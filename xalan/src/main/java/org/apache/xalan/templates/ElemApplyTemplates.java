@@ -22,10 +22,12 @@ package org.apache.xalan.templates;
 
 import java.util.Vector;
 
+import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.transformer.StackGuard;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMIterator;
 import org.apache.xml.serializer.SerializationHandler;
@@ -34,28 +36,30 @@ import org.apache.xml.utils.QName;
 import org.apache.xpath.VariableStack;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceConstructor;
+import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XNodeSet;
+import org.apache.xpath.objects.XNodeSetForDOM;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XRTreeFrag;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * Implement xsl:apply-templates.
- * <pre>
- * &amp;!ELEMENT xsl:apply-templates (xsl:sort|xsl:with-param)*>
- * &amp;!ATTLIST xsl:apply-templates
- *   select %expr; "node()"
- *   mode %qname; #IMPLIED
- * &amp;
- * </pre>
- * @see <a href="http://www.w3.org/TR/xslt#section-Applying-Template-Rules">section-Applying-Template-Rules in XSLT Specification</a>
+ * Implementation of XSLT xsl:apply-templates element.
+ * 
+ * Ref : https://www.w3.org/TR/xslt-30/#element-apply-templates
+ * 
  * @xsl.usage advanced
  */
 public class ElemApplyTemplates extends ElemCallTemplate
 {
-    static final long serialVersionUID = 2903125371542621004L;
+  
+  static final long serialVersionUID = 2903125371542621004L;
 
   /**
    * mode %qname; #IMPLIED
-   * @serial
    */
   private QName m_mode = null;
 
@@ -83,16 +87,9 @@ public class ElemApplyTemplates extends ElemCallTemplate
    * Tells if this belongs to a default template,
    * in which case it will act different with
    * regard to processing modes.
-   * @see <a href="http://www.w3.org/TR/xslt#built-in-rule">built-in-rule in XSLT Specification</a>
-   * @serial
+   * 
    */
   private boolean m_isDefaultTemplate = false;
-  
-//  /**
-//   * List of namespace/localname IDs, for identification of xsl:with-param to 
-//   * xsl:params.  Initialized in the compose() method.
-//   */
-//  private int[] m_paramIDs;
 
   /**
    * Set if this belongs to a default template,
@@ -156,10 +153,6 @@ public class ElemApplyTemplates extends ElemCallTemplate
 
     try
     {
-      // %REVIEW% Do we need this check??
-      //      if (null != sourceNode)
-      //      {
-      // boolean needToTurnOffInfiniteLoopCheck = false;
       QName mode = transformer.getMode();
 
       if (!m_isDefaultTemplate)
@@ -204,7 +197,20 @@ public class ElemApplyTemplates extends ElemCallTemplate
 
     final XPathContext xctxt = transformer.getXPathContext();
     final int sourceNode = xctxt.getCurrentNode();
-    DTMIterator sourceNodes = m_selectExpression.asIterator(xctxt, sourceNode);
+    
+    DTMIterator sourceNodes = null;
+    
+    if (m_selectExpression instanceof XPathSequenceConstructor) {
+       ResultSequence resultSeq = (ResultSequence)(((XPathSequenceConstructor)
+    		                                                               m_selectExpression).execute(xctxt));
+       XNodeSet nodeSet = XslTransformEvaluationHelper.getXNodeSetFromResultSequence(
+    		                                                                     resultSeq, xctxt);
+       sourceNodes = nodeSet.asIterator(xctxt, sourceNode);
+    }
+    else {
+       sourceNodes = m_selectExpression.asIterator(xctxt, sourceNode);
+    }
+    
     VariableStack vars = xctxt.getVarStack();
     int nParams = getParamElemCount();
     int thisframe = vars.getStackFrame();
@@ -212,6 +218,8 @@ public class ElemApplyTemplates extends ElemCallTemplate
     boolean check = (guard.getRecursionLimit() > -1) ? true : false;
     
     boolean pushContextNodeListFlag = false;
+    
+    SourceLocator srcLocator = xctxt.getSAXLocator();
       
     try
     {
@@ -224,7 +232,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
                           ? null
                           : transformer.processSortKeys(this, sourceNode);
 
-      // Sort if we need to.
+      // Sort if we need to
       if (null != keys)
         sourceNodes = sortNodes(xctxt, keys, sourceNodes);
             
@@ -236,19 +244,19 @@ public class ElemApplyTemplates extends ElemCallTemplate
       }
 
       final SerializationHandler rth = transformer.getSerializationHandler();
-//      ContentHandler chandler = rth.getContentHandler();
       final StylesheetRoot sroot = transformer.getStylesheet();
       final TemplateList tl = sroot.getTemplateListComposed();
       final boolean quiet = transformer.getQuietConflictWarnings();
       
-      // Should be able to get this from the iterator but there must be a bug.
+      // Should be able to get this from the iterator 
+      // but there might be a codebase issue.
       DTM dtm = xctxt.getDTM(sourceNode);
       
       int argsFrame = -1;
       if(nParams > 0)
       {
         // This code will create a section on the stack that is all the 
-        // evaluated arguments.  These will be copied into the real params 
+        // evaluated arguments. These will be copied into the real params 
         // section of each called template.
         argsFrame = vars.link(nParams);
         vars.setStackFrame(thisframe);
@@ -258,7 +266,16 @@ public class ElemApplyTemplates extends ElemCallTemplate
           ElemWithParam ewp = m_paramElems[i];
           if (transformer.getDebug())
             transformer.getTraceManager().fireTraceEvent(ewp);
-          XObject obj = ewp.getValue(transformer, sourceNode);
+          
+          XObject obj = null;
+          
+          try {
+             obj = ewp.getValue(transformer, sourceNode);
+          }
+          catch (TransformerException ex) {
+             throw new TransformerException(ex.getMessage(), srcLocator);   
+          }
+          
           if (transformer.getDebug())
             transformer.getTraceManager().fireTraceEndEvent(ewp);
           
@@ -272,9 +289,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
       
       IntStack currentNodes = xctxt.getCurrentNodeStack();
       
-      IntStack currentExpressionNodes = xctxt.getCurrentExpressionNodeStack();     
-      
-      // pushParams(transformer, xctxt);
+      IntStack currentExpressionNodes = xctxt.getCurrentExpressionNodeStack();
       
       int child;
       while (DTM.NULL != (child = sourceNodes.nextNode()))
@@ -298,23 +313,19 @@ public class ElemApplyTemplates extends ElemCallTemplate
 
         // If that didn't locate a node, fall back to a default template rule.
         // See http://www.w3.org/TR/xslt#built-in-rule.
-        if (null == template)
+        if (template == null)
         {
           switch (nodeType)
           {
           case DTM.DOCUMENT_FRAGMENT_NODE :
           case DTM.ELEMENT_NODE :
             template = sroot.getDefaultRule();
-            // %OPT% direct faster?
             break;
           case DTM.ATTRIBUTE_NODE :
           case DTM.CDATA_SECTION_NODE :
           case DTM.TEXT_NODE :
-            // if(rth.m_elemIsPending || rth.m_docPending)
-            //  rth.flushPending(true);
             transformer.pushPairCurrentMatched(sroot.getDefaultTextRule(), child);
             transformer.setCurrentElement(sroot.getDefaultTextRule());
-            // dtm.dispatchCharactersEvents(child, chandler, false);
             dtm.dispatchCharactersEvents(child, rth, false);
             transformer.popCurrentMatched();
             continue;
@@ -322,8 +333,6 @@ public class ElemApplyTemplates extends ElemCallTemplate
             template = sroot.getDefaultRootRule();
             break;
           default :
-
-            // No default rules for processing instructions and the like.
             continue;
           }
         }
@@ -334,7 +343,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
                 
         transformer.pushPairCurrentMatched(template, child);
         if (check)
-	        guard.checkForInfinateLoop();
+	        guard.checkForInfiniteLoop();
 
         int currentFrameBottom;  // See comment with unlink, below
         if(template.m_frameSize > 0)
@@ -375,51 +384,99 @@ public class ElemApplyTemplates extends ElemCallTemplate
             
           }
         }
-        else
-        	currentFrameBottom = 0;
+        else {
+           currentFrameBottom = 0;
+        }
 
-        // Fire a trace event for the template.
-        if (transformer.getDebug())
-          transformer.getTraceManager().fireTraceEvent(template);
+        if (transformer.getDebug()) {
+           transformer.getTraceManager().fireTraceEvent(template);
+        }
 
-        // And execute the child templates.
-        // Loop through the children of the template, calling execute on 
-        // each of them.
-        for (ElemTemplateElement t = template.m_firstChild; 
-             t != null; t = t.m_nextSibling)
-        {
-          xctxt.setSAXLocator(t);
-          try
-          {
-          	transformer.pushElemTemplateElement(t);
-          	t.execute(transformer);
-          }
-          finally
-          {
-          	transformer.popElemTemplateElement();
-          }
+        String templateAsAttrVal = template.getAs();
+        
+        if (templateAsAttrVal != null) {         
+            try {
+               // The codebase logic within this 'try' block, checks whether an
+               // XSLT template's result contents conform to an XPath 'sequence type' 
+               // expression specified as value of template's 'as' attribute.
+                 
+               int dtmNodeHandle = transformer.transformToGlobalRTF(template);
+                
+               NodeList nodeList = (new XRTreeFrag(dtmNodeHandle, xctxt, template)).convertToNodeset();             
+               XObject templateEvalResultForAsAttr = new XNodeSetForDOM(nodeList, xctxt);
+               
+               templateEvalResultForAsAttr = SequenceTypeSupport.convertXdmValueToAnotherType(templateEvalResultForAsAttr, templateAsAttrVal, 
+                                                                                                                                          null, xctxt);
+               if (templateEvalResultForAsAttr != null) {
+                   SerializationHandler handler = transformer.getSerializationHandler();        
+                   
+                   try {
+                        if (templateEvalResultForAsAttr instanceof XNodeSet) {
+                           ElemCopyOf.copyOfActionOnNodeSet((XNodeSet)templateEvalResultForAsAttr, transformer, 
+                                                                                                            handler, xctxt);
+                        }
+                        else {
+                           ElemCopyOf.copyOfActionOnResultSequence((ResultSequence)templateEvalResultForAsAttr, 
+                                                                                                            transformer, handler, xctxt, false); 
+                        }
+                    } 
+                    catch (TransformerException ex) {
+                        throw new TransformerException(ex.getMessage(), srcLocator); 
+                    } 
+                    catch (SAXException ex) {
+                        transformer.getErrorListener().fatalError(new TransformerException(ex)); 
+                    }   
+               }
+               else {
+                   QName m_name = template.getName();
+                   String m_matchPatternStr = (template.getMatch()).getPatternString();
+                   String errTemplateStr = (m_name != null) ? m_name.toString() : m_matchPatternStr; 
+                   throw new TransformerException("XTTE0505 : The required result type of template " + errTemplateStr 
+                                                                                                 + " is " + templateAsAttrVal + ". But the template "
+                                                                                                 + "result doesn't conform to this required type.", srcLocator);  
+               }
+            }
+            catch (TransformerException ex) {
+               String trfExpMessage = ex.getMessage();
+               if ((trfExpMessage != null) && trfExpMessage.startsWith("XTTE0590")) {
+            	   throw ex;   
+               }
+               else {
+	               QName m_name = template.getName();
+	               String m_matchPatternStr = (template.getMatch()).getPatternString();
+	               String errTemplateStr = (m_name != null) ? m_name.toString() : m_matchPatternStr; 
+	               throw new TransformerException("XTTE0505 : The required result type of template " + errTemplateStr 
+	                                                                                                 + " is " + templateAsAttrVal + ". But the template "
+	                                                                                                 + "result doesn't conform to this required type.", srcLocator);
+               }
+            }  
+        }
+        else {
+            // Evaluate the child templates.
+            // Loop through the children of the template, evaluating 
+            // each of them.
+            for (ElemTemplateElement t = template.m_firstChild; 
+                                                        t != null; t = t.m_nextSibling) {
+              xctxt.setSAXLocator(t);
+              
+              try
+              {
+              	  transformer.pushElemTemplateElement(t);
+              	  t.execute(transformer);
+              }
+              finally
+              {
+              	  transformer.popElemTemplateElement();
+              }
+            }
         }
         
-        if (transformer.getDebug())
-	      transformer.getTraceManager().fireTraceEndEvent(template); 
+        if (transformer.getDebug()) {
+	      transformer.getTraceManager().fireTraceEndEvent(template);
+        }
 	    
         if(template.m_frameSize > 0)
         {
-          // See Frank Weiss bug around 03/19/2002 (no Bugzilla report yet).
-          // While unlink will restore to the proper place, the real position 
-          // may have been changed for xsl:with-param, so that variables 
-          // can be accessed.  
-          // of right now.
-          // More:
-          // When we entered this function, the current 
-          // frame buffer (cfb) index in the variable stack may 
-          // have been manually set.  If we just call 
-          // unlink(), however, it will restore the cfb to the 
-          // previous link index from the link stack, rather than 
-          // the manually set cfb.  So, 
-          // the only safe solution is to restore it back 
-          // to the same position it was on entry, since we're 
-          // really not working in a stack context here. (Bug4218)
           vars.unlink(currentFrameBottom);
           xctxt.popRTFContext();
         }

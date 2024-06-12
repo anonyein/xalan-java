@@ -7,6 +7,12 @@ on:
   pull_request:
     branches:
       - '*'
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+  workflow_dispatch:      
 
 permissions:
   contents: read
@@ -36,6 +42,17 @@ jobs:
     - name: 'Build Xalan jars'
       run: |
         mvn --no-transfer-progress clean compile site verify
+    - name: Upload jar
+      uses: actions/upload-artifact@v3
+      with:
+        name: upload-jar
+        path: /home/runner/work/xalan-java/xalan-java/build
+
+    - name: Upload lib
+      uses: actions/upload-artifact@v3
+      with:
+        name: native-lib
+        path: /home/runner/work/xalan-java/xalan-java/lib
     - uses: actions/checkout@v3
       name: 'Checkout xalan-test'
       with:

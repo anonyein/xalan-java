@@ -20,6 +20,8 @@
  */
 package org.apache.xpath.axes;
 
+import javax.xml.transform.TransformerException;
+
 import org.apache.xalan.res.XSLMessages;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMFilter;
@@ -598,7 +600,7 @@ public abstract class LocPathIterator extends PredicatedNodeTest
    * show.  It is here only to fullfill the DOM NodeIterator
    * interface.</p>
    *
-   * @return For now, always NodeFilter.SHOW_ALL &amp; ~NodeFilter.SHOW_ENTITY_REFERENCE.
+   * @return For now, always NodeFilter.SHOW_ALL & ~NodeFilter.SHOW_ENTITY_REFERENCE.
    * @see org.w3c.dom.traversal.NodeIterator
    */
   public int getWhatToShow()

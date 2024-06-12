@@ -20,33 +20,57 @@
  */
 package org.apache.xalan.templates;
 
+import java.util.Vector;
+
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.serializer.NamespaceMappings;
 import org.apache.xml.serializer.SerializationHandler;
 import org.apache.xml.utils.QName;
 import org.apache.xml.utils.XML11Char;
-
+import org.apache.xpath.Expression;
+import org.apache.xpath.XPath;
+import org.apache.xpath.XPathContext;
+import org.apache.xpath.objects.XObject;
+import org.w3c.dom.DOMException;
 import org.xml.sax.SAXException;
 
 /**
- * Implement xsl:attribute.
- * <pre>
- * &amp;!ELEMENT xsl:attribute %char-template;>
- * &amp;!ATTLIST xsl:attribute
- *   name %avt; #REQUIRED
- *   namespace %avt; #IMPLIED
- *   %space-att;
- * &amp;
- * </pre>
- * @see <a href="http://www.w3.org/TR/xslt#creating-attributes">creating-attributes in XSLT Specification</a>
+ * XSLT 3.0 xsl:attribute element.
+ * 
+ * <xsl:attribute
+           name = { qname }
+           namespace? = { uri }
+           select? = expression
+           separator? = { string }
+           type? = eqname
+           validation? = "strict" | "lax" | "preserve" | "strip" >
+        <!-- Content: sequence-constructor -->
+   </xsl:attribute>
+
  * @xsl.usage advanced
  */
+
+/* 
+   Implementation of the XSLT 3.0 xsl:attribute instruction.
+*/
 public class ElemAttribute extends ElemElement
 {
     static final long serialVersionUID = 8817220961566919187L;
+    
+    /**
+     * The "select" expression.
+     */
+    protected Expression m_selectExpression = null;
+    
+    // The following two variables are used, for performing fixupVariables
+    // action on certain XPath expression objects, within an object of this
+    // class.
+    private Vector fVars;    
+    private int fGlobalsSize;
 
   /**
    * Get an int constant identifying the type of element.
@@ -68,48 +92,38 @@ public class ElemAttribute extends ElemElement
   {
     return Constants.ELEMNAME_ATTRIBUTE_STRING;
   }
+  
+  /**
+   * Set the "select" attribute.
+   *
+   * @param xpath The XPath expression for the "select" attribute.
+   */
+  public void setSelect(XPath xpath)
+  {
+      m_selectExpression = xpath.getExpression();  
+  }
 
   /**
-   * Create an attribute in the result tree.
-   * @see <a href="http://www.w3.org/TR/xslt#creating-attributes">creating-attributes in XSLT Specification</a>
+   * Get the "select" attribute.
    *
-   * @param transformer non-null reference to the the current transform-time state.
-   *
-   * @throws TransformerException
+   * @return The XPath expression for the "select" attribute.
    */
-//  public void execute(
-//          TransformerImpl transformer)
-//            throws TransformerException
-//  {
-    //SerializationHandler rhandler = transformer.getSerializationHandler();
-
-    // If they are trying to add an attribute when there isn't an 
-    // element pending, it is an error.
-    // I don't think we need this check here because it is checked in 
-    // ResultTreeHandler.addAttribute.  (is)
-//    if (!rhandler.isElementPending())
-//    {
-//      // Make sure the trace event is sent.
-//      if (TransformerImpl.S_DEBUG)
-//        transformer.getTraceManager().fireTraceEvent(this);
-//
-//      XPathContext xctxt = transformer.getXPathContext();
-//      int sourceNode = xctxt.getCurrentNode();
-//      String attrName = m_name_avt.evaluate(xctxt, sourceNode, this);
-//      transformer.getMsgMgr().warn(this,
-//                                   XSLTErrorResources.WG_ILLEGAL_ATTRIBUTE_POSITION,
-//                                   new Object[]{ attrName });
-//
-//      if (TransformerImpl.S_DEBUG)
-//        transformer.getTraceManager().fireTraceEndEvent(this);
-//      return;
-//
-//      // warn(templateChild, sourceNode, "Trying to add attribute after element child has been added, ignoring...");
-//    }
+  public Expression getSelect()
+  {
+      return m_selectExpression;
+  }
+  
+  public void compose(StylesheetRoot sroot) throws TransformerException
+  {
+    super.compose(sroot);
     
-//    super.execute(transformer);
+    StylesheetRoot.ComposeState cstate = sroot.getComposeState();
+    java.util.Vector vnames = cstate.getVariableNames();
+    int golbalsSize = cstate.getGlobalsSize();
     
-//  }
+    fVars = (java.util.Vector)(vnames.clone());
+    fGlobalsSize = golbalsSize; 
+  }
   
   /**
    * Resolve the namespace into a prefix.  At this level, if no prefix exists, 
@@ -164,54 +178,83 @@ public class ElemAttribute extends ElemElement
    }
   
   /**
-   * Construct a node in the result tree.  This method is overloaded by 
-   * xsl:attribute. At this class level, this method creates an element.
+   * Construct an xsl:attribute node within the XSLT transformation's result tree.
    *
-   * @param nodeName The name of the node, which may be null.
-   * @param prefix The prefix for the namespace, which may be null.
-   * @param nodeNamespace The namespace of the node, which may be null.
-   * @param transformer non-null reference to the the current transform-time state.
-   * @param sourceNode non-null reference to the <a href="http://www.w3.org/TR/xslt#dt-current-node">current source node</a>.
-   * @param mode reference, which may be null, to the <a href="http://www.w3.org/TR/xslt#modes">current mode</a>.
+   * @param nodeName              The name of the node, which may be null.
+   * @param prefix                The prefix for the namespace, which may be null.
+   * @param nodeNamespace         The namespace of the node, which may be null.
+   * @param transformer           non-null reference to the current transform-time state.
    *
    * @throws TransformerException
    */
-  void constructNode(
-          String nodeName, String prefix, String nodeNamespace, TransformerImpl transformer)
-            throws TransformerException
-  {
-
-    if(null != nodeName && nodeName.length() > 0)
-    {
-      SerializationHandler rhandler = transformer.getSerializationHandler();
-
-      // Evaluate the value of this attribute
-      String val = transformer.transformToString(this);
-      try 
-      {
-        // Let the result tree handler add the attribute and its String value.
-        String localName = QName.getLocalPart(nodeName);
-        if(prefix != null && prefix.length() > 0){
-            rhandler.addAttribute(nodeNamespace, localName, nodeName, "CDATA", val, true);
-        }else{
-            rhandler.addAttribute("", localName, nodeName, "CDATA", val, true);
+  void constructNode(String nodeName, String prefix, String nodeNamespace, 
+                                                                 TransformerImpl transformer)
+                                                                            throws TransformerException {
+    
+        XPathContext xctxt = transformer.getXPathContext();
+    
+        if (null != nodeName && nodeName.length() > 0) {
+              SerializationHandler rhandler = transformer.getSerializationHandler();
+              
+              // XSLT 3.0 spec changes wrt XSLT 1.0 : The string value of the new attribute node may be
+              // defined either by using the select attribute, or by the sequence constructor that forms 
+              // the content of the xsl:attribute element. These are mutually exclusive. i.e, if the
+              // select attribute is present then the sequence constructor must be empty, and if the 
+              // sequence constructor is non-empty then the select attribute must be absent.              
+              if (m_selectExpression != null && this.m_firstChild != null) {
+                  throw new TransformerException("XTSE0840 : An xsl:attribute element with a select attribute must "
+                                                                  + "have an empty child sequence constructor.", 
+                                                                        xctxt.getSAXLocator());   
+              }
+        
+              String attrVal = null;
+                            
+              if (m_selectExpression != null) {
+                  // Evaluate an xsl:attribute 'select' attribute's XPath expression,
+            	  // to determine the value of an attribute for emitting to XSLT
+            	  // transformation's output.
+            	  
+                  if (fVars != null) {
+                     m_selectExpression.fixupVariables(fVars, fGlobalsSize);   
+                  }
+                  
+                  XObject xpathEvalResult = m_selectExpression.execute(xctxt);
+                  attrVal = XslTransformEvaluationHelper.getStrVal(xpathEvalResult);
+              }
+              else {
+                  // Evaluate an xsl:attribute's child sequence constructor, to determine 
+            	  // the value of an attribute for emitting to XSLT transformation's 
+            	  // output.          
+                  attrVal = transformer.transformToString(this);
+              }
+              
+              try {
+                    // Let an XSL result tree handler add the attribute and its 
+            	    // string value.
+                    String localName = QName.getLocalPart(nodeName);
+                    if (prefix != null && prefix.length() > 0) {
+                        rhandler.addAttribute(nodeNamespace, localName, nodeName, "CDATA", attrVal, true);
+                    }
+                    else {
+                        rhandler.addAttribute("", localName, nodeName, "CDATA", attrVal, true);
+                    }
+              }
+              catch (SAXException e) {
+                   // no op
+              }
         }
-      }
-      catch (SAXException e)
-      {
-      }
-    }
+    
   }
 
 
   /**
    * Add a child to the child list.
-   * &lt;!ELEMENT xsl:attribute %char-template;&gt;
-   * &lt;!ATTLIST xsl:attribute
+   * <!ELEMENT xsl:attribute %char-template;>
+   * <!ATTLIST xsl:attribute
    *   name %avt; #REQUIRED
    *   namespace %avt; #IMPLIED
    *   %space-att;
-   * &gt;
+   * >
    *
    * @param newChild Child to append to the list of this node's children
    *

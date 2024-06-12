@@ -19,31 +19,32 @@
 
 package org.apache.xpath.jaxp;
 
-import javax.xml.namespace.QName;
+import java.io.IOException;
+
 import javax.xml.namespace.NamespaceContext;
-import javax.xml.xpath.XPathExpressionException;
+import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFunction;
 import javax.xml.xpath.XPathFunctionResolver;
 import javax.xml.xpath.XPathVariableResolver;
-import javax.xml.xpath.XPathExpression;
 
+import org.apache.xalan.res.XSLMessages;
 import org.apache.xml.dtm.DTM;
-import org.apache.xpath.*;
+import org.apache.xpath.XPath;
+import org.apache.xpath.XPathFactory;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.res.XPATHErrorResources;
-import org.apache.xalan.res.XSLMessages;
-
-import org.w3c.dom.Node;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.traversal.NodeIterator;
-
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
-import javax.xml.parsers.*;
-
-import java.io.IOException;
 
 /**
  * The XPathImpl class provides implementation for the methods defined  in
@@ -283,7 +284,7 @@ public class XPathImpl implements javax.xml.xpath.XPath {
         } catch ( java.lang.NullPointerException npe ) {
             // If VariableResolver returns null Or if we get 
             // NullPointerException at this stage for some other reason
-            // then we have to return XPathException 
+            // then we have to reurn XPathException 
             throw new XPathExpressionException ( npe );
         } catch ( javax.xml.transform.TransformerException te ) {
             Throwable nestedException = te.getException();
@@ -377,7 +378,7 @@ public class XPathImpl implements javax.xml.xpath.XPath {
      * <p>If <code>expression</code> contains any {@link XPathFunction}s,
      * they must be available via the {@link XPathFunctionResolver}.
      * An {@link XPathExpressionException} will be thrown if the <code>XPathFunction</code>
-     * cannot be resolved with the <code>XPathFunctionResolver</code>.</p>
+     * cannot be resovled with the <code>XPathFunctionResolver</code>.</p>
      * 
      * <p>If <code>expression</code> is <code>null</code>, a <code>NullPointerException</code> is thrown.</p>
      *

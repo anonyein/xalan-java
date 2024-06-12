@@ -160,7 +160,7 @@ public class XMLMessages
    *
    * @param className The class name of the resource bundle.
    * @return the ResourceBundle
-   * @throws MissingResourceException if the resource bundle can not be retrieved
+   * @throws MissingResourceException
    */
   public static ListResourceBundle loadResourceBundle(String className)
           throws MissingResourceException

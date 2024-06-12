@@ -46,10 +46,10 @@ public class SerializerUtils
      * attribute templates as need be, and processing the xsl:use
      * attribute.
      *
-     * @param handler SerializationHandler to which the attributes are written
+     * @param handler SerializationHandler to which the attributes are added.
      * @param attr Attribute node to add to SerializationHandler.
      *
-     * @throws TransformerException if handler objects
+     * @throws TransformerException
      */
     public static void addAttribute(SerializationHandler handler, int attr)
         throws TransformerException
@@ -86,10 +86,9 @@ public class SerializerUtils
     /**
      * Copy DOM attributes to the result element.
      *
-     * @param handler SerializationHandler to which the attributes are written
      * @param src Source node with the attributes
      *
-     * @throws TransformerException if handler objects
+     * @throws TransformerException
      */
     public static void addAttributes(SerializationHandler handler, int src)
         throws TransformerException
@@ -111,11 +110,10 @@ public class SerializerUtils
      * Given a result tree fragment, walk the tree and
      * output it to the SerializationHandler.
      *
-     * @param handler SerializationHandler to which the attributes are written
      * @param obj Result tree fragment object
      * @param support XPath context for the result tree fragment
      *
-     * @throws org.xml.sax.SAXException if handler objects
+     * @throws org.xml.sax.SAXException
      */
     public static void outputResultTreeFragment(
         SerializationHandler handler,
@@ -146,17 +144,16 @@ public class SerializerUtils
     }
 
     /**
-     * Copy <code>xmlns:</code> attributes in if not already in scope.
+     * Copy <KBD>xmlns:</KBD> attributes in if not already in scope.
      *
      * As a quick hack to support ClonerToResultTree, this can also be used
      * to copy an individual namespace node.
      *
-     * @param handler SerializationHandler to which the attributes are written
-     * @param src int Source Node index in DTM
-     * @param type int Source Node type in DTM
-     * @param dtm Document Table Model containing the source node
+     * @param src Source Node
+     * NEEDSDOC @param type
+     * NEEDSDOC @param dtm
      *
-     * @throws TransformerException if handler objects
+     * @throws TransformerException
      */
     public static void processNSDecls(
         SerializationHandler handler,
@@ -209,7 +206,7 @@ public class SerializerUtils
     /**
      * Returns whether a namespace is defined
      *
-     * @param serializer SerializationHandler to which the attributes are written
+     *
      * @param attr Namespace attribute node
      * @param dtm The DTM that owns attr.
      *
@@ -243,11 +240,10 @@ public class SerializerUtils
      * If it's not, it still needs to be declared at this point.
      * TODO: This needs to be done at an earlier stage in the game... -sb
      *
-     * @param handler SerializationHandler to which the attributes are written
-     * @param dtm Document Table Model containing the source node
-     * @param namespace DTM index number representing namespace of this node
+     * NEEDSDOC @param dtm
+     * NEEDSDOC @param namespace
      *
-     * @throws org.xml.sax.SAXException if handler objects
+     * @throws org.xml.sax.SAXException
      */
     public static void ensureNamespaceDeclDeclared(
         SerializationHandler handler,

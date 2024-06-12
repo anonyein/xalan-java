@@ -24,21 +24,22 @@ import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xml.dtm.DTM;
+import org.apache.xml.dtm.DTMManager;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XObject;
+import org.w3c.dom.DOMException;
+
+import xml.xpath31.processor.types.XSAnyType;
 
 /**
- * Implement xsl:choose.
- * <pre>
- * &lt;!ELEMENT xsl:choose (xsl:when+, xsl:otherwise?)&gt;
- * &lt;!ATTLIST xsl:choose %space-att;&gt;
- * </pre>
- * @see <a href="http://www.w3.org/TR/xslt#section-Conditional-Processing-with-xsl:choose">XXX in XSLT Specification</a>
- * @xsl.usage advanced
+ *  Implementation of the XSLT 3.0 xsl:choose instruction.
+ *  
+ *  @xsl.usage advanced
  */
 public class ElemChoose extends ElemTemplateElement
 {
-    static final long serialVersionUID = -3070117361903102033L;
+   static final long serialVersionUID = -3070117361903102033L;
 
   /**
    * Get an int constant identifying the type of element.
@@ -97,38 +98,57 @@ public class ElemChoose extends ElemTemplateElement
         // must be xsl:when
         XPathContext xctxt = transformer.getXPathContext();
         int sourceNode = xctxt.getCurrentNode();
-        
-        // System.err.println("\""+when.getTest().getPatternString()+"\"");
-        
-        // if(when.getTest().getPatternString().equals("COLLECTION/icuser/ictimezone/LITERAL='GMT +13:00 Pacific/Tongatapu'"))
-        // 	System.err.println("Found COLLECTION/icuser/ictimezone/LITERAL");
 
         if (transformer.getDebug())
         {
-          XObject test = when.getTest().execute(xctxt, sourceNode, when);
+            XObject test = when.getTest().execute(xctxt, sourceNode, when);
 
-          if (transformer.getDebug())
-            transformer.getTraceManager().fireSelectedEvent(sourceNode, when,
-                    "test", when.getTest(), test);
-
-          if (test.bool())
-          {
-            transformer.getTraceManager().fireTraceEvent(when);
+            if (transformer.getDebug())
+               transformer.getTraceManager().fireSelectedEvent(sourceNode, when,
+                                                                        "test", when.getTest(), test);
+            if (test.bool())
+            {
+               transformer.getTraceManager().fireTraceEvent(when);
             
-            transformer.executeChildTemplates(when, true);
+               transformer.executeChildTemplates(when, true);
 
-	        transformer.getTraceManager().fireTraceEndEvent(when); 
+	           transformer.getTraceManager().fireTraceEndEvent(when); 
 	                  
-            return;
-          }
-
+               return;
+            }
         }
-        else if (when.getTest().bool(xctxt, sourceNode, when))
-        {
-          transformer.executeChildTemplates(when, true);
-
-          return;
-        }
+        else {
+            XObject xpath3ContextItem = xctxt.getXPath3ContextItem();        
+            if (xpath3ContextItem != null) {
+                XPathContext xctxtNew = new XPathContext(false);            
+                xctxtNew.setVarStack(xctxt.getVarStack());
+                
+                xctxtNew.setXPath3ContextPosition(xctxt.getXPath3ContextPosition());
+                xctxtNew.setXPath3ContextSize(xctxt.getXPath3ContextSize());
+                                  
+                DTMManager dtmMgr = xctxtNew.getDTMManager();
+                String strVal = "";
+                if (xpath3ContextItem instanceof XSAnyType) {
+                    strVal = ((XSAnyType)xpath3ContextItem).stringValue();     
+                }
+                else {
+                    strVal = xpath3ContextItem.str(); 
+                }
+                DTM docFragDtm = dtmMgr.createDTMForSimpleXMLDocument(strVal);
+          
+                int contextNode = docFragDtm.getFirstChild(docFragDtm.getDocument());            
+                xctxtNew.pushCurrentNode(contextNode);
+                xctxtNew.setSAXLocator(this);
+                if ((when.getTest()).bool(xctxtNew, contextNode, this)) {
+                    transformer.executeChildTemplates(when, true);
+                    return;
+                }  
+            }        
+            else if ((when.getTest()).bool(xctxt, sourceNode, this)) {
+               transformer.executeChildTemplates(when, true);
+               return;
+            }  
+        }        
       }
       else if (Constants.ELEMNAME_OTHERWISE == type)
       {
@@ -170,17 +190,13 @@ public class ElemChoose extends ElemTemplateElement
 
     switch (type)
     {
-    case Constants.ELEMNAME_WHEN :
-    case Constants.ELEMNAME_OTHERWISE :
-
-      // TODO: Positional checking
-      break;
-    default :
-      error(XSLTErrorResources.ER_CANNOT_ADD,
-            new Object[]{ newChild.getNodeName(),
-                          this.getNodeName() });  //"Can not add " +((ElemTemplateElement)newChild).m_elemName +
-
-    //" to " + this.m_elemName);
+        case Constants.ELEMNAME_WHEN :
+        case Constants.ELEMNAME_OTHERWISE :
+          break;
+        default :
+          error(XSLTErrorResources.ER_CANNOT_ADD,
+                new Object[]{ newChild.getNodeName(),
+                              this.getNodeName() });
     }
 
     return super.appendChild(newChild);

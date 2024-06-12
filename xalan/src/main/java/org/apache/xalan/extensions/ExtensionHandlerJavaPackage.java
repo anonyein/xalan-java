@@ -33,6 +33,7 @@ import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.Stylesheet;
+import org.apache.xalan.templates.XSConstructorFunctionUtil;
 import org.apache.xalan.trace.ExtensionEvent;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xpath.functions.FuncExtFunction;
@@ -58,8 +59,6 @@ import org.apache.xpath.objects.XObject;
  *
  * @xsl.usage internal
  */
-
-
 public class ExtensionHandlerJavaPackage extends ExtensionHandlerJava
 {
 
@@ -434,11 +433,24 @@ public class ExtensionHandlerJavaPackage extends ExtensionHandlerJava
    */
   public Object callFunction(FuncExtFunction extFunction,
                              Vector args,
-                             ExpressionContext exprContext)
-      throws TransformerException
+                             ExpressionContext exprContext,
+                             TransformerImpl transformer) throws TransformerException
   {
-    return callFunction(extFunction.getFunctionName(), args, 
-                        extFunction.getMethodKey(), exprContext);
+      
+      Object funcEvalResult = null;
+      
+          XObject evalResult = XSConstructorFunctionUtil.processFuncExtFunctionOrXPathOpn
+                                                                          (exprContext.getXPathContext(), extFunction, transformer);
+          if (evalResult != null) {
+             funcEvalResult = evalResult;
+          }
+          else {
+             funcEvalResult = callFunction(extFunction.getFunctionName(), args, extFunction.getMethodKey(), 
+                                                                                                     exprContext);    
+          }
+      
+      return funcEvalResult;
+      
   }
 
   /**

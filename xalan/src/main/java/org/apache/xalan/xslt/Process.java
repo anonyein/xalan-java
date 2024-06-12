@@ -56,12 +56,11 @@ import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.trace.PrintTraceListener;
 import org.apache.xalan.trace.TraceManager;
 import org.apache.xalan.transformer.XalanProperties;
-import org.apache.xalan.xslt.util.XslTransformErrorLocatorHelper;
+import org.apache.xalan.xslt.util.XslTransformSharedDatastore;
 import org.apache.xml.utils.DefaultErrorHandler;
 import org.apache.xml.utils.SystemIDResolver;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-
 import org.xml.sax.ContentHandler;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
@@ -750,7 +749,8 @@ public class Process
           else
           {
             // System.out.println("Calling newTemplates: "+xslFileName);
-            XslTransformErrorLocatorHelper.systemId = SystemIDResolver.getAbsoluteURI(xslFileName); 
+            XslTransformSharedDatastore.xslSystemId = SystemIDResolver.
+                                                                        getAbsoluteURI(xslFileName); 
             stylesheet = tfactory.newTemplates(new StreamSource(xslFileName));
             // System.out.println("Done calling newTemplates: "+xslFileName);
           }

@@ -20,31 +20,37 @@
  */
 package org.apache.xalan.templates;
 
+import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xpath.VariableStack;
+import org.apache.xpath.XPathContext;
+import org.apache.xpath.composite.SequenceTypeSupport;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Implement xsl:param.
- * <pre>
- * &lt;! xsl:param %template;&gt;
- * &lt;!ATTLIST xsl:param
- *   name %qname; #REQUIRED
- *   select %expr; #IMPLIED
- * &gt;
- * </pre>
- * @see <a href="http://www.w3.org/TR/xslt#variables">variables in XSLT Specification</a>
+ * Implementation of XSLT xsl:param element.
+ * 
+ * Ref : https://www.w3.org/TR/xslt-30/#element-param
+ * 
  * @xsl.usage advanced
  */
 public class ElemParam extends ElemVariable
 {
-    static final long serialVersionUID = -1131781475589006431L;
+  
+  static final long serialVersionUID = -1131781475589006431L;
+  
   int m_qnameID;
+  
+  /**
+   * This class field, supports evaluation of stylesheet 
+   * xsl:iterate->xsl:param elements.
+   */
+  private int xslIterateIterationIdx = -1;
 
   /**
-   * Constructor ElemParam
+   * Constructor ElemParam.
    *
    */
   public ElemParam(){}
@@ -113,18 +119,63 @@ public class ElemParam extends ElemVariable
       
     VariableStack vars = transformer.getXPathContext().getVarStack();
     
-    if(!vars.isLocalSet(m_index))
-    {
-
-      int sourceNode = transformer.getXPathContext().getCurrentNode();
-      XObject var = getValue(transformer, sourceNode);
-  
-      // transformer.getXPathContext().getVarStack().pushVariable(m_qname, var);
-      transformer.getXPathContext().getVarStack().setLocalVariable(m_index, var);
+    XPathContext xctx = transformer.getXPathContext();
+    
+    SourceLocator srcLocator = xctx.getSAXLocator();
+    
+    if (!vars.isLocalSet(m_index) || ((getParentElem() instanceof ElemIterate) && (xslIterateIterationIdx == 0))) {
+        int sourceNode = transformer.getXPathContext().getCurrentNode();
+        
+        try {
+           XObject var = getValue(transformer, sourceNode);
+           if (var != null) {
+              transformer.getXPathContext().getVarStack().setLocalVariable(m_index, var);    
+           }
+           else {              
+              throw new TransformerException("XTTE0590 : The value to parameter " + m_qname.toString() + " cannot be assigned. "
+                                                                             + "Either an input content for parameter is not available within "
+                                                                             + "stylesheet context, or parameter's value cannot be cast to an expected type.", srcLocator);
+           }
+        }
+        catch (TransformerException ex) {
+            throw new TransformerException("XTTE0590 : The value to parameter " + m_qname.toString() + " cannot be assigned. "
+                                                                           + "Either an input content for parameter is not available within "
+                                                                           + "stylesheet context, or parameter's value cannot be cast to an expected type.", srcLocator);   
+        }
     }
+    else {        
+        if (!(getParentElem() instanceof ElemFunction)) {
+            String asAttrVal = getAs();
+            
+            if (asAttrVal != null) {
+              try {
+                 XObject var = transformer.getXPathContext().getVarStack().getLocalVariable(xctx, m_index);
+                 var = SequenceTypeSupport.convertXdmValueToAnotherType(var, asAttrVal, null, 
+                                                                                   transformer.getXPathContext());
+                 if (var == null) {
+                    throw new TransformerException("XTTE0590 : The required item type of the value of parameter " + 
+                                                                                   m_qname.toString() + " is " + asAttrVal + ". The supplied value "
+                                                                                   + "doesn't match the expected item type.", srcLocator);  
+                 }
+              }
+              catch (TransformerException ex) {
+                 throw new TransformerException("XTTE0590 : The required item type of the value of parameter " + 
+                                                                                   m_qname.toString() + " is " + asAttrVal + ". The supplied value "
+                                                                                   + "doesn't match the expected item type.", srcLocator); 
+              }
+           }
+       }
+    }
+    
+    // Reset this class field
+    xslIterateIterationIdx = -1;
     
     if (transformer.getDebug())
       transformer.getTraceManager().fireTraceEndEvent(this);
+  }
+  
+  public void setXslIterateIterationIdx(int iterationIdx) {
+     xslIterateIterationIdx = iterationIdx;   
   }
   
 }

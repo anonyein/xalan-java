@@ -20,10 +20,15 @@
  */
 package org.apache.xpath.operations;
 
+import javax.xml.XMLConstants;
+
+import org.apache.xalan.templates.XSConstructorFunctionUtil;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathVisitor;
+import org.apache.xpath.axes.SelfIteratorNoPredicate;
+import org.apache.xpath.functions.FuncExtFunction;
 import org.apache.xpath.objects.XObject;
 
 /**
@@ -31,7 +36,7 @@ import org.apache.xpath.objects.XObject;
  */
 public class Operation extends Expression implements ExpressionOwner
 {
-    static final long serialVersionUID = -3037139537171050430L;
+  static final long serialVersionUID = -3037139537171050430L;
 
   /** The left operand expression.
    *  @serial */
@@ -105,13 +110,63 @@ public class Operation extends Expression implements ExpressionOwner
   public XObject execute(XPathContext xctxt)
           throws javax.xml.transform.TransformerException
   {
+    
+    // XObject left = m_left.execute(xctxt, true);
+    // XObject right = m_right.execute(xctxt, true);
+      
+    XObject left = null;
+    
+    XObject right = null;
+    
+    if (m_left instanceof FuncExtFunction) {
+    	FuncExtFunction extFunction = (FuncExtFunction)m_left;
+    	if (XMLConstants.W3C_XML_SCHEMA_NS_URI.equals(extFunction.getNamespace())) {
+    		left = XSConstructorFunctionUtil.processFuncExtFunctionOrXPathOpn(xctxt, m_left, null); 
+    	}
+    	else {
+    		left = m_left.execute(xctxt, true);  
+    	}
+    }
+    else if (m_left instanceof SelfIteratorNoPredicate) {
+    	XObject xpath3ContextItem = xctxt.getXPath3ContextItem();
+    	if (xpath3ContextItem != null) {
+    		left = xpath3ContextItem;     
+    	}
+    	else {
+    		left = m_left.execute(xctxt, true);   
+    	}
+    }
+    else {
+    	left = m_left.execute(xctxt, true); 
+    }
 
-    XObject left = m_left.execute(xctxt, true);
-    XObject right = m_right.execute(xctxt, true);
+    if (m_right instanceof FuncExtFunction) {
+    	FuncExtFunction extFunction = (FuncExtFunction)m_right;
+    	if (XMLConstants.W3C_XML_SCHEMA_NS_URI.equals(extFunction.getNamespace())) {
+    		right = XSConstructorFunctionUtil.processFuncExtFunctionOrXPathOpn(xctxt, m_right, null); 
+    	}
+    	else {
+    		right = m_right.execute(xctxt, true);  
+    	}
+    }
+    else if (m_right instanceof SelfIteratorNoPredicate) {
+    	XObject xpath3ContextItem = xctxt.getXPath3ContextItem();
+    	if (xpath3ContextItem != null) {
+    		right = xpath3ContextItem;     
+    	}
+    	else {
+    		right = m_right.execute(xctxt, true);   
+    	}
+    }
+    else {
+    	right = m_right.execute(xctxt, true); 
+    }
 
     XObject result = operate(left, right);
+    
     left.detach();
     right.detach();
+    
     return result;
   }
 

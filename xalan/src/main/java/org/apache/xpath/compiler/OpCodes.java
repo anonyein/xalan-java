@@ -626,7 +626,120 @@ public class OpCodes
 
   /** The end of the axes types.    */
   public static final int AXES_END_TYPES = 53;
+  
+  /**
+   * For XPath 3.1 "to" range expressions.
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_TO = 54;
+  
+  /**
+   * For XPath 3.1 value comparison operator "eq".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_VC_EQUALS = 55;
+  
+  /**
+   * For XPath 3.1 value comparison operator "ne".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_VC_NOT_EQUALS = 56;
+  
+  /**
+   * For XPath 3.1 value comparison operator "lt".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_VC_LT = 57;
+  
+  /**
+   * For XPath 3.1 value comparison operator "gt".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_VC_GT = 58;
+  
+  /**
+   * For XPath 3.1 value comparison operator "le".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_VC_LE = 59;
+  
+  /**
+   * For XPath 3.1 value comparison operator "ge".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_VC_GE = 60;
+  
+  public static final int OP_INLINE_FUNCTION = 61;
+  
+  public static final int OP_DYNAMIC_FUNCTION_CALL = 62;
+  
+  public static final int OP_FOR_EXPR = 63;
+  
+  public static final int OP_LET_EXPR = 64;
+  
+  public static final int OP_QUANTIFIED_EXPR = 65;
+  
+  public static final int OP_IF_EXPR = 66;
+  
+  public static final int OP_SEQUENCE_CONSTRUCTOR_EXPR = 67;
+  
+  /**
+   * For XPath 3.1 string concatenation operator "||".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_STR_CONCAT = 68;
+  
+  /**
+   * For XPath 3.1 node concatenation operator "is".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_IS = 69;
+  
+  /**
+   * For XPath 3.1 node concatenation operator "<<".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_NC_PRECEDE = 70;
+  
+  /**
+   * For XPath 3.1 node concatenation operator ">>".
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_NC_FOLLOWS = 71;
+  
+  /**
+   * For XPath 3.1 simple map operator '!'.
+   * 
+   * @xsl.usage advanced
+   */
+  public static final int OP_SIMPLE_MAP_OPERATOR = 72;
+  
+  public static final int OP_SEQUENCE_TYPE_EXPR = 73;
+  
+  public static final int OP_ARRAY_CONSTRUCTOR_EXPR = 74;
+  
+  public static final int OP_MAP_CONSTRUCTOR_EXPR = 75;
+  
+  public static final int OP_INSTANCE_OF = 76;
+  
+  public static final int OP_CAST_AS = 77;
+  
+  public static final int OP_CASTABLE_AS = 78;
+  
+  public static final int OP_ARROW = 79;
 
-  /** The next free ID.  Please keep this up to date.  */
-  private static final int NEXT_FREE_ID = 99;
+  /** The next free ID. Please keep this up to date. */
+  private static final int NEXT_FREE_ID = 80;
+  
 }

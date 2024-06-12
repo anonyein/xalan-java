@@ -147,8 +147,12 @@ public class XPATHErrorResources extends ListResourceBundle
 	 "ER_BOOLEAN_ARG_NO_LONGER_OPTIONAL";
   public static final String ER_FOUND_COMMA_BUT_NO_PRECEDING_ARG = 
 	 "ER_FOUND_COMMA_BUT_NO_PRECEDING_ARG";
+  public static final String ER_FOUND_COMMA_BUT_NO_PRECEDING_PARAM = 
+     "ER_FOUND_COMMA_BUT_NO_PRECEDING_PARAM";
   public static final String ER_FOUND_COMMA_BUT_NO_FOLLOWING_ARG = 
 	 "ER_FOUND_COMMA_BUT_NO_FOLLOWING_ARG";
+  public static final String ER_FOUND_COMMA_BUT_NO_FOLLOWING_PARAM = 
+     "ER_FOUND_COMMA_BUT_NO_FOLLOWING_PARAM";  
   public static final String ER_PREDICATE_ILLEGAL_SYNTAX = 
 	 "ER_PREDICATE_ILLEGAL_SYNTAX";
   public static final String ER_ILLEGAL_AXIS_NAME = "ER_ILLEGAL_AXIS_NAME";
@@ -209,9 +213,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
  public static final String ER_NULL_ERROR_HANDLER = "ER_NULL_ERROR_HANDLER";
    /**  Programmer's assertion: unknown opcode  */
   public static final String ER_PROG_ASSERT_UNKNOWN_OPCODE = 
-	 "ER_PROG_ASSERT_UNKNOWN_OPCODE";
-   /**  0 or 1   */
-  public static final String ER_ZERO_OR_ONE = "ER_ZERO_OR_ONE";
+	 "ER_PROG_ASSERT_UNKNOWN_OPCODE";   
    /**  rtf() not supported by XRTreeFragSelectWrapper   */
   public static final String ER_RTF_NOT_SUPPORTED_XRTREEFRAGSELECTWRAPPER = 
 	 "ER_RTF_NOT_SUPPORTED_XRTREEFRAGSELECTWRAPPER";
@@ -228,8 +230,22 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
    /**  The FastStringBuffer argument can not be null   */
  public static final String ER_FASTSTRINGBUFFER_CANNOT_BE_NULL = 
 	 "ER_FASTSTRINGBUFFER_CANNOT_BE_NULL";
+  
+  /** 0 */
+  public static final String ER_ZERO = "ER_ZERO";
+  /**  0 or 1   */
+  public static final String ER_ZERO_OR_ONE = "ER_ZERO_OR_ONE";  
+  /** 1 or 2 */
+  public static final String ER_ONE_OR_TWO = "ER_ONE_OR_TWO";
+  /** 2 */
+  public static final String ER_TWO = "ER_TWO";
    /**  2 or 3   */
   public static final String ER_TWO_OR_THREE = "ER_TWO_OR_THREE";
+  /**  1, 2 or 3   */
+  public static final String ER_ONE_TWO_OR_THREE = "ER_ONE_TWO_OR_THREE";
+  /**  3 or 4   */
+  public static final String ER_THREE_OR_FOUR = "ER_THREE_OR_FOUR";
+  
    /** Variable accessed before it is bound! */
   public static final String ER_VARIABLE_ACCESSED_BEFORE_BIND = 
 	 "ER_VARIABLE_ACCESSED_BEFORE_BIND";
@@ -354,6 +370,22 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   /**  str() not supported by XRTreeFragSelectWrapper   */
   public static final String ER_STR_NOT_SUPPORTED_XRTREEFRAGSELECTWRAPPER =
 	 "ER_STR_NOT_SUPPORTED_XRTREEFRAGSELECTWRAPPER";
+  
+  public static final String ER_INVALID_REGEX_FLAGS = "ER_INVALID_REGEX_FLAGS";
+  
+  public static final String ER_INVALID_REGEX = "ER_INVALID_REGEX";
+  
+  public static final String ER_EQ_OPERAND_CARDINALITY_ERROR = "ER_EQ_OPERAND_CARDINALITY_ERROR";
+  
+  public static final String ER_NE_OPERAND_CARDINALITY_ERROR = "ER_NE_OPERAND_CARDINALITY_ERROR";
+  
+  public static final String ER_LT_OPERAND_CARDINALITY_ERROR = "ER_LT_OPERAND_CARDINALITY_ERROR";
+  
+  public static final String ER_GT_OPERAND_CARDINALITY_ERROR = "ER_GT_OPERAND_CARDINALITY_ERROR";
+  
+  public static final String ER_LE_OPERAND_CARDINALITY_ERROR = "ER_LE_OPERAND_CARDINALITY_ERROR";
+  
+  public static final String ER_GE_OPERAND_CARDINALITY_ERROR = "ER_GE_OPERAND_CARDINALITY_ERROR";
 
   // Error messages...
 
@@ -462,9 +494,15 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
 
   { ER_FOUND_COMMA_BUT_NO_PRECEDING_ARG,
       "Found ',' but no preceding argument!"},
+  
+  { ER_FOUND_COMMA_BUT_NO_PRECEDING_PARAM,
+      "Found ',' but no preceding function parameter definition."},
 
   { ER_FOUND_COMMA_BUT_NO_FOLLOWING_ARG,
       "Found ',' but no following argument!"},
+  
+  { ER_FOUND_COMMA_BUT_NO_FOLLOWING_PARAM,
+      "Found ',' but no following function parameter definition."},
 
   { ER_PREDICATE_ILLEGAL_SYNTAX,
       "'..[predicate]' or '.[predicate]' is illegal syntax.  Use 'self::node()[predicate]' instead."},
@@ -577,9 +615,6 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_PROG_ASSERT_UNKNOWN_OPCODE,
        "Programmer''s assertion: unknown opcode: {0}"},
 
-  { ER_ZERO_OR_ONE,
-       "0 or 1"},
-
   { ER_RTF_NOT_SUPPORTED_XRTREEFRAGSELECTWRAPPER,
        "rtf() not supported by XRTreeFragSelectWrapper"},
 
@@ -614,8 +649,24 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_FASTSTRINGBUFFER_CANNOT_BE_NULL,
       "The FastStringBuffer argument can not be null"},
 
+  { ER_ZERO, "0"},
+  
+  { ER_ZERO_OR_ONE,
+       "0 or 1"},
+  
+  { ER_ONE_OR_TWO,
+       "1 or 2"},
+  
+  { ER_TWO, "2"},
+  
   { ER_TWO_OR_THREE,
        "2 or 3"},
+  
+  { ER_ONE_TWO_OR_THREE,
+       "1, 2 or 3"},
+  
+  { ER_THREE_OR_FOUR,
+       "3 or 4"},
 
   { ER_VARIABLE_ACCESSED_BEFORE_BIND,
        "Variable accessed before it is bound!"},
@@ -827,8 +878,32 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
 
   { ER_NULL_XPATH_VARIABLE_RESOLVER,
        "Attempting to set a null XPathVariableResolver:{0}#setXPathVariableResolver(null)"},
+  
+  { ER_INVALID_REGEX_FLAGS,
+       "FORX0001: Invalid regular expression flag(s) usage, with function call {0}."},
+  
+  { ER_INVALID_REGEX,
+       "FORX0002: Invalid regular expression syntax used, with function call {0}."},
+  
+  { ER_EQ_OPERAND_CARDINALITY_ERROR,
+       "XPTY0004 : none of the eq's operands can be a sequence with length greater than one."},
+  
+  { ER_NE_OPERAND_CARDINALITY_ERROR,
+       "XPTY0004 : none of the ne's operands can be a sequence with length greater than one."},
+  
+  { ER_LT_OPERAND_CARDINALITY_ERROR,
+       "XPTY0004 : none of the lt's operands can be a sequence with length greater than one."},
+  
+  { ER_GT_OPERAND_CARDINALITY_ERROR,
+       "XPTY0004 : none of the gt's operands can be a sequence with length greater than one."},
+  
+  { ER_LE_OPERAND_CARDINALITY_ERROR,
+       "XPTY0004 : none of the le's operands can be a sequence with length greater than one."},
+  
+  { ER_GE_OPERAND_CARDINALITY_ERROR,
+       "XPTY0004 : none of the ge's operands can be a sequence with length greater than one."},
 
-  //END:  Definitions of error keys used  in exception messages of  JAXP 1.3 XPath API implementation
+  //END:  Definitions of error keys used in exception messages of JAXP 1.3 XPath API implementation
 
   // Warnings...
 

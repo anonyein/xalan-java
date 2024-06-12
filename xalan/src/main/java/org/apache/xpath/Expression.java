@@ -20,17 +20,20 @@
  */
 package org.apache.xpath;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.xml.transform.ErrorListener;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLMessages;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMIterator;
+import org.apache.xml.utils.QName;
 import org.apache.xml.utils.XMLString;
 import org.apache.xpath.objects.XNodeSet;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.res.XPATHErrorResources;
-
 import org.xml.sax.ContentHandler;
 
 /**
@@ -44,13 +47,22 @@ import org.xml.sax.ContentHandler;
  */
 public abstract class Expression implements java.io.Serializable, ExpressionNode, XPathVisitable
 {
-    static final long serialVersionUID = 565665869777906902L;
+  static final long serialVersionUID = 565665869777906902L;
+  
   /**
-   * The location where this expression was built from.  Need for diagnostic
-   *  messages. May be null.
-   *  @serial
+   * The location where this expression was built from. Needed for diagnostic
+   * messages. May be null.
    */
   private ExpressionNode m_parent;
+  
+  /** 
+   * XPath 3.1 support for, XPath.fixupVariables(..) action for feature 
+   * implementations like XPath function item, "for", "let", 'quantified' 
+   * expressions.
+   * 
+   * We don't use, XalanJ XPath context's variable stack for this purpose.
+   */
+  protected static List<QName> m_xpathVarList = new ArrayList<QName>();
 
   /**
    * Tell if this expression or it's subexpressions can traverse outside

@@ -20,12 +20,16 @@
  */
 package org.apache.xalan.templates;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.List;
 import java.util.Vector;
 
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.transformer.NodeSorter;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMIterator;
 import org.apache.xml.dtm.DTMManager;
@@ -34,26 +38,31 @@ import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.composite.ForExpr;
+import org.apache.xpath.composite.XPathSequenceConstructor;
+import org.apache.xpath.functions.DynamicFunctionCall;
+import org.apache.xpath.functions.Function;
+import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XNodeSet;
+import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathArray;
+import org.apache.xpath.operations.Operation;
+import org.apache.xpath.operations.Variable;
 
-import java.io.ObjectInputStream;
-import java.io.IOException;
+import xml.xpath31.processor.types.XSAnyAtomicType;
 
 /**
- * Implement xsl:for-each.
- * <pre>
- * &lt;!ELEMENT xsl:for-each
- *  (#PCDATA
- *   %instructions;
- *   %result-elements;
- *   | xsl:sort)
- * &gt;
- *
- * &lt;!ATTLIST xsl:for-each
- *   select %expr; #REQUIRED
- *   %space-att;
- * &gt;
- * </pre>
- * @see <a href="http://www.w3.org/TR/xslt#for-each">for-each in XSLT Specification</a>
+ * Implementation of the XSLT 3.0 xsl:for-each instruction.
+ * 
+ * @author Scott Boag <scott_boag@us.ibm.com>
+ * @author Joseph Kesselman <jkesselm@apache.org>, Myriam Midy <mmidy@apache.org>,
+ *         Ilene Seelemann <ilene@apache.org>
+ * 
+ * @author Mukul Gandhi <mukulg@apache.org>
+ *         (XSLT 3 specific changes, to this class)
+ * 
+ * Ref : https://www.w3.org/TR/xslt-30/#for-each
+ * 
  * @xsl.usage advanced
  */
 public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
@@ -165,25 +174,6 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     super.endCompose(sroot);
   }
 
-
-  //  /**
-  //   * This function is called after everything else has been
-  //   * recomposed, and allows the template to set remaining
-  //   * values that may be based on some other property that
-  //   * depends on recomposition.
-  //   *
-  //   * @throws TransformerException
-  //   */
-  //  public void compose() throws TransformerException
-  //  {
-  //
-  //    if (null == m_selectExpression)
-  //    {
-  //      m_selectExpression =
-  //        getStylesheetRoot().m_selectDefault.getExpression();
-  //    }
-  //  }
-
   /**
    * Vector containing the xsl:sort elements associated with this element.
    *  @serial
@@ -257,19 +247,23 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
   {
 
     transformer.pushCurrentTemplateRuleIsNull(true);    
-    if (transformer.getDebug())
-      transformer.getTraceManager().fireTraceEvent(this);//trigger for-each element event
+    if (transformer.getDebug()) {
+        transformer.getTraceManager().fireTraceEvent(this);   // invoke xsl:for-each element event
+    }
 
     try
     {
-      transformSelectedNodes(transformer);
+        transformSelectedNodes(transformer);
     }
     finally
     {
-      if (transformer.getDebug())
-	    transformer.getTraceManager().fireTraceEndEvent(this); 
-      transformer.popCurrentTemplateRuleIsNull();
+        if (transformer.getDebug()) {
+	       transformer.getTraceManager().fireTraceEndEvent(this);
+        }
+        
+        transformer.popCurrentTemplateRuleIsNull();
     }
+    
   }
 
   /**
@@ -319,21 +313,131 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
   }
 
   /**
-   * Perform a query if needed, and call transformNode for each child.
-   *
    * @param transformer non-null reference to the the current transform-time state.
    *
    * @throws TransformerException Thrown in a variety of circumstances.
+   * 
    * @xsl.usage advanced
    */
-  public void transformSelectedNodes(TransformerImpl transformer)
-          throws TransformerException
-  {
-
-    final XPathContext xctxt = transformer.getXPathContext();
+  public void transformSelectedNodes(TransformerImpl transformer) throws 
+                                                             TransformerException {
+    
+    XPathContext xctxt = transformer.getXPathContext();
+    
+    DTMIterator resultSeqDtmIterator = null;
+    
+    if (m_selectExpression instanceof Function) {
+        XObject evalResult = ((Function)m_selectExpression).execute(xctxt);
+        
+        if (evalResult instanceof ResultSequence) {
+            XNodeSet nodeSet = XslTransformEvaluationHelper.getXNodeSetFromResultSequence((ResultSequence)evalResult, 
+                                                                                                                  (DTMManager)xctxt);             
+            if (nodeSet == null) {
+               processSequenceOrArray(transformer, xctxt, evalResult);               
+               return;
+            }
+            else {
+               resultSeqDtmIterator = nodeSet.iter(); 
+            }
+        }                
+    }
+    else if (m_selectExpression instanceof DynamicFunctionCall) {
+        DynamicFunctionCall dfc = (DynamicFunctionCall)m_selectExpression;
+        XObject evalResult = dfc.execute(xctxt);
+        
+        if (evalResult instanceof ResultSequence) {
+            XNodeSet nodeSet = XslTransformEvaluationHelper.getXNodeSetFromResultSequence((ResultSequence)evalResult, 
+                                                                                                                  (DTMManager)xctxt);             
+            if (nodeSet == null) {
+                processSequenceOrArray(transformer, xctxt, evalResult);                
+                return;
+            }
+            else {
+                resultSeqDtmIterator = nodeSet.iter(); 
+            }
+        }
+    }
+    else if (m_selectExpression instanceof Variable) {
+        XObject evalResult = ((Variable)m_selectExpression).execute(xctxt);                
+        
+        if (evalResult instanceof XSAnyAtomicType) {
+        	ResultSequence resultSequence = new ResultSequence();
+        	resultSequence.add(evalResult);
+        	
+        	processSequenceOrArray(transformer, xctxt, resultSequence);        	
+            return;
+        }        
+        else if (evalResult instanceof ResultSequence) {
+            XNodeSet nodeSet = XslTransformEvaluationHelper.getXNodeSetFromResultSequence((ResultSequence)evalResult, 
+                                                                                                                  (DTMManager)xctxt);             
+            if (nodeSet == null) {
+                processSequenceOrArray(transformer, xctxt, evalResult);                
+                return;
+            }
+            else {
+                resultSeqDtmIterator = nodeSet.iter(); 
+            }
+        }
+        else if (evalResult instanceof XPathArray) {
+        	processSequenceOrArray(transformer, xctxt, evalResult);        	
+        	return;
+        }
+    }    
+    else if (m_selectExpression instanceof Operation) {
+        XObject  evalResult = m_selectExpression.execute(xctxt);
+        
+        if (evalResult instanceof ResultSequence) {
+            XNodeSet nodeSet = XslTransformEvaluationHelper.getXNodeSetFromResultSequence((ResultSequence)evalResult, 
+                                                                                                                  (DTMManager)xctxt);             
+            if (nodeSet == null) {
+                processSequenceOrArray(transformer, xctxt, evalResult);                
+                return;
+            }
+            else {
+                resultSeqDtmIterator = nodeSet.iter(); 
+            }
+        }
+    }    
+    else if (m_selectExpression instanceof ForExpr) {
+        ForExpr forExpr = (ForExpr)m_selectExpression;
+        XObject  evalResult = forExpr.execute(xctxt);
+        
+        XNodeSet nodeSet = XslTransformEvaluationHelper.getXNodeSetFromResultSequence((ResultSequence)evalResult, 
+                                                                                                              (DTMManager)xctxt);             
+        if (nodeSet == null) {
+            processSequenceOrArray(transformer, xctxt, evalResult);            
+            return;
+        }
+        else {
+            resultSeqDtmIterator = nodeSet.iter(); 
+        }
+    }    
+    else if (m_selectExpression instanceof XPathSequenceConstructor) {
+        XPathSequenceConstructor seqCtrExpr = (XPathSequenceConstructor)
+                                                                     m_selectExpression;
+        XObject  evalResult = seqCtrExpr.execute(xctxt);
+        
+        XNodeSet nodeSet = XslTransformEvaluationHelper.getXNodeSetFromResultSequence((ResultSequence)evalResult, 
+                                                                                                              (DTMManager)xctxt);             
+        if (nodeSet == null) {
+            processSequenceOrArray(transformer, xctxt, evalResult);
+            return;
+        }
+        else {
+            resultSeqDtmIterator = nodeSet.iter(); 
+        }
+    }
+    
+    DTMIterator sourceNodes = null;
+    
     final int sourceNode = xctxt.getCurrentNode();
-    DTMIterator sourceNodes = m_selectExpression.asIterator(xctxt,
-            sourceNode);
+    
+    if (resultSeqDtmIterator != null) {
+       sourceNodes = resultSeqDtmIterator;
+    }
+    else {       
+       sourceNodes = m_selectExpression.asIterator(xctxt, sourceNode);
+    }
 
     try
     {
@@ -344,37 +448,16 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 
       // Sort if we need to.
       if (null != keys)
-        sourceNodes = sortNodes(xctxt, keys, sourceNodes);
+         sourceNodes = sortNodes(xctxt, keys, sourceNodes);
 
-    if (transformer.getDebug())
-    {
-
-        // The original code, which is broken for bug#16889,
-        // which fails to get the original select expression in the select event. 
-        /*  transformer.getTraceManager().fireSelectedEvent(
-         *    sourceNode,
-         *            this,
-         *            "select",
-         *            new XPath(m_selectExpression),
-         *            new org.apache.xpath.objects.XNodeSet(sourceNodes));
-         */ 
-
-        // The following code fixes bug#16889
-        // Solution: Store away XPath in setSelect(Xath), and use it here.
-        // Pass m_xath, which the current node is associated with, onto the TraceManager.
-        
-        Expression expr = m_xpath.getExpression();
-        org.apache.xpath.objects.XObject xObject = expr.execute(xctxt);
-        int current = xctxt.getCurrentNode();
-        transformer.getTraceManager().fireSelectedEvent(
-            current,
-            this,
-            "select",
-            m_xpath,
-            xObject);
-    }
-
-
+      if (transformer.getDebug())
+      {                
+          Expression expr = m_xpath.getExpression();
+          org.apache.xpath.objects.XObject xObject = expr.execute(xctxt);
+          int current = xctxt.getCurrentNode();
+          transformer.getTraceManager().fireSelectedEvent(current, this, "select", 
+                                                              m_xpath, xObject);
+       }
 
       xctxt.pushCurrentNode(DTM.NULL);
 
@@ -471,15 +554,16 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
       xctxt.popCurrentNode();
       sourceNodes.detach();
     }
+    
   }
 
   /**
    * Add a child to the child list.
-   * &lt;!ELEMENT xsl:apply-templates (xsl:sort|xsl:with-param)*&gt;
-   * &lt;!ATTLIST xsl:apply-templates
+   * <!ELEMENT xsl:apply-templates (xsl:sort|xsl:with-param)*>
+   * <!ATTLIST xsl:apply-templates
    *   select %expr; "node()"
    *   mode %qname; #IMPLIED
-   * &gt;
+   * >
    *
    * @param newChild Child to add to child list
    *
@@ -546,4 +630,43 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
            os.defaultReadObject();
            m_xpath = null;
    }
+   
+   /*
+    * Process each xdm item stored within a sequence or an array 
+    * in order, and apply xdm item's information to all XSL instructions
+    * mentioned within xsl:for-each's sequence constructor.
+    */
+   private void processSequenceOrArray(TransformerImpl transformer,
+                                                              XPathContext xctxt, XObject evalResult) 
+                                                              throws TransformerException {       
+	   List<XObject> itemsToBeProcessed = null;
+	   if (evalResult instanceof ResultSequence) {
+		   ResultSequence resultSeq = (ResultSequence)evalResult;
+		   itemsToBeProcessed = resultSeq.getResultSequenceItems();   
+	   }
+	   else if (evalResult instanceof XPathArray) {
+		   XPathArray xpathArr = (XPathArray)evalResult;
+		   itemsToBeProcessed = xpathArr.getNativeArray();
+	   }	   
+       
+       for (int idx = 0; idx < itemsToBeProcessed.size(); idx++) {
+           XObject resultSeqItem = itemsToBeProcessed.get(idx);
+           
+           if (resultSeqItem instanceof XNodeSet) {
+              resultSeqItem = ((XNodeSet)resultSeqItem).getFresh(); 
+           }
+           
+           setXPathContextForXslSequenceProcessing(itemsToBeProcessed.size(), idx, resultSeqItem, xctxt);
+           
+           for (ElemTemplateElement elemTemplateElem = this.m_firstChild; elemTemplateElem != null; 
+                                                          elemTemplateElem = elemTemplateElem.m_nextSibling) {
+              xctxt.setSAXLocator(elemTemplateElem);
+              transformer.setCurrentElement(elemTemplateElem);
+              elemTemplateElem.execute(transformer);              
+           }
+           
+           resetXPathContextForXslSequenceProcessing(resultSeqItem, xctxt);
+       }
+   }
+   
 }

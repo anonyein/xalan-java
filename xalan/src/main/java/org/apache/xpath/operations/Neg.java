@@ -24,6 +24,8 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 
+import xml.xpath31.processor.types.XSDouble;
+
 /**
  * The unary '-' operation expression executer.
  */
@@ -43,7 +45,16 @@ public class Neg extends UnaryOperation
    */
   public XObject operate(XObject right) throws javax.xml.transform.TransformerException
   {
-    return new XNumber(-right.num());
+    XObject result = null;
+    
+    if (right instanceof XSDouble) {
+       result = new XNumber(-(((XSDouble)right).doubleValue()));   
+    }
+    else {
+       result = new XNumber(-right.num());  
+    }
+    
+    return result;
   }
   
   /**

@@ -20,6 +20,7 @@
  */
 package org.apache.xalan.templates;
 
+import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
@@ -27,26 +28,26 @@ import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XNodeSetForDOM;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XRTreeFrag;
 import org.apache.xpath.objects.XString;
+import org.w3c.dom.NodeList;
 
 /**
- * Implement xsl:with-param.  xsl:with-param is allowed within
- * both xsl:call-template and xsl:apply-templates.
- * <pre>
- * &lt;!ELEMENT xsl:with-param %template;&gt;
- * &lt;!ATTLIST xsl:with-param
- *   name %qname; #REQUIRED
- *   select %expr; #IMPLIED
- * &gt;
- * </pre>
- * @see <a href="http://www.w3.org/TR/xslt#element-with-param">element-with-param in XSLT Specification</a>
+ * Implementation of XSLT xsl:with-param element.
+ * 
+ * Ref : https://www.w3.org/TR/xslt-30/#element-with-param
+ * 
  * @xsl.usage advanced
  */
 public class ElemWithParam extends ElemTemplateElement
 {
-    static final long serialVersionUID = -1070355175864326257L;
+  
+  static final long serialVersionUID = -1070355175864326257L;
+  
   /**
    * This is the index to the stack frame being called, <emph>not</emph> the 
    * stack frame that contains this element.
@@ -59,6 +60,11 @@ public class ElemWithParam extends ElemTemplateElement
    * @serial
    */
   private XPath m_selectPattern = null;
+  
+  /**
+   * True if the pattern is a simple ".".
+   */
+  private boolean m_isDot = false;
 
   /**
    * Set the "select" attribute.
@@ -69,7 +75,13 @@ public class ElemWithParam extends ElemTemplateElement
    */
   public void setSelect(XPath v)
   {
-    m_selectPattern = v;
+      m_selectPattern = v;
+    
+      if (v != null) {
+          String s = v.getPatternString();
+
+          m_isDot = (null != s) && s.equals(".");
+      }
   }
 
   /**
@@ -115,6 +127,26 @@ public class ElemWithParam extends ElemTemplateElement
   public QName getName()
   {
     return m_qname;
+  }
+  
+  /**
+   * The value of the "as" attribute.
+   */
+  private String m_asAttr;
+  
+  /**
+   * Set the "as" attribute.
+   */
+  public void setAs(String val) {
+     m_asAttr = val;
+  }
+  
+  /**
+   * Get the "as" attribute.
+   */
+  public String getAs()
+  {
+     return m_asAttr;
   }
 
   /**
@@ -181,7 +213,7 @@ public class ElemWithParam extends ElemTemplateElement
    * Get the XObject representation of the variable.
    *
    * @param transformer non-null reference to the the current transform-time state.
-   * @param sourceNode non-null reference to the <a href="http://www.w3.org/TR/xslt#dt-current-node">current source node</a>.
+   * @param sourceNode non-null reference to the current source node.
    *
    * @return the XObject representation of the variable.
    *
@@ -193,6 +225,8 @@ public class ElemWithParam extends ElemTemplateElement
 
     XObject var;
     XPathContext xctxt = transformer.getXPathContext();
+    
+    SourceLocator srcLocator = xctxt.getSAXLocator();
 
     xctxt.pushCurrentNode(sourceNode);
 
@@ -200,7 +234,14 @@ public class ElemWithParam extends ElemTemplateElement
     {
       if (null != m_selectPattern)
       {
-        var = m_selectPattern.execute(xctxt, sourceNode, this);
+        XObject xpath3ContextItem = xctxt.getXPath3ContextItem();
+        
+        if (m_isDot && xpath3ContextItem != null) {
+           var = xpath3ContextItem;   
+        }
+        else {
+           var = m_selectPattern.execute(xctxt, sourceNode, this);
+        }
 
         var.allowDetachToRelease(false);
 
@@ -214,16 +255,34 @@ public class ElemWithParam extends ElemTemplateElement
       }
       else
       {
+          // Use result tree fragment
+          int df = transformer.transformToRTF(this);
 
-        // Use result tree fragment
-        int df = transformer.transformToRTF(this);
-
-        var = new XRTreeFrag(df, xctxt, this);
+          var = new XRTreeFrag(df, xctxt, this);
+        
+          NodeList nodeList = (new XRTreeFrag(df, xctxt, this)).convertToNodeset();       
+        
+          var = new XNodeSetForDOM(nodeList, xctxt); 
       }
     }
     finally
     {
       xctxt.popCurrentNode();
+    }
+    
+    if (m_asAttr != null) {
+       var = SequenceTypeSupport.convertXdmValueToAnotherType(var, m_asAttr, null, 
+                                                                          transformer.getXPathContext());
+       if (var == null) {
+          throw new TransformerException("XTTE0590 : The required item type of the value of argument used for xsl:with-param " + 
+                                                                     m_qname.toString() + " is " + m_asAttr + ". The supplied value "
+                                                                     + "doesn't match the expected item type.", srcLocator);  
+       }
+       else {
+          if ((var instanceof ResultSequence) && (((ResultSequence)var).size() == 1)) {
+       	     var = (((ResultSequence)var)).item(0); 
+          }
+       }
     }
 
     return var;

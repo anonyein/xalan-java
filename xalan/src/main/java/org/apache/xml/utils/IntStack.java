@@ -19,6 +19,7 @@
  * $Id$
  */
 package org.apache.xml.utils;
+
 import java.util.EmptyStackException;
 
 /**

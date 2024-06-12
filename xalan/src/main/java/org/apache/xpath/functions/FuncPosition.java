@@ -20,6 +20,8 @@
  */
 package org.apache.xpath.functions;
 
+import javax.xml.transform.TransformerException;
+
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMIterator;
 import org.apache.xpath.XPathContext;
@@ -29,12 +31,14 @@ import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Execute the Position() function.
+ * Execute the XPath 3.1 position() function.
+ * 
  * @xsl.usage advanced
  */
 public class FuncPosition extends Function
 {
-    static final long serialVersionUID = -9092846348197271582L;
+  static final long serialVersionUID = -9092846348197271582L;
+  
   private boolean m_isTopLevel;
   
   /**
@@ -51,12 +55,23 @@ public class FuncPosition extends Function
    *
    * @param xctxt Runtime XPath context.
    *
-   * @return The current position of the itteration in the context node list, 
+   * @return The current position of the iteration in the context node list, 
    *         or -1 if there is no active context node list.
+ * @throws TransformerException 
    */
-  public int getPositionInContextNodeList(XPathContext xctxt)
+  public int getPositionInContextNodeList(XPathContext xctxt) throws TransformerException
   {
-
+    
+    if (xctxt.getXPath3ContextPosition() != -1) {
+       return xctxt.getXPath3ContextPosition();
+    }
+    
+    if (xctxt.getContextNode() == DTM.NULL) {
+        throw new javax.xml.transform.TransformerException("XPDY0002 : The context item is absent "
+                                                                  + "at this point, and therefore position() function "
+                                                                  + "cannot be called.", xctxt.getSAXLocator());       
+    }
+    
     // System.out.println("FuncPosition- entry");
     // If we're in a predicate, then this will return non-null.
     SubContextList iter = m_isTopLevel ? null : xctxt.getSubContextList();
@@ -118,7 +133,7 @@ public class FuncPosition extends Function
    * @throws javax.xml.transform.TransformerException
    */
   public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
-  {
+  {    
     double pos = (double) getPositionInContextNodeList(xctxt);
     
     return new XNumber(pos);

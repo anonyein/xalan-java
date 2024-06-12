@@ -26,15 +26,16 @@ import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xml.utils.XML11Char;
 import org.apache.xpath.XPathContext;
+import org.w3c.dom.DOMException;
 
 /**
  * Implement xsl:processing-instruction.
  * <pre>
- * &lt;!ELEMENT xsl:processing-instruction %char-template;&gt;
- * &lt;!ATTLIST xsl:processing-instruction
+ * <!ELEMENT xsl:processing-instruction %char-template;>
+ * <!ATTLIST xsl:processing-instruction
  *   name %avt; #REQUIRED
  *   %space-att;
- * &gt;
+ * >
  * </pre>
  * @see <a href="http://www.w3.org/TR/xslt#section-Creating-Processing-Instructions">section-Creating-Processing-Instructions in XSLT Specification</a>
  * @xsl.usage advanced

@@ -22,10 +22,10 @@ package org.apache.xml.utils;
 
 import org.apache.xml.res.XMLErrorResources;
 import org.apache.xml.res.XMLMessages;
-
 import org.w3c.dom.Attr;
 import org.w3c.dom.CDATASection;
 import org.w3c.dom.Comment;
+import org.w3c.dom.DOMConfiguration;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
@@ -38,13 +38,10 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.ProcessingInstruction;
 import org.w3c.dom.Text;
-
-import org.w3c.dom.UserDataHandler;
-import org.w3c.dom.DOMConfiguration;
 import org.w3c.dom.TypeInfo;
+import org.w3c.dom.UserDataHandler;
 /**
- * No-op Node implementation. To be subclassed by classes that wish to
- * fake being nodes.
+ * To be subclassed by classes that wish to fake being nodes.
  * @xsl.usage internal
  */
 public class UnImplNode implements Node, Element, NodeList, Document
@@ -88,9 +85,9 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @param newChild New node to append to the list of this node's children
    *
-   * @return null, meaning the append can't be done
+   * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Node appendChild(Node newChild) throws DOMException
   {
@@ -284,10 +281,9 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @param oldAttr Attribute to be removed from this node's list of attributes
    *
-   * @return null, meaning the remove could not be done in this implementation
+   * @return null
    *
-   * @throws DOMException always, "not supported!"
-
+   * @throws DOMException
    */
   public Attr removeAttributeNode(Attr oldAttr) throws DOMException
   {
@@ -302,9 +298,9 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @param newAttr Attribute node to be added to this node's list of attributes
    *
-   * @return null, meaning attribute could not be set in this implementation.
+   * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Attr setAttributeNode(Attr newAttr) throws DOMException
   {
@@ -331,11 +327,13 @@ public class UnImplNode implements Node, Element, NodeList, Document
   }
 
   /**
-   * Unimplemented
-   * {@inheritDoc}
-   * @see org.w3c.dom.Element#hasAttributeNS(String,String)
-   * @return false 
-   * @throws DOMException always, "not supported!"
+   * Unimplemented. See org.w3c.dom.Element
+   *
+   *
+   * @param name
+   * @param x
+   *
+   * @return false
    */
   public boolean hasAttributeNS(String name, String x)
   {
@@ -346,11 +344,12 @@ public class UnImplNode implements Node, Element, NodeList, Document
   }
 
   /**
-   * Unimplemented.
-   * @see org.w3c.dom.Element#getAttributeNode(String)
+   * Unimplemented. See org.w3c.dom.Element
+   *
    *
    * @param name Attribute node name
-   * @return null; always, "not supported!" empty in this implementation.
+   *
+   * @return null
    */
   public Attr getAttributeNode(String name)
   {
@@ -361,12 +360,11 @@ public class UnImplNode implements Node, Element, NodeList, Document
   }
 
   /**
-   * Unimplemented. 
-   * @see org.w3c.dom.Element#removeAttribute(String)
+   * Unimplemented. See org.w3c.dom.Element
    *
    * @param name Attribute node name to remove from list of attributes
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void removeAttribute(String name) throws DOMException
   {
@@ -374,13 +372,12 @@ public class UnImplNode implements Node, Element, NodeList, Document
   }
 
   /**
-   * Unimplemented. 
-   * @see org.w3c.dom.Element#setAttribute(String,String)
+   * Unimplemented. See org.w3c.dom.Element
    *
    * @param name Name of attribute to set
    * @param value Value of attribute
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void setAttribute(String name, String value) throws DOMException
   {
@@ -388,12 +385,11 @@ public class UnImplNode implements Node, Element, NodeList, Document
   }
 
   /**
-   * Unimplemented. 
-   * @see org.w3c.dom.Element#getAttribute(String)
+   * Unimplemented. See org.w3c.dom.Element
    *
    * @param name Name of attribute to get
    *
-   * @return null always, "not supported!" (no match) in this implementation
+   * @return null
    */
   public String getAttribute(String name)
   {
@@ -405,9 +401,8 @@ public class UnImplNode implements Node, Element, NodeList, Document
 
   /**
    * Unimplemented. Introduced in DOM Level 2.
-   * {@inheritDoc}
    *
-   * @return false; this implementation will never have attributes
+   * @return false
    */
   public boolean hasAttributes()
   {
@@ -418,14 +413,12 @@ public class UnImplNode implements Node, Element, NodeList, Document
   }
 
   /**
-   * Unimplemented. 
-   * {@inheritDoc}
-   * @see org.w3c.dom.Element#getElementsByTagNameNS(String,String)
+   * Unimplemented. See org.w3c.dom.Element
    *
    * @param namespaceURI Namespace URI of the element
    * @param localName Local part of qualified name of the element
    *
-   * @return null always, "not supported!", in this implementation
+   * @return null
    */
   public NodeList getElementsByTagNameNS(String namespaceURI,
                                          String localName)
@@ -443,7 +436,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Attr setAttributeNodeNS(Attr newAttr) throws DOMException
   {
@@ -475,7 +468,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    * @param namespaceURI Namespace URI of attribute node to remove
    * @param localName Local part of qualified name of attribute node to remove
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void removeAttributeNS(String namespaceURI, String localName)
           throws DOMException
@@ -490,7 +483,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    * NEEDSDOC @param qualifiedName
    * @param value value of attribute
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void setAttributeNS(
           String namespaceURI, String qualifiedName, String value)
@@ -548,7 +541,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public String getNodeValue() throws DOMException
   {
@@ -563,7 +556,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @param nodeValue Value to set this node to
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void setNodeValue(String nodeValue) throws DOMException
   {
@@ -577,7 +570,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    * NEEDSDOC @param value
    * @return value Node value
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
 
   // public String getValue ()
@@ -591,18 +584,19 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @param value Value to set this node to
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void setValue(String value) throws DOMException
   {
     error(XMLErrorResources.ER_FUNCTION_NOT_SUPPORTED);  //"setValue not supported!");
   }
 
-  // /**
-  //  *  Returns the name of this attribute.
-  //  *
-  //  * @return the name of this attribute.
-  //  */
+  /**
+   *  Returns the name of this attribute.
+   *
+   * @return the name of this attribute.
+   */
+
   // public String getName()
   // {
   //  return this.getNodeName();
@@ -612,7 +606,6 @@ public class UnImplNode implements Node, Element, NodeList, Document
    * Unimplemented. See org.w3c.dom.Node
    *
    * @return null
-   * @throws DOMException always, "not supported!"
    */
   public Element getOwnerElement()
   {
@@ -656,7 +649,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Node insertBefore(Node newChild, Node refChild) throws DOMException
   {
@@ -674,7 +667,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Node replaceChild(Node newChild, Node oldChild) throws DOMException
   {
@@ -691,7 +684,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Node removeChild(Node oldChild) throws DOMException
   {
@@ -728,7 +721,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
   public String getNamespaceURI()
   {
 
-    error(XMLErrorResources.ER_FUNCTION_NOT_SUPPORTED);  //"getNamespaceURI not supported!");
+    // error(XMLErrorResources.ER_FUNCTION_NOT_SUPPORTED);  //"getNamespaceURI not supported!");
 
     return null;
   }
@@ -751,7 +744,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @param prefix Prefix to set for this node
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void setPrefix(String prefix) throws DOMException
   {
@@ -817,7 +810,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Element createElement(String tagName) throws DOMException
   {
@@ -877,7 +870,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public CDATASection createCDATASection(String data) throws DOMException
   {
@@ -895,7 +888,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public ProcessingInstruction createProcessingInstruction(
           String target, String data) throws DOMException
@@ -913,7 +906,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Attr createAttribute(String name) throws DOMException
   {
@@ -930,7 +923,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public EntityReference createEntityReference(String name)
           throws DOMException
@@ -952,7 +945,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Node importNode(Node importedNode, boolean deep) throws DOMException
   {
@@ -970,7 +963,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Element createElementNS(String namespaceURI, String qualifiedName)
           throws DOMException
@@ -989,7 +982,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Attr createAttributeNS(String namespaceURI, String qualifiedName)
           throws DOMException
@@ -1021,7 +1014,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @param data data to set for this node
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void setData(String data) throws DOMException
   {
@@ -1036,7 +1029,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public String substringData(int offset, int count) throws DOMException
   {
@@ -1051,7 +1044,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @param arg String data to append
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void appendData(String arg) throws DOMException
   {
@@ -1061,10 +1054,10 @@ public class UnImplNode implements Node, Element, NodeList, Document
   /**
    * Unimplemented.
    *
-   * @param offset Start offset at which to insert data
-   * @param arg String to be inserted.
+   * @param offset Start offset of substring to insert.
+   * NEEDSDOC @param arg
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void insertData(int offset, String arg) throws DOMException
   {
@@ -1077,7 +1070,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    * @param offset Start offset of substring to delete.
    * @param count The length of the substring to delete.
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void deleteData(int offset, int count) throws DOMException
   {
@@ -1091,7 +1084,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    * @param count The length of the substring to replace.
    * @param arg substring to replace with
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public void replaceData(int offset, int count, String arg)
           throws DOMException
@@ -1106,7 +1099,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * @return null, unimplemented
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Text splitText(int offset) throws DOMException
   {
@@ -1124,7 +1117,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    *
    * NEEDSDOC (adoptNode) @return
    *
-   * @throws DOMException always, "not supported!"
+   * @throws DOMException
    */
   public Node adoptNode(Node source) throws DOMException
   {
@@ -1162,7 +1155,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
    * of this document. This is <code>null</code> when unspecified.
    * @since DOM Level 3
    *
-   * @param encoding String containing the encoding name for this document
+   * NEEDSDOC @param encoding
    */
   public void setInputEncoding(String encoding)
   {
@@ -1293,6 +1286,9 @@ public class UnImplNode implements Node, Element, NodeList, Document
      * <code>Text</code> nodes, as well as any user data or event listeners
      * registered on the nodes.
      * @param arg The node to compare equality with.
+     * @param deep If <code>true</code>, recursively compare the subtrees; if
+     *   <code>false</code>, compare only the nodes themselves (and its
+     *   attributes, if it is an <code>Element</code>).
      * @return If the nodes, and possibly subtrees are equal,
      *   <code>true</code> otherwise <code>false</code>.
      * @since DOM Level 3
@@ -1369,8 +1365,8 @@ public class UnImplNode implements Node, Element, NodeList, Document
      * Look up the namespace URI associated to the given prefix, starting from this node.
      * Use lookupNamespaceURI(null) to lookup the default namespace
      *
-     * @param specifiedPrefix String to be resolved, or null to look up the default namespace
-     * @return String, the URI for the namespace, or null if prefix not bound
+     * @param namespaceURI
+     * @return th URI for the namespace
      * @since DOM Level 3
      */
     public String lookupNamespaceURI(String specifiedPrefix) {
@@ -1533,10 +1529,10 @@ public class UnImplNode implements Node, Element, NodeList, Document
     /**
      *
      * DOM Level 3:
-     * Look up the prefix associated to the given namespace URI, starting from this node. REVIEW:  What happens if more than one prefix is bound to the same namespace? I suspect any valid prefix may be resolved, but there may be some "nearest" logic; check the DOM Level 3 spec.
+     * Look up the prefix associated to the given namespace URI, starting from this node.
      *
-     * @param namespaceURI String namespace URI to be resolved to a prefix
-     * @return String prefix for the namespace in this context.
+     * @param namespaceURI
+     * @return the prefix for the namespace
      */
     public String lookupPrefix(String namespaceURI){
 
@@ -1617,7 +1613,6 @@ public class UnImplNode implements Node, Element, NodeList, Document
      * <br>The string returned is made of the text content of this node
      * depending on its type, as defined below:
      * <table border='1'>
-     * <caption>Text Content of DOM nodes, by node type</caption>
      * <tr>
      * <th>Node type</th>
      * <th>Content</th>
@@ -1668,7 +1663,6 @@ public class UnImplNode implements Node, Element, NodeList, Document
      * <br>The string returned is made of the text content of this node
      * depending on its type, as defined below:
      * <table border='1'>
-     * <caption>Text Content of DOM nodes, by node type</caption>
      * <tr>
      * <th>Node type</th>
      * <th>Content</th>
@@ -1802,8 +1796,8 @@ public class UnImplNode implements Node, Element, NodeList, Document
 
     /**
      * DOM Level 3
-     * @return a String specifying the actual encoding of this document, or
-     * <code>null</code> if no encoding could be retrieved
+     * An attribute specifying the actual encoding of this document. This is
+     * <code>null</code> otherwise.
      * <br> This attribute represents the property [character encoding scheme]
      * defined in .
      * @since DOM Level 3
@@ -1814,10 +1808,10 @@ public class UnImplNode implements Node, Element, NodeList, Document
 
     /**
      * DOM Level 3
+     * An attribute specifying the actual encoding of this document. This is
+     * <code>null</code> otherwise.
      * <br> This attribute represents the property [character encoding scheme]
      * defined in .
-     * @param value A string specifying the actual encoding of this document. This is
-     * <code>null</code> otherwise.
      * @since DOM Level 3
      */
     public void setActualEncoding(String value) {
@@ -1825,9 +1819,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
     }
 
     /**
-     * DOM Level 3, UNIMPLEMENTED
-     * @param content String, new text to replace all of the node's text content
-     * @return null until implemented.
+     * DOM Level 3
      */
     public Text replaceWholeText(String content)
                                  throws DOMException{
@@ -1877,8 +1869,9 @@ public class UnImplNode implements Node, Element, NodeList, Document
     }
 
     /**
-     * DOM Level 3, UNIMPLEMENTED.
-     * @return all text of <code>Text</code> nodes logically-adjacent to this node, concatenated in document order... or, in UnImplNode, null.
+     * DOM Level 3
+     * Returns all text of <code>Text</code> nodes logically-adjacent text
+     * nodes to this node, concatenated in document order.
      * @since DOM Level 3
      */
     public String getWholeText(){
@@ -1903,28 +1896,24 @@ public class UnImplNode implements Node, Element, NodeList, Document
 
     /**
      * DOM Level 3
-     * @return whether this text node contains whitespace in element
-     * content, often abusively called "ignorable whitespace". In
-     * UnImplNode, return false.
+     * Returns whether this text node contains whitespace in element content,
+     * often abusively called "ignorable whitespace".
      */
     public boolean isWhitespaceInElementContent(){
         return false;
     }
 
     /**
-     * NON-DOM, UNIMPLEMENTED: set the type of this attribute node to
-     * be ID type.
+     * NON-DOM: set the type of this attribute to be ID type.
      *
-     * @param id boolean, true or false to set new state
+     * @param id
      */
     public void setIdAttribute(boolean id){
         //PENDING
     }
 
     /**
-     * DOM Level 3: register or deregister the given attribute node of this element as an ID attribute
-     * @param name Attribute node name
-     * @param makeID boolean, true or false to set new state
+     * DOM Level 3: register the given attribute node as an ID attribute
      */
     public void setIdAttribute(String name, boolean makeId) {
         //PENDING
@@ -1932,8 +1921,6 @@ public class UnImplNode implements Node, Element, NodeList, Document
        
     /**
      * DOM Level 3: register the given attribute node as an ID attribute
-     * @param at Attr node object to be registered or deregistered
-     * @param makeId boolean, true or false
      */
     public void setIdAttributeNode(Attr at, boolean makeId) {
         //PENDING
@@ -1941,9 +1928,6 @@ public class UnImplNode implements Node, Element, NodeList, Document
 
     /**
      * DOM Level 3: register the given attribute node as an ID attribute
-     * @param namespaceURI: String, namespace of attribute to be bound
-     * @param localName String, localName of attribute to be bound
-     * @param makeId boolean, true or false
      */
     public void setIdAttributeNS(String namespaceURI, String localName,
                                     boolean makeId) {
@@ -1952,8 +1936,7 @@ public class UnImplNode implements Node, Element, NodeList, Document
     
     /**
      * Method getSchemaTypeInfo.
-     * @return TypeInfo for this node, if it has a schema type, or null if not.
-     * (In this implementation, always null)
+     * @return TypeInfo
      */
     public TypeInfo getSchemaTypeInfo(){
         return null; //PENDING

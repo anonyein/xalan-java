@@ -25,9 +25,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.Properties;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Properties;
 
 import javax.xml.XMLConstants;
 import javax.xml.transform.Templates;
@@ -169,7 +169,7 @@ public final class TemplatesImpl implements Templates, Serializable {
 
     /**
      *  Overrides the default readObject implementation since we decided
-     *  it would be cleaner not to serialize the entire transformer
+     *  it would be cleaner not to serialize the entire tranformer
      *  factory.  [ ref bugzilla 12317 ]
      *  We need to check if the user defined class for URIResolver also
      *  implemented Serializable

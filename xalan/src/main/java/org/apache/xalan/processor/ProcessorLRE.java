@@ -37,7 +37,6 @@ import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.templates.XMLNSDecl;
 import org.apache.xml.utils.SAXSourceLocator;
 import org.apache.xpath.XPath;
-
 import org.xml.sax.Attributes;
 import org.xml.sax.Locator;
 import org.xml.sax.helpers.AttributesImpl;
@@ -315,7 +314,6 @@ public class ProcessorLRE extends ProcessorTemplateElem
    * This method could be over-ridden by a class that extends this class.
    * @param handler non-null reference to current StylesheetHandler that is constructing the Templates.
    * @return an object that represents the stylesheet element.
-   * @throws TransformerConfigurationException if the handler throws one
    */
   protected Stylesheet getStylesheetRoot(StylesheetHandler handler) throws TransformerConfigurationException
   {

@@ -25,14 +25,13 @@ import java.util.Vector;
 import org.apache.xalan.templates.Stylesheet;
 import org.apache.xalan.templates.WhiteSpaceInfo;
 import org.apache.xpath.XPath;
-
 import org.xml.sax.Attributes;
 
 /**
  * TransformerFactory for xsl:preserve-space markup.
  * <pre>
- * &lt;!ELEMENT xsl:preserve-space EMPTY&gt;
- * &lt;!ATTLIST xsl:preserve-space elements CDATA #REQUIRED&gt;
+ * <!ELEMENT xsl:preserve-space EMPTY>
+ * <!ATTLIST xsl:preserve-space elements CDATA #REQUIRED>
  * </pre>
  */
 class ProcessorPreserveSpace extends XSLTElementProcessor

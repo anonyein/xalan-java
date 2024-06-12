@@ -45,7 +45,7 @@ class Lexer
   /**
    * The XPath processor object.
    */
-  XPathParser m_processor;
+  XPathParserImpl m_processor;
 
   /**
    * This value is added to each element name in the TARGETEXTRA
@@ -78,7 +78,7 @@ class Lexer
    * @param xpathProcessor The parser that is processing strings to opcodes.
    */
   Lexer(Compiler compiler, PrefixResolver resolver,
-        XPathParser xpathProcessor)
+        XPathParserImpl xpathProcessor)
   {
 
     m_compiler = compiler;
@@ -251,15 +251,34 @@ class Lexer
       case '[' :
       case ')' :
       case ']' :
+      case '{' :   // added for XPath 3.1
+      case '}' :   // added for XPath 3.1
+      case '?' :   // added for XPath 3.1    
       case '|' :
+        if ((pat.length() > (i + 1)) && (pat.charAt(i + 1) == '|')) {
+          // added for XPath 3.1.
+          // to recognize the character sequence "||", as an XPath 
+          // token.
+          addToTokenQueue(pat.substring(i, i + 2));
+          i += 1;
+          break;
+        }        
       case '/' :
       case '*' :
       case '+' :
       case '=' :
-      case ',' :
+    	if ((pat.length() > (i + 1)) && (pat.charAt(i + 1) == '>')) {
+           // added for XPath 3.1.
+           // to recognize the character sequence "=>", as an XPath 
+           // token.
+           addToTokenQueue(pat.substring(i, i + 2));
+           i += 1;
+           break;
+        }
+      case ',' :      
       case '\\' :  // Unused at the moment
-      case '^' :  // Unused at the moment
-      case '!' :  // Unused at the moment
+      case '^' :   // Unused at the moment
+      case '!' :   // added for XPath 3.1
       case '$' :
       case '<' :
       case '>' :
@@ -584,40 +603,28 @@ class Lexer
     if ((startSubstring >= 0) && (posOfNSSep >= 0))
     {
        prefix = pat.substring(startSubstring, posOfNSSep);
-    }
+    }    
     String uName;
 
     if ((null != m_namespaceContext) &&!prefix.equals("*")
-            &&!prefix.equals("xmlns"))
+                                            &&!prefix.equals("xmlns"))
     {
       try
       {
-        if (prefix.length() > 0)
-          uName = ((PrefixResolver) m_namespaceContext).getNamespaceForPrefix(
-            prefix);
+        if (prefix.length() > 0) {
+           uName = ((PrefixResolver) m_namespaceContext).getNamespaceForPrefix(prefix);
+        }
         else
         {
-
-          // Assume last was wildcard. This is not legal according
-          // to the draft. Set the below to true to make namespace
-          // wildcards work.
-          if (false)
-          {
-            addToTokenQueue(":");
-
-            String s = pat.substring(posOfNSSep + 1, posOfScan);
-
-            if (s.length() > 0)
-              addToTokenQueue(s);
-
-            return -1;
-          }
-          else
-          {
-            uName =
-              ((PrefixResolver) m_namespaceContext).getNamespaceForPrefix(
-                prefix);
-          }
+           if (((m_compiler.getTokenQueue()).indexOf("map") != -1)) 
+           {
+        	   // To handle XPath 3.1 "map" expression 
+        	   addToTokenQueue(":");
+        	   return -1;
+           }
+           else {
+              uName = ((PrefixResolver) m_namespaceContext).getNamespaceForPrefix(prefix);
+           }
         }
       }
       catch (ClassCastException cce)
@@ -629,39 +636,70 @@ class Lexer
     {
       uName = prefix;
     }
-
+    
+    // To handle XPath 3.1 "let" expression variable binding strings like
+    // $varName := val, otherwise the character ':' as part of symbol :=
+    // used for "let" expression variable binding shall be treated for 
+    // XML namespace processing.
+    boolean isLetExprNsCheckOk = false;
+    if (((m_compiler.getTokenQueue()).indexOf("let") != -1)) 
+    {
+       if (":=".equals(pat.substring(posOfNSSep, posOfNSSep + 2)))
+       {
+          isLetExprNsCheckOk = true;
+       }
+    }
+    
     if ((null != uName) && (uName.length() > 0))
     {
-      addToTokenQueue(uName);
-      addToTokenQueue(":");
-
-      String s = pat.substring(posOfNSSep + 1, posOfScan);
-
-      if (s.length() > 0)
-        addToTokenQueue(s);
+      if (!isLetExprNsCheckOk) 
+      {
+          addToTokenQueue(uName);
+          addToTokenQueue(":");
+    
+          String s = pat.substring(posOfNSSep + 1, posOfScan);
+    
+          if (s.length() > 0)
+            addToTokenQueue(s);
+      }
+      else 
+      {          
+          String xpathLetExprBindingVarNameStr = prefix; 
+          if ("".equals(xpathLetExprBindingVarNameStr)) 
+          {
+             // handles XPath "let" expression variable binding strings like $varName := val
+             addToTokenQueue(":");
+          }
+          else 
+          {
+             // handles XPath "let" expression variable binding strings like $varName:= val
+             addToTokenQueue(xpathLetExprBindingVarNameStr);
+             addToTokenQueue(":");    
+          }   
+      }
     }
     else
     {
-        // To older XPath code it doesn't matter if
-        // error() is called or errorForDOM3().
-		m_processor.errorForDOM3(XPATHErrorResources.ER_PREFIX_MUST_RESOLVE,
-						 new String[] {prefix});  //"Prefix must resolve to a namespace: {0}";
-
-/** old code commented out 17-Sep-2004
-// error("Could not locate namespace for prefix: "+prefix);
-//		  m_processor.error(XPATHErrorResources.ER_PREFIX_MUST_RESOLVE,
-//					 new String[] {prefix});  //"Prefix must resolve to a namespace: {0}";
-*/
-
-      /***  Old code commented out 10-Jan-2001
-      addToTokenQueue(prefix);
-      addToTokenQueue(":");
-
-      String s = pat.substring(posOfNSSep + 1, posOfScan);
-
-      if (s.length() > 0)
-        addToTokenQueue(s);
-      ***/
+        if (isLetExprNsCheckOk) 
+        {
+            String xpathLetExprBindingVarNameStr = prefix; 
+            if ("".equals(xpathLetExprBindingVarNameStr)) 
+            {
+               // handles XPath "let" expression variable binding strings like $varName := val
+               addToTokenQueue(":");
+            }
+            else 
+            {
+               // handles XPath "let" expression variable binding strings like $varName:= val
+               addToTokenQueue(xpathLetExprBindingVarNameStr);
+               addToTokenQueue(":");    
+            }    
+        }
+        else 
+        {
+		    m_processor.errorForDOM3(XPATHErrorResources.ER_PREFIX_MUST_RESOLVE,
+						                 new String[] {prefix});  //"Prefix must resolve to a namespace: {0}";
+        }		
     }
 
     return -1;

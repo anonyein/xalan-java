@@ -241,7 +241,7 @@ public class TransformerFactoryImpl extends SAXTransformerFactory
    *
    * @return A Source object capable of being used to create a Templates object.
    *
-   * @throws TransformerConfigurationException wrapper if there is an underlying exception.
+   * @throws TransformerConfigurationException
    */
   public Source getAssociatedStylesheet(
           Source source, String media, String title, String charset)
@@ -608,7 +608,7 @@ public class TransformerFactoryImpl extends SAXTransformerFactory
    *
    * @return An XMLFilter object, or null if this feature is not supported.
    *
-   * @throws TransformerConfigurationException wrapper if one is thrown by underlying code
+   * @throws TransformerConfigurationException
    */
   public XMLFilter newXMLFilter(Source src)
           throws TransformerConfigurationException
@@ -628,7 +628,7 @@ public class TransformerFactoryImpl extends SAXTransformerFactory
    *
    * @return An XMLFilter object, or null if this feature is not supported.
    *
-   * @throws TransformerConfigurationException wrapper if TrAXFilter construction failed
+   * @throws TransformerConfigurationException
    */
   public XMLFilter newXMLFilter(Templates templates)
           throws TransformerConfigurationException
@@ -668,7 +668,7 @@ public class TransformerFactoryImpl extends SAXTransformerFactory
    *
    * @return TransformerHandler ready to transform SAX events.
    *
-   * @throws TransformerConfigurationException if handler could not be created.
+   * @throws TransformerConfigurationException
    */
   public TransformerHandler newTransformerHandler(Source src)
           throws TransformerConfigurationException
@@ -742,7 +742,7 @@ public class TransformerFactoryImpl extends SAXTransformerFactory
    *
    * @return TransformerHandler ready to transform SAX events.
    *
-   * @throws TransformerConfigurationException if handler could not be created
+   * @throws TransformerConfigurationException
    */
   public TransformerHandler newTransformerHandler()
           throws TransformerConfigurationException

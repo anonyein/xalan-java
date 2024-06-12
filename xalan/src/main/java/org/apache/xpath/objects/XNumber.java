@@ -24,6 +24,8 @@ import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathVisitor;
 
+import xml.xpath31.processor.types.XSDecimal;
+
 /**
  * This class represents an XPath number, and is capable of
  * converting the number to other types, such as a string.
@@ -392,10 +394,11 @@ public class XNumber extends XObject
    */
   public boolean equals(XObject obj2)
   {
-
-    // In order to handle the 'all' semantics of 
-    // nodeset comparisons, we always call the 
-    // nodeset function.
+    
+    if (obj2 instanceof XSDecimal) {
+       return m_val == ((XSDecimal)obj2).doubleValue();   
+    }
+    
     int t = obj2.getType();
     try
     {

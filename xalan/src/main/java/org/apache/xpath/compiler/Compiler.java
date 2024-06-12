@@ -41,22 +41,38 @@ import org.apache.xpath.functions.WrongNumberArgsException;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.And;
+import org.apache.xpath.operations.ArrowOp;
+import org.apache.xpath.operations.CastAs;
+import org.apache.xpath.operations.CastableAs;
 import org.apache.xpath.operations.Div;
 import org.apache.xpath.operations.Equals;
 import org.apache.xpath.operations.Gt;
 import org.apache.xpath.operations.Gte;
+import org.apache.xpath.operations.InstanceOf;
 import org.apache.xpath.operations.Lt;
 import org.apache.xpath.operations.Lte;
 import org.apache.xpath.operations.Minus;
 import org.apache.xpath.operations.Mod;
 import org.apache.xpath.operations.Mult;
 import org.apache.xpath.operations.Neg;
+import org.apache.xpath.operations.NodeComparisonFollows;
+import org.apache.xpath.operations.NodeComparisonIs;
+import org.apache.xpath.operations.NodeComparisonPrecede;
 import org.apache.xpath.operations.NotEquals;
 import org.apache.xpath.operations.Operation;
 import org.apache.xpath.operations.Or;
 import org.apache.xpath.operations.Plus;
+import org.apache.xpath.operations.Range;
+import org.apache.xpath.operations.SimpleMapOperator;
+import org.apache.xpath.operations.StrConcat;
 import org.apache.xpath.operations.UnaryOperation;
 import org.apache.xpath.operations.Variable;
+import org.apache.xpath.operations.VcEquals;
+import org.apache.xpath.operations.VcGe;
+import org.apache.xpath.operations.VcGt;
+import org.apache.xpath.operations.VcLe;
+import org.apache.xpath.operations.VcLt;
+import org.apache.xpath.operations.VcNotEquals;
 import org.apache.xpath.patterns.FunctionPattern;
 import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.patterns.StepPattern;
@@ -122,6 +138,20 @@ public class Compiler extends OpMap
     {
     case OpCodes.OP_XPATH :
       expr = compile(opPos + 2); break;
+    case OpCodes.OP_FOR_EXPR :
+      expr = forExpr(opPos); break;
+    case OpCodes.OP_LET_EXPR :
+      expr = letExpr(opPos); break;
+    case OpCodes.OP_QUANTIFIED_EXPR :
+      expr = quantifiedExpr(opPos); break;
+    case OpCodes.OP_IF_EXPR :
+      expr = ifExpr(opPos); break;
+    case OpCodes.OP_SEQUENCE_CONSTRUCTOR_EXPR :
+      expr = sequenceConstructorExpr(opPos); break;
+    case OpCodes.OP_ARRAY_CONSTRUCTOR_EXPR :
+      expr = arrayConstructorExpr(opPos); break;
+    case OpCodes.OP_MAP_CONSTRUCTOR_EXPR :
+      expr = mapConstructorExpr(opPos); break;
     case OpCodes.OP_OR :
       expr = or(opPos); break;
     case OpCodes.OP_AND :
@@ -130,6 +160,34 @@ public class Compiler extends OpMap
       expr = notequals(opPos); break;
     case OpCodes.OP_EQUALS :
       expr = equals(opPos); break;
+    case OpCodes.OP_VC_EQUALS :
+      expr = vcEquals(opPos); break;
+    case OpCodes.OP_VC_NOT_EQUALS :
+      expr = vcNotEquals(opPos); break;
+    case OpCodes.OP_VC_LT :
+      expr = vcLt(opPos); break;
+    case OpCodes.OP_VC_GT :
+      expr = vcGt(opPos); break;
+    case OpCodes.OP_VC_LE :
+      expr = vcLe(opPos); break;
+    case OpCodes.OP_VC_GE :
+      expr = vcGe(opPos); break;
+    case OpCodes.OP_IS :
+      expr = nodeComparisonIs(opPos); break;
+    case OpCodes.OP_NC_PRECEDE :
+      expr = nodeComparisonPrecede(opPos); break;
+    case OpCodes.OP_NC_FOLLOWS :
+      expr = nodeComparisonFollows(opPos); break;
+    case OpCodes.OP_SIMPLE_MAP_OPERATOR :
+      expr = simpleMapOperator(opPos); break;
+    case OpCodes.OP_SEQUENCE_TYPE_EXPR :
+      expr = sequenceTypeExpr(opPos); break;
+    case OpCodes.OP_INSTANCE_OF :
+      expr = instanceOfExpr(opPos); break;
+    case OpCodes.OP_CAST_AS :
+      expr = castAsExpr(opPos); break;
+    case OpCodes.OP_CASTABLE_AS :
+        expr = castableAsExpr(opPos); break;
     case OpCodes.OP_LTE :
       expr = lte(opPos); break;
     case OpCodes.OP_LT :
@@ -140,6 +198,14 @@ public class Compiler extends OpMap
       expr = gt(opPos); break;
     case OpCodes.OP_PLUS :
       expr = plus(opPos); break;
+    case OpCodes.OP_TO :
+      expr = range(opPos); break;
+    case OpCodes.OP_STR_CONCAT :
+      expr = strConcat(opPos); break;
+    case OpCodes.OP_ARROW :
+      fIsCompileFuncPrecededByCompileArrow = true;
+      expr = arrowOp(opPos);
+      break;
     case OpCodes.OP_MINUS :
       expr = minus(opPos); break;
     case OpCodes.OP_MULT :
@@ -174,6 +240,10 @@ public class Compiler extends OpMap
       expr = compileExtension(opPos); break;
     case OpCodes.OP_FUNCTION :
       expr = compileFunction(opPos); break;
+    case OpCodes.OP_INLINE_FUNCTION :
+      expr = compileInlineFunctionDefinition(opPos); break;
+    case OpCodes.OP_DYNAMIC_FUNCTION_CALL :
+      expr = compileDynamicFunctionCall(opPos); break;
     case OpCodes.OP_LOCATIONPATH :
       expr = locationPath(opPos); break;
     case OpCodes.OP_PREDICATE :
@@ -192,7 +262,7 @@ public class Compiler extends OpMap
     }
 //    if(null != expr)
 //      expr.setSourceLocator(m_locator);
-
+    
     return expr;
   }
 
@@ -294,6 +364,34 @@ public class Compiler extends OpMap
   {
     return compileOperation(new Equals(), opPos);
   }
+  
+  /**
+   * Compile an XPath 3.1 value comparison "eq" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.VcEquals} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression vcEquals(int opPos) throws TransformerException
+  {
+    return compileOperation(new VcEquals(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 value comparison "ne" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.VcNotEquals} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression vcNotEquals(int opPos) throws TransformerException
+  {
+    return compileOperation(new VcNotEquals(), opPos);
+  }
 
   /**
    * Compile a '<=' operation.
@@ -321,6 +419,174 @@ public class Compiler extends OpMap
   protected Expression lt(int opPos) throws TransformerException
   {
     return compileOperation(new Lt(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 value comparison "lt" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.VcLt} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression vcLt(int opPos) throws TransformerException
+  {
+    return compileOperation(new VcLt(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 value comparison "gt" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.VcGt} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression vcGt(int opPos) throws TransformerException
+  {
+    return compileOperation(new VcGt(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 value comparison "le" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.VcLe} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression vcLe(int opPos) throws TransformerException
+  {
+    return compileOperation(new VcLe(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 value comparison "ge" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.VcGe} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression vcGe(int opPos) throws TransformerException
+  {
+    return compileOperation(new VcGe(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 node comparison "is" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.NodeComparisonIs} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression nodeComparisonIs(int opPos) throws TransformerException
+  {
+    return compileOperation(new NodeComparisonIs(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 node comparison "<<" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.NodeComparisonPrecede} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression nodeComparisonPrecede(int opPos) throws TransformerException
+  {
+    return compileOperation(new NodeComparisonPrecede(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 node comparison ">>" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.NodeComparisonFollows} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression nodeComparisonFollows(int opPos) throws TransformerException
+  {
+    return compileOperation(new NodeComparisonFollows(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 simple map '!' operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.SimpleMapOperator} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression simpleMapOperator(int opPos) throws TransformerException
+  {
+    return compileOperation(new SimpleMapOperator(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 'SequenceType', expression.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   *
+   * @return the compiled 'SequenceType' expression returned as an object of class
+   *         XPathSequenceTypeExpr. An object of class XPathSequenceTypeExpr
+   *         has already been created and populated by XPath expression parser,
+   *         and this function just returns that object to the caller of this 
+   *         method.       
+   *
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  Expression sequenceTypeExpr(int opPos) throws TransformerException
+  {
+      return XPathParserImpl.fXpathSequenceTypeExpr;
+  }
+  
+  /**
+   * Compile an XPath 3.1 "instance of" expression.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.InstanceOf} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression instanceOfExpr(int opPos) throws TransformerException
+  {
+    return compileOperation(new InstanceOf(), opPos);
+  }
+  
+  /**
+   * Compile a 'cast as' operation.
+   * 
+   * @param    opPos The current position in the m_opMap array.
+   * @return   an XPath compiled representation of 'cast as' expression 
+   * @throws TransformerException
+   */
+  protected Expression castAsExpr(int opPos) throws TransformerException
+  {
+	return compileOperation(new CastAs(), opPos); 
+  }
+  
+  /**
+   * Compile a 'castable as' operation.
+   * 
+   * @param    opPos The current position in the m_opMap array.
+   * @return   an XPath compiled representation of 'castable as' expression 
+   * @throws TransformerException
+   */
+  protected Expression castableAsExpr(int opPos) throws TransformerException
+  {
+	return compileOperation(new CastableAs(), opPos); 
   }
 
   /**
@@ -363,6 +629,46 @@ public class Compiler extends OpMap
   protected Expression plus(int opPos) throws TransformerException
   {
     return compileOperation(new Plus(), opPos);
+  }
+  
+  /**
+   * Compile an XPath 3.1 range "to" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.Range} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression range(int opPos) throws TransformerException
+  {
+    return compileOperation(new Range(), opPos);   
+  }
+  
+  /**
+   * Compile an XPath 3.1 string concatenation "||" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @return reference to {@link org.apache.xpath.operations.StrConcat} instance.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression strConcat(int opPos) throws TransformerException
+  {
+    return compileOperation(new StrConcat(), opPos);   
+  }
+  
+  /**
+   * Compile an XPath 3.1 arrow "=>" operation.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   * 
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression arrowOp(int opPos) throws TransformerException
+  {
+	return compileOperation(new ArrowOp(), opPos);
   }
 
   /**
@@ -1045,13 +1351,18 @@ private static final boolean DEBUG = false;
         int i = 0;
 
         for (int p = opPos; p < endFunc; p = getNextOpPos(p), i++)
-        {
-
-          // System.out.println("argPos: "+ p);
-          // System.out.println("argCode: "+ m_opMap[p]);
-          func.setArg(compile(p), i);
+        {          
+           func.setArg(compile(p), i);
         }
-
+        
+        if (fIsCompileFuncPrecededByCompileArrow) 
+        {
+           // This allows us to, permit the absence of XPath function's 1st 
+           // argument when evaluating with operator "=>".
+           i++;
+           fIsCompileFuncPrecededByCompileArrow = false;
+        }
+        
         func.checkNumberArgs(i);
       }
       catch (WrongNumberArgsException wnae)
@@ -1059,9 +1370,8 @@ private static final boolean DEBUG = false;
         java.lang.String name = m_functionTable.getFunctionName(funcID);
 
         m_errorHandler.fatalError( new TransformerException(
-                  XSLMessages.createXPATHMessage(XPATHErrorResources.ER_ONLY_ALLOWS, 
-                      new Object[]{name, wnae.getMessage()}), m_locator)); 
-              //"name + " only allows " + wnae.getMessage() + " arguments", m_locator));
+                                             XSLMessages.createXPATHMessage(XPATHErrorResources.ER_ONLY_ALLOWS, 
+                                             new Object[]{name, wnae.getMessage()}), m_locator));
       }
 
       return func;
@@ -1072,6 +1382,145 @@ private static final boolean DEBUG = false;
 
       return null;
     }
+  }
+  
+  /**
+   * Compile an XPath function item inline function definition, expression.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   *
+   * @return the compiled inline function definition expression returned
+   *         as an object of class InlineFunction. An object of class
+   *         InlineFunction has already been created and populated by XPath 
+   *         expression parser, and this function just returns that object
+   *         to the caller of this method.
+   *
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  Expression compileInlineFunctionDefinition(int opPos) throws TransformerException
+  {
+      return XPathParserImpl.fInlineFunction;
+  }
+  
+  /**
+   * Compile an XPath dynamic function call, expression.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   *
+   * @return the compiled dynamic function call expression returned
+   *         as an object of class DynamicFunctionCall. An object of class
+   *         DynamicFunctionCall has already been created and populated by 
+   *         XPath expression parser, and this function just returns that
+   *         object to the caller of this method.
+   *
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  Expression compileDynamicFunctionCall(int opPos) throws TransformerException
+  {
+      return XPathParserImpl.fDynamicFunctionCall;
+  }
+  
+  /**
+   * Compile an XPath "for", expression.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   *
+   * @return the compiled "for" expression returned as an object of class
+   *         ForExpr. An object of class ForExpr has already been created and
+   *         populated by XPath expression parser, and this function just 
+   *         returns that object to the caller of this method.
+   *
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  Expression forExpr(int opPos) throws TransformerException
+  {
+      return XPathParserImpl.fForExpr;
+  }
+  
+  /**
+   * Compile an XPath "let", expression.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   *
+   * @return the compiled "let" expression returned as an object of class
+   *         LetExpr. An object of class LetExpr has already been created
+   *         and populated by XPath expression parser, and this function 
+   *         just returns that object to the caller of this method.
+   *
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  Expression letExpr(int opPos) throws TransformerException
+  {
+      return XPathParserImpl.fLetExpr;
+  }
+  
+  /**
+   * Compile an XPath quantified, expression (either 'some' or 'every').
+   * 
+   * @param opPos The current position in the m_opMap array.
+   *
+   * @return the compiled quantified expression returned as an object of class
+   *         QuantifiedExpr. An object of class QuantifiedExpr has already
+   *         been created and populated by XPath expression parser, and 
+   *         this function just returns that object to the caller of this
+   *         method.
+   *
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  Expression quantifiedExpr(int opPos) throws TransformerException
+  {
+      return XPathParserImpl.fQuantifiedExpr;
+  }
+  
+  /**
+   * Compile an XPath "if", expression.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   *
+   * @return the compiled "if" expression returned as an object of class
+   *         IfExpr. An object of class IfExpr has already been created and
+   *         populated by XPath expression parser, and this function just 
+   *         returns that object to the caller of this method.       
+   *
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  Expression ifExpr(int opPos) throws TransformerException
+  {
+      return XPathParserImpl.fIfExpr;
+  }
+  
+  /**
+   * Compile an XPath sequence constructor, expression.
+   * 
+   * @param opPos The current position in the m_opMap array.
+   *
+   * @return the compiled sequence constructor expression returned as an object
+   *         of class XPathSequenceConstructor. An object of class
+   *         XPathSequenceConstructor has already been created and populated by
+   *         XPath expression parser, and this function just returns that object 
+   *         to the caller of this method.       
+   *
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  Expression sequenceConstructorExpr(int opPos) throws TransformerException
+  {
+      return XPathParserImpl.fXPathSequenceConstructor;
+  }
+  
+  /**
+   * Compile an XPath array constructor, expression.
+   */
+  Expression arrayConstructorExpr(int opPos) throws TransformerException
+  {
+      return XPathParserImpl.fXPathArrayConstructor;
+  }
+  
+  /**
+   * Compile an XPath map constructor, expression.
+   */
+  Expression mapConstructorExpr(int opPos) throws TransformerException
+  {
+	  return XPathParserImpl.fMapConstructor; 
   }
 
   // The current id for extension functions.
@@ -1265,4 +1714,10 @@ private static final boolean DEBUG = false;
    * The FunctionTable for all xpath build-in functions
    */
   private FunctionTable m_functionTable;
+  
+  /**
+   * We store within this class field, the fact that, there is
+   * an XPath expression of kind "... => functionCall()".
+   */
+  private boolean fIsCompileFuncPrecededByCompileArrow;
 }

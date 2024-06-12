@@ -26,6 +26,7 @@ import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xml.utils.QName;
+import org.w3c.dom.DOMException;
 
 /**
  * Implement xsl:attribute-set.
@@ -136,11 +137,11 @@ public class ElemAttributeSet extends ElemUse
 
   /**
    * Add a child to the child list.
-   * &lt;!ELEMENT xsl:attribute-set (xsl:attribute)*&gt;
-   * &lt;!ATTLIST xsl:attribute-set
+   * <!ELEMENT xsl:attribute-set (xsl:attribute)*>
+   * <!ATTLIST xsl:attribute-set
    *   name %qname; #REQUIRED
    *   use-attribute-sets %qnames; #IMPLIED
-   * &gt;
+   * >
    *
    * @param newChild Child to be added to this node's list of children
    *

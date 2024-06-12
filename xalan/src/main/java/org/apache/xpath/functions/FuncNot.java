@@ -20,12 +20,15 @@
  */
 package org.apache.xpath.functions;
 
+import org.apache.xalan.templates.XSConstructorFunctionUtil;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.operations.Operation;
 
 /**
- * Execute the Not() function.
+ * Execute the not() function.
+ * 
  * @xsl.usage advanced
  */
 public class FuncNot extends FunctionOneArg
@@ -33,8 +36,9 @@ public class FuncNot extends FunctionOneArg
     static final long serialVersionUID = 7299699961076329790L;
 
   /**
-   * Execute the function.  The function must return
+   * Execute the function. The function must return
    * a valid object.
+   * 
    * @param xctxt The current execution context.
    * @return A valid XObject.
    *
@@ -42,6 +46,14 @@ public class FuncNot extends FunctionOneArg
    */
   public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
   {
-    return m_arg0.execute(xctxt).bool() ? XBoolean.S_FALSE : XBoolean.S_TRUE;
+      if (m_arg0 instanceof Operation) {
+             XObject result = XSConstructorFunctionUtil.processFuncExtFunctionOrXPathOpn(
+                                                                                    xctxt, m_arg0, null);
+             return result.bool() ? XBoolean.S_FALSE : XBoolean.S_TRUE; 
+      }
+      else {
+          return m_arg0.execute(xctxt).bool() ? XBoolean.S_FALSE : XBoolean.S_TRUE;
+      }
   }
+  
 }

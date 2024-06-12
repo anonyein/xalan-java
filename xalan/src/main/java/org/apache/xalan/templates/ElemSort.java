@@ -22,23 +22,22 @@ package org.apache.xalan.templates;
 
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xpath.XPath;
-
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
 
 /**
  * Implement xsl:sort.
  * <pre>
- * &lt;!ELEMENT xsl:sort EMPTY&gt;
- * &lt;!ATTLIST xsl:sort
+ * <!ELEMENT xsl:sort EMPTY>
+ * <!ATTLIST xsl:sort
  *   select %expr; "."
  *   lang %avt; #IMPLIED
  *   data-type %avt; "text"
  *   order %avt; "ascending"
  *   case-order %avt; #IMPLIED
- * &gt;
- * &lt;!-- xsl:sort cannot occur after any other elements or
- * any non-whitespace character --&gt;
+ * >
+ * <!-- xsl:sort cannot occur after any other elements or
+ * any non-whitespace character -->
  * </pre>
  * @see <a href="http://www.w3.org/TR/xslt#sorting">sorting in XSLT Specification</a>
  * @xsl.usage advanced

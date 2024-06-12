@@ -20,15 +20,14 @@
  */
 package org.apache.xpath.functions;
 
-import org.apache.xml.dtm.DTM;
-import org.apache.xml.dtm.DTMIterator;
-import org.apache.xml.utils.XMLString;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Execute the Sum() function.
+ * Implementation of an XPath function fn:sum.
+ * 
  * @xsl.usage advanced
  */
 public class FuncSum extends FunctionOneArg
@@ -44,22 +43,9 @@ public class FuncSum extends FunctionOneArg
    * @throws javax.xml.transform.TransformerException
    */
   public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
-  {
-
-    DTMIterator nodes = m_arg0.asIterator(xctxt, xctxt.getCurrentNode());
-    double sum = 0.0;
-    int pos;
-
-    while (DTM.NULL != (pos = nodes.nextNode()))
-    {
-      DTM dtm = nodes.getDTM(pos);
-      XMLString s = dtm.getStringValue(pos);
-
-      if (null != s)
-        sum += s.toDouble();
-    }
-    nodes.detach();
-
-    return new XNumber(sum);
+  {    
+     XNumber result = XslTransformEvaluationHelper.getSumOfValues(m_arg0, xctxt);
+     
+     return result;    
   }
 }

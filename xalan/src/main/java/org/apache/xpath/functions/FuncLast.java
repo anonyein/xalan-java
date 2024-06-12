@@ -20,6 +20,7 @@
  */
 package org.apache.xpath.functions;
 
+import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMIterator;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.SubContextList;
@@ -27,14 +28,14 @@ import org.apache.xpath.compiler.Compiler;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 
-
 /**
- * Execute the Last() function.
+ * Execute the XPath 3.1 last() function.
+ * 
  * @xsl.usage advanced
  */
 public class FuncLast extends Function
 {
-    static final long serialVersionUID = 9205812403085432943L;
+  static final long serialVersionUID = 9205812403085432943L;
   
   private boolean m_isTopLevel;
   
@@ -59,6 +60,16 @@ public class FuncLast extends Function
   public int getCountOfContextNodeList(XPathContext xctxt)
           throws javax.xml.transform.TransformerException
   {
+      
+    if (xctxt.getXPath3ContextSize() != -1) {
+        return xctxt.getXPath3ContextSize();
+    }
+    
+    if (xctxt.getContextNode() == DTM.NULL) {
+        throw new javax.xml.transform.TransformerException("XPDY0002 : The context item is absent "
+                                                                 + "at this point, and therefore last() function "
+                                                                 + "cannot be called.", xctxt.getSAXLocator());       
+    }
 
     // assert(null != m_contextNodeList, "m_contextNodeList must be non-null");
     // If we're in a predicate, then this will return non-null.

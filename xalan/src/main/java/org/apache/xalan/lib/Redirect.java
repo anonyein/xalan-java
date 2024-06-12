@@ -34,9 +34,9 @@ import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.templates.ElemExtensionCall;
 import org.apache.xalan.templates.OutputProperties;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xml.serializer.SerializationHandler;
 import org.apache.xpath.XPath;
 import org.apache.xpath.objects.XObject;
-import org.apache.xml.serializer.SerializationHandler;
 import org.xml.sax.ContentHandler;
 
 /**
@@ -77,44 +77,44 @@ import org.xml.sax.ContentHandler;
  *
  * <p>Example:</p>
  * <PRE>
- * &lt;?xml version="1.0"?&gt;
+ * &lt;?xml version="1.0"?>
  * &lt;xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
  *                 version="1.0"
  *                 xmlns:redirect="http://xml.apache.org/xalan/redirect"
- *                 extension-element-prefixes="redirect"&gt;
+ *                 extension-element-prefixes="redirect">
  *
- *   &lt;xsl:template match="/"&gt;
- *     &lt;out&gt;
+ *   &lt;xsl:template match="/">
+ *     &lt;out>
  *       default output.
- *     &lt;/out&gt;
- *     &lt;redirect:open file="doc3.out"/&gt;
- *     &lt;redirect:write file="doc3.out"&gt;
- *       &lt;out&gt;
- *         &lt;redirect:write file="doc1.out"&gt;
- *           &lt;out&gt;
+ *     &lt;/out>
+ *     &lt;redirect:open file="doc3.out"/>
+ *     &lt;redirect:write file="doc3.out">
+ *       &lt;out>
+ *         &lt;redirect:write file="doc1.out">
+ *           &lt;out>
  *             doc1 output.
- *             &lt;redirect:write file="doc3.out"&gt;
+ *             &lt;redirect:write file="doc3.out">
  *               Some text to doc3
- *             &lt;/redirect:write&gt;
- *           &lt;/out&gt;
- *         &lt;/redirect:write&gt;
- *         &lt;redirect:write file="doc2.out"&gt;
- *           &lt;out&gt;
+ *             &lt;/redirect:write>
+ *           &lt;/out>
+ *         &lt;/redirect:write>
+ *         &lt;redirect:write file="doc2.out">
+ *           &lt;out>
  *             doc2 output.
- *             &lt;redirect:write file="doc3.out"&gt;
+ *             &lt;redirect:write file="doc3.out">
  *               Some more text to doc3
- *               &lt;redirect:write select="doc/foo"&gt;
+ *               &lt;redirect:write select="doc/foo">
  *                 text for doc4
- *               &lt;/redirect:write&gt;
- *             &lt;/redirect:write&gt;
- *           &lt;/out&gt;
- *         &lt;/redirect:write&gt;
- *       &lt;/out&gt;
- *     &lt;/redirect:write&gt;
- *     &lt;redirect:close file="doc3.out"/&gt;
- *   &lt;/xsl:template&gt;
+ *               &lt;/redirect:write>
+ *             &lt;/redirect:write>
+ *           &lt;/out>
+ *         &lt;/redirect:write>
+ *       &lt;/out>
+ *     &lt;/redirect:write>
+ *     &lt;redirect:close file="doc3.out"/>
+ *   &lt;/xsl:template>
  *
- * &lt;/xsl:stylesheet&gt;
+ * &lt;/xsl:stylesheet>
  * </PRE>
  *
  * @author Scott Boag

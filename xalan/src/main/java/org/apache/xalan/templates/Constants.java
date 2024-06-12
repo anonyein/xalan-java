@@ -32,10 +32,7 @@ public class Constants extends org.apache.xml.utils.Constants
    * IDs for XSL element types. These are associated
    * with the string literals in the TransformerImpl class.
    * Don't change the numbers. NOTE THAT THESE ARE NOT IN
-   * ALPHABETICAL ORDER!
-   * (It's a pity Java doesn't have a real Enumerated Mnemonic
-   * datatype... or a C-like preprocessor in lieu thereof which
-   * could be used to generate and maintain synch between these lists.)
+   * ALPHABETICAL ORDER.
    */
   public static final int ELEMNAME_UNDEFINED = -1, ELEMNAME_WITHPARAM = 2,
                           ELEMNAME_ADDATTRIBUTE = 4, ELEMNAME_ANCHOR = 22,
@@ -89,12 +86,32 @@ public class Constants extends org.apache.xml.utils.Constants
   ELEMNAME_LITERALRESULT = 77, ELEMNAME_TEXTLITERALRESULT = 78,
   ELEMNAME_EXTENSIONCALL = 79, ELEMNAME_EXTENSIONDECL = 85,
   ELEMNAME_EXTENSIONSCRIPT = 86, ELEMNAME_OUTPUT = 80,
-  ELEMNAME_COMPONENT = 81, ELEMNAME_SCRIPT = 82;
+  ELEMNAME_COMPONENT = 81, ELEMNAME_SCRIPT = 82,
+  
+  ELEMNAME_FOREACHGROUP = 90,
 
-  // Next free number: 90 (88 and 89 used for EXSLT elements);
+  ELEMNAME_ANALYZESTRING = 91,
+  
+  ELEMNAME_MATCHING_SUBSTRING = 92,
+  
+  ELEMNAME_NON_MATCHING_SUBSTRING = 93,
+  
+  ELEMNAME_ITERATE = 94,
+  
+  ELEMNAME_ITERATE_ONCOMPLETION = 95,
+  
+  ELEMNAME_ITERATE_NEXTITERATION = 96,
+  
+  ELEMNAME_ITERATE_BREAK = 97,
+  
+  ELEMNAME_FUNCTION = 98,
+  
+  ELEMNAME_SEQUENCE = 99;
+  
+  // next available number : 100
 
   /**
-   * Literals for XSL element names.  Note that there are more
+   * Literals for XSL element names. Note that there are more
    * names than IDs, because some names map to the same ID.
    */
   public static final String       
@@ -132,6 +149,14 @@ public class Constants extends org.apache.xml.utils.Constants
       ELEMNAME_EXTENSION_STRING = "functions",
       ELEMNAME_FALLBACK_STRING = "fallback",
       ELEMNAME_FOREACH_STRING = "for-each",
+      ELEMNAME_FOREACHGROUP_STRING = "for-each-group",
+      ELEMNAME_ANALYZESTRING_STRING = "analyze-string",
+      ELEMNAME_MATCHINGSUBSTRING_STRING = "matching-substring",
+      ELEMNAME_NONMATCHINGSUBSTRING_STRING = "non-matching-substring",
+      ELEMNAME_ITERATE_STRING = "iterate",
+      ELEMNAME_ITERATE_ONCOMPLETION_STRING = "on-completion",
+      ELEMNAME_ITERATE_NEXTITERATION_STRING = "next-iteration",
+      ELEMNAME_ITERATE_BREAK_STRING = "break",
       ELEMNAME_IF_STRING = "if",
       ELEMNAME_IMPORT_STRING = "import",
       ELEMNAME_INCLUDE_STRING = "include",
@@ -164,7 +189,10 @@ public class Constants extends org.apache.xml.utils.Constants
       ELEMNAME_VALUEOF_STRING = "value-of",
       ELEMNAME_VARIABLE_STRING = "variable",
       ELEMNAME_WHEN_STRING = "when",
-      ELEMNAME_WITHPARAM_STRING = "with-param";
+      ELEMNAME_WITHPARAM_STRING = "with-param",
+      ELEMNAME_FUNCTION_STRING = "function",
+      ELEMNAME_SEQUENCE_STRING = "sequence",
+      ELEMNAME_IMPORT_SCHEMA_STRING = "import-schema";
   
   /**
    * Literals for EXSLT function elements.

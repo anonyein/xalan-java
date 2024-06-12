@@ -24,12 +24,13 @@ import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.w3c.dom.DOMException;
 
 /**
  * Implement xsl:comment.
  * <pre>
- * &lt;!ELEMENT xsl:comment %char-template;&gt;
- * &lt;!ATTLIST xsl:comment %space-att;&gt;
+ * <!ELEMENT xsl:comment %char-template;>
+ * <!ATTLIST xsl:comment %space-att;>
  * </pre>
  * @see <a href="http://www.w3.org/TR/xslt#section-Creating-Comments">section-Creating-Comments in XSLT Specification</a>
  * @xsl.usage advanced

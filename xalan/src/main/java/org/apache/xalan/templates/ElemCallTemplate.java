@@ -30,6 +30,7 @@ import org.apache.xml.utils.QName;
 import org.apache.xpath.VariableStack;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XObject;
+import org.w3c.dom.DOMException;
 
 /**
  * Implement xsl:call-template.
@@ -325,11 +326,11 @@ public class ElemCallTemplate extends ElemForEach
 
   /**
    * Add a child to the child list.
-   * &lt;!ELEMENT xsl:apply-templates (xsl:sort|xsl:with-param)*&gt;
-   * &lt;!ATTLIST xsl:apply-templates
+   * <!ELEMENT xsl:apply-templates (xsl:sort|xsl:with-param)*>
+   * <!ATTLIST xsl:apply-templates
    *   select %expr; "node()"
    *   mode %qname; #IMPLIED
-   * &gt;
+   * >
    *
    * @param newChild Child to add to this node's children list
    *

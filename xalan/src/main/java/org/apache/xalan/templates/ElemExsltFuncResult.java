@@ -34,7 +34,7 @@ public class ElemExsltFuncResult extends ElemVariable
     static final long serialVersionUID = -3478311949388304563L;
     /*
      * To keep the binary compatibility put those three private global 
-     * variables back, although they are never used in this version
+     * variables back, although they are never used in this verison
      */
     // A flag indicating whether the return result is set
     private boolean m_isResultSet = false;

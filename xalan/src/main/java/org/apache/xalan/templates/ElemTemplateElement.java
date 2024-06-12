@@ -31,17 +31,19 @@ import javax.xml.transform.TransformerException;
 import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xml.dtm.DTMIterator;
 import org.apache.xml.serializer.SerializationHandler;
 import org.apache.xml.utils.PrefixResolver;
 import org.apache.xml.utils.UnImplNode;
 import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.WhitespaceStrippingElementMatcher;
-
+import org.apache.xpath.XPathContext;
+import org.apache.xpath.objects.XNodeSet;
+import org.apache.xpath.objects.XObject;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import org.xml.sax.helpers.NamespaceSupport;
 
 /**
@@ -55,13 +57,31 @@ import org.xml.sax.helpers.NamespaceSupport;
  * basic traversal of the tree.
  *
  * @see Stylesheet
+ * 
+ * @author Scott Boag <scott_boag@us.ibm.com>
+ * @author Myriam Midy <mmidy@apache.org>
+ * @author Joseph Kesselman <jkesselm@apache.org>
+ * 
+ * @author Mukul Gandhi <mukulg@apache.org>
+ *         (XSLT 3 specific changes, to this class)
+ * 
  * @xsl.usage advanced
  */
 public class ElemTemplateElement extends UnImplNode
         implements PrefixResolver, Serializable, ExpressionNode, 
                    WhitespaceStrippingElementMatcher, XSLTVisitable
 {
-    static final long serialVersionUID = 4440018597841834447L;
+   static final long serialVersionUID = 4440018597841834447L;
+    
+   // This class field supports, implementation of xsl:for-each-group's grouping key. 
+   // An instance of this class, stores this value for a specific xsl:for-each-group element 
+   // within the XSLT stylesheet.
+   private Object fGroupingKey = null;
+    
+   // This class field supports, implementation of xsl:for-each-group's current-group contents. 
+   // An instance of this class, stores this value for a specific xsl:for-each-group element 
+   // within the XSLT stylesheet.
+   private List<Integer> fGroupNodesDtmHandles;
 
   /**
    * Construct a template element instance.
@@ -113,12 +133,14 @@ public class ElemTemplateElement extends UnImplNode
     return getNodeName();
   }
 
+
   /**
    * This function will be called on top-level elements
    * only, just before the transform begins.
    *
    * @param transformer The XSLT TransformerFactory.
-   * @throws TransformerException if initialization could not complete
+   *
+   * @throws TransformerException
    */
   public void runtimeInit(TransformerImpl transformer) throws TransformerException{}
 
@@ -175,8 +197,6 @@ public class ElemTemplateElement extends UnImplNode
   /**
    * This function is called during recomposition to
    * control how this element is composed.
-   * @param root StylesheetRoot at base of tree to recompose
-   * @throws TransformerException if recomposition fails
    */
   public void recompose(StylesheetRoot root) throws TransformerException
   {
@@ -187,8 +207,6 @@ public class ElemTemplateElement extends UnImplNode
    * recomposed, and allows the template to set remaining
    * values that may be based on some other property that
    * depends on recomposition.
-   * @param sroot StylesheetRoot at base of tree to compose
-   * @throws TransformerException if composition fails
    */
   public void compose(StylesheetRoot sroot) throws TransformerException
   {
@@ -204,8 +222,6 @@ public class ElemTemplateElement extends UnImplNode
   
   /**
    * This after the template's children have been composed.
-   * @param sroot StylesheetRoot at base of tree to compose
-   * @throws TransformerException if composition fails
    */
   public void endCompose(StylesheetRoot sroot) throws TransformerException
   {
@@ -253,7 +269,7 @@ public class ElemTemplateElement extends UnImplNode
    * @param newChild Child to be added to child list
    *
    * @return Child just added to the child list
-   * @throws DOMException if the child would be poorly formed or misplaced
+   * @throws DOMException
    */
   public Node appendChild(Node newChild) throws DOMException
   {
@@ -393,7 +409,7 @@ public class ElemTemplateElement extends UnImplNode
    *
    * @return The new child
    *
-   * @throws DOMException if the replacement could not be made
+   * @throws DOMException
    */
   public Node replaceChild(Node newChild, Node oldChild) throws DOMException
   {
@@ -433,7 +449,7 @@ public class ElemTemplateElement extends UnImplNode
    *
    * @return null
    *
-   * @throws DOMException if the insertion was not possible
+   * @throws DOMException
    */
   public Node insertBefore(Node newChild, Node refChild) throws DOMException
   {
@@ -503,7 +519,7 @@ public class ElemTemplateElement extends UnImplNode
    *
    * @return The new child
    *
-   * @throws DOMException if the replacement could not be performed
+   * @throws DOMException
    */
   public ElemTemplateElement replaceChild(ElemTemplateElement newChildElem, 
                                           ElemTemplateElement oldChildElem)
@@ -835,7 +851,7 @@ public class ElemTemplateElement extends UnImplNode
    * @param nsSupport non-null reference to NamespaceSupport from 
    * the ContentHandler.
    *
-   * @throws TransformerException if the prefixes could not be bound
+   * @throws TransformerException
    */
   public void setPrefixes(NamespaceSupport nsSupport) throws TransformerException
   {
@@ -851,7 +867,7 @@ public class ElemTemplateElement extends UnImplNode
    * the ContentHandler.
    * @param excludeXSLDecl true if XSLT namespaces should be ignored.
    *
-   * @throws TransformerException if the prefixes could not be set
+   * @throws TransformerException
    */
   public void setPrefixes(NamespaceSupport nsSupport, boolean excludeXSLDecl)
           throws TransformerException
@@ -962,7 +978,7 @@ public class ElemTemplateElement extends UnImplNode
    *
    * @return reference to vector of {@link XMLNSDecl}s, which may be null.
    */
-  List getPrefixTable()
+  public List getPrefixTable()
   {
     return m_prefixTable;
   }
@@ -978,7 +994,6 @@ public class ElemTemplateElement extends UnImplNode
    * @see <a href="http://www.w3.org/TR/xslt#extension-element">extension-element in XSLT Specification</a>
    *
    * @param prefix non-null reference to prefix that might be excluded.
-   * @param uri non-null reference to URI that might be excluded
    *
    * @return true if the prefix should normally be excluded.
    */
@@ -1001,7 +1016,7 @@ public class ElemTemplateElement extends UnImplNode
    *
    * @return true if the given namespace should be excluded.
    *
-   * @throws TransformerException if exclusion could not be performed
+   * @throws TransformerException
    */
   private boolean excludeResultNSDecl(String prefix, String uri)
           throws TransformerException
@@ -1029,7 +1044,7 @@ public class ElemTemplateElement extends UnImplNode
    * Note that this method builds m_prefixTable with aliased 
    * namespaces, *not* the original namespaces.
    *
-   * @throws TransformerException if prefixes could not be resolved
+   * @throws TransformerException
    */
   public void resolvePrefixTables() throws TransformerException
   {
@@ -1164,7 +1179,7 @@ public class ElemTemplateElement extends UnImplNode
    *
    * @param transformer non-null reference to the the current transform-time state.
    *
-   * @throws TransformerException if the handler objected to the prefix mappings
+   * @throws TransformerException
    */
   void executeNSDecls(TransformerImpl transformer) throws TransformerException
   {
@@ -1178,7 +1193,7 @@ public class ElemTemplateElement extends UnImplNode
    * @param transformer non-null reference to the the current transform-time state.
    * @param ignorePrefix string prefix to not startPrefixMapping
    *
-   * @throws TransformerException if the handler objected to the prefix mappings
+   * @throws TransformerException
    */
   void executeNSDecls(TransformerImpl transformer, String ignorePrefix) throws TransformerException
   {  
@@ -1533,7 +1548,7 @@ public class ElemTemplateElement extends UnImplNode
    *
    * @return true if the whitespace should be stripped.
    *
-   * @throws TransformerException if stylesheet root can't answer the question
+   * @throws TransformerException
    */
   public boolean shouldStripWhiteSpace(
           org.apache.xpath.XPathContext support, 
@@ -1634,7 +1649,6 @@ public class ElemTemplateElement extends UnImplNode
   /**
    * Call the children visitors.
    * @param visitor The visitor whose appropriate method will be called.
-   * @param callAttributes has no effect in this implementation
    */
   protected void callChildVisitors(XSLTVisitor visitor, boolean callAttributes)
   {
@@ -1642,8 +1656,8 @@ public class ElemTemplateElement extends UnImplNode
       node != null;
       node = node.m_nextSibling)
       {
-	  node.callVisitors(visitor);
-      }
+      node.callVisitors(visitor);
+    }
   }
   
   /**
@@ -1654,13 +1668,132 @@ public class ElemTemplateElement extends UnImplNode
   {
   	callChildVisitors(visitor, true);
   }
+  
+  /**
+   * @see PrefixResolver#handlesNullPrefixes()
+   */
+  public boolean handlesNullPrefixes() {
+      return false;
+  }
 
+  public Object getGroupingKey() {
+      return fGroupingKey;
+  }
 
-	/**
-	 * @see PrefixResolver#handlesNullPrefixes()
-	 */
-	public boolean handlesNullPrefixes() {
-		return false;
-	}
+  public void setGroupingKey(Object groupingKey) {
+      this.fGroupingKey = groupingKey;
+  }
+
+  public List<Integer> getGroupNodesDtmHandles() {
+      return fGroupNodesDtmHandles;
+  }
+
+  public void setGroupNodesDtmHandles(List<Integer> groupNodesDtmHandles) {
+      this.fGroupNodesDtmHandles = groupNodesDtmHandles;
+  }
+  
+  /**
+   * Method to determine whether, an XSLT instruction is in a sequence constructor's tail position.
+   * 
+   * The XSLT 3.0 spec, provides following definition to determine, whether an XSLT instruction
+   * is in the tail position within an XSLT sequence constructor,
+   * 
+   * An instruction J is in a tail position within a sequence constructor SC if it satisfies 
+   * one of the following conditions:
+     1) J is the last instruction in SC, ignoring any xsl:fallback instructions.
+     2) J is in a tail position within the sequence constructor that forms the body of an xsl:if instruction that 
+        is itself in a tail position within SC.
+     3) J is in a tail position within the sequence constructor that forms the body of an xsl:when or xsl:otherwise 
+        branch of an xsl:choose instruction that is itself in a tail position within SC.
+     4) J is in a tail position within the sequence constructor that forms the body of an xsl:try instruction that 
+        is itself in a tail position within SC (that is, it is immediately followed by an xsl:catch element, ignoring 
+        any xsl:fallback elements).
+     5) J is in a tail position within the sequence constructor that forms the body of an xsl:catch element within 
+        an xsl:try instruction that is itself in a tail position within SC.
+        
+     Currently, we check only points 1), 2) and 3) as mentioned within previous definition above.
+             
+     @param  xslInstr    the XSLT instruction for which we need to find, whether its in a tail position of an XSLT 
+                         sequence constructor.                          
+   */
+  protected boolean isXslInstructionInTailPositionOfSequenceConstructor(ElemTemplateElement xslInstr) {
+      
+      boolean isXslInstructionInTailPositionOfSequenceConstructor = true;
+      
+      ElemTemplateElement elemTemplateElementNextSubling = xslInstr.m_nextSibling;
+      
+      if (elemTemplateElementNextSubling == null) {
+         ElemTemplateElement xslInstrParentElement = xslInstr.m_parentNode;
+          
+         if (xslInstrParentElement instanceof ElemIf) {
+            isXslInstructionInTailPositionOfSequenceConstructor = isXslInstructionInTailPositionOfSequenceConstructor(
+                                                                                             xslInstrParentElement); 
+         }
+         else if ((xslInstrParentElement instanceof ElemWhen) || (xslInstrParentElement 
+                                                                                   instanceof ElemOtherwise)) {
+             xslInstrParentElement = xslInstrParentElement.m_parentNode;
+             isXslInstructionInTailPositionOfSequenceConstructor = isXslInstructionInTailPositionOfSequenceConstructor(
+                                                                                                      xslInstrParentElement);
+         }
+      }
+      else {
+          if (!((elemTemplateElementNextSubling instanceof ElemIterateNextIteration) && 
+                                                                      (elemTemplateElementNextSubling.m_nextSibling == null))) {
+              isXslInstructionInTailPositionOfSequenceConstructor = false;   
+          }
+      }
+      
+      return isXslInstructionInTailPositionOfSequenceConstructor;
+  }
+  
+  /**
+   * During processing of, xsl:for-each or xsl:iterate instruction, when the input data to be
+   * processed by these instructions is a 'ResultSequence' object, we use this method to set
+   * the XPath context information before each sequence item is processed by these 
+   * XSL instructions.
+   * 
+   * @param inpSequenceLength                  an input data sequence length
+   * @param currentlyProcessingItemIndex       an index of currently processed item within an 
+                                               input sequence.
+   * @param currentContextItem                 the current xdm item been processed
+   * @param xctxt                              the currently active, XPath context object
+   */
+  protected void setXPathContextForXslSequenceProcessing(int inpSequenceLength, 
+                                                                  int currentlyProcessingItemIndex, 
+                                                                  XObject currentContextItem, 
+                                                                  XPathContext xctxt) {
+      if (currentContextItem instanceof XNodeSet) {         
+         XNodeSet xNodeSet = (XNodeSet)currentContextItem;
+         DTMIterator dtmIter = xNodeSet.iterRaw();
+         int contextNode = dtmIter.nextNode();
+         xctxt.pushCurrentNode(contextNode);
+      }
+      else {         
+         xctxt.setXPath3ContextSize(inpSequenceLength);
+         xctxt.setXPath3ContextItem(currentContextItem);
+         xctxt.setXPath3ContextPosition(currentlyProcessingItemIndex + 1);
+      }
+  }
+  
+  /**
+   * During processing of, xsl:for-each or xsl:iterate instruction, when the input data to be
+   * processed by these instructions is a 'ResultSequence' object, we use this method to reset
+   * the XPath context information after each sequence item has been processed by these 
+   * XSL instructions. 
+   * 
+   * @param currentContextItem      the current xdm item been processed
+   * @param xctxt                   the currently active, XPath context object
+   */
+  protected void resetXPathContextForXslSequenceProcessing(XObject currentContextItem, 
+                                                                            XPathContext xctxt) {
+     if (currentContextItem instanceof XNodeSet) {        
+        xctxt.popCurrentNode();
+     }
+     else {     
+        xctxt.setXPath3ContextSize(-1);
+        xctxt.setXPath3ContextItem(null);
+        xctxt.setXPath3ContextPosition(-1);
+     }
+  }
 
 }

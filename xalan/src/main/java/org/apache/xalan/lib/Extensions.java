@@ -33,14 +33,12 @@ import org.apache.xpath.NodeSet;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import org.w3c.dom.traversal.NodeIterator;
-
 import org.xml.sax.SAXNotSupportedException;
 
 /**
@@ -265,8 +263,8 @@ public class Extensions
 
   /**
    * Returns a NodeSet containing one text node for each token in the first argument.
-   * Delimiters are whitespace.  That is, the delimiters that are used are tab (&amp;#x09),
-   * linefeed (&amp;#x0A), return (&amp;#x0D), and space (&amp;#x20).
+   * Delimiters are whitespace.  That is, the delimiters that are used are tab (&#x09),
+   * linefeed (&#x0A), return (&#x0D), and space (&#x20).
    * Tokens are determined by a call to <code>StringTokenizer</code>.
    * If the first argument is an empty string or contains only delimiters, the result
    * will be an empty NodeSet.

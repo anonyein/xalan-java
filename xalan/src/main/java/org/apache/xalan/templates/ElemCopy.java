@@ -22,21 +22,21 @@ package org.apache.xalan.templates;
 
 import javax.xml.transform.TransformerException;
 
+import org.apache.xalan.serialize.SerializerUtils;
 import org.apache.xalan.transformer.ClonerToResultTree;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xml.dtm.DTM;
-import org.apache.xalan.serialize.SerializerUtils;
 import org.apache.xml.serializer.SerializationHandler;
 import org.apache.xpath.XPathContext;
 
 /**
  * Implement xsl:copy.
  * <pre>
- * &lt;!ELEMENT xsl:copy %template;&gt;
- * &lt;!ATTLIST xsl:copy
+ * <!ELEMENT xsl:copy %template;>
+ * <!ATTLIST xsl:copy
  *   %space-att;
  *   use-attribute-sets %qnames; #IMPLIED
- * &gt;
+ * >
  * </pre>
  * @see <a href="http://www.w3.org/TR/xslt#copying">copying in XSLT Specification</a>
  * @xsl.usage advanced

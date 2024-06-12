@@ -26,9 +26,9 @@ import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
-import org.xml.sax.SAXException;
 
 /**
  * Creates XMLReader objects and caches them for re-use.
@@ -146,21 +146,16 @@ public class XMLReaderManager {
     }
 
     /**
-     * Mark the cached XMLReader as available for reuse.
+     * Mark the cached XMLReader as available.  If the reader was not
+     * actually in the cache, do nothing.
      *
      * @param reader The XMLReader that's being released.
      */
     public synchronized void releaseXMLReader(XMLReader reader) {
-	if (reader == null) {
-            return;
-        }
         // If the reader that's being released is the cached reader
-        // for this thread, mark it as no longer being in use.
-	// TODO: REVIEW. I'm not sure this sequence makes sense.
-        if (m_readers.get() == reader) {
-           m_readers.set(null);
-           m_inUse.put(reader, Boolean.FALSE);
+        // for this thread, remove it from the m_isUse list.
+        if (m_readers.get() == reader && reader != null) {
+            m_inUse.remove(reader);
         }
-        m_inUse.remove(reader);
     }
 }

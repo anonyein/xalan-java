@@ -21,10 +21,15 @@
 package org.apache.xpath;
 
 import java.lang.reflect.Method;
-import java.util.Stack;
-import java.util.Vector;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Stack;
+import java.util.TimeZone;
+import java.util.Vector;
 
 import javax.xml.transform.ErrorListener;
 import javax.xml.transform.SourceLocator;
@@ -44,20 +49,22 @@ import org.apache.xml.utils.IntStack;
 import org.apache.xml.utils.NodeVector;
 import org.apache.xml.utils.ObjectStack;
 import org.apache.xml.utils.PrefixResolver;
+import org.apache.xml.utils.QName;
 import org.apache.xml.utils.SAXSourceLocator;
 import org.apache.xml.utils.XMLString;
 import org.apache.xpath.axes.SubContextList;
-import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.DTMXRTreeFrag;
+import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.res.XPATHErrorResources;
-
 import org.xml.sax.XMLReader;
+
+import xml.xpath31.processor.types.XSDayTimeDuration;
+import xml.xpath31.processor.types.XSDuration;
 
 /**
  * Default class for the runtime execution context for XPath.
  * 
- * <p>This class extends DTMManager but does not directly implement it.</p>
  * @xsl.usage advanced
  */
 public class XPathContext extends DTMManager // implements ExpressionContext
@@ -93,6 +100,56 @@ public class XPathContext extends DTMManager // implements ExpressionContext
    * state of the secure processing feature.
    */
   private boolean m_isSecureProcessing = false;
+  
+  /**
+   *  This data value, represents the XPath 3.1's current evaluation 
+   *  context item.
+   */
+  private XObject m_xpath3ContextItem = null;
+  
+  /**
+   *  This data value, represents the XPath 3.1's current evaluation 
+   *  context position.
+   */
+  private int m_xpath3ContextPosition = -1;
+  
+  /**
+   *  This data value, represents the XPath 3.1's current evaluation 
+   *  context size.
+   */
+  private int m_xpath3ContextSize = -1; 
+  
+  /**
+   * This data value, represents certain custom data (represented 
+   * as a java.util.Map object) within the current XPath 3.1 evaluation 
+   * context.
+   */
+  private Map<String, String> m_customDataMap = new HashMap<String, String>();
+  
+  private GregorianCalendar m_currentDateTime;
+  
+  private XSDuration m_timezone;
+  
+  /**
+   * We use this java.util.Map object, to store XPath 3.1 variable binding
+   * information (i.e, a mapping from variable name to its run-time value). 
+   * These variable bindings, are used for XPath feature implementations 
+   * like function item, "for", "let", 'quantified' expressions.
+   * 
+   * We don't use, XalanJ XPath context's variable stack for this purpose.
+   */
+  private Map<QName, XObject> xpathVarMap = new HashMap<QName, XObject>();
+  
+  /**
+   * The default collation uri (the default collation for XalanJ's XSL3 support 
+   * is, "Unicode Codepoint Collation").
+   */
+  private String m_default_collation = XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI;
+  
+  /**
+   * An XPathCollationSupport object instance to support, collations within XPath implementation.
+   */
+  private XPathCollationSupport m_collationSupport = new XPathCollationSupport(m_default_collation);
 	
   /**
    * Though XPathContext context extends 
@@ -485,7 +542,7 @@ public class XPathContext extends DTMManager // implements ExpressionContext
   }
 
   /** 
-   * Get the variable stack, which is in charge of variables and
+   * Set the variable stack, which is in charge of variables and
    * parameters.
    *
    * @param varStack non-null reference to the variable stack.
@@ -1349,4 +1406,88 @@ public class XPathContext extends DTMManager // implements ExpressionContext
     }
     m_DTMXRTreeFrags = null;
  }
+
+ public Map<String, String> getCustomDataMap() {
+    return m_customDataMap;
+ }
+
+ public void setCustomDataMap(Map<String, String> customDataMap) {
+    this.m_customDataMap = customDataMap;
+ }
+
+ public XObject getXPath3ContextItem() {
+     return m_xpath3ContextItem;
+ }
+
+ public void setXPath3ContextItem(XObject xpath3ContextItem) {
+     this.m_xpath3ContextItem = xpath3ContextItem;
+ }
+
+ public int getXPath3ContextPosition() {
+    return m_xpath3ContextPosition;
+ }
+
+ public void setXPath3ContextPosition(int xpath3ContextPosition) {
+    this.m_xpath3ContextPosition = xpath3ContextPosition;
+ }
+
+ public int getXPath3ContextSize() {
+    return m_xpath3ContextSize;
+ }
+
+ public void setXPath3ContextSize(int xpath3ContextSize) {
+    this.m_xpath3ContextSize = xpath3ContextSize;
+ }
+
+ public GregorianCalendar getCurrentDateTime() {
+     if (m_currentDateTime == null) {
+         m_currentDateTime = new GregorianCalendar(TimeZone.getDefault());
+     }
+     
+     return m_currentDateTime;
+ }
+
+ public void setCurrentDateTime(GregorianCalendar currentDateTime) {
+     this.m_currentDateTime = currentDateTime;
+ }
+
+ public XSDuration getTimezone() {
+     if (m_timezone == null) {
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        ZoneOffset zoneOffset = zonedDateTime.getOffset();
+        String zoneOffsetStr = zoneOffset.toString();
+        String[] zoneOffsetStrParts = zoneOffsetStr.split("\\+|\\-|:");
+        int zoneHrs = 0;
+        int zoneMinutes = 0;
+        if (zoneOffsetStrParts.length > 1) {
+           zoneHrs = (new Integer(zoneOffsetStrParts[1])).intValue();
+           zoneMinutes = (new Integer(zoneOffsetStrParts[2])).intValue();
+        }
+        boolean isNegativeTimezone = !zoneOffsetStr.startsWith("+");
+        m_timezone = new XSDayTimeDuration(0, zoneHrs, zoneMinutes, 0, isNegativeTimezone);
+     }
+     
+     return m_timezone;
+ }
+
+ public void setTimezone(XSDuration timezone) {
+     this.m_timezone = timezone;
+ }
+
+ public Map<QName, XObject> getXPathVarMap() {
+     return xpathVarMap;
+ }
+
+ public void setXPathVarMap(Map<QName, XObject> xpathVarMap) {
+     this.xpathVarMap = xpathVarMap;
+ }
+
+ public XPathCollationSupport getXPathCollationSupport() {
+     return m_collationSupport;
+ }
+ 
+ public String getDefaultCollation() {
+     return m_default_collation;
+ }
+  
 }

@@ -43,7 +43,6 @@ import org.apache.bcel.classfile.JavaClass;
 import org.apache.xalan.xsltc.compiler.util.ErrorMsg;
 import org.apache.xalan.xsltc.compiler.util.Util;
 import org.apache.xml.dtm.DTM;
-
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
@@ -860,7 +859,7 @@ public final class XSLTC {
     		  // check that the, class to be serialized to filesystem, is of the valid format.
     		  // check with the native JVM class loader
     		  byte[] classByteArray = clazz.getBytes();
-    		  ByteArrayClassLoader classLoader = new ByteArrayClassLoader(classByteArray, ObjectFactory.findClassLoader());
+    		  ByteArrayClassLoader classLoader = new ByteArrayClassLoader(classByteArray);
     		  Class clz = classLoader.findClass(clazz.getClassName());
     		  
     		  clazz.dump(new BufferedOutputStream(
@@ -881,8 +880,7 @@ public final class XSLTC {
 
         byte[] ba;
         
-        public ByteArrayClassLoader(byte[] bArray, ClassLoader parent) {
-            super(parent);
+        public ByteArrayClassLoader(byte[] bArray) {
             ba = bArray;
         }
         

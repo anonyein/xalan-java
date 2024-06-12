@@ -24,8 +24,10 @@ import org.apache.xml.utils.FastStringBuffer;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathFactory;
-import org.apache.xpath.compiler.XPathParser;
+import org.apache.xpath.compiler.XPathParserImpl;
 import org.apache.xpath.objects.XObject;
+
+import xml.xpath31.processor.types.XSAnyType;
 
 /**
  * Simple string part of a complex AVT.
@@ -97,7 +99,7 @@ public class AVTPartXPath extends AVTPart
    */
   public AVTPartXPath(
           String val, org.apache.xml.utils.PrefixResolver nsNode, 
-          XPathParser xpathProcessor, XPathFactory factory, 
+          XPathParserImpl xpathProcessor, XPathFactory factory, 
           XPathContext liaison)
             throws javax.xml.transform.TransformerException
   {
@@ -134,9 +136,13 @@ public class AVTPartXPath extends AVTPart
 
     XObject xobj = m_xpath.execute(xctxt, context, nsNode);
 
-    if (null != xobj)
-    {
-      xobj.appendToFsb(buf);
+    if (xobj != null) {
+        if (xobj instanceof XSAnyType) {
+           ((XSAnyType)xobj).appendToFsb(buf);
+        }
+        else {
+           xobj.appendToFsb(buf);
+        }
     }
   }
   
@@ -147,4 +153,9 @@ public class AVTPartXPath extends AVTPart
   {
   	m_xpath.getExpression().callVisitors(m_xpath, visitor);
   }
+
+  public XPath getXPath() {
+    return m_xpath;
+  }
+
 }

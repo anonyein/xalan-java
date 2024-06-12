@@ -21,16 +21,17 @@
 package org.apache.xalan.templates;
 
 import org.apache.xalan.res.XSLTErrorResources;
+import org.w3c.dom.DOMException;
 
 /**
  * Implement xsl:template.
  * This primarily acts as a marker on the element
  * stack to signal that whitespace should be preserved.
  * <pre>
- * &lt;!ELEMENT xsl:text (#PCDATA)&gt;
- * &lt;!ATTLIST xsl:text
+ * <!ELEMENT xsl:text (#PCDATA)>
+ * <!ATTLIST xsl:text
  *   disable-output-escaping (yes|no) "no"
- * &gt;
+ * >
  * </pre>
  * @see <a href="http://www.w3.org/TR/xslt#section-Creating-Text">section-Creating-Text in XSLT Specification</a>
  * @xsl.usage advanced
@@ -47,7 +48,7 @@ public class ElemText extends ElemTemplateElement
 
   /**
    * Set the "disable-output-escaping" attribute.
-   * Normally, the xml output method escapes &amp; and &lt; (and
+   * Normally, the xml output method escapes & and < (and
    * possibly other characters) when outputting text nodes.
    * This ensures that the output is well-formed XML. However,
    * it is sometimes convenient to be able to produce output
@@ -72,7 +73,7 @@ public class ElemText extends ElemTemplateElement
 
   /**
    * Get the "disable-output-escaping" attribute.
-   * Normally, the xml output method escapes &amp; and &lt; (and
+   * Normally, the xml output method escapes & and < (and
    * possibly other characters) when outputting text nodes.
    * This ensures that the output is well-formed XML. However,
    * it is sometimes convenient to be able to produce output

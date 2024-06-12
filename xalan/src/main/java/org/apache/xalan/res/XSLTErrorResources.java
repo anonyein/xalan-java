@@ -244,6 +244,8 @@ public class XSLTErrorResources extends ListResourceBundle
 	 "ER_IN_ELEMTEMPLATEELEM_READOBJECT";
   public static final String ER_DUPLICATE_NAMED_TEMPLATE = 
 	 "ER_DUPLICATE_NAMED_TEMPLATE";
+  public static final String ER_DUPLICATE_XSL_FUNCTION = 
+     "ER_DUPLICATE_XSL_FUNCTION";
   public static final String ER_INVALID_KEY_CALL = "ER_INVALID_KEY_CALL";
   public static final String ER_REFERENCING_ITSELF = "ER_REFERENCING_ITSELF";
   public static final String ER_ILLEGAL_DOMSOURCE_INPUT = 
@@ -795,6 +797,9 @@ public class XSLTErrorResources extends ListResourceBundle
 
     { ER_DUPLICATE_NAMED_TEMPLATE,
       "Found more than one template named: {0}"},
+    
+    { ER_DUPLICATE_XSL_FUNCTION,
+      "Found more than one stylesheet function named: {0}"},
 
     { ER_INVALID_KEY_CALL,
       "Invalid function call: recursive key() calls are not allowed"},
@@ -1065,7 +1070,7 @@ public class XSLTErrorResources extends ListResourceBundle
      "Programmer''s assertion in RedundentExprEliminator: {0}"},
 
     { ER_NOT_ALLOWED_IN_POSITION,
-     "{0} is not allowed in this position in the stylesheet!"},
+     "{0} is not allowed in this position in the stylesheet"},
 
     { ER_NONWHITESPACE_NOT_ALLOWED_IN_POSITION,
      "Non-whitespace text is not allowed in this position in the stylesheet!"},
@@ -1450,7 +1455,7 @@ public class XSLTErrorResources extends ListResourceBundle
    *
    *   @param className the name of the class that implements the resource bundle.
    *   @return the ResourceBundle
-   *   @throws MissingResourceException if the requested resources can not be loaded
+   *   @throws MissingResourceException
    */
   public static final XSLTErrorResources loadResourceBundle(String className)
           throws MissingResourceException

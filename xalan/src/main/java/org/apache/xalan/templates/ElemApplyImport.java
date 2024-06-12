@@ -29,7 +29,7 @@ import org.apache.xml.dtm.DTM;
 /**
  * Implement xsl:apply-imports.
  * <pre>
- * &lt;!ELEMENT xsl:apply-imports EMPTY&gt;
+ * <!ELEMENT xsl:apply-imports EMPTY>
  * </pre>
  * @see <a href="http://www.w3.org/TR/xslt#apply-imports">apply-imports in XSLT Specification</a>
  * @xsl.usage advanced
@@ -98,7 +98,7 @@ public class ElemApplyImport extends ElemTemplateElement
 
   /**
    * Add a child to the child list.
-   * &lt;!ELEMENT xsl:apply-imports EMPTY&gt;
+   * <!ELEMENT xsl:apply-imports EMPTY>
    *
    * @param newChild New element to append to this element's children list
    *

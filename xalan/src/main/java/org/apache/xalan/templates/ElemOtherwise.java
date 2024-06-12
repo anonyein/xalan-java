@@ -24,8 +24,8 @@ package org.apache.xalan.templates;
 /**
  * Implement xsl:otherwise.
  * <pre>
- * &lt;! xsl:otherwise %template;&gt;
- * &lt;!ATTLIST xsl:otherwise %space-att;&gt;
+ * <!ELEMENT xsl:otherwise %template;>
+ * <!ATTLIST xsl:otherwise %space-att;>
  * </pre>
  * @see <a href="http://www.w3.org/TR/xslt#section-Conditional-Processing-with-xsl:choose">XXX in XSLT Specification</a>
  * @xsl.usage advanced

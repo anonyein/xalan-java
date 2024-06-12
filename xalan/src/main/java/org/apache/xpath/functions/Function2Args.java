@@ -34,7 +34,8 @@ public class Function2Args extends FunctionOneArg
     static final long serialVersionUID = 5574294996842710641L;
 
   /** The second argument passed to the function (at index 1).
-   *  @serial  */
+   *  
+   */
   Expression m_arg1;
 
   /**
@@ -78,8 +79,6 @@ public class Function2Args extends FunctionOneArg
   public void setArg(Expression arg, int argNum)
           throws WrongNumberArgsException
   {
-
-    // System.out.println("argNum: "+argNum);
     if (argNum == 0)
       super.setArg(arg, argNum);
     else if (1 == argNum)

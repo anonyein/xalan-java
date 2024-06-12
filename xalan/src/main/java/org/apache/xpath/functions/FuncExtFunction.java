@@ -22,7 +22,10 @@ package org.apache.xpath.functions;
 
 import java.util.Vector;
 
+import javax.xml.transform.TransformerException;
+
 import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan.templates.XSConstructorFunctionUtil;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.ExpressionOwner;
@@ -188,7 +191,24 @@ public class FuncExtFunction extends Function
           XPATHErrorResources.ER_EXTENSION_FUNCTION_CANNOT_BE_INVOKED,
           new Object[] {toString()}));
       
-    XObject result;
+    XObject result = null;
+    
+    try {
+       // Attempting to resolve this function call, as XSLT stylesheet function call (i.e, for
+       // functions defined with XSLT stylesheet element xsl:function), or as XPath 3.1 
+       // constructor function call (i.e, function calls with syntax xs:type_name(..), where the 
+       // XML namespace prefix 'xs' is bound to XML namespace uri http://www.w3.org/2001/XMLSchema).
+       result = XSConstructorFunctionUtil.processFuncExtFunctionOrXPathOpn(
+                                                                        xctxt, this, null);
+    } 
+    catch (TransformerException ex) {        
+       throw new TransformerException(ex.getMessage(), xctxt.getSAXLocator());
+    }
+       
+    if (result != null) {
+       return result;
+    }
+    
     Vector argVec = new Vector();
     int nArgs = m_argVec.size();
 
