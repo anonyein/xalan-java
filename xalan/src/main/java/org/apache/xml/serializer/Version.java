@@ -20,32 +20,104 @@
  */
 package org.apache.xml.serializer;
 
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Administrative class to keep track of the version number of
  * the Serializer release.
  * <P>This class implements the upcoming standard of having
- * org.apache.project-name.Version.getVersion() be a standard way 
- * to get version information.</P> 
+ * org.apache.project-name.Version.getVersion() be a standard way
+ * to get version information.</P>
  * @xsl.usage general
  */
-public final class Version
-{
+public class Version {
+  private static final String VERSION_NUMBER_PATTERN = "^(\\d+)[.](\\d+)[.](D)?(\\d+)(-SNAPSHOT)?$";
+  private static final String NO_VERSION = "0.0.0";
+
+  private static int majorVersionNum;
+  private static int releaseVersionNum;
+  private static int maintenanceVersionNum;
+  private static int developmentVersionNum;
+
+  private static boolean snapshot;
+
+  static {
+    parseVersionNumber(readVersionNumber());
+  }
+
+  static String readVersionNumber() {
+    try (InputStream fromResource = getPropertiesStream()) {
+      Properties properties = new Properties();
+      if (fromResource != null) {
+        properties.load(fromResource);
+        return properties.getProperty("version", NO_VERSION);
+      }
+    } catch (Exception e) {
+      new RuntimeException("Cannot read properties file to extract Xalan version number information: ", e)
+        .printStackTrace();
+    }
+    return NO_VERSION;
+  }
+
+  static InputStream getPropertiesStream() {
+    // IMPLEMENTATION NOTE: Class.getResourceAsStream uses a *relative* path by
+    // default, in contrast to Classloader.getResourceAsStream, which uses an
+    // *absolute* one. This is not clearly documented in the JDK, only
+    // noticeable by the absence of the word "absolute" in
+    // Class.getResourceAsStream javadocs. For more details, see
+    // https://www.baeldung.com/java-class-vs-classloader-getresource.
+    //
+    // Because we expect the properties file to be in the same directory/package
+    // as this class, the relative path comes in handy and as a bonus is also
+    // relocation-friendly (think Maven Shade).
+    return Version.class.getResourceAsStream("version.properties");
+  }
+
+  static void parseVersionNumber(String version) {
+    resetVersionNumber();
+    if (version == null)
+      version = NO_VERSION;
+    Matcher matcher = Pattern.compile(VERSION_NUMBER_PATTERN).matcher(version);
+    if (matcher.find()) {
+      majorVersionNum = Integer.parseInt(matcher.group(1));
+      releaseVersionNum = Integer.parseInt(matcher.group(2));
+      if (matcher.group(3) == null) {
+        maintenanceVersionNum = Integer.parseInt(matcher.group(4));
+      } else {
+        developmentVersionNum = Integer.parseInt(matcher.group(4));
+      }
+      snapshot = matcher.group(5) != null && !matcher.group(5).isEmpty();
+    } else {
+      System.err.println(
+        "Cannot match Xalan version \"" + version + "\" " +
+          "against expected pattern \"" + VERSION_NUMBER_PATTERN + "\", " +
+          "resetting version number to "+ NO_VERSION
+      );
+      resetVersionNumber();
+    }
+    }
+
+  private static void resetVersionNumber() {
+    majorVersionNum = releaseVersionNum = maintenanceVersionNum = developmentVersionNum = 0;
+    snapshot = false;
+  }
 
   /**
-   * Get the basic version string for the current Serializer.
-   * Version String formatted like 
-   * <CODE>"<B>Serializer</B> <B>Java</B> v.r[.dd| <B>D</B>nn]"</CODE>.
-   *
-   * Futurework: have this read version info from jar manifest.
+   * Get the basic version string for the current Serializer release.
+   * Version String formatted like
+   * <CODE>"<B>Xalan Serializer</B> <B>Java</B> v.r[.dd| <B>D</B>nn]"</CODE>.
    *
    * @return String denoting our current version
    */
-  public static String getVersion()
-  {
+  public static String getVersion() {
      return getProduct()+" "+getImplementationLanguage()+" "
            +getMajorVersionNum()+"."+getReleaseVersionNum()+"."
-           +( (getDevelopmentVersionNum() > 0) ? 
-               ("D"+getDevelopmentVersionNum()) : (""+getMaintenanceVersionNum()));  
+           +( (getDevelopmentVersionNum() > 0) ?
+               ("D"+getDevelopmentVersionNum()) : (""+getMaintenanceVersionNum()))
+           +(isSnapshot() ? "-SNAPSHOT" :"");
   }
 
   /**
@@ -53,44 +125,39 @@ public final class Version
    *
    * @param argv command line arguments, unused.
    */
-  public static void main(String argv[])
-  {
+  public static void main(String argv[]) {
     System.out.println(getVersion());
   }
-  
+
   /**
-   * Name of product: Serializer.
+   * Name of product: Xalan Serializer.
    */
-  public static String getProduct()
-  {
-    return "Serializer";
+  public static String getProduct() {
+    return "Xalan Serializer";
   }
 
   /**
    * Implementation Language: Java.
    */
-  public static String getImplementationLanguage()
-  {
+  public static String getImplementationLanguage() {
     return "Java";
   }
-  
-  
+
+
   /**
    * Major version number.
    * Version number. This changes only when there is a
    *          significant, externally apparent enhancement from
    *          the previous release. 'n' represents the n'th
    *          version.
-   *
+   * <p>
    *          Clients should carefully consider the implications
    *          of new versions as external interfaces and behaviour
    *          may have changed.
    */
-  public static int getMajorVersionNum()
-  {
-    return @version.VERSION@;
-    
-  }  
+  public static int getMajorVersionNum() {
+    return majorVersionNum;
+  }
 
   /**
    * Release Number.
@@ -100,11 +167,10 @@ public final class Version
    *            -  API or behaviour change.
    *            -  its designated as a reference release.
    */
-  public static int getReleaseVersionNum()
-  {
-    return @version.RELEASE@;
+  public static int getReleaseVersionNum() {
+    return releaseVersionNum;
   }
-  
+
   /**
    * Maintenance Drop Number.
    * Optional identifier used to designate maintenance
@@ -114,9 +180,8 @@ public final class Version
    *          When missing, it designates the final and complete
    *          development drop for a release.
    */
-  public static int getMaintenanceVersionNum()
-  {
-    return @version.MINOR@;
+  public static int getMaintenanceVersionNum() {
+    return maintenanceVersionNum;
   }
 
   /**
@@ -124,27 +189,29 @@ public final class Version
    * Optional identifier designates development drop of
    *          a specific release. D01 is the first development drop
    *          of a new release.
-   *
+   * <p>
    *          Development drops are works in progress towards a
    *          compeleted, final release. A specific development drop
    *          may not completely implement all aspects of a new
    *          feature, which may take several development drops to
    *          complete. At the point of the final drop for the
    *          release, the D suffix will be omitted.
-   *
+   * <p>
    *          Each 'D' drops can contain functional enhancements as
    *          well as defect fixes. 'D' drops may not be as stable as
    *          the final releases.
    */
-  public static int getDevelopmentVersionNum()
-  { 
-    try {   
-        if ((new String("@version.DEVELOPER@")).length() == 0)
-          return 0;
-        else  
-          return Integer.parseInt("@version.DEVELOPER@");
-    } catch (NumberFormatException nfe) {
-           return 0;
-    }    
-  }      
+  public static int getDevelopmentVersionNum() {
+    return developmentVersionNum;
+    }
+
+  /**
+   * Snapshot flag.
+   * Specifies whether the version number has a "-SNAPSHOT" suffix,
+   *          which by Maven/Gradle conventions designates a
+   *          development version.
+   */
+  public static boolean isSnapshot() {
+    return snapshot;
+  }
 }
