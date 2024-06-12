@@ -41,7 +41,7 @@ jobs:
         java-version: 8
     - name: 'Build Xalan jars'
       run: |
-        mvn install:install-file -Dfile=./xalan-java/xalan/lib/xpath31_types.jar -DgroupId=xml.xpath31 -DartifactId=xpath31_types -Dversion=1.0 -Dpackaging=jar
+        mvn install:install-file -Dfile=./xalan/lib/xpath31_types.jar -DgroupId=xml.xpath31 -DartifactId=xpath31_types -Dversion=1.0 -Dpackaging=jar
         mvn --no-transfer-progress clean compile site verify
     - name: Upload jar
       uses: actions/upload-artifact@v3
