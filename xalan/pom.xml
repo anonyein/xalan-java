@@ -184,6 +184,12 @@
       <version>1.0</version>
       <scope>provided</scope>
     </dependency>
+        <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json-20200518</artifactId>
+      <version>1.0</version>
+      <scope>provided</scope>
+    </dependency>
     <!-- https://mvnrepository.com/artifact/javax/javaee-api -->
     <dependency>
       <groupId>javax</groupId>
