@@ -213,9 +213,9 @@
     </dependency>
     <!-- https://mvnrepository.com/artifact/xml-apis/xml-apis -->
     <dependency>
-      <groupId>xml-apis</groupId>
+      <groupId>org.apache</groupId>
       <artifactId>xml-apis</artifactId>
-      <version>1.4.01</version> <!-- We were actually using 1.4.02 in the Ant build? -->
+      <version>1.4.02</version> <!-- We were actually using 1.4.02 in the Ant build? -->
       <scope>provided</scope>
     </dependency>
 
