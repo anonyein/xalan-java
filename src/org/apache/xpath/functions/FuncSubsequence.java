@@ -18,8 +18,8 @@ package org.apache.xpath.functions;
 
 import javax.xml.transform.SourceLocator;
 
-import org.apache.xalan.res.XSLMessages;
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xalan3.res.XSLMessages;
+import org.apache.xalan3.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.ResultSequence;

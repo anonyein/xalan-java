@@ -374,7 +374,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "A current() f\u00fcggv\u00e9ny nem fogad el argumentumokat!" },
 
   { ER_DOCUMENT_REPLACED,
-      "A document() f\u00fcggv\u00e9ny megval\u00f3s\u00edt\u00e1s\u00e1t lecser\u00e9lte az org.apache.xalan.xslt.FuncDocument!"},
+      "A document() f\u00fcggv\u00e9ny megval\u00f3s\u00edt\u00e1s\u00e1t lecser\u00e9lte az org.apache.xalan3.xslt.FuncDocument!"},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "A k\u00f6rnyezetnek nincs tulajdonos dokumentuma!"},

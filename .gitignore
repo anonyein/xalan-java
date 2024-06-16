@@ -1,9 +1,9 @@
 /build/
 /.metadata/
-/src/org/apache/xalan/Version.java
-/src/org/apache/xalan/processor/XSLProcessorVersion.java
-/src/org/apache/xalan/xsltc/compiler/XPathLexer.java
-/src/org/apache/xalan/xsltc/compiler/XPathParser.java
-/src/org/apache/xalan/xsltc/compiler/sym.java
+/src/org/apache/xalan3/Version.java
+/src/org/apache/xalan3/processor/XSLProcessorVersion.java
+/src/org/apache/xalan3/xsltc/compiler/XPathLexer.java
+/src/org/apache/xalan3/xsltc/compiler/XPathParser.java
+/src/org/apache/xalan3/xsltc/compiler/sym.java
 /src/org/apache/xml/serializer/Version.java
 /xdocs/sources/entities.ent

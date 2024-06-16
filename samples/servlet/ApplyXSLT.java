@@ -29,8 +29,8 @@ import java.net.MalformedURLException;
 import java.net.URLConnection;
 import javax.xml.transform.OutputKeys;
 
-import org.apache.xalan.templates.Constants;
-import org.apache.xalan.templates.StylesheetRoot;
+import org.apache.xalan3.templates.Constants;
+import org.apache.xalan3.templates.StylesheetRoot;
 // SAX2 Imports
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
@@ -45,16 +45,14 @@ import org.xml.sax.SAXNotSupportedException;
 import org.w3c.dom.*;
 import javax.xml.transform.*;
 import javax.xml.transform.stream.*;
-import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan3.transformer.TransformerImpl;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XString;
-import org.apache.xalan.processor.*;
+import org.apache.xalan3.processor.*;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.XMLReaderFactory;
 import org.xml.sax.helpers.XMLFilterImpl;
 
 /*****************************************************************************************************

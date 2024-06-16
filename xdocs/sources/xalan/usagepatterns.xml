@@ -68,7 +68,7 @@ transformer.transform
   </s2><anchor name="transformerfactory"/>
   <s2 title="1. Instantiate a TransformerFactory">
   <p><jump href="apidocs/javax/xml/transform/TransformerFactory.html">TransformerFactory</jump> is an abstract class with a static newInstance() method that instantiates the concrete subclass designated by the javax.xml.transform.TransformerFactory system property.</p>
-  <p>The default setting for this system property is <jump href="apidocs/org/apache/xalan/processor/TransformerFactoryImpl.html">org.apache.xalan.processor.TransformerFactoryImpl</jump>.</p>
+  <p>The default setting for this system property is <jump href="apidocs/org/apache/xalan3/processor/TransformerFactoryImpl.html">org.apache.xalan3.processor.TransformerFactoryImpl</jump>.</p>
 </s2><anchor name="transformer"/>
   <s2 title="2. Use the TransformerFactory to process the stylesheet Source and produce a Transformer">
 <p>The TransformerFactory <jump href="apidocs/javax/xml/transform/TransformerFactory.html#newTransformer(javax.xml.transform.Source)">newTransformer(Source xslSource)</jump> method processes the stylesheet Source into a Templates object and returns a Transformer that you can use to perform a transformation (apply the Templates object to an XML Source).</p>
@@ -87,7 +87,7 @@ transformer.transform
   <label>System property</label>
     <item>Setting</item>
   <label><code>javax.xml.transform.TransformerFactory</code></label>
-   <item><code>org.apache.xalan.processor.TransformerFactoryImpl</code></item>
+   <item><code>org.apache.xalan3.processor.TransformerFactoryImpl</code></item>
 </gloss>
 <p>If you are using Xerces, the XML parser factory settings are as follows:</p>
 <gloss>
@@ -303,7 +303,7 @@ Examples.exampleSerializeNode(), and Examples.exampleAsSerializer() in the <link
 <p>An XSLT stylesheet may include parameters that are set at run time each time a transformation is performed. To set a stylesheet parameter, use the Transformer 
 <jump href="apidocs/javax/xml/transform/Transformer.html#setParameter(java.lang.String,java.lang.Object)">setParameter(String name, Object value)</jump> method. For a working example, see UseStylesheetParam.java in the samples/UseStylesheetParam subdirectory.</p>
 <p>You can also set a parameter with the command-line utility by including the <code>-param</code> flag. For example:</p>
-<p><code>java org.apache.xalan.xslt.Process -in foo.xml -xsl foo.xsl -param param1 foobar</code></p>
+<p><code>java org.apache.xalan3.xslt.Process -in foo.xml -xsl foo.xsl -param param1 foobar</code></p>
 <p>where <code>param</code> is the parameter name and <code>foobar</code> is the parameter value. The parameter namespace is null.</p>
 <note>&xslt4j2; processes string parameters. You are no longer required (as you were with &xslt4j; version 1) to enclose strings in single 
 quotes (') as string expressions.</note>
@@ -368,7 +368,7 @@ if (tFactory.getFeature(javax.xml.transform.sax.SAXSource.FEATURE) &amp;&amp;
     reader.parse("foo.xml");</source>
     <note>If you want to perform multiple transformations with the same Templates object and a TransformerHandler, you must create a new
     TransformerHandler for each transformation. The &xslt4j; implementation of TransformerHandler 
-    (<jump href="apidocs/org/apache/xalan/transformer/TransformerHandlerImpl.html">TransformerHandlerImpl</jump> fails to respond 
+    (<jump href="apidocs/org/apache/xalan3/transformer/TransformerHandlerImpl.html">TransformerHandlerImpl</jump> fails to respond
     to events after the first endDocument event occurs.</note>
 </s2><anchor name="outasin"/>
 <s2 title="Using transformation output as input for another transformation">
@@ -418,21 +418,19 @@ API, see <link idref="samples" anchor="applyxpathjaxp">ApplyXPathJAXP</link> and
 </s2><anchor name="applet"/>
 <s2 title="Using the &xslt4j; applet wrapper">
 <ol> 
-<li>Include <jump href="apidocs/org/apache/xalan/client/XSLTProcessorApplet.html">XSLTProcessorApplet</jump> in an HTML client.<br/><br/></li>
+<li>Include <jump href="apidocs/org/apache/xalan3/client/XSLTProcessorApplet.html">XSLTProcessorApplet</jump> in an HTML client.<br/><br/></li>
 <li>Specify the XML source document and XSL stylesheet.<br/><br/>
-You can use the DocumentURL and StyleURL PARAM tags or the <jump href="apidocs/org/apache/xalan/client/XSLTProcessorApplet.html#setDocumentURL(java.lang.String)">setdocumentURL()</jump> and <jump href="apidocs/org/apache/xalan/client/XSLTProcessorApplet.html#setStyleURL(java.lang.String)">setStyleURL()</jump> methods. If the XML document contains a stylesheet Processing Instruction (PI), you do not need to specify an XSL stylesheet.<br/><br/></li>
-<li>Call the <jump href="apidocs/org/apache/xalan/client/XSLTProcessorApplet.html#transformToHtml(java.lang.String,java.lang.String)">transformToHtml()</jump> or <jump href="apidocs/org/apache/xalan/client/XSLTProcessorApplet.html#getHtmlText()">getHtmlText()</jump> method, which performs the transformation and returns the new document as a String.</li></ol>
+You can use the DocumentURL and StyleURL PARAM tags or the <jump href="apidocs/org/apache/xalan3/client/XSLTProcessorApplet.html#setDocumentURL(java.lang.String)">setdocumentURL()</jump> and <jump href="apidocs/org/apache/xalan3/client/XSLTProcessorApplet.html#setStyleURL(java.lang.String)">setStyleURL()</jump> methods. If the XML document contains a stylesheet Processing Instruction (PI), you do not need to specify an XSL stylesheet.<br/><br/></li>
+<li>Call the <jump href="apidocs/org/apache/xalan3/client/XSLTProcessorApplet.html#transformToHtml(java.lang.String,java.lang.String)">transformToHtml()</jump> or <jump href="apidocs/org/apache/xalan3/client/XSLTProcessorApplet.html#getHtmlText()">getHtmlText()</jump> method, which performs the transformation and returns the new document as a String.</li></ol>
 <note>The transformToHTML() method takes arguments for the XML source document and XSL stylesheet. The getHtmlText() method takes no arguments: it uses property or parameter settings, as in the example below.</note>
 <p>For an example, see the <link idref="samples" anchor="appletxmltohtml">AppletXMLtoHTML</link> sample applet. The &lt;applet&gt; tag is in samples/AppletXMLtoHTML/client.html:</p>
-<source>&lt;applet  
+<source>&lt;applet
     name="xslControl"
-    code="org.apache.xalan.client.XSLTProcessorApplet.class"
+    code="org.apache.xalan3.client.XSLTProcessorApplet.class"
     archive="../../xalan.jar,../../build/xalan.jar,../../serializer.jar,../../build/serializer.jar,../../lib/xml-apis.jar,../../lib/xercesImpl.jar"
     height="0"
-    width"0">
-    &lt;param name="documentURL" value="xalanApplets.xml"/&gt;
-    &lt;param name="styleURL" value="s1ToHTML.xsl"/&gt;
-&lt;/applet&gt;</source>
+    width"0"> &lt;param name="documentURL" value="xalanApplets.xml"/&gt; &lt;param name="styleURL"
+    value="s1ToHTML.xsl"/&gt; &lt;/applet&gt;</source>
 <p>When the user clicks the Transform button, the HTML client calls the getHtmlText() method, and puts the returned HTML text in a frame for the user to view.</p>
 <p>For samples, see <link idref="samples" anchor="applet">AppletXMLtoHTML</link>.</p>
 <anchor name="netscape"/><s3 title="Problems with Netscape">
@@ -441,7 +439,7 @@ You can use the DocumentURL and StyleURL PARAM tags or the <jump href="apidocs/o
     <p>Stuart Connell 
     &lt;Stuart.Connell@compuware.com&gt; reports that the &xslt4j; applet wrapper does work in Netscape Communicator 6, 
     provided that you avoid calls to the AppletContext showStatus() method. In other words, you can remove the showStatus() calls
-    from org.apache.xalan.client.XSLTProcessorApplet, and run &xslt4j; applets from Netscape Communicator 6. This appears to be a
+    from org.apache.xalan3.client.XSLTProcessorApplet, and run &xslt4j; applets from Netscape Communicator 6. This appears to be a
     Netscape bug, which hopefully will be fixed soon. For more information, see 
     <jump href="http://issues.apache.org/bugzilla/show_bug.cgi?id=3231">Bugzilla bug 3231</jump>.</p>
 </s3>    
@@ -511,74 +509,74 @@ anchor="usestylesheetparamservlet">UseStylesheetParamServlet</link> and <link id
 <p>For an example, see Examples.exampleUseTemplatesObj() in the <link idref="samples" anchor="trax">trax sample</link>.</p>
 </s2><anchor name="debugging"/>
 <s2 title="Debugger Interface">
-		<p>&xslt4j; contains a debugger interface in the org.apache.xalan.xslt.trace package:</p> 
+		<p>&xslt4j; contains a debugger interface in the org.apache.xalan3.xslt.trace package:</p>
 		<ul>
-		  <li><jump href="apidocs/org/apache/xalan/trace/TraceListener.html">TraceListener</jump> is an interface that debuggers 
+		  <li><jump href="apidocs/org/apache/xalan3/trace/TraceListener.html">TraceListener</jump> is an interface that debuggers
 		  can implement. Or, like the <link idref="commandline">command-line utility</link>, you can use the <jump
-      href="apidocs/org/apache/xalan/trace/PrintTraceListener.html">PrintTraceListener</jump> implementation of that interface.
+      href="apidocs/org/apache/xalan3/trace/PrintTraceListener.html">PrintTraceListener</jump> implementation of that interface.
       <br/><br/></li>
       <li>You can register a TraceListener with the 
-      <jump href="apidocs/org/apache/xalan/trace/TraceManager.html">TraceManager</jump> associated
+      <jump href="apidocs/org/apache/xalan3/trace/TraceManager.html">TraceManager</jump> associated
       with the Transformer that will perform a given transformation.<br/><br/></li>
-		  <li><jump href="apidocs/org/apache/xalan/trace/TracerEvent.html">TracerEvent</jump> is an event that is 
+		  <li><jump href="apidocs/org/apache/xalan3/trace/TracerEvent.html">TracerEvent</jump> is an event that is
 		  passed to the TraceListener.trace() function. It is called before a node is 'executed' in the stylesheet.<br/><br/></li>
-		  <li><jump href="apidocs/org/apache/xalan/trace/GenerateEvent.html">GenerateEvent</jump> is an event that is 
+		  <li><jump href="apidocs/org/apache/xalan3/trace/GenerateEvent.html">GenerateEvent</jump> is an event that is
 		  passed to the TraceListener.generated() function. It is called after an event occurs to create something in the result
       tree.<br/><br/></li>
-      <li><jump href="apidocs/org/apache/xalan/trace/SelectionEvent.html">SelectionEvent</jump> is an event triggered by the
+      <li><jump href="apidocs/org/apache/xalan3/trace/SelectionEvent.html">SelectionEvent</jump> is an event triggered by the
        selection of a stylesheet node.</li>
-      <li><jump href="apidocs/org/apache/xalan/trace/ExtensionEvent.html">ExtensionEvent</jump> is an event that is
+      <li><jump href="apidocs/org/apache/xalan3/trace/ExtensionEvent.html">ExtensionEvent</jump> is an event that is
        passed to the TraceListener.extension() function.  It is called before an extension call is made.<br/><br/></li>
 		</ul>
     <p>The <link idref="commandline">command-line utility</link> uses the debugger interface when you include one or more of the
      following switches: <code>-TT</code>, <code>-TG</code>, <code>-TS</code>, <code>-TTC</code>.</p>
     <p>Example:</p>
-<source>import org.apache.xalan.transformer.TransformerImpl;
-import org.apache.xalan.trace.TraceManager;
-import org.apache.xalan.trace.PrintTraceListener;
-...
-// Set up a PrintTraceListener object to print to a file.
-java.io.FileWriter fw = new java.io.FileWriter("events.log");
-java.io.PrintWriter pw = new java.io.PrintWriter(fw);
-PrintTraceListener ptl = new PrintTraceListener(pw);
+<source>import org.apache.xalan3.transformer.TransformerImpl;
+    import org.apache.xalan3.trace.TraceManager;
+    import org.apache.xalan3.trace.PrintTraceListener;
+    ...
+    // Set up a PrintTraceListener object to print to a file.
+    java.io.FileWriter fw = new java.io.FileWriter("events.log");
+    java.io.PrintWriter pw = new java.io.PrintWriter(fw);
+    PrintTraceListener ptl = new PrintTraceListener(pw);
 
-// Print information as each node is 'executed' in the stylesheet.
-ptl.m_traceElements = true;
-// Print information after each result-tree generation event.
-ptl.m_traceGeneration = true;
-// Print information after each selection event.
-ptl.m_traceSelection = true;
-// Print information whenever a template is invoked.
-ptl.m_traceTemplates = true;
-// Print information whenever an extension is called.
-ptl.m_traceExtension = true;
+    // Print information as each node is 'executed' in the stylesheet.
+    ptl.m_traceElements = true;
+    // Print information after each result-tree generation event.
+    ptl.m_traceGeneration = true;
+    // Print information after each selection event.
+    ptl.m_traceSelection = true;
+    // Print information whenever a template is invoked.
+    ptl.m_traceTemplates = true;
+    // Print information whenever an extension is called.
+    ptl.m_traceExtension = true;
 
-// Set up the transformation    
-javax.xml.transform.TransformerFactory tFactory = 
-                     javax.xml.transform.TransformerFactory.newInstance();
-javax.xml.transform.Transformer transformer = 
-  tFactory.newTransformer(new javax.xml.transform.stream.StreamSource
-                                                             ("foo.xsl"));
+    // Set up the transformation
+    javax.xml.transform.TransformerFactory tFactory =
+    javax.xml.transform.TransformerFactory.newInstance();
+    javax.xml.transform.Transformer transformer =
+    tFactory.newTransformer(new javax.xml.transform.stream.StreamSource
+    ("foo.xsl"));
 
-// Cast the Transformer object to TransformerImpl.
-if (transformer instanceof TransformerImpl) {
-  TransformerImpl transformerImpl = (TransformerImpl)transformer;
-  
-  // Register the TraceListener with the TraceManager associated 
-  // with the TransformerImpl.
-  TraceManager trMgr = transformerImpl.getTraceManager();
-  trMgr.addTraceListener(ptl);
-  
-  // Perform the transformation --printing information to
-  // the events log during the process.
-  transformer.transform
-      ( new javax.xml.transform.stream.StreamSource("foo.xml"), 
-        new javax.xml.transform.stream.StreamResult
-                                    (new java.io.FileWriter("foo.out")) );
-}
-// Close the PrintWriter and FileWriter.
-pw.close();
-fw.close();</source>
+    // Cast the Transformer object to TransformerImpl.
+    if (transformer instanceof TransformerImpl) {
+    TransformerImpl transformerImpl = (TransformerImpl)transformer;
+
+    // Register the TraceListener with the TraceManager associated
+    // with the TransformerImpl.
+    TraceManager trMgr = transformerImpl.getTraceManager();
+    trMgr.addTraceListener(ptl);
+
+    // Perform the transformation --printing information to
+    // the events log during the process.
+    transformer.transform
+    ( new javax.xml.transform.stream.StreamSource("foo.xml"),
+    new javax.xml.transform.stream.StreamResult
+    (new java.io.FileWriter("foo.out")) );
+    }
+    // Close the PrintWriter and FileWriter.
+    pw.close();
+    fw.close();</source>
 <p>For a sample application that uses this technique, see <link idref="samples" anchor="trace">Trace</link>.</p>
 </s2>
 </s1>

@@ -23,7 +23,7 @@ import java.util.Set;
 
 import javax.xml.transform.SourceLocator;
 
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xalan3.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPathCollationSupport;
 import org.apache.xpath.XPathContext;

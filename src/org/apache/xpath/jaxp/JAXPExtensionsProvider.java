@@ -28,7 +28,7 @@ import javax.xml.xpath.XPathFunction;
 import javax.xml.xpath.XPathFunctionException;
 import javax.xml.xpath.XPathFunctionResolver;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xpath.ExtensionsProvider;
 import org.apache.xpath.functions.FuncExtFunction;
 import org.apache.xpath.objects.XNodeSet;

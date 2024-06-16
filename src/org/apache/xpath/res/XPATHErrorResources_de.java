@@ -374,7 +374,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "In der Funktion current() d\u00fcrfen keine Argumente angegeben werden!" },
 
   { ER_DOCUMENT_REPLACED,
-      "Die Implementierung der Funktion document() wurde durch org.apache.xalan.xslt.FuncDocument ersetzt!"},
+      "Die Implementierung der Funktion document() wurde durch org.apache.xalan3.xslt.FuncDocument ersetzt!"},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "Der Kontextknoten verf\u00fcgt nicht \u00fcber ein Eignerdokument!"},

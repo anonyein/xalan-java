@@ -65,7 +65,7 @@ JAVACMD=$JAVA_HOME/bin/java
 CLASSPATH=$CLASSPATH:$JAVA_HOME/lib/tools.jar
 
 # Since Linux has scoped environments, we don't need explicit temporary vars.
-# Default is to use a copy of ant bundled with xalan-java.
+# Default is to use a copy of ant bundled with xalan3-java.
 if [ "$ANT_HOME" = "" ]; then 
     ANT_HOME=.
 fi

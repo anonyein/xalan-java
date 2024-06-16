@@ -26,7 +26,7 @@
     xmlns:my-ext="ext2"
     extension-element-prefixes="my-ext">
     
-  <!--The component and its script are in the xalan namespace and define the implementation-->
+  <!--The component and its script are in the xalan3 namespace and define the implementation-->
   <xalan:component prefix="my-ext" elements="timelapse" functions="getdate">
     <xalan:script lang="javascript">
       var multiplier=1;

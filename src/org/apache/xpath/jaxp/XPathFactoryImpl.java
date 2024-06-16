@@ -25,7 +25,7 @@ import javax.xml.xpath.XPathFactoryConfigurationException;
 import javax.xml.xpath.XPathFunctionResolver;
 import javax.xml.xpath.XPathVariableResolver;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xpath.res.XPATHErrorResources;
 
 /**

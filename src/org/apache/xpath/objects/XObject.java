@@ -24,7 +24,7 @@ import java.io.Serializable;
 
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMIterator;
 import org.apache.xml.utils.XMLString;

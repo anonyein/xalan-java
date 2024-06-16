@@ -374,7 +374,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "current() \u95a2\u6570\u306f\u5f15\u6570\u3092\u53d7\u3051\u5165\u308c\u307e\u305b\u3093\u3002" },
 
   { ER_DOCUMENT_REPLACED,
-      "document() \u95a2\u6570\u306e\u5b9f\u88c5\u304c org.apache.xalan.xslt.FuncDocument \u306b\u3088\u308a\u7f6e\u304d\u63db\u3048\u3089\u308c\u307e\u3057\u305f\u3002"},
+      "document() \u95a2\u6570\u306e\u5b9f\u88c5\u304c org.apache.xalan3.xslt.FuncDocument \u306b\u3088\u308a\u7f6e\u304d\u63db\u3048\u3089\u308c\u307e\u3057\u305f\u3002"},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "\u30b3\u30f3\u30c6\u30ad\u30b9\u30c8\u306b\u6240\u6709\u8005\u6587\u66f8\u304c\u3042\u308a\u307e\u305b\u3093\u3002"},

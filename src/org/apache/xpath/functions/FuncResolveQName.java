@@ -20,8 +20,8 @@ package org.apache.xpath.functions;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.templates.Constants;
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xalan3.templates.Constants;
+import org.apache.xalan3.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMManager;
 import org.apache.xpath.Expression;

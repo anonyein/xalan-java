@@ -32,7 +32,7 @@ import org.w3c.dom.Node;
  * This interface is not a public API, it is only public because it is
  * used by Xalan.
  * 
- * @see org.apache.xalan.transformer.TransformState
+ * @see org.apache.xalan3.transformer.TransformState
  * @xsl.usage internal
  */
 public interface TransformStateSetter

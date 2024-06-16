@@ -27,7 +27,7 @@ import javax.xml.transform.ErrorListener;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.xslt.util.XslTransformSharedDatastore;
+import org.apache.xalan3.xslt.util.XslTransformSharedDatastore;
 import org.apache.xml.res.XMLErrorResources;
 import org.apache.xml.res.XMLMessages;
 import org.xml.sax.ErrorHandler;

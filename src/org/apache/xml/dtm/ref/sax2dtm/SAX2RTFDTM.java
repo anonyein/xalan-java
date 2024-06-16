@@ -127,7 +127,7 @@ public class SAX2RTFDTM extends SAX2DTM
           
     // NEVER track source locators for RTFs; they aren't meaningful. I think.
     // (If we did track them, we'd need to tail-prune these too.)
-    //org.apache.xalan.processor.TransformerFactoryImpl.m_source_location;
+    //org.apache.xalan3.processor.TransformerFactoryImpl.m_source_location;
     m_useSourceLocationProperty=false;
     m_sourceSystemId = (m_useSourceLocationProperty) ? new StringVector()
                                                      : null;

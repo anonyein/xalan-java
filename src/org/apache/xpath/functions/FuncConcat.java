@@ -22,7 +22,7 @@ package org.apache.xpath.functions;
 
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;

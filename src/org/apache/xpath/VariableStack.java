@@ -23,7 +23,7 @@ package org.apache.xpath;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.res.XPATHErrorResources;
 
@@ -511,25 +511,25 @@ public class VariableStack implements Cloneable
     // qname.  If we reach the top level, use the StylesheetRoot's composed
     // list of top level variables and parameters.
 
-    if (prefixResolver instanceof org.apache.xalan.templates.ElemTemplateElement)
+    if (prefixResolver instanceof org.apache.xalan3.templates.ElemTemplateElement)
     {
       
-      org.apache.xalan.templates.ElemVariable vvar;
+      org.apache.xalan3.templates.ElemVariable vvar;
 
-      org.apache.xalan.templates.ElemTemplateElement prev =
-        (org.apache.xalan.templates.ElemTemplateElement) prefixResolver;
+      org.apache.xalan3.templates.ElemTemplateElement prev =
+        (org.apache.xalan3.templates.ElemTemplateElement) prefixResolver;
 
-      if (!(prev instanceof org.apache.xalan.templates.Stylesheet))
+      if (!(prev instanceof org.apache.xalan3.templates.Stylesheet))
       {
-        while ( !(prev.getParentNode() instanceof org.apache.xalan.templates.Stylesheet) )
+        while ( !(prev.getParentNode() instanceof org.apache.xalan3.templates.Stylesheet) )
         {
-          org.apache.xalan.templates.ElemTemplateElement savedprev = prev;
+          org.apache.xalan3.templates.ElemTemplateElement savedprev = prev;
 
           while (null != (prev = prev.getPreviousSiblingElem()))
           {
-            if (prev instanceof org.apache.xalan.templates.ElemVariable)
+            if (prev instanceof org.apache.xalan3.templates.ElemVariable)
             {
-              vvar = (org.apache.xalan.templates.ElemVariable) prev;
+              vvar = (org.apache.xalan3.templates.ElemVariable) prev;
 
               if (vvar.getName().equals(qname))
                 return getLocalVariable(xctxt, vvar.getIndex());

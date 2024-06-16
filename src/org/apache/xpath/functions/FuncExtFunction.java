@@ -24,8 +24,8 @@ import java.util.Vector;
 
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.res.XSLMessages;
-import org.apache.xalan.templates.XSConstructorFunctionUtil;
+import org.apache.xalan3.res.XSLMessages;
+import org.apache.xalan3.templates.XSConstructorFunctionUtil;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.ExpressionOwner;

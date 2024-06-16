@@ -4,8 +4,8 @@
     <ol> 
       <li>
         <p>Include
-        org.apache.xalan.xslt.client.XSLTProcessorApplet
-        in an HTML client.</p>
+            org.apache.xalan3.xslt.client.XSLTProcessorApplet
+            in an HTML client.</p>
       </li>
       <li>
         <p>Specify the XML source document and XSL

@@ -24,11 +24,11 @@ import java.util.Vector;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.extensions.ExpressionContext;
-import org.apache.xalan.templates.ElemTemplateElement;
-import org.apache.xalan.templates.StylesheetRoot;
-import org.apache.xalan.templates.XMLNSDecl;
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xalan3.extensions.ExpressionContext;
+import org.apache.xalan3.templates.ElemTemplateElement;
+import org.apache.xalan3.templates.StylesheetRoot;
+import org.apache.xalan3.templates.XMLNSDecl;
+import org.apache.xalan3.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionNode;

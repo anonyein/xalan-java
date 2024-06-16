@@ -83,7 +83,7 @@ class XPathNamespaceImpl implements XPathNamespace {
     }
 
     /**
-     * @see org.apache.xalan.dom3.xpath.XPathNamespace#getOwnerElement()
+     * @see org.apache.xalan3.dom3.xpath.XPathNamespace#getOwnerElement()
      */
     public Element getOwnerElement() {
         return ((Attr)m_attributeNode).getOwnerElement(); 

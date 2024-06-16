@@ -57,7 +57,7 @@ more information.</note><br></br>
      can interact with directly (node-set, result tree fragment, string, boolean, and number) as well 
      as values (of any type) that you pass in turn to other extension functions. Extension functions 
      written in Java can also access certain items in the XSLT execution environment through an 
-     <jump href="apidocs/org/apache/xalan/extensions/ExpressionContext.html">ExpressionContext</jump> 
+     <jump href="apidocs/org/apache/xalan3/extensions/ExpressionContext.html">ExpressionContext</jump>
      interface.</p>
   <p>XSLT extensions are specified in the <jump href="http://www.w3.org/TR/xslt#extension">XSLT 
      Recommendation</jump>.  This document focuses on the &xslt4j; implementation of those 
@@ -85,12 +85,12 @@ more information.</note><br></br>
 <anchor name="BSFManager"/>
 <p>By default Xalan-Java assumes BSF support is provided by the Apache Commons BSF implementation. There are three 
    ways of specifying the class that provides the BSF Manager service:.</p>
-<ul><li>Set the system property org.apache.xalan.extensions.bsf.BSFManager;</li>
-    <li>In the property file "/lib/xalan.properties" in the JRE directory, add the key 
-    org.apache.xalan.extensions.bsf.BSFManager with the value that is the fully qualified BSF 
-    implementation class name;</li>
-    <li>Include a META-INF/services/org.apache.xalan.extensions.bsf.BSFManager 
-    file in your classpath;</li>
+<ul><li>Set the system property org.apache.xalan3.extensions.bsf.BSFManager;</li>
+    <li>In the property file "/lib/xalan.properties" in the JRE directory, add the key
+        org.apache.xalan3.extensions.bsf.BSFManager with the value that is the fully qualified BSF
+        implementation class name;</li>
+    <li>Include a META-INF/services/org.apache.xalan3.extensions.bsf.BSFManager
+        file in your classpath;</li>
 </ul>
 </s2><anchor name="basic-pattern"/>
 <s2 title="The basic pattern">
@@ -267,25 +267,26 @@ explained in <link anchor="java-namespace-declare">Declare the namespace</link>.
 <s2 title="Using an extension element">
 <p>Extension elements pass the extension two objects:</p>
 <ul>
-<li><jump href="apidocs/org/apache/xalan/extensions/XSLProcessorContext.html">
-org.apache.xalan.extensions.XSLProcessorContext</jump>, which provides access to the XSL processor, 
+<li><jump href="apidocs/org/apache/xalan3/extensions/XSLProcessorContext.html">
+    org.apache.xalan3.extensions.XSLProcessorContext</jump>, which provides access to the XSL processor,
 the XML source tree, the stylesheet tree, the current context node, and the current mode (if any).
 <br/><br/></li>
-<li><jump href="apidocs/org/apache/xalan/templates/ElemExtensionCall.html">
-org.apache.xalan.templates.ElemExtensionCall</jump>, which provides the API for interacting with 
+<li><jump href="apidocs/org/apache/xalan3/templates/ElemExtensionCall.html">
+    org.apache.xalan3.templates.ElemExtensionCall</jump>, which provides the API for interacting with
 the extension element.</li>
 </ul>
 <p>You can use the ElemExtensionCall getAttribute(String name) method, for example, to read element 
 attributes in their raw form.  Use the getAttribute(String name, Node sourceNode, XSLTEngineImpl 
 processor) method to evaluate the attribute as an attribute value template.  Note that the method 
 names are the same but the method signatures are different.  For full details, see the 
-<jump href="apidocs/org/apache/xalan/templates/ElemExtensionCall.html">Javadoc</jump> for the 
+<jump href="apidocs/org/apache/xalan3/templates/ElemExtensionCall.html">Javadoc</jump> for the
 ElemExtensionCall class.</p>
 <s3 title="Implementing an extension element">
 <p>For each extension element in a namespace, the implementation must be a Java method with the 
 following signature, or the scripting language equivalent:</p>
-<p><code><ref>Type element</ref>(org.apache.xalan.extensions.XSLProcessorContext, </code><br/>
-<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;org.apache.xalan.templates.ElemExtensionCall extensionElement)</code></p>
+<p><code><ref>Type element</ref>(org.apache.xalan3.extensions.XSLProcessorContext, </code><br/>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;org.apache.xalan3.templates.ElemExtensionCall
+    extensionElement)</code></p>
 <p>where <ref>Type</ref> designates the return type and <ref>element</ref> is the local part of the 
 extension element name (the element name without the namespace prefix). In the method signature, you 
 may also use superclasses of the indicated types.</p>
@@ -295,8 +296,9 @@ the arguments and return value are untyped.</p>
 If you are not interested in a return value, use a public void Java method or return null from a 
 scripting language function.</p>
 <p>Java example: <code>public void myElement</code><br/>
-<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(org.apache.xalan.extensions.XSLProcessorContext, </code><br/>
-<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;org.apache.xalan.templates.ElemExtensionCall extensionElement)</code></p>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(org.apache.xalan3.extensions.XSLProcessorContext,</code><br/>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;org.apache.xalan3.templates.ElemExtensionCall
+    extensionElement)</code></p>
 <p>JavaScript example: <code>function myElement(xslProcContext, element)</code></p>
 <p>The <link idref="extensionslib" anchor="redirect">Redirect extension</link> in the extensions 
 library contains three extension elements.</p>
@@ -395,7 +397,7 @@ any of the indicated Java types, as explained below:</p>
       type. If more than one method has the highest score, an exception is thrown.</li>
 </ol>
 <p>Any extension function written in Java can have a first parameter of 
-type <code>org.apache.xalan.extensions.ExpressionContext</code>. Any method with an 
+type <code>org.apache.xalan3.extensions.ExpressionContext</code>. Any method with an
 ExpressionContext as the first parameter will score higher than any method which does not have an 
 ExpressionContext as a first parameter.</p>
 </s3>
@@ -607,7 +609,7 @@ function name (the function name without the namespace prefix), and <ref>args</r
 arguments in the function call.</p>
 <p>In addition, for extension functions implemented in Java, the implementation may include either a 
 Java method with the signature shown above or one with the following signature:</p>
-<p><code>public <ref> object function</ref>(org.apache.xalan.extensions.ExpressionContext, 
+<p><code>public <ref> object function</ref>(org.apache.xalan3.extensions.ExpressionContext,
 <ref>args</ref>)</code></p>
 </s3>
 </s2><anchor name="java-namespace"/>
@@ -733,47 +735,47 @@ to do the same. Both examples include equivalent extension elements and an exten
 <p>MyCounter.java</p>
 <source>Import java.util.*;
 
-public class MyCounter {
-  Hashtable counters = new Hashtable ();
+    public class MyCounter {
+    Hashtable counters = new Hashtable ();
 
-  public MyCounter () 
-  {}
+    public MyCounter ()
+    {}
 
-  public void init
-             ( org.apache.xalan.extensions.XSLProcessorContext context,
-               org.apache.xalan.templates.ElemExtensionCall extElem ) 
-  {
+    public void init
+    ( org.apache.xalan3.extensions.XSLProcessorContext context,
+    org.apache.xalan3.templates.ElemExtensionCall extElem )
+    {
     String name = extElem.getAttribute("name");
     String value = extElem.getAttribute("value");
     int val;
-    try 
+    try
     {
-      val = Integer.parseInt (value);
-    } 
-    catch (NumberFormatException e) 
+    val = Integer.parseInt (value);
+    }
+    catch (NumberFormatException e)
     {
-      e.printStackTrace ();
-      val = 0;
+    e.printStackTrace ();
+    val = 0;
     }
     counters.put (name, new Integer (val));
-  }
+    }
 
-  public int read(String name) 
-  {
+    public int read(String name)
+    {
     Integer cval = (Integer) counters.get (name);
     return (cval == null) ? 0 : cval.intValue ();
-  }
+    }
 
-  public void incr
-             ( org.apache.xalan.extensions.XSLProcessorContext context,
-               org.apache.xalan.templates.ElemExtensionCall extElem) 
-  {
+    public void incr
+    ( org.apache.xalan3.extensions.XSLProcessorContext context,
+    org.apache.xalan3.templates.ElemExtensionCall extElem)
+    {
     String name = extElem.getAttribute("name");
     Integer cval = (Integer) counters.get(name);
     int nval = (cval == null) ? 0 : (cval.intValue () + 1);
     counters.put (name, new Integer (nval));
-  }
-}
+    }
+    }
 </source>
 <p>An XML source document:</p>
 <source>&lt;?xml version="1.0"?&gt;

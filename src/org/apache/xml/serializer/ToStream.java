@@ -115,7 +115,7 @@ abstract public class ToStream extends SerializerBase
      * The system line separator for writing out line breaks.
      * The default value is from the system property,
      * but this value can be set through the xsl:output
-     * extension attribute xalan:line-separator.
+     * extension attribute xalan3:line-separator.
      */
     protected char[] m_lineSep = s_systemLineSep;
         

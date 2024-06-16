@@ -618,7 +618,7 @@ public class FunctionTable
     m_functions[FUNC_COUNT] = org.apache.xpath.functions.FuncCount.class;
     m_functions[FUNC_ID] = org.apache.xpath.functions.FuncId.class;
     m_functions[FUNC_KEY] =
-      org.apache.xalan.templates.FuncKey.class;
+      org.apache.xalan3.templates.FuncKey.class;
     m_functions[FUNC_LOCAL_NAME] = 
       org.apache.xpath.functions.FuncLocalName.class;
     m_functions[FUNC_NAMESPACE_URI] = 
@@ -683,13 +683,13 @@ public class FunctionTable
     m_functions[FUNC_REPLACE] = 
       org.apache.xpath.functions.FuncReplace.class;
     m_functions[FUNC_CURRENT_GROUPING_KEY] = 
-      org.apache.xalan.templates.FuncCurrentGroupingKey.class;
+      org.apache.xalan3.templates.FuncCurrentGroupingKey.class;
     m_functions[FUNC_CURRENT_GROUP] = 
-      org.apache.xalan.templates.FuncCurrentGroup.class;
+      org.apache.xalan3.templates.FuncCurrentGroup.class;
     m_functions[FUNC_ABS] = 
       org.apache.xpath.functions.FuncAbs.class;
     m_functions[FUNC_REGEX_GROUP] = 
-      org.apache.xalan.templates.FuncRegexGroup.class;
+      org.apache.xalan3.templates.FuncRegexGroup.class;
     m_functions[FUNC_TOKENIZE] = 
       org.apache.xpath.functions.FuncTokenize.class;
     m_functions[FUNC_UNPARSED_TEXT] = 

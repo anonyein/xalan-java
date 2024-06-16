@@ -20,7 +20,7 @@
  */
 package org.apache.xpath;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMFilter;
 import org.apache.xml.dtm.DTMIterator;

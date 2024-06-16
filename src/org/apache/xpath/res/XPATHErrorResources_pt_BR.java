@@ -375,7 +375,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "A fun\u00e7\u00e3o current() n\u00e3o aceita argumentos!" },
 
   { ER_DOCUMENT_REPLACED,
-      "A implementa\u00e7\u00e3o da fun\u00e7\u00e3o document() foi substitu\u00edda por org.apache.xalan.xslt.FuncDocument!"},
+      "A implementa\u00e7\u00e3o da fun\u00e7\u00e3o document() foi substitu\u00edda por org.apache.xalan3.xslt.FuncDocument!"},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "context n\u00e3o possui um documento do propriet\u00e1rio!"},

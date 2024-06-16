@@ -42,7 +42,7 @@ file build.xml provided by XalanJ xalan-test git repos.
 
 <!-- Note: A number of property names may seem a little odd.  I've 
      explicitly tried to reduce property name collisions between 
-     this file and xml-xalan/java/build.xml to try to simplify 
+     this file and xml-xalan3/java/build.xml to try to simplify
      maintenance (or at least to separate the dev stuff from the 
      testing stuff).  Suggestions for improvements (along with 
      maintenance strategies) accepted. 
@@ -143,7 +143,7 @@ file build.xml provided by XalanJ xalan-test git repos.
     </path>
 
     <!-- Note: given that many of the tests interact with xerces and 
-         xalan classes, and that Ant may use these classes (especially parser 
+         xalan3 classes, and that Ant may use these classes (especially parser
          ones) I've found it's best to fork the tests.
          Later I'd like to give the user the option to fork or not, since 
          while forking is slower and problematic on some systems, it is 
@@ -205,7 +205,7 @@ file build.xml provided by XalanJ xalan-test git repos.
 	   <pathelement path="${sun.boot.class.path}" />
 	</path>
 
-    <!-- Gump build xml-xalan2-smoketest should use xalan.unbundled.jar -->
+    <!-- Gump build xml-xalan2-smoketest should use xalan3.unbundled.jar -->
     <path id="boot.class.path.gump">
         <pathelement location="${sun.boot.class.path}" />
     </path>
@@ -347,7 +347,7 @@ file build.xml provided by XalanJ xalan-test git repos.
     </target>
     
     <target name="run.xalan-extension-test" >
-        <!-- <antcall target="run.xalan-extension-test.gump"/> -->
+        <!-- <antcall target="run.xalan3-extension-test.gump"/> -->
         <antcall target="run.xalan-extension-test.normal"/>
     </target>
 
@@ -358,7 +358,7 @@ file build.xml provided by XalanJ xalan-test git repos.
             bootclasspathref="boot.class.path.gump"
             fork="${fork-tests}"
             failonerror="${fail-on-error}" >
-            <sysproperty key="org.apache.xalan.extensions.bsf.BSFManager"
+            <sysproperty key="org.apache.xalan3.extensions.bsf.BSFManager"
                          value="${sysprop.BSFManager}" />
         </xalantest>
     </target>
@@ -370,7 +370,7 @@ file build.xml provided by XalanJ xalan-test git repos.
             bootclasspathref="boot.class.path"
             fork="${fork-tests}"
             failonerror="${fail-on-error}" >
-            <sysproperty key="org.apache.xalan.extensions.bsf.BSFManager"
+            <sysproperty key="org.apache.xalan3.extensions.bsf.BSFManager"
                          value="${sysprop.BSFManager}" />
         </xalantest>    
     </target>
@@ -569,7 +569,7 @@ file build.xml provided by XalanJ xalan-test git repos.
             <param name="xalantest.classpathref" value="conf.class.path" />
             <!-- Explicitly set TransformerFactory property to use xsltc -->
             <param name="sysprop.transfact"
-                   value="org.apache.xalan.xsltc.trax.TransformerFactoryImpl" />
+                   value="org.apache.xalan3.xsltc.trax.TransformerFactoryImpl" />
         </antcall>
         <antcall target="scan">
             <param name="scan.outputDir" value="${conferr.xsltc.outputDir}" />
@@ -1554,7 +1554,7 @@ file build.xml provided by XalanJ xalan-test git repos.
 
         <!-- Build .tars, then .gzs, then cleanup .tars before doing .zips -->
         <!-- Note ../.. paths to ensure archives start with 
-             top-level xml-xalan/test/blah directories
+             top-level xml-xalan3/test/blah directories
         -->
         <property name="tarzip-backref" value="../.."/>
         <property name="tarzip-fwdref" value="xml-xalan/test"/>
@@ -1643,11 +1643,11 @@ file build.xml provided by XalanJ xalan-test git repos.
 
     <!-- ================================================================== -->
     <!-- Special: Targets specific to XSLTC which requires extra .jars      -->
-    <!-- This section will be updated as xsltc integrates more with xalan   -->
+    <!-- This section will be updated as xsltc integrates more with xalan3   -->
     <!-- ================================================================== -->
     <!-- Actually, I'd like to figure out some sneaky Ant trick to 
          allow swapping of parts of classpaths (i.e. swap in xsltc.jar 
-         and related files instead of xalan.jar; likewise replace 
+         and related files instead of xalan3.jar; likewise replace
          xercesImpl.jar with the PARSER_JAR defined outside) to clean 
          this section up.  But for the time being I'm planning on 
          simply maintaining separate-but-equal targets.xsltc
@@ -1695,7 +1695,7 @@ file build.xml provided by XalanJ xalan-test git repos.
 	              value="xsltc.runtime.class.path" />
 	       <!-- Explicitly set TransformerFactory property to use xsltc -->
 	       <param name="sysprop.transfact"
-	              value="org.apache.xalan.xsltc.trax.TransformerFactoryImpl" />
+	              value="org.apache.xalan3.xsltc.trax.TransformerFactoryImpl" />
 	    </antcall>
 	    <property name="scan.outputDir" value="${conf.xsltc.outputDir}"/>
 	    <antcall target="scan" />
@@ -1726,7 +1726,7 @@ file build.xml provided by XalanJ xalan-test git repos.
                    value="xsltc.runtime.class.path" />
             <!-- Explicitly set TransformerFactory property to use xsltc -->
             <param name="sysprop.transfact"
-                   value="org.apache.xalan.xsltc.trax.TransformerFactoryImpl" />
+                   value="org.apache.xalan3.xsltc.trax.TransformerFactoryImpl" />
         </antcall>
         <antcall target="scan">
             <param name="scan.outputDir" value="${perf.xsltc.outputDir}"/>
@@ -1766,7 +1766,7 @@ file build.xml provided by XalanJ xalan-test git repos.
                    value="xsltc.compile.class.path" />
             <!-- Explicitly set TransformerFactory property to use xsltc -->
             <param name="sysprop.transfact"
-                   value="org.apache.xalan.xsltc.trax.TransformerFactoryImpl" />
+                   value="org.apache.xalan3.xsltc.trax.TransformerFactoryImpl" />
         </antcall>
     </target>
 

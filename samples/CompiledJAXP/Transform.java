@@ -46,7 +46,7 @@ public class Transform {
         try {
             // Set XSLTC's TransformerFactory implementation as the default
             System.setProperty("javax.xml.transform.TransformerFactory",
-                         "org.apache.xalan.xsltc.trax.TransformerFactoryImpl");
+                         "org.apache.xalan3.xsltc.trax.TransformerFactoryImpl");
 
             TransformerFactory tf = TransformerFactory.newInstance();
             tf.setAttribute("use-classpath", Boolean.TRUE);

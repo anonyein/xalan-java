@@ -33,7 +33,7 @@ fi
 #release or in the root direcctory for a binary release.
 
 
-if [ -f ../../../build/xalan.jar ] ; then
+if [ -f ../../../build/xalan3.jar ] ; then
 echo "Configuring Xalan for a Source build"
 _XALAN_DIR=../../../build/
 else
@@ -58,7 +58,7 @@ if [ "$XML_APIS_JAR" = "" ] ; then
 fi
 
 if [ "$XALAN_JAR" = "" ] ; then
-    XALAN_JAR=$_XALAN_DIR/xalan.jar
+    XALAN_JAR=$_XALAN_DIR/xalan3.jar
     SERIALIZER_JAR=$_XALAN_DIR/serializer.jar 
 fi
 
@@ -86,7 +86,7 @@ _ENDORSED_DIR=${_XALAN_DIR}${CLPATHSEP}${_JAR_DIR}
 echo "Running Xalan: $@"
 echo "...with classpath: $_CLASSPATH"
 
-"$_JAVACMD" $JAVA_OPTS -Djava.endorsed.dirs=$_ENDORSED_DIR -classpath "$_CLASSPATH" -Dij.protocol=jdbc:derby: org.apache.xalan.xslt.Process $@
+"$_JAVACMD" $JAVA_OPTS -Djava.endorsed.dirs=$_ENDORSED_DIR -classpath "$_CLASSPATH" -Dij.protocol=jdbc:derby: org.apache.xalan3.xslt.Process $@
 
 
 

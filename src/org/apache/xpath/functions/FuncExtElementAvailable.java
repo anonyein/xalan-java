@@ -20,8 +20,8 @@
  */
 package org.apache.xpath.functions;
 
-import org.apache.xalan.templates.Constants;
-import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan3.templates.Constants;
+import org.apache.xalan3.transformer.TransformerImpl;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.ExtensionsProvider;
 import org.apache.xpath.XPathContext;

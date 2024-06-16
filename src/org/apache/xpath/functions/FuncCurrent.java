@@ -20,8 +20,8 @@
  */
 package org.apache.xpath.functions;
 
-import org.apache.xalan.res.XSLMessages;
-import org.apache.xalan.res.XSLTErrorResources;
+import org.apache.xalan3.res.XSLMessages;
+import org.apache.xalan3.res.XSLTErrorResources;
 import org.apache.xml.dtm.DTM;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;

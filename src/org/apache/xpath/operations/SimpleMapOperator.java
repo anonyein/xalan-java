@@ -21,7 +21,7 @@ import javax.xml.XMLConstants;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.templates.XSConstructorFunctionUtil;
+import org.apache.xalan3.templates.XSConstructorFunctionUtil;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMIterator;
 import org.apache.xpath.XPathContext;

@@ -78,7 +78,7 @@
         </p>
         <p>You can run this utility from the command line as follows:</p>
         <p>
-          <code>java org.apache.xalan.xslt.EnvironmentCheck [-out outFile]</code>
+          <code>java org.apache.xalan3.xslt.EnvironmentCheck [-out outFile]</code>
         </p>
         <p>You can also call this utility from within your application. For example,</p>
         <p>
@@ -212,12 +212,15 @@
         when your applet attempts to use the &xslt4jc-short; implementation.</p>
         <p>To work around this problem, you can change the contents of the 
         META-INF/services/javax.xml.transform.TransformerFactory file in xalan.jar so that it refers to the
-        transformer factory class implementation for &xslt4jc-short;, org.apache.xalan.xsltc.trax.TransformerFactoryImpl. </p>
-        <p>Another solution is to create a jar that contains a META-INF/services/javax.xml.transform.TransformerFactory file 
-        containing the value org.apache.xalan.xsltc.trax.TransformerFactoryImpl.  Place the jar in the 
-         &lt;jre-home&gt;\lib\endorsed directory. When you name your jar file, the ASCII code of the first 
-        character should be smaller than the ASCII code of "X" to ensure that your jar will be loaded before 
-        xalan.jar</p>
+        transformer factory class implementation for &xslt4jc-short;, org.apache.xalan3.xsltc.trax.TransformerFactoryImpl. </p>
+        <p>Another solution is to create a jar that contains a
+            META-INF/services/javax.xml.transform.TransformerFactory file
+            containing the value org.apache.xalan3.xsltc.trax.TransformerFactoryImpl. Place the jar
+            in the &lt;jre-home&gt;\lib\endorsed directory. When you name your jar file, the ASCII
+            code of the first
+            character should be smaller than the ASCII code of "X" to ensure that your jar will be
+            loaded before
+            xalan.jar</p>
       </a>
     </faq>        
     <faq title="Using the 'signature' file to verify a download">
@@ -642,7 +645,7 @@ file:///
          transformation?</q>
       <a>
         <p>Use or mimic the command-line processor (<jump 
-                       href='apidocs/org/apache/xalan/xslt/Process.html'>org.apache.xalan.xslt.Process</jump>).
+                       href='apidocs/org/apache/xalan3/xslt/Process.html'>org.apache.xalan3.xslt.Process</jump>).
         </p>
         <p>A
           <jump href='apidocs/javax/xml/transform/TransformerException.html'>TransformerException</jump> generally wraps another exception, often a SAXParseException. The command-line processor uses the static

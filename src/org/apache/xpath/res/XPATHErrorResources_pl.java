@@ -374,7 +374,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "Funkcja current() nie akceptuje argument\u00f3w!" },
 
   { ER_DOCUMENT_REPLACED,
-      "Implementacja funkcji document() zosta\u0142a zast\u0105piona przez org.apache.xalan.xslt.FuncDocument!"},
+      "Implementacja funkcji document() zosta\u0142a zast\u0105piona przez org.apache.xalan3.xslt.FuncDocument!"},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "Kontekst nie ma dokumentu w\u0142a\u015bciciela!"},

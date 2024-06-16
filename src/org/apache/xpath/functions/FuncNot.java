@@ -20,7 +20,7 @@
  */
 package org.apache.xpath.functions;
 
-import org.apache.xalan.templates.XSConstructorFunctionUtil;
+import org.apache.xalan3.templates.XSConstructorFunctionUtil;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XObject;

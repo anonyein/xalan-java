@@ -22,7 +22,7 @@ package org.apache.xpath.jaxp;
 import javax.xml.transform.TransformerException;
 import javax.xml.xpath.XPathVariableResolver;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.VariableStack;
 import org.apache.xpath.XPathContext;

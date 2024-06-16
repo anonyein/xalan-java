@@ -136,7 +136,7 @@ public class SourceTreeManager
     return source;
   }
 
-  /** JJK: Support  <?xalan:doc_cache_off?> kluge in ElemForEach.
+  /** JJK: Support  <?xalan3:doc_cache_off?> kluge in ElemForEach.
    * TODO: This function is highly dangerous. Cache management must be improved.
    *
    * @param n The node to remove.

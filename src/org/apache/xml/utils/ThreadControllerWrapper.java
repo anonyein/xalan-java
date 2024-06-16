@@ -59,7 +59,7 @@ public class ThreadControllerWrapper
      *
      * NEEDSDOC @param task
      * @param priority if >0 the task will run with the given priority
-     *  ( doesn't seem to be used in xalan, since it's allways the default )
+     *  ( doesn't seem to be used in xalan3, since it's allways the default )
      * @return  The thread that is running the task, can be used
      *          to wait for completion
      */

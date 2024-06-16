@@ -609,7 +609,7 @@ implements IncrementalSAXSource, ContentHandler, DTDHandler, LexicalHandler, Err
     fXMLReaderInputSource=source;
     
     // Xalan thread pooling...
-    // org.apache.xalan.transformer.TransformerImpl.runTransformThread(this);
+    // org.apache.xalan3.transformer.TransformerImpl.runTransformThread(this);
     ThreadControllerWrapper.runThread(this, -1);
   }
   

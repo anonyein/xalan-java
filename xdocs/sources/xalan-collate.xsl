@@ -21,18 +21,18 @@
 <xsl:template match ="/">
   <documentation>
     <chapter id="index"><xsl:copy-of select="document('xalan/dtm.xml')"/></chapter>  
-    <!--chapter id="index"><xsl:copy-of select="document('xalan/index.xml')"/></chapter>  
-    <chapter id="whatsnew"><xsl:copy-of select="document('xalan/whatsnew.xml')"/></chapter>
-    <chapter id="overview"><xsl:copy-of select="document('xalan/overview.xml')"/></chapter>
-    <chapter id="getstarted"><xsl:copy-of select="document('xalan/getstarted.xml')"/></chapter>
-    <chapter id="faq"><xsl:copy-of select="document('xalan/faq.xml')"/></chapter>
-    <chapter id="samples"><xsl:copy-of select="document('xalan/samples.xml')"/></chapter>
-    <chapter id="commandline"><xsl:copy-of select="document('xalan/commandline.xml')"/></chapter>
-    <chapter id="usagepatterns"><xsl:copy-of select="document('xalan/usagepatterns.xml')"/></chapter>
-    <chapter id="trax"><xsl:copy-of select="document('xalan/trax.xml')"/></chapter>
-    <chapter id="extensions"><xsl:copy-of select="document('xalan/extensions.xml')"/></chapter>
-    <chapter id="extensionslib"><xsl:copy-of select="document('xalan/extensionslib.xml')"/></chapter>
-    <chapter id="readme"><xsl:copy-of select="document('xalan/readme.xml')"/></chapter>
+    <!--chapter id="index"><xsl:copy-of select="document('xalan3/index.xml')"/></chapter>
+    <chapter id="whatsnew"><xsl:copy-of select="document('xalan3/whatsnew.xml')"/></chapter>
+    <chapter id="overview"><xsl:copy-of select="document('xalan3/overview.xml')"/></chapter>
+    <chapter id="getstarted"><xsl:copy-of select="document('xalan3/getstarted.xml')"/></chapter>
+    <chapter id="faq"><xsl:copy-of select="document('xalan3/faq.xml')"/></chapter>
+    <chapter id="samples"><xsl:copy-of select="document('xalan3/samples.xml')"/></chapter>
+    <chapter id="commandline"><xsl:copy-of select="document('xalan3/commandline.xml')"/></chapter>
+    <chapter id="usagepatterns"><xsl:copy-of select="document('xalan3/usagepatterns.xml')"/></chapter>
+    <chapter id="trax"><xsl:copy-of select="document('xalan3/trax.xml')"/></chapter>
+    <chapter id="extensions"><xsl:copy-of select="document('xalan3/extensions.xml')"/></chapter>
+    <chapter id="extensionslib"><xsl:copy-of select="document('xalan3/extensionslib.xml')"/></chapter>
+    <chapter id="readme"><xsl:copy-of select="document('xalan3/readme.xml')"/></chapter>
     <chapter id="api">
       <s1 title="Java API">
         <p>Javadoc for the entire Xalan-Java API:</p>

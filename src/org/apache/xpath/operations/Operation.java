@@ -22,7 +22,7 @@ package org.apache.xpath.operations;
 
 import javax.xml.XMLConstants;
 
-import org.apache.xalan.templates.XSConstructorFunctionUtil;
+import org.apache.xalan3.templates.XSConstructorFunctionUtil;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPathContext;

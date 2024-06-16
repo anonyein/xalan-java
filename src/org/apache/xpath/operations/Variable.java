@@ -24,7 +24,7 @@ import java.util.Map;
 
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
@@ -261,7 +261,7 @@ public class Variable extends Expression implements PathComponent
    * this to work, the SourceLocator must be the owning ElemTemplateElement.
    * @return The dereference to the ElemVariable, or null if not found.
    */
-  public org.apache.xalan.templates.ElemVariable getElemVariable()
+  public org.apache.xalan3.templates.ElemVariable getElemVariable()
   {
   	
     // Get the current ElemTemplateElement, and then walk backwards in 
@@ -270,26 +270,26 @@ public class Variable extends Expression implements PathComponent
     // qname.  If we reach the top level, use the StylesheetRoot's composed
     // list of top level variables and parameters.
     
-    org.apache.xalan.templates.ElemVariable vvar = null;	
+    org.apache.xalan3.templates.ElemVariable vvar = null;
     org.apache.xpath.ExpressionNode owner = getExpressionOwner();
 
-    if (null != owner && owner instanceof org.apache.xalan.templates.ElemTemplateElement)
+    if (null != owner && owner instanceof org.apache.xalan3.templates.ElemTemplateElement)
     {
 
-      org.apache.xalan.templates.ElemTemplateElement prev = 
-        (org.apache.xalan.templates.ElemTemplateElement) owner;
+      org.apache.xalan3.templates.ElemTemplateElement prev =
+        (org.apache.xalan3.templates.ElemTemplateElement) owner;
 
-      if (!(prev instanceof org.apache.xalan.templates.Stylesheet))
+      if (!(prev instanceof org.apache.xalan3.templates.Stylesheet))
       {            
-        while ( prev != null && !(prev.getParentNode() instanceof org.apache.xalan.templates.Stylesheet) )
+        while ( prev != null && !(prev.getParentNode() instanceof org.apache.xalan3.templates.Stylesheet) )
         {
-          org.apache.xalan.templates.ElemTemplateElement savedprev = prev;
+          org.apache.xalan3.templates.ElemTemplateElement savedprev = prev;
 
           while (null != (prev = prev.getPreviousSiblingElem()))
           {
-            if(prev instanceof org.apache.xalan.templates.ElemVariable)
+            if(prev instanceof org.apache.xalan3.templates.ElemVariable)
             {
-              vvar = (org.apache.xalan.templates.ElemVariable) prev;
+              vvar = (org.apache.xalan3.templates.ElemVariable) prev;
             
               if (vvar.getName().equals(m_qname))
               {
@@ -327,7 +327,7 @@ public class Variable extends Expression implements PathComponent
    */
   public int getAnalysisBits()
   {
-  	org.apache.xalan.templates.ElemVariable vvar = getElemVariable();
+  	org.apache.xalan3.templates.ElemVariable vvar = getElemVariable();
   	if(null != vvar)
   	{
   		XPath xpath = vvar.getSelect();

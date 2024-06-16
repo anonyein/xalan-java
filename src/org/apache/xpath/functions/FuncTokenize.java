@@ -25,7 +25,7 @@ import java.util.List;
 
 import javax.xml.transform.SourceLocator;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xml.utils.XMLString;
 import org.apache.xml.utils.XMLStringFactory;
 import org.apache.xpath.XPathContext;

@@ -301,7 +301,7 @@ public class SAX2DTM extends DTMDefaultBaseIterators
 
     //m_dataOrQName = new SuballocatedIntVector(blocksize);
     
-    // m_useSourceLocationProperty=org.apache.xalan.processor.TransformerFactoryImpl.m_source_location;
+    // m_useSourceLocationProperty=org.apache.xalan3.processor.TransformerFactoryImpl.m_source_location;
     m_useSourceLocationProperty = mgr.getSource_location();
     m_sourceSystemId = (m_useSourceLocationProperty) ? new StringVector() : null;
  	m_sourceLine = (m_useSourceLocationProperty) ?  new IntVector() : null;

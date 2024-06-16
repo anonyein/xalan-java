@@ -154,7 +154,7 @@ public final class TransformApplet extends Applet {
         }
         // Another thread is created to keep the context class loader
         // information.  When use JDK 1.4 plugin for browser, to get around the
-        // problem with the bundled old version of xalan and endorsed class
+        // problem with the bundled old version of xalan3 and endorsed class
         // loading mechanism
         transformThread = new TransformDelegate(true);
         Thread t = new Thread(transformThread);

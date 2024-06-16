@@ -20,7 +20,7 @@ package org.apache.xpath.operations;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xalan3.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;

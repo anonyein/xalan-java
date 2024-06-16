@@ -58,7 +58,7 @@ Authors:
   
 This file has been written, to enable building XalanJ from XalanJ 
 source distribution. This file is largely, a copy of the file build.xml
-provided by XalanJ xalan-java git repos.   
+provided by XalanJ xalan3-java git repos.
 
 $Id$
 ==================================================================== -->
@@ -98,7 +98,7 @@ $Id$
   <property name="apachexml.reldir"       value="org/apache/xml"/>
   <property name="serializer.reldir"      value="org/apache/xml/serializer"/>
   <property name="xpath.reldir"           value="org/apache/xpath"/>
-  <property name="xalan.reldir"           value="org/apache/xalan"/>
+  <property name="xalan.reldir"           value="org/apache/xalan3"/>
   <property name="domxpath.reldir"        value="org/w3c/dom/xpath"/>
   <property name="xsltc.reldir"           value="${xalan.reldir}/xsltc"/>  
 
@@ -138,7 +138,7 @@ $Id$
   <property name="manifest.mf"            value="./src/MANIFEST.MF"/>
   <property name="manifest.xsltc.mf"      value="./src/manifest.xsltc"/>
   <property name="manifest.xalan-interpretive.mf" value="./src/manifest.xalan-interpretive"/>  
-  <property name="XSLTInfo.props"         value="./src/org/apache/xalan/res/XSLTInfo.properties"/>  
+  <property name="XSLTInfo.props"         value="./src/org/apache/xalan3/res/XSLTInfo.properties"/>
   <property name="generated.xpathparser"  value="${src.dir}/${xsltc.reldir}/compiler/XPathParser.java"/>
   <property name="generated.xpathlexer"   value="${src.dir}/${xsltc.reldir}/compiler/XPathLexer.java"/>
   <property name="generated.xpathsym"     value="${src.dir}/${xsltc.reldir}/compiler/sym.java"/>
@@ -176,7 +176,7 @@ $Id$
   <property name="xdocs.style"                  value="${xdocs.dir}/style"/>
   <property name="xalanonly-styledocs"
             value="dtd/xsl-html40s.dtd,dtd/spec.dtd,stylesheets/patterns.xsl,stylesheets/notice.xsl,stylesheets/spec.xsl,stylesheets/done.xsl,loaderdesign.xml,stylesheets/design2project.xsl,stylesheets/designdoc2html.xsl,stylesheets/xml2fo.xsl"/>
-  <property name="xalan.cmdline.class"          value="org.apache.xalan.xslt.Process"/>
+  <property name="xalan.cmdline.class"          value="org.apache.xalan3.xslt.Process"/>
   <property name="doc.generator"                value="org.apache.stylebook.StyleBook"/>
   <property name="doc.generator.styletargz"     value="${xdocs.dir}/xml-site-style.tar.gz"/>
   <property name="doc.generator.styletar"       value="${xdocs.dir}/xml-site-style.tar"/>
@@ -241,7 +241,7 @@ $Id$
   </path>
 	
   <path id="xslt.boot.class.path">
-	 <!-- Put this version of xalan in front of the jdk's for JDK 1.4+ -->
+	 <!-- Put this version of xalan3 in front of the jdk's for JDK 1.4+ -->
 	 <pathelement location="${xmlapis.jar}" />
 	 <pathelement location="${build.serializer.jar}" />    
 	 <pathelement location="${parser.jar}" />
@@ -367,7 +367,7 @@ $Id$
 
     <!-- We use a sed script to extract Xalan-Java 2 commits from the repository into commits.xml
          The following operation transforms commits.xml (just including source code commits) and 
-         puts the result in xdocs/sources/xalan for inclusion in the readme.xml -->      
+         puts the result in xdocs/sources/xalan3 for inclusion in the readme.xml -->
     <echo message="Transform commits.xml and put the result in ${xdocs.dir}"/>
     <java fork="yes" classname="${xalan.cmdline.class}" >
       <classpath refid="docs.class.path" />
@@ -433,7 +433,7 @@ $Id$
       <fileset dir="${src.dir}" includes="**/*.properties,META-INF/services/*" excludes="**/XSLTInfo.properties"/>
     </copy>  
     <filter token="impl.version" value="${impl.version}"/>
-    <copy todir="${build.classes}/org/apache/xalan/res" file="${XSLTInfo.props}" filtering="true"/>
+    <copy todir="${build.classes}/org/apache/xalan3/res" file="${XSLTInfo.props}" filtering="true"/>
   </target>
   
   <!-- Compile all java sources (Xalan interpretive and XSLTC) -->
@@ -452,7 +452,7 @@ $Id$
     <pathelement location="${java_cup.jar}" />
     <pathelement location="${runtime.jar}" />
     <!-- build.classes needed for 
-         org.apache.xalan.xsltc.util.JavaCupRedirect -->
+         org.apache.xalan33.xsltc.util.JavaCupRedirect -->
     <pathelement location="${build.classes}" />
     <pathelement path="${java.class.path}" />
   </path>
@@ -496,7 +496,7 @@ $Id$
     <!-- The second step generates sym.java and XPathParser.java. -->
     <echo message="java_cup preparsing"/>
     <java fork="yes" failonerror="true" 
-       classname="org.apache.xalan.xsltc.util.JavaCupRedirect" >
+       classname="org.apache.xalan3.xsltc.util.JavaCupRedirect" >
       <classpath refid="xsltc.class.path" />
       <!-- need to bootclasspath java_cup for JDKs that include JavaCupRedirect -->
       <jvmarg value="-Xbootclasspath/p:${java_cup.jar}${path.separator}${runtime.jar}"/>
@@ -565,7 +565,7 @@ $Id$
       <patternset><!-- relative to jar/@basedir -->
         <include name="org/apache/xml/**" />
         <include name="${xsltc.reldir}/**/*" />
-        <exclude name="org/apache/xalan/xsltc/util/JavaCupRedirect*" />
+        <exclude name="org/apache/xalan3/xsltc/util/JavaCupRedirect*" />
       </patternset>
     </jar>
   </target>
@@ -595,7 +595,7 @@ $Id$
       <param name="param_jar_name" value="${bcel.jar.name}" />
     </antcall>
 
-<!-- We don't need to package the JLex or java_cup jars in the xalan.jar.
+<!-- We don't need to package the JLex or java_cup jars in the xalan3.jar.
      These are only required for building XSLTC, not for using XSLTC.
      
     <antcall target="xsltc.copy-deps-jar">
@@ -648,8 +648,8 @@ $Id$
     <!-- make bundled jar named xsltc.jar -->
     <jar jarfile="${build.dir}/xsltc.jar" manifest="${build.dir}/manifest.xsltc" >
       <fileset dir="${build.classes}">
-        <include name="org/apache/xalan/xsltc/**"/>
-        <exclude name="org/apache/xalan/xsltc/util/JavaCupRedirect*" />
+        <include name="org/apache/xalan3/xsltc/**"/>
+        <exclude name="org/apache/xalan3/xsltc/util/JavaCupRedirect*" />
       </fileset>
       <fileset dir="${build.classes}" includes="org/apache/xml/**" 
                                       excludes="${serializer.reldir}/**" />
@@ -662,7 +662,7 @@ $Id$
   </target>
   
   <!-- =================================================================== -->
-  <!-- Creates the xalan interpretive jar                                  -->
+  <!-- Creates the xalan3 interpretive jar                                  -->
   <!-- =================================================================== -->
   <target name="xalan-interpretive.jar" depends="xalan-interpretive.compile"
     description="Jar up everything in Xalan interpretive (without XSLTC)" >
@@ -685,7 +685,7 @@ $Id$
   </target>
   
   <!-- =================================================================== -->
-  <!-- Creates the xalan unbundled jar (Xalan interpretive + XSLTC -       -->
+  <!-- Creates the xalan3 unbundled jar (Xalan interpretive + XSLTC -       -->
   <!-- support jars                                                        -->
   <!-- =================================================================== -->
   <target name="unbundledjar" depends="xalan-interpretive.compile,xsltc.compile"
@@ -707,7 +707,7 @@ $Id$
   </target>
   
   <!-- =================================================================== -->
-  <!-- Creates one big xalan jar (Xalan interpretive + XSLTC + support jars) -->
+  <!-- Creates one big xalan3 jar (Xalan interpretive + XSLTC + support jars) -->
   <!-- =================================================================== -->
   <target name="jar" depends="xalan-interpretive.compile,xsltc.compile,xsltc.copy-deps-jars"
     description="Jar up everything (Xalan, XSLTC and XSLTC dependencies)" >
@@ -718,7 +718,7 @@ $Id$
     <filter token="java.vendor" value="${java.vendor}"/>     
     <copy todir="${build.dir}" file="${manifest.mf}" filtering="true"/>
     
-    <!-- make bundled jar named xalan.jar -->
+    <!-- make bundled jar named xalan3.jar -->
     <jar jarfile="${build.xalan.jar}" manifest="${build.dir}/MANIFEST.MF"
          basedir="${build.classes}" >
        <patternset>
@@ -730,7 +730,7 @@ $Id$
   </target>
   
   <!-- =================================================================== -->
-  <!-- Default all target simply Creates the xalan JAR                     -->
+  <!-- Default all target simply Creates the xalan3 JAR                     -->
   <!-- =================================================================== -->
   <target name="all" depends="serializer.jar,jar"><!-- 'Standardizing build.xml files' <bloritsch@apache.org> -->
     <echo message="Redirect to jar target; please provide input on desired functionality of this target"/>
@@ -1119,17 +1119,17 @@ $Id$
           <group title="Transformations API for XML (TrAX)" packages="javax.xml.transform*"/>
           <group title="Java API for XML Parsing" packages="javax.xml.parsers"/>
           <group title="Xalan Core"
-                 packages="org.apache.xalan.processor:org.apache.xalan.templates:org.apache.xalan.transformer"/>
+                 packages="org.apache.xalan3.processor:org.apache.xalan3.templates:org.apache.xalan3.transformer"/>
           <group title="XPath" packages="org.apache.xpath*"/>
           <group title="Document Table Model (DTM)" packages="org.apache.xml.dtm*"/>          
           <group title="Utilities" packages="org.apache.xml.utils*"/>
-          <group title="Xalan Other" packages="org.apache.xalan.client:org:org.apache.xalan.extensions:org.apache.xalan.res:org.apache.xalan.stree:org.apache.xalan.trace:org.apache.xalan.xslt"/>
-          <group title="Xalan Extensions" packages="org.apache.xalan.lib*"/>
-          <group title="Serializers" packages="org.apache.xml.serialize*, org.apache.xalan.serialize"/>
+          <group title="Xalan Other" packages="org.apache.xalan3.client:org:org.apache.xalan3.extensions:org.apache.xalan3.res:org.apache.xalan3.stree:org.apache.xalan3.trace:org.apache.xalan3.xslt"/>
+          <group title="Xalan Extensions" packages="org.apache.xalan3.lib*"/>
+          <group title="Serializers" packages="org.apache.xml.serialize*, org.apache.xalan3.serialize"/>
           <group title="SAX 2" packages="org.xml.sax*"/>
           <group title="DOM 2" packages="org.w3c.dom*"/>
           <group title="XSLTC Core"
-                 packages="org.apache.xalan.xsltc*"/>
+                 packages="org.apache.xalan3.xsltc*"/>
     </javadoc>
   </target>
 
@@ -1154,17 +1154,17 @@ $Id$
           <group title="Transformations API for XML (TrAX)" packages="javax.xml.transform*"/>
           <group title="Java API for XML Parsing" packages="javax.xml.parsers"/>
           <group title="Xalan Core"
-                 packages="org.apache.xalan.processor:org.apache.xalan.templates:org.apache.xalan.transformer"/>
+                 packages="org.apache.xalan3.processor:org.apache.xalan3.templates:org.apache.xalan3.transformer"/>
           <group title="XPath" packages="org.apache.xpath*"/>
           <group title="Document Table Model (DTM)" packages="org.apache.xml.dtm*"/>          
           <group title="Utilities" packages="org.apache.xml.utils*"/>
-          <group title="Xalan Other" packages="org.apache.xalan.client:org:org.apache.xalan.extensions:org.apache.xalan.res:org.apache.xalan.stree:org.apache.xalan.trace:org.apache.xalan.xslt"/>
-          <group title="Xalan Extensions" packages="org.apache.xalan.lib*"/>
-          <group title="Serializers" packages="org.apache.xml.serialize*, org.apache.xalan.serialize"/>
+          <group title="Xalan Other" packages="org.apache.xalan3.client:org:org.apache.xalan3.extensions:org.apache.xalan3.res:org.apache.xalan3.stree:org.apache.xalan3.trace:org.apache.xalan3.xslt"/>
+          <group title="Xalan Extensions" packages="org.apache.xalan3.lib*"/>
+          <group title="Serializers" packages="org.apache.xml.serialize*, org.apache.xalan3.serialize"/>
           <group title="SAX 2" packages="org.xml.sax*"/>
           <group title="DOM 2" packages="org.w3c.dom*"/>
           <group title="XSLTC Core"
-                 packages="org.apache.xalan.xsltc*"/>
+                 packages="org.apache.xalan3.xsltc*"/>
     </javadoc>
   </target>
 
@@ -1233,7 +1233,7 @@ $Id$
   </target>
 
   <!-- =================================================================== -->
-  <!-- Creates a complete distribution in which the xalan.jar contains     -->
+  <!-- Creates a complete distribution in which the xalan3.jar contains     -->
   <!-- the interpretive, compiled and the common packages                  -->
   <!-- =================================================================== -->
   <target name="fulldist" depends="build.nonstd.dist,autodist"
@@ -1249,7 +1249,7 @@ $Id$
   </target>  
 
   <!-- =================================================================== -->
-  <!-- Creates a complete distribution with separate xalan.jar and         -->
+  <!-- Creates a complete distribution with separate xalan3.jar and         -->
   <!-- xsltc.jar.  The common packages are contained in each jar.          -->
   <!-- =================================================================== -->
   <target name="fulldist-separatejars" depends="build.nonstd-separatejars.dist,autodist"
@@ -1490,7 +1490,7 @@ $Id$
   </target>
   
   <!-- =================================================================== -->
-  <!-- Creates the documentation tree for the xml.apache.org/xalan-j       -->
+  <!-- Creates the documentation tree for the xml.apache.org/xalan3-j       -->
   <!-- website                                                             -->
   <!-- =================================================================== -->
   <target name="site" depends="prepare.docs,javadocs,xsltc.docs"
@@ -1505,7 +1505,7 @@ $Id$
        <arg line="targetDirectory=${site.dir} ${site.book} ${xdocs.style}"/>
     </java>
 
-    <!-- put xalan design doc in the site design subdir -->
+    <!-- put xalan3 design doc in the site design subdir -->
     <copy todir="${site.dir}/design">
       <fileset dir="${build.docs}/design"/>
     </copy>
@@ -1521,7 +1521,7 @@ $Id$
   </target>
   
   <!-- =================================================================== -->
-  <!-- Creates the documentation tree for the xalan.apache.org website     -->
+  <!-- Creates the documentation tree for the xalan3.apache.org website     -->
   <!-- =================================================================== -->
   <target name="xalan.apache.org.site"
     description="Build documentation for posting to the website" >
@@ -1536,15 +1536,15 @@ $Id$
   </target>  
    
   <!-- =================================================================== -->
-  <!-- Compiles and runs mini/smoketest from xml-xalan\xalan-test, if present. -->
-  <!-- xml-xalan is a representative folder, that can contain folders xalan-java and xalan-test -->
+  <!-- Compiles and runs mini/smoketest from xml-xalan3\xalan3-test, if present. -->
+  <!-- xml-xalan3 is a representative folder, that can contain folders xalan3-java and xalan3-test -->
   <!-- =================================================================== -->
   <property name="test.relpath" value="xalan-test"/>
 
   <target name="minitest" depends="prepare,minitest-run,tests-not-available" 
     description="Run the Minitest from xml-xalan/xalan-test" >
     <!-- This target simply asks the minitest-run worker target to 
-         actually have the Minitest run (by the xalan-test/build.xml file);
+         actually have the Minitest run (by the xalan3-test/build.xml file);
          we then also call the tests-not-available target in case 
          the user never checked out the tests.
     -->
@@ -1586,7 +1586,7 @@ $Id$
   </target>
 
   <!-- =================================================================== -->
-  <!-- Creates the xalan design document                                   -->
+  <!-- Creates the xalan3 design document                                   -->
   <!-- =================================================================== -->
     <target name="xalan-j2-design">
     <java fork="yes" 
@@ -1643,7 +1643,7 @@ $Id$
    <mkdir dir="${build.docs}/xsltc"/>
    <!--   
    <echo message="Transform xsltc_todo.xml and put the result in ${build.docs}/xsltc"/>
-   <java fork="yes" classname="${xalan.cmdline.class}">
+   <java fork="yes" classname="${xalan3.cmdline.class}">
       <classpath refid="docs.class.path" />
       <arg line="-in xsltc_todo.xml -xsl todo.xsl -out build/docs/xsltc/todo.html"/>
    </java>  -->
@@ -1664,8 +1664,8 @@ $Id$
  
    <!-- pack all doc for transfer to website -->
  <target name="pack.docs">
-    <!--tar tarfile="./build/xalan-j-docs.tar" basedir="./xml-site/target/xalan-j" includes="**"/>
-    <gzip src="./build/xalan-j-docs.tar" zipfile="./build/xalan-j-docs.tar.gz"/-->
+    <!--tar tarfile="./build/xalan3-j-docs.tar" basedir="./xml-site/target/xalan3-j" includes="**"/>
+    <gzip src="./build/xalan3-j-docs.tar" zipfile="./build/xalan3-j-docs.tar.gz"/-->
     <zip zipfile="./build/xalan-j-docs.zip" basedir="./xml-site/target/xalan-j" includes="**"/>
   </target>
 

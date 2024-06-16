@@ -66,7 +66,7 @@ public class Constants
   /** S_BUILTIN_EXTENSIONS_URL is a mnemonic for the XML Namespace 
    *(http://xml.apache.org/xalan) predefined to signify Xalan's
    * built-in XSLT Extensions. When used in stylesheets, this is often 
-   * bound to the "xalan:" prefix.
+   * bound to the "xalan3:" prefix.
    */
   public static final String 
     S_BUILTIN_EXTENSIONS_URL = "http://xml.apache.org/xalan"; 

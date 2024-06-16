@@ -220,7 +220,7 @@ public class XRTreeFrag extends XObject implements Cloneable
    * Cast result object to a DTMIterator.
    * dml - modified to return an RTFIterator for
    * benefit of EXSLT object-type function in 
-   * {@link org.apache.xalan.lib.ExsltCommon}.
+   * {@link org.apache.xalan3.lib.ExsltCommon}.
    * @return The document fragment as a DTMIterator
    */
   public DTMIterator asNodeIterator()

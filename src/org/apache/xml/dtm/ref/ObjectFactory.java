@@ -54,14 +54,14 @@ final class ObjectFactory {
 
     // name of default properties file to look for in JDK's jre/lib directory
     private static final String DEFAULT_PROPERTIES_FILENAME =
-                                                     "xalan.properties";
+                                                     "xalan3.properties";
 
     private static final String SERVICES_PATH = "META-INF/services/";
 
     /** Set to true for debugging */
     private static final boolean DEBUG = false;
 
-    /** cache the contents of the xalan.properties file.
+    /** cache the contents of the xalan3.properties file.
      *  Until an attempt has been made to read this file, this will
      * be null; if the file does not exist or we encounter some other error
      * during the read, this will be empty.
@@ -69,7 +69,7 @@ final class ObjectFactory {
     private static Properties fXalanProperties = null;
 
     /***
-     * Cache the time stamp of the xalan.properties file so
+     * Cache the time stamp of the xalan3.properties file so
      * that we know if it's been modified and can invalidate
      * the cache when necessary.
      */
@@ -118,7 +118,7 @@ final class ObjectFactory {
      *                              a property name
      * @param propertiesFilename The filename in the $java.home/lib directory
      *                           of the properties file.  If none specified,
-     *                           ${java.home}/lib/xalan.properties will be used.
+     *                           ${java.home}/lib/xalan3.properties will be used.
      * @param fallbackClassName     Implementation class name, if nothing else
      *                              is found.  Use null to mean no fallback.
      *
@@ -165,7 +165,7 @@ final class ObjectFactory {
      *                              a property name
      * @param propertiesFilename The filename in the $java.home/lib directory
      *                           of the properties file.  If none specified,
-     *                           ${java.home}/lib/xalan.properties will be used.
+     *                           ${java.home}/lib/xalan3.properties will be used.
      * @param fallbackClassName     Implementation class name, if nothing else
      *                              is found.  Use null to mean no fallback.
      *
@@ -193,7 +193,7 @@ final class ObjectFactory {
      *                              a property name
      * @param propertiesFilename The filename in the $java.home/lib directory
      *                           of the properties file.  If none specified,
-     *                           ${java.home}/lib/xalan.properties will be used.
+     *                           ${java.home}/lib/xalan3.properties will be used.
      * @param fallbackClassName     Implementation class name, if nothing else
      *                              is found.  Use null to mean no fallback.
      *
@@ -247,7 +247,7 @@ final class ObjectFactory {
      *                              a property name
      * @param propertiesFilename The filename in the $java.home/lib directory
      *                           of the properties file.  If none specified,
-     *                           ${java.home}/lib/xalan.properties will be used.
+     *                           ${java.home}/lib/xalan3.properties will be used.
      * @param fallbackClassName     Implementation class name, if nothing else
      *                              is found.  Use null to mean no fallback.
      *
@@ -269,10 +269,10 @@ final class ObjectFactory {
         }
 
         // Try to read from propertiesFilename, or
-        // $java.home/lib/xalan.properties
+        // $java.home/lib/xalan3.properties
         String factoryClassName = null;
         // no properties file name specified; use
-        // $JAVA_HOME/lib/xalan.properties:
+        // $JAVA_HOME/lib/xalan3.properties:
         if (propertiesFilename == null) {
             File propertiesFile = null;
             boolean propertiesFileExists = false;
@@ -312,7 +312,7 @@ final class ObjectFactory {
                         } // else, nothing's changed
                     }
                     if(loadProperties) {
-                        // must never have attempted to read xalan.properties
+                        // must never have attempted to read xalan3.properties
                         // before (or it's outdeated)
                         fXalanProperties = new Properties();
                         fis = SecuritySupport.getFileInputStream(propertiesFile);

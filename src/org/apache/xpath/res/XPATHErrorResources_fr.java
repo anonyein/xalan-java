@@ -374,7 +374,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "La fonction current() n'accepte pas d'arguments !" },
 
   { ER_DOCUMENT_REPLACED,
-      "L'impl\u00e9mentation de la fonction document() a \u00e9t\u00e9 remplac\u00e9e par org.apache.xalan.xslt.FuncDocument !"},
+      "L'impl\u00e9mentation de la fonction document() a \u00e9t\u00e9 remplac\u00e9e par org.apache.xalan3.xslt.FuncDocument !"},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "Le contexte ne poss\u00e8de pas de document propri\u00e9taire !"},

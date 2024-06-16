@@ -374,7 +374,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "current() i\u015flevi ba\u011f\u0131ms\u0131z de\u011fi\u015fken kabul etmez!" },
 
   { ER_DOCUMENT_REPLACED,
-      "document() i\u015flevi uygulamas\u0131 org.apache.xalan.xslt.FuncDocument ile de\u011fi\u015ftirildi!"},
+      "document() i\u015flevi uygulamas\u0131 org.apache.xalan3.xslt.FuncDocument ile de\u011fi\u015ftirildi!"},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "Ba\u011flam\u0131n iye belgesi yok!"},

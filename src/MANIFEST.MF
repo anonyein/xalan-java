@@ -1,15 +1,15 @@
 Manifest-Version: 1.0
 Created-By: @java.version@ (@java.vendor@)
-Main-Class: org.apache.xalan.xslt.Process
+Main-Class: org.apache.xalan3.xslt.Process
 Class-Path: xercesImpl.jar xml-apis.jar serializer.jar
 
 
-Name: org/apache/xalan/
+Name: org/apache/xalan3/
 Comment: Main Xalan engine implementing TrAX/JAXP
 Specification-Title: Java API for XML Processing
 Specification-Vendor: Sun Microsystems Inc.
 Specification-Version: 1.3
-Implementation-Title: org.apache.xalan
+Implementation-Title: org.apache.xalan3
 Implementation-Version: @impl.version@
 Implementation-Vendor: Apache Software Foundation
 Implementation-URL: https://xalan.apache.org/xalan-j/
@@ -28,12 +28,12 @@ Implementation-Version: @impl.version@
 Implementation-Vendor: Apache Software Foundation
 Implementation-URL: https://xalan.apache.org/xalan-j/
 
-Name: org/apache/xalan/xsltc/
+Name: org/apache/xalan3/xsltc/
 Comment: Main XSLTC engine implementing TrAX/JAXP
 Specification-Title: Java API for XML Processing
 Specification-Vendor: Sun Microsystems Inc.
 Specification-Version: 1.3
-Implementation-Title: org.apache.xalan.xsltc
+Implementation-Title: org.apache.xalan3.xsltc
 Implementation-Version: @impl.version@
 Implementation-Vendor: Apache Software Foundation
 Implementation-URL: https://xalan.apache.org/xalan-j/

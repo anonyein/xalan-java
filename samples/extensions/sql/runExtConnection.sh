@@ -33,7 +33,7 @@ fi
 #release or in the root direcctory for a binary release.
 
 
-if [ -f ../../../build/xalan.jar ] ; then
+if [ -f ../../../build/xalan3.jar ] ; then
 echo "Configuring Xalan for a Source build"
 echo .
 _XALAN_DIR=../../../build/
@@ -58,7 +58,7 @@ if [ "$XML_APIS_JAR" = "" ] ; then
 fi
 
 if [ "$XALAN_JAR" = "" ] ; then
-    XALAN_JAR=$_XALAN_DIR/xalan.jar
+    XALAN_JAR=$_XALAN_DIR/xalan3.jar
     SERIALIZER_JAR=$_XALAN_DIR/serializer.jar 
 fi
 

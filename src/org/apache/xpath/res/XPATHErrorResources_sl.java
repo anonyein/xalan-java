@@ -375,7 +375,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "Funkcija current() ne sprejema argumentov!" },
 
   { ER_DOCUMENT_REPLACED,
-      "Implementacija funkcije document() je bila nadome\u0161\u010dena z org.apache.xalan.xslt.FuncDocument!"},
+      "Implementacija funkcije document() je bila nadome\u0161\u010dena z org.apache.xalan3.xslt.FuncDocument!"},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "Kontekst ne vsebuje lastni\u0161kega dokumenta!"},

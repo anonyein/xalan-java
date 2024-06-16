@@ -198,13 +198,13 @@ For more information, see <link idref="dtm" anchor="optimize">DTM optimize</link
 <p>To turn optimization off, you can use the TransformerFactoryImpl.FEATURE_OPTIMIZE static variable (equivalent to the URI String above) 
 as follows:</p>
 <source>import javax.xml.transform.TransformerFactory;
-import org.apache.xalan.processor.TransformerFactoryImpl;
-..
-TransformerFactory tFact = TransformerFactory.newInstance();
-if (tFact instanceof TransformerFactoryImpl) {
-  tFact.setAttribute(TransformerFactoryImpl.FEATURE_OPTIMIZE, 
-                     Boolean.FALSE);
-}</source>
+    import org.apache.xalan3.processor.TransformerFactoryImpl;
+    ..
+    TransformerFactory tFact = TransformerFactory.newInstance();
+    if (tFact instanceof TransformerFactoryImpl) {
+    tFact.setAttribute(TransformerFactoryImpl.FEATURE_OPTIMIZE,
+    Boolean.FALSE);
+    }</source>
 </s3><anchor name="incremental"/>
 <s3 title="incremental attribute">
 <p><em>URI:</em> "http://xml.apache.org/xalan/features/incremental"</p>
@@ -213,13 +213,13 @@ to false. You can turn this attribute on to transform large documents where the 
 without having to parse the entire document. For more information, see <link idref="dtm" anchor="incremental">DTM incremental</link>.</p>
 <p>To turn incremental transformations on, you can use the TransformerFactoryImpl.FEATURE_INCREMENTAL static variable (equivalent to the URI String above) as follows:</p>
 <source>import javax.xml.transform.TransformerFactory;
-import org.apache.xalan.processor.TransformerFactoryImpl;
-..
-TransformerFactory tFact = TransformerFactory.newInstance();
-if (tFact instanceof TransformerFactoryImpl) {
-  tFact.setAttribute(TransformerFactoryImpl.FEATURE_INCREMENTAL, 
-                     Boolean.FALSE);
-}</source>
+    import org.apache.xalan3.processor.TransformerFactoryImpl;
+    ..
+    TransformerFactory tFact = TransformerFactory.newInstance();
+    if (tFact instanceof TransformerFactoryImpl) {
+    tFact.setAttribute(TransformerFactoryImpl.FEATURE_INCREMENTAL,
+    Boolean.FALSE);
+    }</source>
 <note>The incremental feature is not currently supported by XSLTC.</note>
 </s3>
 <anchor name="source_location"/>
@@ -235,14 +235,14 @@ stylesheet.</p>
 programmatically, you can use the TransformerFactoryImpl.FEATURE_SOURCE_LOCATION static variable (equivalent to the URI String above) 
 as follows:</p>
 <source>import javax.xml.transform.TransformerFactory;
-import org.apache.xalan.transformer.TransformerImpl;
-import org.apache.xalan.transformer.XalanProperties;
-..
-TransformerFactory tFact = TransformerFactory.newInstance();
-if (tFact instanceof TransformerFactoryImpl) {
-  tFact.setAttribute(TransformerFactoryImpl.FEATURE_SOURCE_LOCATION, 
-                     Boolean.TRUE);
-}</source>
+    import org.apache.xalan3.transformer.TransformerImpl;
+    import org.apache.xalan3.transformer.XalanProperties;
+    ..
+    TransformerFactory tFact = TransformerFactory.newInstance();
+    if (tFact instanceof TransformerFactoryImpl) {
+    tFact.setAttribute(TransformerFactoryImpl.FEATURE_SOURCE_LOCATION,
+    Boolean.TRUE);
+    }</source>
 </s3>
 </s2>
 </s1>

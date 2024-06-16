@@ -374,7 +374,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "La funzione corrente () non accetta argomenti." },
 
   { ER_DOCUMENT_REPLACED,
-      "L'implementazione della funzione documento () \u00e8 stata sostituita da org.apache.xalan.xslt.FuncDocument."},
+      "L'implementazione della funzione documento () \u00e8 stata sostituita da org.apache.xalan3.xslt.FuncDocument."},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "il contesto non ha un documento proprietario."},

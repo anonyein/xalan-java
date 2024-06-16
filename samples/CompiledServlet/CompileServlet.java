@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.xalan.xsltc.compiler.XSLTC;
+import org.apache.xalan3.xsltc.compiler.XSLTC;
 
 /**
  * @author Morten Jorgensen

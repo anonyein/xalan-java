@@ -22,7 +22,7 @@ package org.apache.xpath.axes;
 
 import java.util.Vector;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMAxisTraverser;
 import org.apache.xml.dtm.DTMIterator;

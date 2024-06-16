@@ -20,7 +20,7 @@
  */
 package org.apache.xpath.objects;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xml.utils.FastStringBuffer;
 import org.apache.xpath.res.XPATHErrorResources;
 

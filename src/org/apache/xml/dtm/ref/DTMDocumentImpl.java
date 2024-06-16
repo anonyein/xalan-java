@@ -838,7 +838,7 @@ implements DTM, org.xml.sax.ContentHandler, org.xml.sax.ext.LexicalHandler
 // 			String prefix = qname.substring(0, colonpos);
 // 			if (prefix.equals("xml")) {
 // 				//w0 = ATTRIBUTE_NODE |
-// 				//	(org.apache.xalan.templates.Constants.S_XMLNAMESPACEURI << 16);
+// 				//	(org.apache.xalan3.templates.Constants.S_XMLNAMESPACEURI << 16);
 // 			} else {
 // 				//w0 = ATTRIBUTE_NODE |
 // 			}

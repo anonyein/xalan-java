@@ -20,7 +20,7 @@
  */
 package org.apache.xpath;
 
-import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan3.res.XSLMessages;
 import org.apache.xml.utils.DOM2Helper;
 import org.apache.xpath.axes.ContextNodeList;
 import org.apache.xpath.res.XPATHErrorResources;

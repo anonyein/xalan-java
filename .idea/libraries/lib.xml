@@ -1,0 +1,19 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/regexp.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-logging-1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javaee-api-5.0-2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/brazil-2.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/servlet-api-2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/bsf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/rhino-1.7.14.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/bcel-6.7.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/runtime.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/xpath31_types.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/json-20200518.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -63,13 +63,13 @@ Installation
 
 
     The 'src tree' is a hierarchy of the following packages:
-	org.apache.xalan.xsltc
-	org.apache.xalan.xsltc.compiler
-	org.apache.xalan.xsltc.compiler.util
-	org.apache.xalan.xsltc.dom
-	org.apache.xalan.xsltc.runtime
-	org.apache.xalan.xsltc.util
-	org.apache.xalan.xsltc.util.getopt
+	org.apache.xalan3.xsltc
+	org.apache.xalan3.xsltc.compiler
+	org.apache.xalan3.xsltc.compiler.util
+	org.apache.xalan3.xsltc.dom
+	org.apache.xalan3.xsltc.runtime
+	org.apache.xalan3.xsltc.util
+	org.apache.xalan3.xsltc.util.getopt
 
 
 (2) make bin programs executable

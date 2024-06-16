@@ -34,8 +34,8 @@ import org.w3c.dom.Node;
 /**
  * Simple static utility to convert Hashtable to a Node.  
  *
- * @see org.apache.xalan.xslt.EnvironmentCheck
- * @see org.apache.xalan.lib.Extensions
+ * @see org.apache.xalan3.xslt.EnvironmentCheck
+ * @see org.apache.xalan3.lib.Extensions
  * @author shane_curcuru@us.ibm.com
  * @version $Id$
  * @xsl.usage general

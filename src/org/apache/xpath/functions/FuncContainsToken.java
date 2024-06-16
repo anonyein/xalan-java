@@ -22,8 +22,8 @@ import java.util.List;
 
 import javax.xml.transform.SourceLocator;
 
-import org.apache.xalan.res.XSLMessages;
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xalan3.res.XSLMessages;
+import org.apache.xalan3.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMIterator;
 import org.apache.xml.dtm.DTMManager;

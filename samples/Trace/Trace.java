@@ -25,9 +25,9 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.xalan.trace.PrintTraceListener;
-import org.apache.xalan.trace.TraceManager;
-import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan3.trace.PrintTraceListener;
+import org.apache.xalan3.trace.TraceManager;
+import org.apache.xalan3.transformer.TransformerImpl;
 
 /**
  * Sample for demonstrating Xalan "trace" interface.

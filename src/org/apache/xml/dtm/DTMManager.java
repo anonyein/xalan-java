@@ -111,7 +111,7 @@ public abstract class DTMManager
    * </li>
    * <li>
    * Use the JAVA_HOME(the parent directory where jdk is
-   * installed)/lib/xalan.properties for a property file that contains the
+   * installed)/lib/xalan3.properties for a property file that contains the
    * name of the implementation class keyed on the same value as the
    * system property defined above.
    * </li>

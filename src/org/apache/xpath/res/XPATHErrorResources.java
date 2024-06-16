@@ -406,7 +406,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_CURRENT_TAKES_NO_ARGS, "The current() function does not accept arguments!" },
 
   { ER_DOCUMENT_REPLACED,
-      "document() function implementation has been replaced by org.apache.xalan.xslt.FuncDocument!"},
+      "document() function implementation has been replaced by org.apache.xalan3.xslt.FuncDocument!"},
 
   { ER_CONTEXT_HAS_NO_OWNERDOC,
       "context does not have an owner document!"},

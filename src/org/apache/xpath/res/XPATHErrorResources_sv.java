@@ -89,7 +89,7 @@ public static final int MAX_CODE = 108;  // this is needed to keep track of the 
 
   {
     ER_DOCUMENT_REPLACED,
-      "Implementeringen av funktionen document() har ersatts av org.apache.xalan.xslt.FuncDocument!"},
+      "Implementeringen av funktionen document() har ersatts av org.apache.xalan3.xslt.FuncDocument!"},
 
 
   /** Field ER_CONTEXT_HAS_NO_OWNERDOC          */

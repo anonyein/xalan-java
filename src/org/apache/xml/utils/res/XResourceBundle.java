@@ -34,7 +34,7 @@ public class XResourceBundle extends ListResourceBundle
 
   /** Error resource constants */
   public static final String ERROR_RESOURCES =
-    "org.apache.xalan.res.XSLTErrorResources", XSLT_RESOURCE =
+    "org.apache.xalan3.res.XSLTErrorResources", XSLT_RESOURCE =
     "org.apache.xml.utils.res.XResourceBundle", LANG_BUNDLE_NAME =
     "org.apache.xml.utils.res.XResources", MULT_ORDER =
     "multiplierOrder", MULT_PRECEDES = "precedes", MULT_FOLLOWS =

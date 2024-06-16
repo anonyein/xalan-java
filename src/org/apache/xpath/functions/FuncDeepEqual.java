@@ -24,8 +24,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.templates.XSConstructorFunctionUtil;
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xalan3.templates.XSConstructorFunctionUtil;
+import org.apache.xalan3.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xerces.dom.ElementImpl;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMIterator;

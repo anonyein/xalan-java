@@ -24,7 +24,7 @@ import java.math.BigInteger;
 
 import javax.xml.XMLConstants;
 
-import org.apache.xalan.templates.XSConstructorFunctionUtil;
+import org.apache.xalan3.templates.XSConstructorFunctionUtil;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.FuncExtFunction;
 import org.apache.xpath.objects.ResultSequence;

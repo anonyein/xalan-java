@@ -25,10 +25,10 @@ import java.util.Map;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.res.XSLMessages;
-import org.apache.xalan.templates.ElemTemplateElement;
-import org.apache.xalan.templates.XMLNSDecl;
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xalan3.res.XSLMessages;
+import org.apache.xalan3.templates.ElemTemplateElement;
+import org.apache.xalan3.templates.XMLNSDecl;
+import org.apache.xalan3.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
