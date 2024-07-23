@@ -53,9 +53,7 @@ import java.lang.String;
  */
 public class Plus extends ArithmeticOperation
 {
-    static final long serialVersionUID = -4492072861616504256L;
-    
-    private static final String OP_SYMBOL = "+";
+   static final long serialVersionUID = -4492072861616504256L;
 
   /**
    * Apply the operation to two operands, and return the result.
@@ -116,18 +114,17 @@ public class Plus extends ArithmeticOperation
       else if ((left instanceof XSNumericType) && (right instanceof XSNumericType)) {          
           result = addXSNumericTypeToXsNumericType((XSNumericType)left, (XSNumericType)right);
       }
-      else if ((left instanceof XNumber) && (right instanceof XNumber)) {
-          double lDouble = ((XNumber)left).num();
-          double rDouble = ((XNumber)right).num();
-          
-          result = new XNumber(lDouble + rDouble);                    
+      else if ((left instanceof XNumber) && (right instanceof XNumber)) {          
+    	  XNumber lNumber = (XNumber)left;
+    	  XNumber rNumber = (XNumber)right;
+    	  result = arithmeticOpOnXNumberValues(lNumber, rNumber, OP_SYMBOL_PLUS);
       }
       else if ((left instanceof XNumber) && (right instanceof XNodeSet)) {
           double lDouble = ((XNumber)left).num();
           
           XNodeSet rNodeSet = (XNodeSet)right;
           if (rNodeSet.getLength() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           else {
              java.lang.String rStrVal = rNodeSet.str();
@@ -141,7 +138,7 @@ public class Plus extends ArithmeticOperation
           
           XNodeSet lNodeSet = (XNodeSet)left;
           if (lNodeSet.getLength() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           else {
              java.lang.String lStrVal = lNodeSet.str();
@@ -153,7 +150,7 @@ public class Plus extends ArithmeticOperation
       else if ((left instanceof XSNumericType) && (right instanceof XNodeSet)) {
     	  XNodeSet rNodeSet = (XNodeSet)right;
           if (rNodeSet.getLength() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           else {
         	  BigDecimal lBigDecimal = new BigDecimal(((XSNumericType)left).stringValue());
@@ -162,7 +159,7 @@ public class Plus extends ArithmeticOperation
         	     rBigDecimal = new BigDecimal(rNodeSet.str());
         	  }
         	  catch (NumberFormatException ex) {
-        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});
+        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});
         	  }
         	  
         	  BigDecimal resultBigDecimal = lBigDecimal.add(rBigDecimal);
@@ -177,7 +174,7 @@ public class Plus extends ArithmeticOperation
       else if ((left instanceof XNodeSet) && (right instanceof XSNumericType)) {
     	  XNodeSet lNodeSet = (XNodeSet)left;
           if (lNodeSet.getLength() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           else {        	  
         	  BigDecimal lBigDecimal = null;
@@ -185,7 +182,7 @@ public class Plus extends ArithmeticOperation
         		 lBigDecimal = new BigDecimal(lNodeSet.str());
         	  }
         	  catch (NumberFormatException ex) {
-        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
         	  }
         	  BigDecimal rBigDecimal = new BigDecimal(((XSNumericType)right).stringValue());
         	  
@@ -201,12 +198,12 @@ public class Plus extends ArithmeticOperation
       else if ((left instanceof XNodeSet) && (right instanceof XNodeSet)) {
     	  XNodeSet lNodeSet = (XNodeSet)left;
           if (lNodeSet.getLength() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           
           XNodeSet rNodeSet = (XNodeSet)right;
           if (rNodeSet.getLength() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           
           BigDecimal lBigDecimal = null;
@@ -214,7 +211,7 @@ public class Plus extends ArithmeticOperation
     		 lBigDecimal = new BigDecimal(lNodeSet.str());
     	  }
     	  catch (NumberFormatException ex) {
-    		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+    		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
     	  }
     	  
     	  BigDecimal rBigDecimal = null;
@@ -222,7 +219,7 @@ public class Plus extends ArithmeticOperation
     	     rBigDecimal = new BigDecimal(rNodeSet.str());
     	  }
     	  catch (NumberFormatException ex) {
-    		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+    		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
     	  }
     	  
     	  BigDecimal resultBigDecimal = lBigDecimal.add(rBigDecimal);
@@ -236,7 +233,7 @@ public class Plus extends ArithmeticOperation
       else if ((left instanceof ResultSequence) && (right instanceof XNumber)) {
     	  ResultSequence lSeq = (ResultSequence)left;
           if (lSeq.size() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           else {        	  
         	  BigDecimal lBigDecimal = null;
@@ -244,7 +241,7 @@ public class Plus extends ArithmeticOperation
         		 lBigDecimal = new BigDecimal(XslTransformEvaluationHelper.getStrVal(lSeq.item(0)));
         	  }
         	  catch (NumberFormatException ex) {
-        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
         	  }
         	  BigDecimal rBigDecimal = BigDecimal.valueOf(((XNumber)right).num());
         	  
@@ -260,7 +257,7 @@ public class Plus extends ArithmeticOperation
       else if ((left instanceof XNumber) && (right instanceof ResultSequence)) {
     	  ResultSequence rSeq = (ResultSequence)right;
           if (rSeq.size() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           else {
         	  BigDecimal lBigDecimal = BigDecimal.valueOf(((XNumber)left).num());
@@ -269,7 +266,7 @@ public class Plus extends ArithmeticOperation
         	     rBigDecimal = new BigDecimal(XslTransformEvaluationHelper.getStrVal(rSeq.item(0)));
         	  }
         	  catch (NumberFormatException ex) {
-        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
         	  }
         	  
         	  BigDecimal resultBigDecimal = lBigDecimal.add(rBigDecimal);
@@ -284,7 +281,7 @@ public class Plus extends ArithmeticOperation
       else if ((left instanceof ResultSequence) && (right instanceof XSNumericType)) {
     	  ResultSequence lSeq = (ResultSequence)left;
           if (lSeq.size() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           else {        	  
         	  BigDecimal lBigDecimal = null;
@@ -292,7 +289,7 @@ public class Plus extends ArithmeticOperation
         		 lBigDecimal = new BigDecimal(XslTransformEvaluationHelper.getStrVal(lSeq.item(0)));
         	  }
         	  catch (NumberFormatException ex) {
-        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
         	  }
         	  BigDecimal rBigDecimal = new BigDecimal(((XSNumericType)right).stringValue());
         	  
@@ -308,7 +305,7 @@ public class Plus extends ArithmeticOperation
       else if ((left instanceof XSNumericType) && (right instanceof ResultSequence)) {
     	  ResultSequence rSeq = (ResultSequence)right;
           if (rSeq.size() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           else {
         	  BigDecimal lBigDecimal = new BigDecimal(((XSNumericType)left).stringValue());
@@ -317,7 +314,7 @@ public class Plus extends ArithmeticOperation
         	     rBigDecimal = new BigDecimal(XslTransformEvaluationHelper.getStrVal(rSeq.item(0)));
         	  }
         	  catch (NumberFormatException ex) {
-        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+        		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
         	  }
         	  
         	  BigDecimal resultBigDecimal = lBigDecimal.add(rBigDecimal);
@@ -344,12 +341,12 @@ public class Plus extends ArithmeticOperation
       else if ((left instanceof ResultSequence) && (right instanceof ResultSequence)) {
     	  ResultSequence lSeq = (ResultSequence)left;          
           if (lSeq.size() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           
           ResultSequence rSeq = (ResultSequence)right;
           if (rSeq.size() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
           }
           
           XObject lXObj = ((ResultSequence)left).item(0);
@@ -374,7 +371,7 @@ public class Plus extends ArithmeticOperation
 	              rBigDecimal = new BigDecimal(rStr);
         	  }
         	  catch (NumberFormatException ex) {
-        		  error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});
+        		  error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});
         	  }
         	  
         	  BigDecimal resultBigDecimal = lBigDecimal.add(rBigDecimal);
@@ -389,7 +386,7 @@ public class Plus extends ArithmeticOperation
       else if (left instanceof ResultSequence) {
     	  ResultSequence lSeq = (ResultSequence)left;          
           if (lSeq.size() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});  
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});  
           }
           
           XObject lXObj = ((ResultSequence)left).item(0);
@@ -412,7 +409,7 @@ public class Plus extends ArithmeticOperation
 	              rBigDecimal = new BigDecimal(rStr);
         	  }
         	  catch (NumberFormatException ex) {
-        		  error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL});
+        		  error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS});
         	  }
         	  
         	  BigDecimal resultBigDecimal = lBigDecimal.add(rBigDecimal);
@@ -427,7 +424,7 @@ public class Plus extends ArithmeticOperation
       else if (left instanceof XNodeSet) {
     	  XNodeSet lNodeSet = (XNodeSet)left;
           if (lNodeSet.getLength() > 1) {
-        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+        	  error(CARDINALITY_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
           }
           
           BigDecimal lBigDecimal = null;
@@ -437,7 +434,7 @@ public class Plus extends ArithmeticOperation
              rBigDecimal = new BigDecimal(XslTransformEvaluationHelper.getStrVal(right));
     	  }
     	  catch (NumberFormatException ex) {
-    		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+    		 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
     	  }
         	  
           BigDecimal resultBigDecimal = lBigDecimal.add(rBigDecimal);
@@ -455,13 +452,13 @@ public class Plus extends ArithmeticOperation
              result = new XNumber(Double.valueOf(lStrVal) + Double.valueOf(rStrVal));
           }
           catch (NumberFormatException ex) {
-        	 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL}); 
+        	 error(OPERAND_NOT_NUMERIC_ERR_MESG, new String[] {"XPTY0004", OP_SYMBOL_PLUS}); 
           }
       }
       
       return result;
   }
-  
+
   /**
    * Evaluate this operation directly to a double.
    *
