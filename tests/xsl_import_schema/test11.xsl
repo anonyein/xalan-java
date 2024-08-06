@@ -1,40 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                exclude-result-prefixes="xs"
+                exclude-result-prefixes="xs"				
                 version="3.0">
-                
-    <!-- Author: mukulg@apache.org -->                
+
+   <!-- Author: mukulg@apache.org -->
     
-    <!-- An XSLT stylesheet test case, to test the sequence type
-         declaration attribute "as" on named template element 
-         xsl:template.
-    -->                
+   <!-- use with test4.xml --> 
     
-    <xsl:output method="xml" indent="yes"/>
-    
-    <xsl:template match="/">       
-       <result>
-          <one>
-             <xsl:call-template name="Template1"/>
-          </one>
-          <two>
-             <xsl:call-template name="Template2"/>
-          </two>
-       </result>
-    </xsl:template>
-    
-    <xsl:template name="Template1" as="xs:date">       
-       <xsl:sequence select="xs:date('2005-10-07')"/>
-    </xsl:template>
-    
-    <xsl:template name="Template2" as="element(elem)*">
-       <xsl:for-each select="1 to 5">
-          <elem/>
-       </xsl:for-each>
-    </xsl:template>
-    
-    <!--
+   <!-- An XSL stylesheet test case, to test XSLT 3.0's xsl:import-schema 
+        instruction. 
+   -->			
+
+   <xsl:output method="xml" indent="yes"/>
+   
+   <xsl:import-schema schema-location="info_2.xsd"/>
+
+   <xsl:template match="/info">
+	  <result>
+	     <xsl:for-each select="*">
+		   <a id="{position()}">
+		      <xsl:value-of select=". instance of element(a, xs:integer)"/>
+		   </a>
+		 </xsl:for-each>
+	  </result>	  
+   </xsl:template>
+   
+   <!--
       * Licensed to the Apache Software Foundation (ASF) under one
       * or more contributor license agreements. See the NOTICE file
       * distributed with this work for additional information
@@ -50,6 +42,6 @@
       * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
       * See the License for the specific language governing permissions and
       * limitations under the License.
-    -->
-    
+  -->
+
 </xsl:stylesheet>
