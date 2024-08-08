@@ -24,17 +24,17 @@ import org.junit.Test;
 
 /**
  * XSLT tests cases to test, use of an attribute type/validation on XSL  
- * instruction xsl:element.
+ * instruction xsl:attribute.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
  * @xsl.usage advanced
  */
-public class XslElementValidationTests extends XSLTransformTestsUtil {
+public class XslAttributeValidationTests extends XSLTransformTestsUtil {
     
-    private static final String XSL_TRANSFORM_INPUT_DIRPATH = XSLConstants.XSL_TRANSFORM_INPUT_DIRPATH_PREFIX + "xsl_element_validation/";
+    private static final String XSL_TRANSFORM_INPUT_DIRPATH = XSLConstants.XSL_TRANSFORM_INPUT_DIRPATH_PREFIX + "xsl_attribute_validation/";
     
-    private static final String XSL_TRANSFORM_GOLD_DIRPATH = XSLConstants.XSL_TRANSFORM_GOLD_DIRPATH_PREFIX + "xsl_element_validation/gold/";      
+    private static final String XSL_TRANSFORM_GOLD_DIRPATH = XSLConstants.XSL_TRANSFORM_GOLD_DIRPATH_PREFIX + "xsl_attribute_validation/gold/";      
 
 
     @BeforeClass
@@ -50,45 +50,21 @@ public class XslElementValidationTests extends XSLTransformTestsUtil {
     }
 
     @Test
-    public void xslElementValidationTest1() {
+    public void xslAttributeValidationTest1() {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1.xml"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test1.out";                
-        
-        setXmlValidationProperty(true);
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test1.out";        
         
         runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
     }
     
     @Test
-    public void xslElementValidationTest2() {
+    public void xslAttributeValidationTest2() {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1.xml"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test2.out";                
-        
-        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);   
-    }
-    
-    @Test
-    public void xslElementValidationTest3() {
-        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1.xml"; 
-        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test3.xsl";
-        
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test3.out";                
-        
-        setXmlValidationProperty(true);
-        
-        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);   
-    }
-    
-    @Test
-    public void xslElementValidationTest4() {
-        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1.xml"; 
-        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test4.xsl";
-        
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test4.out";                
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test2.out";
         
         setXmlValidationProperty(true);
         
