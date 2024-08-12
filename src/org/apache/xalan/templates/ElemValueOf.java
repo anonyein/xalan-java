@@ -33,7 +33,6 @@ import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
-import org.apache.xpath.axes.WalkingIterator;
 import org.apache.xpath.composite.XPathIfExpr;
 import org.apache.xpath.composite.XPathLetExpr;
 import org.apache.xpath.functions.Function;
@@ -461,12 +460,8 @@ public class ElemValueOf extends ElemTemplateElement {
                   else if (expr instanceof LocPathIterator) {
                      LocPathIterator locPathIterator = (LocPathIterator)expr;
                      
-                     Function func = null;
-                     
-                     if (locPathIterator instanceof WalkingIterator) {
-                         WalkingIterator walkingIter = (WalkingIterator)locPathIterator;
-                         func = walkingIter.getFuncExpr();
-                     }
+                     Function func = locPathIterator.getFuncExpr();
+                     XPathDynamicFunctionCall dfc = locPathIterator.getDynamicFuncCallExpr();
                      
                      DTMIterator dtmIter = null;                     
                      try {
@@ -484,9 +479,18 @@ public class ElemValueOf extends ElemTemplateElement {
                            XNodeSet singletonXPathNode = new XNodeSet(nextNode, xctxt);
                            String resultStr = "";
                            if (func != null) {
+                        	  // Evaluate an XPath path expression like /a/b/funcCall(..).
+                        	  // Find one result item, since this is within a loop.
                               xctxt.setXPath3ContextItem(singletonXPathNode);                              
                               XObject funcEvalResult = func.execute(xctxt);
                               resultStr = XslTransformEvaluationHelper.getStrVal(funcEvalResult);                               
+                           }
+                           else if (dfc != null) {
+                        	   // Evaluate an XPath path expression like /a/b/$funcCall(..).
+                        	   // Find one result item, since this is within a loop.
+                               xctxt.setXPath3ContextItem(singletonXPathNode);                              
+                               XObject evalResult = dfc.execute(xctxt);
+                               resultStr = XslTransformEvaluationHelper.getStrVal(evalResult);                               
                            }
                            else {
                               resultStr = singletonXPathNode.str();

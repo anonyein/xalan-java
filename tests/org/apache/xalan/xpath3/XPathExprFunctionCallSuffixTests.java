@@ -87,5 +87,125 @@ public class XPathExprFunctionCallSuffixTests extends XSLTransformTestsUtil {
         
         runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
     }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest5() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test5.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test5.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest6() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test6.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test6.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest7() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test7.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test7.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest8() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test8.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test8.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest9() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test3.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test9.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test9.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest10() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test10.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test10.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest11() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test11.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test11.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest12() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test12.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test12.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest13() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test13.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test13.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest14() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test14.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test14.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest15() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test15.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test15.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xpathExprFunctionCallSuffixTest16() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test2.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test16.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test16.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
 
 }

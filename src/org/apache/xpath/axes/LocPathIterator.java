@@ -32,6 +32,8 @@ import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathVisitor;
 import org.apache.xpath.compiler.Compiler;
+import org.apache.xpath.functions.Function;
+import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.objects.XNodeSet;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.res.XPATHErrorResources;
@@ -52,6 +54,21 @@ public abstract class LocPathIterator extends PredicatedNodeTest
         implements Cloneable, DTMIterator, java.io.Serializable, PathComponent
 {
     static final long serialVersionUID = -4602476357268405754L;
+    
+    /**
+     * If there's a function call suffix at an end of XPath path expression 
+     * similar to /a/b/func(..), we keep a compiled Function 
+     * object for func(..) within this class field.  
+     */
+    private Function m_func_expr = null;
+    
+    /**
+     * If there's an XPath dynamic function call suffix at an end of 
+     * XPath path expression similar to /a/b/$func(..), we keep a 
+     * compiled XPathDynamicFunctionCall object for $func(..) within 
+     * this class field.  
+     */
+    private XPathDynamicFunctionCall m_dfc_expr = null; 
 	
   /**
    * Create a LocPathIterator object.
@@ -1030,6 +1047,22 @@ public abstract class LocPathIterator extends PredicatedNodeTest
   public int getLastPos(XPathContext xctxt)
   {
     return getLength();
+  }
+  
+  public void setFuncExpr(Function expr) {		
+	  m_func_expr = expr;
+  }
+
+  public Function getFuncExpr() {
+	  return m_func_expr;
+  }
+  
+  public void setDynamicFuncCallExpr(XPathDynamicFunctionCall dfc) {
+	  m_dfc_expr = dfc;
+  }
+  
+  public XPathDynamicFunctionCall getDynamicFuncCallExpr() {
+	  return m_dfc_expr;
   }
 
 }
