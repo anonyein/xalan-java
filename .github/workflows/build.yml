@@ -80,14 +80,18 @@ jobs:
           -Dmaven.repo.local=libs \
           -B
         
+        
     - name: Upload jar
       uses: actions/upload-artifact@v4
       with:
         name: upload-jar
-        path: build/*jar
+        path: target/*.jar
         
     - name: Upload lib
       uses: actions/upload-artifact@v4
+      with:
+        name: native-lib
+        path: target/lib/**
       with:
         name: native-lib
         path: lib
