@@ -17,13 +17,7 @@ on:
 permissions:
   contents: read
 
-# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners
-# GitHub Actions does not support Docker, PostgreSQL server on Windows, macOS :(
-
 concurrency:
-  # On master/release, we don't want any jobs cancelled so the sha is used to name the group
-  # On PR branches, we cancel the job if new commits are pushed
-  # More info: https://stackoverflow.com/a/68422069/253468
   group: ${{ github.ref == 'refs/heads/trunk' && format('ci-main-{0}', github.sha) || format('ci-main-{0}', github.ref) }}
   cancel-in-progress: true
 
@@ -41,31 +35,56 @@ jobs:
         distribution: zulu
         java-version: 8
         
+    - name: 'Install dependencies to local Maven repo'
+      run: |
+        # 创建Maven本地仓库目录
+        mkdir -p libs
+        
+        # 自动安装libs目录下的所有JAR
+        for jar_file in libs/*.jar; do
+          # 从文件名解析groupId和artifactId
+          filename=$(basename "$jar_file")
+          artifact_id="${filename%-*}"
+          version="${filename##*-}"
+          version="${version%.jar}"
+          
+          # 安装到本地仓库
+          mvn install:install-file \
+            -Dfile="$jar_file" \
+            -DgroupId=local.libs \
+            -DartifactId="$artifact_id" \
+            -Dversion="$version" \
+            -Dpackaging=jar \
+            -DlocalRepositoryPath=libs
+        done
+        
     - name: 'Build Xalan jars with local dependencies'
       run: |
-        # 添加本地仓库配置
-        echo '<settings>' > settings.xml
-        echo '  <localRepository>${basedir}/libs</localRepository>' >> settings.xml
-        echo '  <profiles>' >> settings.xml
-        echo '    <profile>' >> settings.xml
-        echo '      <id>local-repo</id>' >> settings.xml
-        echo '      <repositories>' >> settings.xml
-        echo '        <repository>' >> settings.xml
-        echo '          <id>local-libs</id>' >> settings.xml
-        echo '          <url>file://${basedir}/libs</url>' >> settings.xml
-        echo '          <releases><enabled>true</enabled></releases>' >> settings.xml
-        echo '          <snapshots><enabled>true</enabled></snapshots>' >> settings.xml
-        echo '        </repository>' >> settings.xml
-        echo '      </repositories>' >> settings.xml
-        echo '    </profile>' >> settings.xml
-        echo '  </profiles>' >> settings.xml
-        echo '  <activeProfiles>' >> settings.xml
-        echo '    <activeProfile>local-repo</activeProfile>' >> settings.xml
-        echo '  </activeProfiles>' >> settings.xml
-        echo '</settings>' >> settings.xml
+        # 创建自定义settings.xml
+        cat <<EOF > settings.xml
+        <settings>
+          <localRepository>\${basedir}/libs</localRepository>
+          <profiles>
+            <profile>
+              <id>local-repo</id>
+              <repositories>
+                <repository>
+                  <id>local-libs</id>
+                  <url>file://\${basedir}/libs</url>
+                  <releases><enabled>true</enabled></releases>
+                  <snapshots><enabled>false</enabled></snapshots>
+                </repository>
+              </repositories>
+            </profile>
+          </profiles>
+          <activeProfiles>
+            <activeProfile>local-repo</activeProfile>
+          </activeProfiles>
+        </settings>
+        EOF
         
-        # 使用自定义设置运行 Maven
-        mvn -s settings.xml clean install test -Dtest=AllXalanXSLT3Tests
+        # 使用自定义设置运行Maven
+        mvn -s settings.xml clean install test -Dtest=AllXalanXSLT3Tests -Dmaven.repo.local=libs
         
     - name: Upload jar
       uses: actions/upload-artifact@v4
