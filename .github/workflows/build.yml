@@ -35,76 +35,117 @@ jobs:
         distribution: zulu
         java-version: 8
         
-    - name: List libs directory (for debugging)
-      run: |
-        echo "Checking libs directory:"
-        ls -la libs/
-        echo "JAR files in libs:"
-        find libs/ -name "*.jar" -print
-        
     - name: 'Install dependencies to local Maven repo'
       run: |
-        # 确保libs目录存在
-        mkdir -p libs
+        # 为Jlex创建正确的Maven坐标结构
+        mkdir -p libs/Jlex/Jlex/1.0
+        cp libs/JLex/JLex/1.0/jlex-1.0.jar libs/Jlex/Jlex/1.0/Jlex-1.0.jar
         
-        # 查找所有JAR文件并安装
-        find libs -name "*.jar" -print0 | while IFS= read -r -d '' jar_file; do
-          # 从路径解析文件名
-          filename=$(basename "$jar_file")
+        # 安装所有依赖到本地仓库
+        mvn install:install-file \
+          -Dfile=libs/Jlex/Jlex/1.0/Jlex-1.0.jar \
+          -DgroupId=Jlex \
+          -DartifactId=Jlex \
+          -Dversion=1.0 \
+          -Dpackaging=jar \
+          -DlocalRepositoryPath=libs \
+          -DcreateChecksum=true
           
-          # 移除扩展名
-          no_extension="${filename%.jar}"
+        mvn install:install-file \
+          -Dfile=libs/edu/princeton/cs/java_cup/1.0/java_cup-1.0.jar \
+          -DgroupId=edu.princeton.cs \
+          -DartifactId=java_cup \
+          -Dversion=1.0 \
+          -Dpackaging=jar \
+          -DlocalRepositoryPath=libs
           
-          # 分割artifactId和version (假设格式为name-version)
-          artifact_id="${no_extension%-*}"
-          version="${no_extension##*-}"
+        mvn install:install-file \
+          -Dfile=libs/edu/princeton/cs/cup_runtime/1.0/cup_runtime-1.0.jar \
+          -DgroupId=edu.princeton.cs \
+          -DartifactId=cup_runtime \
+          -Dversion=1.0 \
+          -Dpackaging=jar \
+          -DlocalRepositoryPath=libs
           
-          echo "Installing: $jar_file"
-          echo "Group: local.libs, Artifact: $artifact_id, Version: $version"
+        mvn install:install-file \
+          -Dfile=libs/org/apache/xsl/xpath31_types/1.0/xpath31_types-1.0.jar \
+          -DgroupId=org.apache.xsl \
+          -DartifactId=xpath31_types \
+          -Dversion=1.0 \
+          -Dpackaging=jar \
+          -DlocalRepositoryPath=libs
           
-          # 安装到本地仓库
-          mvn install:install-file \
-            -Dfile="$jar_file" \
-            -DgroupId=local.libs \
-            -DartifactId="$artifact_id" \
-            -Dversion="$version" \
-            -Dpackaging=jar \
-            -DlocalRepositoryPath=libs \
-            -DcreateChecksum=true
-        done
+        mvn install:install-file \
+          -Dfile=libs/org/apache/xerces/xercesImpl/2.12.3/xercesImpl-2.12.3.jar \
+          -DgroupId=org.apache.xerces \
+          -DartifactId=xercesImpl \
+          -Dversion=2.12.3 \
+          -Dpackaging=jar \
+          -DlocalRepositoryPath=libs
+          
+        mvn install:install-file \
+          -Dfile=libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar \
+          -DgroupId=org.apache.xerces \
+          -DartifactId=xml-apis \
+          -Dversion=1.4.02 \
+          -Dpackaging=jar \
+          -DlocalRepositoryPath=libs
+          
+        mvn install:install-file \
+          -Dfile=libs/org/apache/commons/bsf/1.0/bsf-1.0.jar \
+          -DgroupId=org.apache.commons \
+          -DartifactId=bsf \
+          -Dversion=1.0 \
+          -Dpackaging=jar \
+          -DlocalRepositoryPath=libs
         
     - name: 'Build Xalan jars with local dependencies'
       run: |
-        # 创建自定义settings.xml
+        # 创建离线settings.xml
         cat <<EOF > settings.xml
-        <settings>
+        <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+          https://maven.apache.org/xsd/settings-1.0.0.xsd">
           <localRepository>\${basedir}/libs</localRepository>
+          <offline>true</offline>
+          <mirrors>
+            <mirror>
+              <id>local-only</id>
+              <name>Local Repository Only</name>
+              <url>file://\${basedir}/libs</url>
+              <mirrorOf>*</mirrorOf>
+            </mirror>
+          </mirrors>
           <profiles>
             <profile>
-              <id>local-repo</id>
+              <id>disable-central</id>
               <repositories>
                 <repository>
-                  <id>local-libs</id>
-                  <url>file://\${basedir}/libs</url>
-                  <releases>
-                    <enabled>true</enabled>
-                    <updatePolicy>never</updatePolicy>
-                  </releases>
-                  <snapshots>
-                    <enabled>false</enabled>
-                  </snapshots>
+                  <id>central</id>
+                  <url>http://invalid.localhost</url>
                 </repository>
               </repositories>
+              <pluginRepositories>
+                <pluginRepository>
+                  <id>central</id>
+                  <url>http://invalid.localhost</url>
+                </pluginRepository>
+              </pluginRepositories>
             </profile>
           </profiles>
           <activeProfiles>
-            <activeProfile>local-repo</activeProfile>
+            <activeProfile>disable-central</activeProfile>
           </activeProfiles>
         </settings>
         EOF
         
-        # 使用自定义设置运行Maven
-        mvn -s settings.xml clean install test -Dtest=AllXalanXSLT3Tests -Dmaven.repo.local=libs -B
+        # 运行Maven构建
+        mvn -s settings.xml clean install test \
+          -Dtest=AllXalanXSLT3Tests \
+          -Dmaven.repo.local=libs \
+          -o \
+          -B
         
     - name: Upload jar
       uses: actions/upload-artifact@v4
