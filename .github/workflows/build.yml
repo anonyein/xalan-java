@@ -71,7 +71,12 @@ jobs:
         install_jar "libs/org/apache/xerces/xercesImpl/2.12.3/xercesImpl-2.12.3.jar" "org.apache.xerces" "xercesImpl" "2.12.3"
         install_jar "libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar" "org.apache.xerces" "xml-apis" "1.4.02"
         install_jar "libs/org/apache/commons/bsf/1.0/bsf-1.0.jar" "org.apache.commons" "bsf" "1.0"
-          
+        
+    - name: 'Pre-download Maven plugins'
+      run: |
+        # 先在线模式下下载必要的插件
+        mvn clean --fail-never -Dmaven.repo.local=libs
+        
     - name: 'Build with offline settings'
       run: |
         # 创建简单的离线settings.xml
