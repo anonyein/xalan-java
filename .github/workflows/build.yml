@@ -45,12 +45,12 @@ jobs:
         chmod 777 build.sh
         ./build.sh clean jar
     - name: Upload jar
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: upload-jar
         path: /home/runner/work/xalan-java/xalan-java/build/*jar
     - name: Upload lib
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: native-lib
         path: /home/runner/work/xalan-java/xalan-java/lib
