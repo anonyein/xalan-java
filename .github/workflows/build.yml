@@ -41,7 +41,6 @@ jobs:
         java-version: 8
     - name: 'Build Xalan jars'
       run: |
-        # patch -p1 -f < xalan.patches
         chmod 777 build.sh
         ./build.sh clean jar
     - name: Upload jar
