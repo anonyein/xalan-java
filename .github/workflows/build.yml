@@ -43,7 +43,7 @@ jobs:
         
         # 安装所有依赖到本地仓库
         mvn install:install-file \
-          -Dfile=libs/Jlex/Jlex/1.0/Jlex-1.0.jar \
+          -Dfile=libs/Jlex/Jlex/1.0/jlex-1.0.jar \
           -DgroupId=Jlex \
           -DartifactId=Jlex \
           -Dversion=1.0 \
