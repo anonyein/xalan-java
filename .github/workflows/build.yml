@@ -46,53 +46,53 @@ jobs:
           -Dpackaging=jar \
           -DlocalRepositoryPath=libs
         
-        mvn install:install-file \
-          -Dfile=libs/edu/princeton/cs/java_cup/1.0/java_cup-1.0.jar \
-          -DgroupId=edu.princeton.cs \
-          -DartifactId=java_cup \
-          -Dversion=1.0 \
-          -Dpackaging=jar \
-          -DlocalRepositoryPath=libs
+        # mvn install:install-file \
+        #   -Dfile=libs/edu/princeton/cs/java_cup/1.0/java_cup-1.0.jar \
+        #   -DgroupId=edu.princeton.cs \
+        #   -DartifactId=java_cup \
+        #   -Dversion=1.0 \
+        #   -Dpackaging=jar \
+        #   -DlocalRepositoryPath=libs
           
-        mvn install:install-file \
-          -Dfile=libs/edu/princeton/cs/cup_runtime/1.0/cup_runtime-1.0.jar \
-          -DgroupId=edu.princeton.cs \
-          -DartifactId=cup_runtime \
-          -Dversion=1.0 \
-          -Dpackaging=jar \
-          -DlocalRepositoryPath=libs
+        # mvn install:install-file \
+        #   -Dfile=libs/edu/princeton/cs/cup_runtime/1.0/cup_runtime-1.0.jar \
+        #   -DgroupId=edu.princeton.cs \
+        #   -DartifactId=cup_runtime \
+        #   -Dversion=1.0 \
+        #   -Dpackaging=jar \
+        #   -DlocalRepositoryPath=libs
           
-        mvn install:install-file \
-          -Dfile=libs/org/apache/xsl/xpath31_types/1.0/xpath31_types-1.0.jar \
-          -DgroupId=org.apache.xsl \
-          -DartifactId=xpath31_types \
-          -Dversion=1.0 \
-          -Dpackaging=jar \
-          -DlocalRepositoryPath=libs
+        # mvn install:install-file \
+        #   -Dfile=libs/org/apache/xsl/xpath31_types/1.0/xpath31_types-1.0.jar \
+        #   -DgroupId=org.apache.xsl \
+        #   -DartifactId=xpath31_types \
+        #   -Dversion=1.0 \
+        #   -Dpackaging=jar \
+        #   -DlocalRepositoryPath=libs
           
-        mvn install:install-file \
-          -Dfile=libs/org/apache/xerces/xercesImpl/2.12.3/xercesImpl-2.12.3.jar \
-          -DgroupId=org.apache.xerces \
-          -DartifactId=xercesImpl \
-          -Dversion=2.12.3 \
-          -Dpackaging=jar \
-          -DlocalRepositoryPath=libs
+        # mvn install:install-file \
+        #   -Dfile=libs/org/apache/xerces/xercesImpl/2.12.3/xercesImpl-2.12.3.jar \
+        #   -DgroupId=org.apache.xerces \
+        #   -DartifactId=xercesImpl \
+        #   -Dversion=2.12.3 \
+        #   -Dpackaging=jar \
+        #   -DlocalRepositoryPath=libs
           
-        mvn install:install-file \
-          -Dfile=libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar \
-          -DgroupId=org.apache.xerces \
-          -DartifactId=xml-apis \
-          -Dversion=1.4.02 \
-          -Dpackaging=jar \
-          -DlocalRepositoryPath=libs
+        # mvn install:install-file \
+        #   -Dfile=libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar \
+        #   -DgroupId=org.apache.xerces \
+        #   -DartifactId=xml-apis \
+        #   -Dversion=1.4.02 \
+        #   -Dpackaging=jar \
+        #   -DlocalRepositoryPath=libs
           
-        mvn install:install-file \
-          -Dfile=libs/org/apache/commons/bsf/1.0/bsf-1.0.jar \
-          -DgroupId=org.apache.commons \
-          -DartifactId=bsf \
-          -Dversion=1.0 \
-          -Dpackaging=jar \
-          -DlocalRepositoryPath=libs
+        # mvn install:install-file \
+        #   -Dfile=libs/org/apache/commons/bsf/1.0/bsf-1.0.jar \
+        #   -DgroupId=org.apache.commons \
+        #   -DartifactId=bsf \
+        #   -Dversion=1.0 \
+        #   -Dpackaging=jar \
+        #   -DlocalRepositoryPath=libs
         
     - name: 'Build with offline settings'
       run: |
