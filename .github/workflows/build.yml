@@ -76,7 +76,6 @@ jobs:
       run: |
         # 运行Maven构建（在线模式）
         mvn clean install test \
-          -Dtest=AllXalanXSLT3Tests \
           -Dmaven.repo.local=libs \
           -B
         
