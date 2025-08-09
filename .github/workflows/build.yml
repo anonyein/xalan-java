@@ -37,63 +37,41 @@ jobs:
         
     - name: 'Install dependencies directly from libs'
       run: |
-        # 直接使用原始文件路径安装所有依赖
-        mvn install:install-file \
-          -Dfile=libs/JLex/JLex/1.0/jlex-1.0.jar \
-          -DgroupId=Jlex \
-          -DartifactId=Jlex \
-          -Dversion=1.0 \
-          -Dpackaging=jar \
-          -DlocalRepositoryPath=libs
-        
-        # mvn install:install-file \
-        #   -Dfile=libs/edu/princeton/cs/java_cup/1.0/java_cup-1.0.jar \
-        #   -DgroupId=edu.princeton.cs \
-        #   -DartifactId=java_cup \
-        #   -Dversion=1.0 \
-        #   -Dpackaging=jar \
-        #   -DlocalRepositoryPath=libs
+        # 定义函数用于安装 JAR 文件
+        install_jar() {
+          local file=$1
+          local groupId=$2
+          local artifactId=$3
+          local version=$4
+
+          # 检查本地仓库中是否已存在该 artifact
+          local artifactPath="libs/${groupId//.//}/${artifactId}/${version}/${artifactId}-${version}.jar"
+          if [ ! -f "$artifactPath" ]; then
+            echo "Installing $artifactId..."
+            mvn install:install-file \
+              -Dfile="$file" \
+              -DgroupId="$groupId" \
+              -DartifactId="$artifactId" \
+              -Dversion="$version" \
+              -Dpackaging=jar \
+              -DlocalRepositoryPath=libs
+          else
+            echo "Skipping $artifactId, already installed."
+          fi
+        }
+
+        # 确保 libs 目录存在
+        mkdir -p libs
+
+        # 调用函数安装所有依赖项
+        install_jar "libs/JLex/JLex/1.0/jlex-1.0.jar" "Jlex" "Jlex" "1.0"
+        install_jar "libs/edu/princeton/cs/java_cup/1.0/java_cup-1.0.jar" "edu.princeton.cs" "java_cup" "1.0"
+        install_jar "libs/edu/princeton/cs/cup_runtime/1.0/cup_runtime-1.0.jar" "edu.princeton.cs" "cup_runtime" "1.0"
+        install_jar "libs/org/apache/xsl/xpath31_types/1.0/xpath31_types-1.0.jar" "org.apache.xsl" "xpath31_types" "1.0"
+        install_jar "libs/org/apache/xerces/xercesImpl/2.12.3/xercesImpl-2.12.3.jar" "org.apache.xerces" "xercesImpl" "2.12.3"
+        install_jar "libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar" "org.apache.xerces" "xml-apis" "1.4.02"
+        install_jar "libs/org/apache/commons/bsf/1.0/bsf-1.0.jar" "org.apache.commons" "bsf" "1.0"
           
-        # mvn install:install-file \
-        #   -Dfile=libs/edu/princeton/cs/cup_runtime/1.0/cup_runtime-1.0.jar \
-        #   -DgroupId=edu.princeton.cs \
-        #   -DartifactId=cup_runtime \
-        #   -Dversion=1.0 \
-        #   -Dpackaging=jar \
-        #   -DlocalRepositoryPath=libs
-          
-        # mvn install:install-file \
-        #   -Dfile=libs/org/apache/xsl/xpath31_types/1.0/xpath31_types-1.0.jar \
-        #   -DgroupId=org.apache.xsl \
-        #   -DartifactId=xpath31_types \
-        #   -Dversion=1.0 \
-        #   -Dpackaging=jar \
-        #   -DlocalRepositoryPath=libs
-          
-        # mvn install:install-file \
-        #   -Dfile=libs/org/apache/xerces/xercesImpl/2.12.3/xercesImpl-2.12.3.jar \
-        #   -DgroupId=org.apache.xerces \
-        #   -DartifactId=xercesImpl \
-        #   -Dversion=2.12.3 \
-        #   -Dpackaging=jar \
-        #   -DlocalRepositoryPath=libs
-          
-        # mvn install:install-file \
-        #   -Dfile=libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar \
-        #   -DgroupId=org.apache.xerces \
-        #   -DartifactId=xml-apis \
-        #   -Dversion=1.4.02 \
-        #   -Dpackaging=jar \
-        #   -DlocalRepositoryPath=libs
-          
-        # mvn install:install-file \
-        #   -Dfile=libs/org/apache/commons/bsf/1.0/bsf-1.0.jar \
-        #   -DgroupId=org.apache.commons \
-        #   -DartifactId=bsf \
-        #   -Dversion=1.0 \
-        #   -Dpackaging=jar \
-        #   -DlocalRepositoryPath=libs
-        
     - name: 'Build with offline settings'
       run: |
         # 创建简单的离线settings.xml
