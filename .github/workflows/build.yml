@@ -36,11 +36,7 @@ jobs:
         java-version: 8
         
     - name: 'Install dependencies to local Maven repo'
-      run: |
-        # 为Jlex创建正确的Maven坐标结构
-        mkdir -p libs/Jlex/Jlex/1.0
-        cp libs/JLex/JLex/1.0/jlex-1.0.jar libs/Jlex/Jlex/1.0/Jlex-1.0.jar
-        
+      run: |        
         # 安装所有依赖到本地仓库
         mvn install:install-file \
           -Dfile=libs/Jlex/Jlex/1.0/jlex-1.0.jar \
