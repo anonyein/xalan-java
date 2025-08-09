@@ -72,33 +72,12 @@ jobs:
         install_jar "libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar" "org.apache.xerces" "xml-apis" "1.4.02"
         install_jar "libs/org/apache/commons/bsf/1.0/bsf-1.0.jar" "org.apache.commons" "bsf" "1.0"
         
-    - name: 'Pre-download Maven plugins'
+    - name: 'Build project'
       run: |
-        # 先在线模式下下载必要的插件
-        mvn clean --fail-never -Dmaven.repo.local=libs
-        
-    - name: 'Build with offline settings'
-      run: |
-        # 创建简单的离线settings.xml
-        cat <<EOF > settings.xml
-        <settings>
-          <localRepository>\${basedir}/libs</localRepository>
-          <offline>true</offline>
-          <mirrors>
-            <mirror>
-              <id>local-only</id>
-              <url>file://\${basedir}/libs</url>
-              <mirrorOf>*</mirrorOf>
-            </mirror>
-          </mirrors>
-        </settings>
-        EOF
-        
-        # 运行Maven构建（强制离线模式）
-        mvn -s settings.xml clean install test \
+        # 运行Maven构建（在线模式）
+        mvn clean install test \
           -Dtest=AllXalanXSLT3Tests \
           -Dmaven.repo.local=libs \
-          -o \
           -B
         
     - name: Upload jar
