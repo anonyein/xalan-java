@@ -41,8 +41,7 @@ jobs:
         java-version: 8
     - name: 'Build Xalan jars'
       run: |
-        chmod 777 build.sh
-        ./build.sh clean jar
+        mvn clean install test -Dtest=AllXalanXSLT3Tests
     - name: Upload jar
       uses: actions/upload-artifact@v4
       with:
