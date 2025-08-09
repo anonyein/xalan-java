@@ -34,19 +34,45 @@ jobs:
     steps:
     - name: 'Checkout xalan-java'
       uses: actions/checkout@v3
+      
     - name: 'Set up JDK 8'
       uses: actions/setup-java@v2
       with:
         distribution: zulu
         java-version: 8
-    - name: 'Build Xalan jars'
+        
+    - name: 'Build Xalan jars with local dependencies'
       run: |
-        mvn clean install test -Dtest=AllXalanXSLT3Tests
+        # 添加本地仓库配置
+        echo '<settings>' > settings.xml
+        echo '  <localRepository>${basedir}/libs</localRepository>' >> settings.xml
+        echo '  <profiles>' >> settings.xml
+        echo '    <profile>' >> settings.xml
+        echo '      <id>local-repo</id>' >> settings.xml
+        echo '      <repositories>' >> settings.xml
+        echo '        <repository>' >> settings.xml
+        echo '          <id>local-libs</id>' >> settings.xml
+        echo '          <url>file://${basedir}/libs</url>' >> settings.xml
+        echo '          <releases><enabled>true</enabled></releases>' >> settings.xml
+        echo '          <snapshots><enabled>true</enabled></snapshots>' >> settings.xml
+        echo '        </repository>' >> settings.xml
+        echo '      </repositories>' >> settings.xml
+        echo '    </profile>' >> settings.xml
+        echo '  </profiles>' >> settings.xml
+        echo '  <activeProfiles>' >> settings.xml
+        echo '    <activeProfile>local-repo</activeProfile>' >> settings.xml
+        echo '  </activeProfiles>' >> settings.xml
+        echo '</settings>' >> settings.xml
+        
+        # 使用自定义设置运行 Maven
+        mvn -s settings.xml clean install test -Dtest=AllXalanXSLT3Tests
+        
     - name: Upload jar
       uses: actions/upload-artifact@v4
       with:
         name: upload-jar
         path: /home/runner/work/xalan-java/xalan-java/build/*jar
+        
     - name: Upload lib
       uses: actions/upload-artifact@v4
       with:
