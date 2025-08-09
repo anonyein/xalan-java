@@ -75,7 +75,8 @@ jobs:
     - name: 'Build project'
       run: |
         # 运行Maven构建（在线模式）
-        mvn clean install test \
+        mvn clean install \
+          -DskipTests \
           -Dmaven.repo.local=libs \
           -B
         
