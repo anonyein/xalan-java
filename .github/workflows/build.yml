@@ -70,7 +70,6 @@ jobs:
         install_jar "libs/org/apache/xsl/xpath31_types/1.0/xpath31_types-1.0.jar" "org.apache.xsl" "xpath31_types" "1.0"
         install_jar "libs/org/apache/xerces/xercesImpl/2.12.3_beta/xercesImpl-2.12.3_beta.jar" "org.apache.xerces" "xercesImpl" "2.12.3_beta"
         install_jar "libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar" "org.apache.xerces" "xml-apis" "1.4.02"
-        install_jar "libs/org/apache/commons/bsf/1.0/bsf-1.0.jar" "org.apache.commons" "bsf" "1.0"
         
     - name: 'Build project'
       run: |
