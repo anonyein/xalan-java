@@ -16,22 +16,21 @@
  */
 package org.apache.xalan.xslt.util;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 import java.util.stream.IntStream;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
+import javax.xml.transform.dom.DOMSource;
 
+import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.ElemFunction;
 import org.apache.xalan.templates.ElemTemplate;
 import org.apache.xalan.templates.StylesheetRoot;
@@ -61,16 +60,23 @@ import org.apache.xpath.objects.XBooleanStatic;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.Range;
 import org.apache.xpath.operations.SimpleMapOperator;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.patterns.NodeTest;
+import org.w3c.dom.Attr;
 import org.w3c.dom.DOMConfiguration;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.w3c.dom.bootstrap.DOMImplementationRegistry;
 import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSSerializer;
+import org.xml.sax.InputSource;
 
 import xml.xpath31.processor.types.XSAnyAtomicType;
 import xml.xpath31.processor.types.XSAnyType;
@@ -83,7 +89,7 @@ import xml.xpath31.processor.types.XSUntyped;
 import xml.xpath31.processor.types.XSUntypedAtomic;
 
 /**
- * This class definition, specifies few utility methods that provide 
+ * A class definition, that has few utility methods that provide 
  * support for Xalan-J's XSLT 3.0 transformation processor implementation.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
@@ -94,21 +100,28 @@ public class XslTransformEvaluationHelper {
     
     /**
      * Given an xdm input sequence, expand that sequence to produce a new sequence
-     * none of whose items are sequence with cardinality greater than one.
+     * none of whose items are sequence or array with cardinality greater than one.
      * 
-     * The caller of this method, needs to pass an xdm sequence to be expanded
+     * The caller of this method, needs to supply an xdm sequence to be expanded
      * as an argument, and another argument reference to get the result from this 
      * method.
      */
     public static void expandResultSequence(ResultSequence seqToBeExpanded, 
-                                                                  ResultSequence finalResultSeq) {               
+                                                                  ResultSequence result) {               
         for (int idx = 0; idx < seqToBeExpanded.size(); idx++) {
-          XObject xObject = seqToBeExpanded.item(idx);
-          if (xObject instanceof ResultSequence) {
-             expandResultSequence((ResultSequence)xObject, finalResultSeq); 
+          XObject seqItem = seqToBeExpanded.item(idx);
+          if (seqItem instanceof ResultSequence) {
+             expandResultSequence((ResultSequence)seqItem, result); 
+          }
+          if (seqItem instanceof XPathArray) {
+             ResultSequence rSeq = ((XPathArray)seqItem).atomize();
+             for (int idx2 = 0; idx2 < rSeq.size(); idx2++) {
+            	XObject xObject2 = rSeq.item(idx2);            	
+            	result.add(xObject2);
+             }
           }
           else {
-             finalResultSeq.add(xObject);
+             result.add(seqItem);
           }
        }
     }
@@ -540,35 +553,14 @@ public class XslTransformEvaluationHelper {
     	String resultStr = null;
 
     	DOMImplementationLS domImplLS = (DOMImplementationLS)((DOMImplementationRegistry.
-    																				 newInstance()).getDOMImplementation("LS"));
+    																				 newInstance()).getDOMImplementation("LS"));    	
     	LSSerializer lsSerializer = domImplLS.createLSSerializer();
     	DOMConfiguration domConfig = lsSerializer.getDomConfig();
     	domConfig.setParameter(XSL3FunctionService.XML_DOM_FORMAT_PRETTY_PRINT, Boolean.TRUE);
     	resultStr = lsSerializer.writeToString(node);
     	resultStr = resultStr.replaceFirst(XSL3FunctionService.UTF_16, XSL3FunctionService.UTF_8);
-
+        		
     	return resultStr;
-    }
-    
-    /**
-     * Get the string contents from an URL.
-     */
-    public static String getStringContentFromUrl(URL url) throws IOException {
-        StringBuilder strBuilder = new StringBuilder();
-        
-        InputStream inpStream = url.openStream();        
-        try {                    
-            BufferedReader buffReader = new BufferedReader(new InputStreamReader(inpStream));
-            int c;
-            while ((c = buffReader.read()) != -1) {
-               strBuilder.append((char)c);
-            }
-        } 
-        finally {
-            inpStream.close();
-        }
-     
-        return strBuilder.toString();
     }
     
     /**
@@ -584,84 +576,6 @@ public class XslTransformEvaluationHelper {
        }
        
        return result;
-    }
-    
-    /**
-     * Method definition to check, whether the supplied string value 
-     * has balanced parentheses pairs.
-     */
-    public static boolean isStrHasBalancedParentheses(String strValue, char lParenChar, char rParenChar) {
-       
-       boolean result = true;
-       
-       Stack<Character> charStack = new Stack<Character>();
-       
-       int strLen = strValue.length();
-       
-       for(int idx = 0; idx < strLen; idx++) {
-           char ch = strValue.charAt(idx);
-           if (ch == lParenChar) {
-              charStack.push(ch); 
-           }
-           else if (ch == rParenChar){
-              if (charStack.isEmpty() || (charStack.pop() != lParenChar)) {
-                 // Unbalanced parentheses
-                 result = false;
-                 break;
-              }   
-           }
-       }
-       
-       if (!charStack.isEmpty()) {
-          result = false;
-       }
-       
-       return result; 
-    }
-    
-    /**
-     * Method definition to check, whether the supplied string value 
-     * has balanced XPath comment delimiters. XPath comments have
-     * lexical form (: comment text :)
-     */
-    public static boolean isStrHasBalancedXPathCommentDelim(String strValue) {
-        
-        boolean result = true;
-        
-        // Sufficiently random character strings, that're unlikely 
-        // to occur within an XPath expression.        
-        String lDelimStr = new String(new int[] { 2 }, 0, 1);
-        String rDelimStr = new String(new int[] { 3 }, 0, 1);
-        
-        char lDelimChar = lDelimStr.charAt(0);
-        char rDelimChar = rDelimStr.charAt(0);
-        
-        strValue = strValue.replace("(:", lDelimStr);        
-        strValue = strValue.replace(":)", rDelimStr);
-        
-        Stack<Character> charStack = new Stack<Character>();
-        
-        int strLen = strValue.length();
-        
-        for(int idx = 0; idx < strLen; idx++) {
-            char ch = strValue.charAt(idx);
-            if (ch == lDelimChar) {
-               charStack.push(ch); 
-            }
-            else if (ch == rDelimChar){
-               if (charStack.isEmpty() || (charStack.pop() != lDelimChar)) {
-                  // Unbalanced comment string
-                  result = false;
-                  break;
-               }   
-            }
-        }
-        
-        if (!charStack.isEmpty()) {
-           result = false;
-        }
-        
-        return result; 
     }
     
     /**
@@ -786,6 +700,70 @@ public class XslTransformEvaluationHelper {
     }
     
     /**
+     * Method definition, to strip XML namespace nodes recursively
+     * from the supplied XMLNodeCursorImpl node set object.
+     * 
+     * @param nodeSet					The supplied XMLNodeCursorImpl node set object
+     * @param xctxt					    An XPath context object
+     */
+    public static XMLNodeCursorImpl stripNamespacesNodeSet(XMLNodeCursorImpl nodeSet, XPathContext xctxt) throws TransformerException {
+ 	   
+ 	   XMLNodeCursorImpl result = null;
+ 	   
+ 	   int nodeHandle = nodeSet.asNode(xctxt);
+ 	   DTM dtm = xctxt.getDTM(nodeHandle);
+ 	   Node node = dtm.getNode(nodeHandle);
+ 	   String xmlStr = null;
+ 	   
+ 	   SourceLocator srcLocator = xctxt.getSAXLocator();
+ 	   
+ 	   try {
+ 		   xmlStr = XslTransformEvaluationHelper.serializeXmlDomElementNode(node);
+ 		   DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+ 		   dbFactory.setNamespaceAware(true);
+ 		   DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
+ 		   StringReader strReader = new StringReader(xmlStr);
+ 		   InputSource inpSource = new InputSource(strReader);
+ 		   Document document = docBuilder.parse(inpSource);
+ 		   nodeNamespacesStrip(document.getDocumentElement());
+
+ 		   DTMManager dtmManager = xctxt.getDTMManager();
+ 		   DTM resultDtm = dtmManager.getDTM(new DOMSource(document), true, null, false, false);
+ 		   int resultNodeHandle = resultDtm.getDocument();
+
+ 		   result = new XMLNodeCursorImpl(resultNodeHandle, dtmManager);
+ 	   }
+ 	   catch (Exception ex) {
+ 		   throw new TransformerException(ex.getMessage(), srcLocator); 
+ 	   }
+ 	   
+ 	   return result;
+    }
+    
+    /**
+     * Method definition, to construct a string value of required 
+     * length, comprising a sequence of character '0'.
+     * 
+     * @param strLength				The length of the desired string 
+     *                              value.
+     * @return                      The string value constructed
+     */
+    public static String getStrWithZeros(int strLength) {
+       
+       String result = null;
+       
+       StringBuffer strBuff = new StringBuffer();
+       
+       for (int idx = 0; idx < strLength; idx++) {
+          strBuff.append("0");
+       }
+       
+       result = strBuff.toString(); 
+       
+       return result;
+    }
+    
+    /**
      * This method produces, numerical sum of xdm sequence items.
      *  
      * @param resultSeq  An xdm sequence object instance, whose items
@@ -812,6 +790,34 @@ public class XslTransformEvaluationHelper {
        }
        
        return sum;
+    }
+    
+    /**
+     * Method definition, to strip XML namespace nodes recursively
+     * from the supplied XML dom element node.
+     * 
+     * @param elemNode					The supplied XML dom element node
+     */
+    private static void nodeNamespacesStrip(Element elemNode) {
+
+ 	   NamedNodeMap namedNodeMap = elemNode.getAttributes();
+
+ 	   int attrCount = namedNodeMap.getLength();
+ 	   for (int idx = 0; idx < attrCount; idx++) {
+ 		   Node node = namedNodeMap.item(idx);
+ 		   String nodeName = node.getNodeName();
+ 		   if (nodeName.startsWith(Constants.ATTRNAME_XMLNS) || (Constants.ATTRNAME_XMLNSDEF).equals(nodeName)) {
+ 			   elemNode.removeAttributeNode((Attr)node);
+ 			   NodeList nodeList = elemNode.getChildNodes();
+ 			   int nodeListLength = nodeList.getLength();
+ 			   for (int idx2 = 0; idx2 < nodeListLength; idx2++) {
+ 				   Node node2 = nodeList.item(idx2);
+ 				   if (node2.getNodeType() == Node.ELEMENT_NODE) {
+ 					   nodeNamespacesStrip((Element)node2); 
+ 				   }
+ 			   }
+ 		   }
+ 	   }
     }
 
 }

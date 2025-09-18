@@ -136,6 +136,9 @@ public class XSLTSchema extends XSLTElementDef
     XSLTAttributeDef xslExpandTextAttrOpt = new XSLTAttributeDef(Constants.S_XSLNAMESPACEURL, "expand-text",
                                            XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);
     
+    XSLTAttributeDef xslCopyNamespacesOpt = new XSLTAttributeDef(null, "copy-namespaces",
+                                           XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);
+    
     // Required.
     // xsl:output-character                                     
     XSLTAttributeDef characterAttrRequired = new XSLTAttributeDef(null, "character",
@@ -291,9 +294,14 @@ public class XSLTSchema extends XSLTElementDef
     XSLTAttributeDef compositeAttrOpt = new XSLTAttributeDef(null, "composite",
                                                       XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.WARNING);
     // Optional
-    // xsl:for-each-group 
+    // xsl:for-each-group, xsl:sort 
     XSLTAttributeDef collationAttrOpt = new XSLTAttributeDef(null, "collation", 
     	                                              XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.ERROR);
+    
+    // Optional
+    // xsl:sort
+    XSLTAttributeDef stableAttrOpt = new XSLTAttributeDef(null, "stable",
+                                                      XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);    
     
     // Optional
     // xsl:value-of
@@ -350,7 +358,7 @@ public class XSLTSchema extends XSLTElementDef
 
     // Optional                                          
     // xsl:variable, xsl:value-of, xsl:param, xsl:with-param, xsl:attribute, xsl:break, 
-    // xsl:on-completion, xsl:sequence, xsl:try, xsl:catch                                       
+    // xsl:on-completion, xsl:sequence, xsl:try, xsl:catch, xsl:copy                                       
     XSLTAttributeDef selectAttrOpt = new XSLTAttributeDef(null, "select",
                                        XSLTAttributeDef.T_EXPR, false, false, XSLTAttributeDef.ERROR);
     
@@ -591,6 +599,7 @@ public class XSLTSchema extends XSLTElementDef
                                  Constants.S_XSLNAMESPACEURL, "copy-of",
                                  null /*alias */, null /* elements */,
                                  new XSLTAttributeDef[]{ selectAttrRequired,
+                                		                 xslCopyNamespacesOpt,
                                 		                 typeAttrOpt,
                                 		                 validationAttrOpt, xpathDefaultNamespaceAttrOpt,
                                 		                 expandTextAttrOpt },
@@ -626,13 +635,13 @@ public class XSLTSchema extends XSLTElementDef
     XSLTElementDef xslSort = new XSLTElementDef(this,
                                                 Constants.S_XSLNAMESPACEURL,
                                                 "sort", null /*alias */,
-                                                null /* elements */,
+                                                templateElements,
                                                 new XSLTAttributeDef[]{
-                                                  selectAttrDefDot,
+                                                  selectAttrOpt,
                                                   langAttr,
                                                   dataTypeAttr,
                                                   orderAttr,
-                                                  caseOrderAttr }, 
+                                                  caseOrderAttr, collationAttrOpt, stableAttrOpt }, 
                                        new ProcessorTemplateElem(),
                                                 ElemSort.class/* class object */, 19, true );
     XSLTElementDef xslWithParam = new XSLTElementDef(this,
@@ -922,10 +931,12 @@ public class XSLTSchema extends XSLTElementDef
                          null /*alias */, templateElements /* elements */,  // %template;>
                           new XSLTAttributeDef[]{
                                                   spaceAttr,
+                                                  selectAttrOpt,
+                                                  xslCopyNamespacesOpt,
                                                   useAttributeSetsAttr,
                                                   typeAttrOpt,
                          		                  validationAttrOpt, 
-                         		                  xpathDefaultNamespaceAttrOpt, expandTextAttrOpt }, 
+                         		                  xpathDefaultNamespaceAttrOpt, expandTextAttrOpt },
                                         new ProcessorTemplateElem(),
                           ElemCopy.class /* class object */, 20, true);
     XSLTElementDef xslMessage = new XSLTElementDef(this,

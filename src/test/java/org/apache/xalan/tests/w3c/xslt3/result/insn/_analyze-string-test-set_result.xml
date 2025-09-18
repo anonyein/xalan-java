@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-08-14T16:50:44Z" fail="16" name="analyze-string" pass="37" skipped="5" statusUnknown="0" totalRun="53">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-09-16T13:25:24Z" fail="14" name="analyze-string" pass="39" skipped="5" statusUnknown="0" totalRun="53">
    <testResult status="pass" testName="analyze-string-001"/>
    <testResult status="pass" testName="analyze-string-002"/>
    <testResult status="pass" testName="analyze-string-003"/>
@@ -54,10 +54,9 @@
    <testResult status="skipped" testName="analyze-string-090a" xsltVersion="xslt 2.0 only"/>
    <testResult status="fail" testName="analyze-string-090b"/>
    <testResult status="skipped" testName="analyze-string-091a" xsltVersion="xslt 2.0 only"/>
-   <testResult status="fail" testName="analyze-string-091b"/>
+   <testResult status="pass" testName="analyze-string-091b"/>
    <testResult status="fail" testName="analyze-string-092">
       <outResult>
-         <errTrace>java.lang.NullPointerException</errTrace>
          <errTrace>Expected ), but found: "s "</errTrace>
          <errTrace>java.lang.ClassCastException: org.apache.xpath.objects.XNumber cannot be cast to java.lang.String</errTrace>
       </outResult>
@@ -65,7 +64,7 @@
    <testResult status="pass" testName="analyze-string-093"/>
    <testResult status="pass" testName="analyze-string-094"/>
    <testResult status="pass" testName="analyze-string-095"/>
-   <testResult status="fail" testName="analyze-string-096"/>
+   <testResult status="pass" testName="analyze-string-096"/>
    <testResult status="fail" testName="analyze-string-097">
       <outResult>
          <errTrace>XTTE1540 : An error occured while evaluating an XSL stylesheet xsl:copy-of instruction.</errTrace>

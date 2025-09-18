@@ -1841,14 +1841,11 @@ public class ElemTemplateElement extends UnImplNode
          ElemTemplateElement xslInstrParentElement = xslInstr.m_parentNode;
           
          if (xslInstrParentElement instanceof ElemIf) {
-            result = isXslInstructionInTailPositionOfSequenceConstructor(
-                                                                                             xslInstrParentElement); 
+            result = isXslInstructionInTailPositionOfSequenceConstructor(xslInstrParentElement); 
          }
-         else if ((xslInstrParentElement instanceof ElemWhen) || (xslInstrParentElement 
-                                                                                   instanceof ElemOtherwise)) {
+         else if ((xslInstrParentElement instanceof ElemWhen) || (xslInstrParentElement instanceof ElemOtherwise)) {
              xslInstrParentElement = xslInstrParentElement.m_parentNode;
-             result = isXslInstructionInTailPositionOfSequenceConstructor(
-                                                                                                      xslInstrParentElement);
+             result = isXslInstructionInTailPositionOfSequenceConstructor(xslInstrParentElement);
          }
       }
       else {
@@ -2256,6 +2253,9 @@ public class ElemTemplateElement extends UnImplNode
   	}
   	else if (elemTemplateElem instanceof ElemApplyTemplates) {
   		result = ((ElemApplyTemplates)elemTemplateElem).getExpandText();  		
+  	}
+  	else if (elemTemplateElem instanceof ElemCallTemplate) {
+  		result = ((ElemCallTemplate)elemTemplateElem).getExpandText();  		
   	}
   	else if (elemTemplateElem instanceof ElemForEach) {
   		result = ((ElemForEach)elemTemplateElem).getExpandText();  		

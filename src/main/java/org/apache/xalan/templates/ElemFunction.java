@@ -17,6 +17,7 @@
  */
 package org.apache.xalan.templates;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,8 +29,8 @@ import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
-import org.apache.xalan.xslt.util.XslTransformSharedDatastore;
 import org.apache.xerces.xs.XSTypeDefinition;
 import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xml.dtm.ref.DTMNodeList;
@@ -488,7 +489,7 @@ public class ElemFunction extends ElemTemplate
       String funcAsAttrStrVal = getAs();
       
       if (funcAsAttrStrVal != null) {
-    	 // Process xsl:function's evaluation result with "as" attribute
+    	  // Process xsl:function's evaluation result with "as" attribute
     	  
     	  try {
     		SequenceTypeData seqExpectedTypeData = SequenceTypeSupport.getSequenceTypeDataFromSeqTypeStr(funcAsAttrStrVal, xctxt, srcLocator);
@@ -534,9 +535,8 @@ public class ElemFunction extends ElemTemplate
 																			            				 funcAsAttrStrVal + ".", srcLocator);
             	 }             	            	              	
              }
-             else if (((XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence).size() > 0) && 
-            		                                                                      !ElemVariable.m_isXPathNamedFunctionRefSequenceVar) {            	
-            	int funcItemSeqSize = (XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence).size();
+             else if (((XslTransformData.m_xpathNamedFunctionRefSequence).size() > 0) && !ElemVariable.m_isXPathNamedFunctionRefSequenceVar) {            
+            	int funcItemSeqSize = (XslTransformData.m_xpathNamedFunctionRefSequence).size();
         		
         		SequenceTypeFunctionTest sequenceTypeFunctionTest = seqExpectedTypeData.getSequenceTypeFunctionTest();
         		int seqTypeItemOccurenceIndicator = seqExpectedTypeData.getItemTypeOccurrenceIndicator();
@@ -568,19 +568,19 @@ public class ElemFunction extends ElemTemplate
             	
         		if (sequenceTypeFunctionTest != null) {
         			if (sequenceTypeFunctionTest.isAnyFunctionTest()) {
-        				if ((XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence).size() == 1) {
-        					funcResultConvertedVal = (XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence).item(0);
-        					(XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence).remove(0);
+        				if ((XslTransformData.m_xpathNamedFunctionRefSequence).size() == 1) {
+        					funcResultConvertedVal = (XslTransformData.m_xpathNamedFunctionRefSequence).item(0);
+        					(XslTransformData.m_xpathNamedFunctionRefSequence).remove(0);
         				}
         				else {
-        					funcResultConvertedVal = XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence;
+        					funcResultConvertedVal = XslTransformData.m_xpathNamedFunctionRefSequence;
         				}
 
         				return funcResultConvertedVal;
         			}
         			else {
-        				if ((XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence).size() == 1) {
-        					funcResultConvertedVal = (XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence).item(0);        					
+        				if ((XslTransformData.m_xpathNamedFunctionRefSequence).size() == 1) {
+        					funcResultConvertedVal = (XslTransformData.m_xpathNamedFunctionRefSequence).item(0);        					
         					if (funcResultConvertedVal instanceof XPathNamedFunctionReference) {
         					   XPathNamedFunctionReference xpathNamedFunctionReference = (XPathNamedFunctionReference)funcResultConvertedVal;
         					   if (xpathNamedFunctionReference.getXslStylesheetFunction() == null) {
@@ -591,18 +591,14 @@ public class ElemFunction extends ElemTemplate
                                                                                                                              ", doesn't match the declared function result type " + funcAsAttrStrVal + 
                                                                                                                              ". The function arity specification doesn't match.", srcLocator); 
         						   }        						   
-        					   }
-        					   else {
-        						   // REVISIT
-        					   }
+        					   }        					   
         					}
         					
-        					(XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence).remove(0);
+        					(XslTransformData.m_xpathNamedFunctionRefSequence).remove(0);
         				}
         				else {
-        					// REVISIT
-        					funcResultConvertedVal = XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence;
-        					(XslTransformSharedDatastore.m_xpathNamedFunctionRefSequence).clear();
+        					funcResultConvertedVal = XslTransformData.m_xpathNamedFunctionRefSequence;
+        					(XslTransformData.m_xpathNamedFunctionRefSequence).clear();
         				}
 
         				return funcResultConvertedVal;
@@ -631,6 +627,9 @@ public class ElemFunction extends ElemTemplate
          catch (TransformerException ex) {
             throw new TransformerException(ex.getMessage(), srcLocator); 
          }
+    	 finally {
+    		ElemVariable.m_isXPathNamedFunctionRefSequenceVar = false;    		 
+    	 }
       }
       
       if (funcResultConvertedVal instanceof ResultSequence) {
@@ -943,17 +942,17 @@ public class ElemFunction extends ElemTemplate
 	  else {
 		  Object xslFunctionResult = transformer.transformToGlobalRTFXslFunctionOrTemplate(this);
 
-		  if (XslTransformSharedDatastore.m_xpathInlineFunction != null) {
-			  result = XslTransformSharedDatastore.m_xpathInlineFunction;			  
-			  XslTransformSharedDatastore.m_xpathInlineFunction = null;
+		  if (XslTransformData.m_xpathInlineFunction != null) {
+			  result = XslTransformData.m_xpathInlineFunction;			  
+			  XslTransformData.m_xpathInlineFunction = null;
 		  }
-		  else if (XslTransformSharedDatastore.m_xpathMap != null) {
-			  result = XslTransformSharedDatastore.m_xpathMap;			  
-			  XslTransformSharedDatastore.m_xpathMap = null;
+		  else if (XslTransformData.m_xpathMap != null) {
+			  result = XslTransformData.m_xpathMap;			  
+			  XslTransformData.m_xpathMap = null;
 		  }
-		  else if (XslTransformSharedDatastore.m_xpathArray != null) {
-			  result = XslTransformSharedDatastore.m_xpathArray;			  
-			  XslTransformSharedDatastore.m_xpathArray = null;
+		  else if (XslTransformData.m_xpathArray != null) {
+			  result = XslTransformData.m_xpathArray;			  
+			  XslTransformData.m_xpathArray = null;
 		  }
 
 		  if (result == null) {		  
@@ -1205,6 +1204,22 @@ public class ElemFunction extends ElemTemplate
     
     public boolean isOverrideExtensionFunctionAttrDeclared() {
     	return m_override_extension_function_attr_declared;
+    }
+    
+    /**
+     * Method definition, to get xsl:function's parameter information.
+     * 
+     * @return                   List of ElemParam objects, or null.
+     */
+    public List<ElemParam> getFuncParamList() {
+    	List<ElemParam> funcParamList = new ArrayList<ElemParam>();
+    	
+    	ElemTemplateElement elemTemplateElem = this.getFirstChildElem();
+    	if (elemTemplateElem instanceof ElemParam) {
+    	   funcParamList.add((ElemParam)elemTemplateElem);
+    	}
+    	
+    	return funcParamList; 
     }
 
 }

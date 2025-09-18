@@ -59,7 +59,7 @@ import org.apache.xalan.trace.PrintTraceListener;
 import org.apache.xalan.trace.TraceManager;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xalan.transformer.XalanProperties;
-import org.apache.xalan.xslt.util.XslTransformSharedDatastore;
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xml.utils.DefaultErrorHandler;
 import org.apache.xml.utils.SystemIDResolver;
 import org.w3c.dom.Document;
@@ -213,7 +213,7 @@ public class Process
 		  try
 		  {
 			  tfactory = TransformerFactory.newInstance();
-			  tfactory.setErrorListener(new DefaultErrorHandler(false));
+			  tfactory.setErrorListener(new DefaultErrorHandler(true));
 		  }
 		  catch (TransformerFactoryConfigurationError err)
 		  {
@@ -761,7 +761,7 @@ public class Process
 				  }
 				  else
 				  {					  					  
-					  XslTransformSharedDatastore.m_xslSystemId = SystemIDResolver.getAbsoluteURI(xslFileName);
+					  XslTransformData.m_xslSystemId = SystemIDResolver.getAbsoluteURI(xslFileName);
 					  
 					  InputStream inputStr = new FileInputStream(new File(xslFileName));						 
 					  StreamSource streamSrc = new StreamSource(inputStr);
@@ -829,7 +829,7 @@ public class Process
 					  ((TransformerImpl)transformer).setProperty(TransformerImpl.XSL_EVALUATE_PROPERTY, Boolean.TRUE);
 				  }
 
-				  transformer.setErrorListener(new DefaultErrorHandler(false));
+				  transformer.setErrorListener(new DefaultErrorHandler(true));
 
 				  // Override the output format?
 				  if (null != outputType)
@@ -907,7 +907,7 @@ public class Process
 
 						  // Now serialize output to disk with identity transformer
 						  Transformer identityTransformer = stf.newTransformer();
-						  identityTransformer.setErrorListener(new DefaultErrorHandler(false));
+						  identityTransformer.setErrorListener(new DefaultErrorHandler(true));
 
 						  Properties serializationProps = stylesheet.getOutputProperties();
 
@@ -936,12 +936,16 @@ public class Process
 						  if (encoding != null) {
 							 inpSrc.setEncoding(encoding); 
 						  }
+						  
+						  // Using an XMLReader to construct SAXSource for an XML input
+						  // document, enables correct XML namespace processing. 
+						  XMLReader xmlReader = XMLReaderFactory.createXMLReader();
 
-						  transformer.transform(new SAXSource(inpSrc), new DOMResult(outNode));
+						  transformer.transform(new SAXSource(xmlReader, inpSrc), new DOMResult(outNode));
 
 						  // Now serialize output to disk with identity transformer
 						  Transformer identityTransformer = stf.newTransformer();
-						  identityTransformer.setErrorListener(new DefaultErrorHandler(false));
+						  identityTransformer.setErrorListener(new DefaultErrorHandler(true));
 
 						  Properties serializationProps = stylesheet.getOutputProperties();
 

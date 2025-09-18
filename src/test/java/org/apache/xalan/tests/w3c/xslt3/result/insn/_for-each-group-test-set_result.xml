@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-08-14T16:48:51Z" fail="26" name="for-each-group" pass="47" skipped="4" statusUnknown="1" totalRun="74">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-09-16T13:24:40Z" fail="24" name="for-each-group" pass="49" skipped="4" statusUnknown="1" totalRun="74">
    <testResult status="pass" testName="for-each-group-001"/>
    <testResult status="skipped" testName="for-each-group-002a" xsltVersion="xslt 2.0 only"/>
    <testResult status="pass" testName="for-each-group-002"/>
@@ -38,7 +38,7 @@
    <testResult status="pass" testName="for-each-group-044"/>
    <testResult status="fail" testName="for-each-group-045"/>
    <testResult status="skipped" testName="for-each-group-046" xsltVersion="xslt 2.0 only"/>
-   <testResult status="fail" testName="for-each-group-046a"/>
+   <testResult status="pass" testName="for-each-group-046a"/>
    <testResult status="pass" testName="for-each-group-047"/>
    <testResult status="pass" testName="for-each-group-048"/>
    <testResult status="pass" testName="for-each-group-049"/>
@@ -52,9 +52,7 @@
    <testResult status="fail" testName="for-each-group-053">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;table&gt;&lt;tr&gt;&lt;th&gt;Position&lt;/th&gt;&lt;th&gt;Country&lt;/th&gt;&lt;th&gt;City List&lt;/th&gt;&lt;th&gt;Population&lt;/th&gt;&lt;/tr&gt;&lt;/table&gt;</outResult>
    </testResult>
-   <testResult status="fail" testName="for-each-group-054">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;table&gt;&lt;tr&gt;&lt;th&gt;Position&lt;/th&gt;&lt;th&gt;Country&lt;/th&gt;&lt;th&gt;City List&lt;/th&gt;&lt;th&gt;Population&lt;/th&gt;&lt;/tr&gt;&lt;/table&gt;</outResult>
-   </testResult>
+   <testResult status="pass" testName="for-each-group-054"/>
    <testResult status="pass" testName="for-each-group-055"/>
    <testResult status="pass" testName="for-each-group-056"/>
    <testResult status="fail" testName="for-each-group-059">

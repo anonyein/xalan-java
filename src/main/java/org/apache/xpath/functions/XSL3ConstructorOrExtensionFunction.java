@@ -15,26 +15,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.functions;
 
+import java.io.ByteArrayInputStream;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xml.dtm.DTM;
+import org.apache.xml.dtm.DTMManager;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.ExtensionsProvider;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathVisitor;
+import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XBoolean;
+import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNull;
+import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathArray;
+import org.apache.xpath.objects.XPathMap;
+import org.apache.xpath.objects.XString;
 import org.apache.xpath.res.XPATHErrorResources;
 import org.apache.xpath.res.XPATHMessages;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeObject;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+
+import xml.xpath31.processor.types.XSBoolean;
+import xml.xpath31.processor.types.XSNumericType;
+import xml.xpath31.processor.types.XSString;
 
 /**
  * An object of this class represents an XPath constructor function, 
@@ -217,19 +238,116 @@ public class XSL3ConstructorOrExtensionFunction extends Function
     		Expression arg = (Expression) m_argVec.elementAt(i);
 
     		XObject xobj = arg.execute(xctxt);
-    		/*
-    		 * Should cache the arguments for func:function
-    		 */
-    		xobj.allowDetachToRelease(false); 
-    		argVec.addElement(xobj);
+    		
+    		if (xobj instanceof XSString) {
+    			xobj = new XString(((XSString)xobj).stringValue());
+    			xobj.allowDetachToRelease(false);
+    			argVec.addElement(xobj);    			
+    		}
+    		else if (xobj instanceof XSBoolean) {
+    			xobj = new XBoolean(((XSBoolean)xobj).bool());
+    			xobj.allowDetachToRelease(false);
+    			argVec.addElement(xobj);    			
+    		}
+    		else if (xobj instanceof XSNumericType) {
+    			Double dbl = Double.valueOf(((XSNumericType)xobj).stringValue());
+    			xobj = new XNumber(dbl);
+    			xobj.allowDetachToRelease(false);
+    			argVec.addElement(xobj);
+    		}
+    		else if (xobj instanceof XMLNodeCursorImpl) {    			    			
+    			XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xobj;
+    			int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
+    			DTMManager dtmManager = xctxt.getDTMManager();
+    			DTM dtm = dtmManager.getDTM(nodeHandle);
+    			Node node = dtm.getNode(nodeHandle);    			
+    			try {
+    				String xmlStr1 = XslTransformEvaluationHelper.serializeXmlDomElementNode(node);
+
+    				DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+    				dbf.setNamespaceAware(true);
+
+    				DocumentBuilder dBuilder = dbf.newDocumentBuilder();
+
+    				Document document = dBuilder.parse(new ByteArrayInputStream(xmlStr1.getBytes()));
+    				xobj.allowDetachToRelease(false);
+    				argVec.addElement((Node)document);
+				} 
+    			catch (Exception ex) {
+					throw new TransformerException(ex.getMessage());
+				}    			    			
+    		}
+    		else if (xobj instanceof ResultSequence) {    			
+    			ResultSequence rSeq = (ResultSequence)xobj;
+    			int seqLength = rSeq.size();
+    			XObject[] xObjArr = new XObject[seqLength];
+    			for (int idx = 0; idx < seqLength; idx++) {
+    				XObject seqitem = rSeq.item(idx);
+    				if (seqitem instanceof XSString) {
+    					seqitem = new XString(((XSString)xobj).stringValue());   				   
+    				}
+    				else if (seqitem instanceof XSBoolean) {
+    					seqitem = new XBoolean(((XSBoolean)xobj).bool());   				   
+    				}
+    				else if (seqitem instanceof XSNumericType) {
+    					Double dbl = Double.valueOf(((XSNumericType)seqitem).stringValue());
+    					XNumber xNum = new XNumber(dbl.doubleValue());
+    					seqitem = xNum;
+    				}
+
+    				seqitem.allowDetachToRelease(false);    			   
+    				xObjArr[idx] = seqitem;
+    			}
+    			
+    			argVec.add(xObjArr);
+    		}
+    		else if (xobj instanceof XPathMap) { 
+    			XPathMap xpathMap = (XPathMap)xobj;
+    			Map<XObject, XObject> nativeMap = xpathMap.getNativeMap();
+    			xobj.allowDetachToRelease(false);
+    			argVec.add(nativeMap);
+    		}
+    		else if (xobj instanceof XPathArray) {    			
+    			XPathArray xpathArr = (XPathArray)xobj;
+    			int arrLength = xpathArr.size();
+    			XObject[] xObjArr = new XObject[arrLength];
+    			for (int idx = 0; idx < arrLength; idx++) {
+    				XObject seqitem = xpathArr.get(idx);
+    				if (seqitem instanceof XSString) {
+    					seqitem = new XString(((XSString)xobj).stringValue());   				   
+    				}
+    				else if (seqitem instanceof XSBoolean) {
+    					seqitem = new XBoolean(((XSBoolean)xobj).bool());   				   
+    				}
+    				else if (seqitem instanceof XSNumericType) {
+    					Double dbl = Double.valueOf(((XSNumericType)seqitem).stringValue());
+    					XNumber xNum = new XNumber(dbl.doubleValue());
+    					seqitem = xNum;
+    				}
+
+    				seqitem.allowDetachToRelease(false);    			   
+    				xObjArr[idx] = seqitem;
+    			}
+    			
+    			argVec.add(xObjArr);
+    		}    		
+    		else {
+    			xobj.allowDetachToRelease(false);
+    			argVec.addElement(xobj);
+    		}
     	}
-    	//dml
-    	ExtensionsProvider extProvider = (ExtensionsProvider)xctxt.getOwnerObject();
+
+    	ExtensionsProvider extProvider = (ExtensionsProvider)xctxt.getOwnerObject();    	
     	Object val = extProvider.extFunction(this, argVec);
 
     	if (null != val)
     	{
-    		result = XObject.create(val, xctxt);
+    		if ((val instanceof NativeObject) || (val instanceof NativeArray)) {    		   	    		   
+    		   result = getXPathObjectFromJsObject(val, xctxt); 
+    		}
+    		else {
+    		   result = XObject.create(val, xctxt);
+    		}
     	}
     	else
     	{
@@ -360,5 +478,65 @@ public class XSL3ConstructorOrExtensionFunction extends Function
   public Vector getArgVector() {
 	 return m_argVec;  
   }
+  
+  /**
+   * Method definition, to get an XPath typed object from an object typed 
+   * according to JavaScript implementation.
+   * 
+   * @param obj1						An object that needs to be converted 
+   *                                    to an XPath typed object.
+   * @param xctxt                       An XPath context object
+   * @return                            The result XPath typed object
+   */
+  private XObject getXPathObjectFromJsObject(Object obj1, XPathContext xctxt) {
+		 
+	  XObject result = null;
+
+	  if (obj1 instanceof NativeObject) {
+		  XPathMap xpathMap = new XPathMap();
+		  NativeObject nativeObj = (NativeObject)obj1;
+		  Set<Object> keySet = nativeObj.keySet();
+		  Iterator<Object> iter1 = keySet.iterator();
+		  while (iter1.hasNext()) {
+			  Object key = iter1.next();
+			  XObject x1 = XObject.create(key, xctxt);
+			  Object value = nativeObj.get(key);
+			  if ((value instanceof NativeObject) || (value instanceof NativeArray)) {			   
+				  XObject xObjValue = getXPathObjectFromJsObject(value, xctxt);
+				  xpathMap.put(x1, xObjValue); 
+			  }
+			  else {			  
+				  XObject y1 = XObject.create(value, xctxt);
+				  xpathMap.put(x1, y1); 
+			  }
+		  }
+
+		  result = xpathMap;
+	  }
+	  else if (obj1 instanceof NativeArray) { 
+		  XPathArray xpathArr = new XPathArray();
+		  NativeArray nativeArr = (NativeArray)obj1;
+		  int arrSize = nativeArr.size();
+		  for (int idx = 0; idx < arrSize; idx++) {
+			  Object obj2 = nativeArr.get(idx);
+			  XObject xObj = null;
+			  if ((obj2 instanceof NativeObject) || (obj2 instanceof NativeArray)) {	
+				  xObj = getXPathObjectFromJsObject(obj2, xctxt); 
+			  }
+			  else {
+				  xObj = XObject.create(obj2, xctxt);  
+			  }
+
+			  xpathArr.add(xObj);
+		  }
+
+		  result = xpathArr;
+	  }
+	  else {
+		  result = XObject.create(obj1, xctxt); 
+	  }
+
+	  return result;
+   }
 
 }

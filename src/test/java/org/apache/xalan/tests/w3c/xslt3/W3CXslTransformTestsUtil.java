@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
@@ -49,22 +51,19 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpression;
 
 import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.ElemTemplate;
 import org.apache.xalan.templates.StylesheetRoot;
+import org.apache.xalan.tests.util.XSLTestConstants;
 import org.apache.xalan.tests.util.XslTestsErrorHandler;
 import org.apache.xalan.tests.util.XslTransformTestsUtil;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xalan.transformer.XalanProperties;
-import org.apache.xalan.xslt.util.XslTransformSharedDatastore;
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.utils.QName;
-import org.apache.xml.utils.XML11Char;
 import org.apache.xpath.XPathContext;
-import org.apache.xpath.jaxp.XPathFactoryImpl;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.regex.Matcher;
 import org.apache.xpath.regex.Pattern;
@@ -783,33 +782,55 @@ public class W3CXslTransformTestsUtil extends XslTransformTestsUtil {
             else if (EXPECTED_NODE_KIND_ASSERT.equals(expectedNodeKindName)) {
             	Element elemNode = (Element)nodeExpected;
             	String fileName = elemNode.getAttribute(FILE_ATTR);
-            	String expectedResultStr = null;
+            	String xslTrfExpectedResultXPathStr = null;
             	if (!"".equals(fileName)) {
             		URI uri = new URI(m_xslTransformTestSetFilePath);
             		uri = uri.resolve(fileName);
-            		expectedResultStr = getStringContentFromUrl(uri.toURL());
+            		xslTrfExpectedResultXPathStr = getStringContentFromUrl(uri.toURL());
             	}
             	else {
-            		expectedResultStr = elemNode.getTextContent();            		
+            		xslTrfExpectedResultXPathStr = elemNode.getTextContent();            		
             	}
 
             	Document xmlInpDoc1 = m_xmlDocumentBuilder.parse(new ByteArrayInputStream((resultStrWriter.toString()).getBytes()));
             	String xmlStr1 = serializeXmlDomElementNode(xmlInpDoc1);
             	
-            	StringReader strReader = new StringReader(xmlStr1);
-            	            	
-            	XPathFactoryImpl xpathFactory = new XPathFactoryImpl();
-            	XPath xpath = xpathFactory.newXPath();
+            	StringReader strReader = new StringReader(xmlStr1);             	            	
             	
-            	if (XML11Char.isXML11ValidNCName(expectedResultStr)) {
-            		expectedResultStr = "exists(" + expectedResultStr + ")";
-            	}
+                xslTrfExpectedResultXPathStr = "if (" + xslTrfExpectedResultXPathStr + ") then "
+                		                                                           + "true() else exists(" + xslTrfExpectedResultXPathStr + ")";
             	
-            	XPathExpression xpathExpr = xpath.compile(expectedResultStr);
+            	System.setProperty(Constants.XML_DOCUMENT_BUILDER_FACTORY_KEY, Constants.XML_DOCUMENT_BUILDER_FACTORY_VALUE);            	            	
             	
-            	String xpathEvalResult = xpathExpr.evaluate(new InputSource(strReader));
+            	DocumentBuilderFactory dBuilderFactory = DocumentBuilderFactory.newInstance();
+            	dBuilderFactory.setNamespaceAware(true);
+            	DocumentBuilder docBuilder = dBuilderFactory.newDocumentBuilder();
+            	
+            	Document document = docBuilder.parse(new InputSource(strReader));
+            	
+            	xslTrfExpectedResultXPathStr = xslTrfExpectedResultXPathStr.replace('\'', '"');
+            	
+            	String xslStylesheetStr = "<?xml version=\"1.0\"?>" +
+					            			"<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"3.0\">" +
+					            			"  <xsl:output method=\"text\"/>" +
+					            			"  <xsl:template match=\"/\">" +
+					            			"     <xsl:value-of select='" + xslTrfExpectedResultXPathStr + "'/>" +
+					            			"  </xsl:template>" +
+					            			"</xsl:stylesheet>";            	
+            	
+            	Document xslDocument = docBuilder.parse(new InputSource(new StringReader(xslStylesheetStr)));
+            	
+            	System.setProperty(XSLTestConstants.XSLT_TRANSFORMER_FACTORY_KEY, XSLTestConstants.XSLT_TRANSFORMER_FACTORY_VALUE);
+                
+            	TransformerFactory trfFactory2 = TransformerFactory.newInstance();
+            	
+            	Transformer transformer2 = trfFactory2.newTransformer(new DOMSource(xslDocument));
+            	resultStrWriter = new StringWriter();
+            	transformer2.transform(new DOMSource(document), new StreamResult(resultStrWriter));
 
-            	if (TRUE.equals(xpathEvalResult)) {            		
+            	String str1 = resultStrWriter.toString();
+            	
+            	if (TRUE.equals(str1)) {            		
             		elemTestResult.setAttribute("status", "pass");
             	}
             	else {
@@ -903,12 +924,12 @@ public class W3CXslTransformTestsUtil extends XslTransformTestsUtil {
 		
 		Document documentToBeTransformed = m_xmlDocumentBuilder.parse(new ByteArrayInputStream((resultStrWriter.toString()).getBytes()));
 		
-		XslTransformSharedDatastore.m_is_xsl_test_invocation = true;
+		XslTransformData.m_is_xsl_test_invocation = true;
 		try {
 		   transformer.transform(new DOMSource(documentToBeTransformed), new StreamResult(strWriter));
 		}
 		finally {
-		   XslTransformSharedDatastore.m_is_xsl_test_invocation = false;
+		   XslTransformData.m_is_xsl_test_invocation = false;
 		}
 		
 		String str2 = strWriter.toString();

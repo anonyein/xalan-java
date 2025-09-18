@@ -38,6 +38,7 @@ import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.ElemApplyTemplates;
 import org.apache.xalan.templates.ElemAttribute;
+import org.apache.xalan.templates.ElemCallTemplate;
 import org.apache.xalan.templates.ElemChoose;
 import org.apache.xalan.templates.ElemComment;
 import org.apache.xalan.templates.ElemCopy;
@@ -61,8 +62,8 @@ import org.apache.xalan.templates.ElemValueOf;
 import org.apache.xalan.templates.ElemVariable;
 import org.apache.xalan.templates.ElemWhen;
 import org.apache.xalan.templates.StylesheetRoot;
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
-import org.apache.xalan.xslt.util.XslTransformSharedDatastore;
+import org.apache.xalan.xslt.util.StringUtil;
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xerces.dom.DOMInputImpl;
 import org.apache.xerces.impl.xs.XSLoaderImpl;
 import org.apache.xerces.xs.XSModel;
@@ -96,6 +97,7 @@ import org.apache.xpath.composite.XPathQuantifiedExpr;
 import org.apache.xpath.composite.XPathSequenceConstructor;
 import org.apache.xpath.composite.XPathSequenceTypeExpr;
 import org.apache.xpath.domapi.XPathStylesheetDOM3Exception;
+import org.apache.xpath.functions.FuncArgPlaceholder;
 import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.functions.XSL3FunctionService;
 import org.apache.xpath.functions.XSLFunctionBuilder;
@@ -292,6 +294,8 @@ public class XPathParser
   
   static XPath3ExprSingleComparison m_xpath3ExprSingleComparison = null;
   
+  static List<FuncArgPlaceholder> m_funcArgPlaceHolderList = new ArrayList<FuncArgPlaceholder>();
+  
   private String m_arrowOpRemainingXPathExprStr = null;
   
   private XPathExprFunctionSuffix m_xpathExprFunctionSuffix = null;
@@ -310,6 +314,8 @@ public class XPathParser
   
   private String m_xpathDefaultNamespace = null;
   
+  private boolean m_op_group_parse = false;
+
   
   /**
    * The parser constructor.
@@ -362,7 +368,7 @@ public class XPathParser
     
     // Remove XPath expression comments from the supplied expression,
     // before parse of an XPath expression.
-    if (XslTransformEvaluationHelper.isStrHasBalancedXPathCommentDelim(expression)) {
+    if (StringUtil.isStrHasBalancedXPathCommentDelim(expression)) {
        expression = expression.replaceAll("\\(:.*:\\)", "");
     }
     else {
@@ -370,6 +376,13 @@ public class XPathParser
     }
 
     lexer.tokenize(expression);
+    
+    if (lexer.isNsBindingRequired() && !lexer.isNsBound()) {
+       String nsUnboundPrefix = lexer.getNsUnboundPrefix();
+       if (nsUnboundPrefix != null) {
+          error(XPATHErrorResources.ER_NS_BINDING, new Object[]{ nsUnboundPrefix });
+       }
+    }
 
     m_ops.setOp(0,OpCodes.OP_XPATH);
     m_ops.setOp(OpMap.MAPINDEX_LENGTH,2);
@@ -397,7 +410,7 @@ public class XPathParser
         	   boolean isXPathExprStrHasBalancedParens = true;
         	   for (int idx = 0; idx < strArr.length; idx++) {
         		  String str1 = strArr[idx];
-        		  if (!XslTransformEvaluationHelper.isStrHasBalancedParentheses(str1, '(', ')')) {
+        		  if (!StringUtil.isStrHasBalancedParentheses(str1, '(', ')')) {
         			  isXPathExprStrHasBalancedParens = false; 
         		  }
         	   }
@@ -1097,7 +1110,7 @@ public class XPathParser
       else {
          String argDetailsAccumulatedStrSoFar = "(" + getStrValueFromStrList(
                                                                   argDetailsStrPartsList) + ")";         
-         if (!XslTransformEvaluationHelper.isStrHasBalancedParentheses(argDetailsAccumulatedStrSoFar, '(', ')')) {
+         if (!StringUtil.isStrHasBalancedParentheses(argDetailsAccumulatedStrSoFar, '(', ')')) {
             argDetailsStrPartsList.add(m_token);
             nextToken();
             isXpathDynamicFuncCallParseAhead = true;
@@ -1560,6 +1573,28 @@ public class XPathParser
                     seqOrArrayXPathItems.add(xpathExprStr);
                  }
               }
+              else if (tokenIs('[')) {
+            	 StringBuffer arrStrBuff = new StringBuffer();
+            	 arrStrBuff.append(m_token);
+            	 nextToken();
+            	 while (!((tokenIs(',') && StringUtil.isStrHasBalancedParentheses(arrStrBuff.toString(), '[',']')) || 
+            			                                                                                           (isSequenceConstructor && tokenIs(')')) || 
+            			                                                                                           (isSquareArrayConstructor && tokenIs(']')) || 
+            			                                                                                            (m_token == null))) {           		 
+            		arrStrBuff.append(m_token);
+            		nextToken();
+            	 }
+            	 if (tokenIs(']') && !lookahead(null, 1)) {
+            		arrStrBuff.append(m_token);
+            		consumeExpected(']');
+            	 }
+            	 String str1 = arrStrBuff.toString();
+            	 seqOrArrayXPathItems.add(str1);
+            	 if (tokenIs(',') || (isSequenceConstructor && tokenIs(')')) || 
+            			             (isSquareArrayConstructor && tokenIs(']'))) {            		
+            	    nextToken();            	    
+            	 }
+              }              
               else {
                  List<String> xpathExprTokens = new ArrayList<String>();                 
                  
@@ -1654,10 +1689,10 @@ public class XPathParser
           
           boolean isXPathParseOkToProceed = true;
           
-          if (isSquareArrayConstructor) {
+          /*if (isSquareArrayConstructor) {
         	 // Compact the array items
              compactArrayItems(seqOrArrayXPathItems);
-	      }
+	      }*/
 	  
           // We verify here that, each XPath string within the list 
           // 'xpathExprParts' has balanced parentheses pairs.
@@ -1678,7 +1713,7 @@ public class XPathParser
             	 rParenChar = '}'; 
              }
              
-             boolean isStrHasBalancedParentheses = XslTransformEvaluationHelper.isStrHasBalancedParentheses(
+             boolean isStrHasBalancedParentheses = StringUtil.isStrHasBalancedParentheses(
 								            		                                                    seqOrArrayMemberXPathExprStr, 
 								            		                                                    lParenChar, rParenChar);
              if (!isStrHasBalancedParentheses) {
@@ -1702,6 +1737,12 @@ public class XPathParser
 	    			 // XPath parse of expressions like (for ...). i.e, XPath 'for' 
 	    			 // and other such expressions contained within '(' & ')'.
 	    			 isXPathParseOkToProceed = true; 
+	    		 }
+	    		 else if (seqOrArrayXPathItems.size() == 1) {
+	    			 String str1 = seqOrArrayXPathItems.get(0);
+	    			 if (!(str1.startsWith("[") && str1.endsWith("]"))) {
+	    				isXPathParseOkToProceed = false; 
+	    			 }
 	    		 }
 	    		 else {
 	    			 isXPathParseOkToProceed = false;
@@ -1974,6 +2015,22 @@ public class XPathParser
 		 m_ops.setOp(opPos1 + OpMap.MAPINDEX_LENGTH,
                   								 m_ops.getOp(OpMap.MAPINDEX_LENGTH) - opPos1);
 		 
+	  }
+	  else if (tokenIs("?")) {
+		  // A function argument placeholder, for a function call partial 
+		  // function application.
+
+		  int opPos1 = m_ops.getOp(OpMap.MAPINDEX_LENGTH);
+
+		  appendOp(2, OpCodes.OP_FUNC_ARG_PLACEHOLDER);
+
+		  consumeExpected('?');
+
+		  FuncArgPlaceholder funcArgPlaceholder = new FuncArgPlaceholder();
+		  m_funcArgPlaceHolderList.add(funcArgPlaceholder);
+
+		  m_ops.setOp(opPos1 + OpMap.MAPINDEX_LENGTH,
+				                                  m_ops.getOp(OpMap.MAPINDEX_LENGTH) - opPos1);
 	  }
       else {
          ExprSingle();                  
@@ -2373,7 +2430,7 @@ public class XPathParser
 			strBuff.append(strList.get(idx)); 
 		 }
 		 
-		 if (XslTransformEvaluationHelper.isStrHasBalancedParentheses(strBuff.toString(), '(', ')')) {
+		 if (StringUtil.isStrHasBalancedParentheses(strBuff.toString(), '(', ')')) {
 			 result = true; 
 		 }
 	  }
@@ -2681,7 +2738,7 @@ public class XPathParser
          else if (tokenIs(',') && (",".equals(prevTokenStrBeforeFor) || "(".equals(prevTokenStrBeforeFor))) {
         	String lstStrJoin = xPathReturnExprStrPartsList.toString();
         	lstStrJoin = lstStrJoin.substring(1, lstStrJoin.length()-1);
-        	if (XslTransformEvaluationHelper.isStrHasBalancedParentheses(lstStrJoin, '(', ')')) {        	
+        	if (StringUtil.isStrHasBalancedParentheses(lstStrJoin, '(', ')')) {        	
         	   break;
         	}
         	else {
@@ -2962,7 +3019,7 @@ public class XPathParser
       
       String probableBranchConditionExprStr = probableBranchConditionXPathStrBuff.toString();
       int thenTokenComputedRevisedIdx = 0;
-      while (!XslTransformEvaluationHelper.isStrHasBalancedParentheses(probableBranchConditionExprStr, '(', ')')) {
+      while (!StringUtil.isStrHasBalancedParentheses(probableBranchConditionExprStr, '(', ')')) {
     	  boolean isBreak = false;
     	  for (int idx = (thenTokenEffectiveComputedIdx + 1); idx < tokenQueueSize; idx++) {
     		 Object tokenObj = (m_ops.m_tokenQueue).elementAt(idx);
@@ -2970,7 +3027,7 @@ public class XPathParser
         	 if (!"then".equals(tokenStrValue)) {
         	    probableBranchConditionExprStr += tokenStrValue;  
         	 }
-        	 else if (XslTransformEvaluationHelper.isStrHasBalancedParentheses(probableBranchConditionExprStr, '(', ')')) {
+        	 else if (StringUtil.isStrHasBalancedParentheses(probableBranchConditionExprStr, '(', ')')) {
         		thenTokenComputedRevisedIdx = idx;
         		isBreak = true;
         		break; 
@@ -3005,7 +3062,7 @@ public class XPathParser
       
       String probableElseExprStr = probableElseExprStrBuff.toString();
       int elseTokenComputedRevisedIdx = 0;
-      while (!XslTransformEvaluationHelper.isStrHasBalancedParentheses(probableElseExprStr, '(', ')')) {
+      while (!StringUtil.isStrHasBalancedParentheses(probableElseExprStr, '(', ')')) {
     	  boolean isBreak = false;
     	  for (int idx = (elseTokenEffectiveComputedIdx - 1); idx >= 0; idx--) {
     		  Object tokenObj = (m_ops.m_tokenQueue).elementAt(idx);
@@ -3017,7 +3074,7 @@ public class XPathParser
         			probableElseExprStr += (tokenObj.toString() + " "); 
         		 }
         		 probableElseExprStr = probableElseExprStr.trim();
-        		 if (XslTransformEvaluationHelper.isStrHasBalancedParentheses(probableElseExprStr, '(', ')')) {
+        		 if (StringUtil.isStrHasBalancedParentheses(probableElseExprStr, '(', ')')) {
         			elseTokenComputedRevisedIdx = idx; 
         			isBreak = true;
         			break; 
@@ -3245,7 +3302,7 @@ public class XPathParser
                  
                  char lParenChar = '(';
                  char rParenChar = ')';                 
-                 boolean isStrHasBalancedParentheses = XslTransformEvaluationHelper.isStrHasBalancedParentheses(
+                 boolean isStrHasBalancedParentheses = StringUtil.isStrHasBalancedParentheses(
 								                		                                                    seqItemXPathExprStr, 
 								                		                                                    lParenChar, rParenChar);
                  if (!isStrHasBalancedParentheses) {
@@ -3448,7 +3505,7 @@ public class XPathParser
         			
         			char lParenChar = '(';
         			char rParenChar = ')';                 
-        			boolean isStrHasBalancedParentheses = XslTransformEvaluationHelper.isStrHasBalancedParentheses(seqItemXPathExprStr, 
+        			boolean isStrHasBalancedParentheses = StringUtil.isStrHasBalancedParentheses(seqItemXPathExprStr, 
         					                                                          												lParenChar, rParenChar);
         			if (!isStrHasBalancedParentheses) {
         				isXPathParseOkToProceed = false;
@@ -4073,7 +4130,7 @@ public class XPathParser
 
     		String seqExprStr = seqExprStrBuff.toString();
     		if (seqExprStr.contains(",")) {
-    			XslTransformSharedDatastore.m_xpathNodeCombiningExprRhsStrBuff = seqExprStrBuff;
+    			XslTransformData.m_xpathNodeCombiningExprRhsStrBuff = seqExprStrBuff;
 
     			int tokenQueueSize = m_ops.m_tokenQueue.size();
     			for (int idx = (prevTokQueueScanPosition.getQueueMark() - 1); idx < tokenQueueSize; idx++) {
@@ -4445,8 +4502,10 @@ public class XPathParser
     else if (m_tokenChar == '(')
     {
       nextToken();
-      appendOp(2, OpCodes.OP_GROUP);     
+      appendOp(2, OpCodes.OP_GROUP);
+      m_op_group_parse = true;
       Expr();
+      m_op_group_parse = false;
       consumeExpected(')');      
       
       m_ops.setOp(opPos + OpMap.MAPINDEX_LENGTH,
@@ -4613,7 +4672,7 @@ public class XPathParser
     	TokenQueueScanPosition prevTokQueueScanPosition = new TokenQueueScanPosition(
     			                                                           m_queueMark, m_tokenChar, m_token);
     	if (lookahead(')', 1)) {
-	        // an XPath function argument is () (i.e, an empty sequence)	        
+	        // An XPath function argument is () (i.e, an empty sequence)	        
 	        consumeExpected('(');
 	        consumeExpected(')');                            
 	        
@@ -4716,6 +4775,16 @@ public class XPathParser
     else if (tokenIs("map")) {
        // XPath literal map expression as, function argument    	
   	   mapFuncArg();	
+    }
+    else if (tokenIs("?")) {
+       // A function argument placeholder, for a function call partial 
+       // function application.    	
+       appendOp(2, OpCodes.OP_FUNC_ARG_PLACEHOLDER);
+       
+       consumeExpected('?');
+       
+       FuncArgPlaceholder funcArgPlaceholder = new FuncArgPlaceholder();
+       m_funcArgPlaceHolderList.add(funcArgPlaceholder);
     }
     else if (lookahead(':', 1)) {
        // XPath parse of named function reference, for XPath built-in functions 
@@ -5502,7 +5571,6 @@ public class XPathParser
    */
   protected void NodeTest(int axesType) throws javax.xml.transform.TransformerException
   {
-
     if (lookahead('(', 1))
     {
       Object nodeTestOp = Keywords.getNodeType(m_token);
@@ -6150,7 +6218,7 @@ public class XPathParser
  		  if (!(tokenIs(',') || tokenIs(rParen))) {
  			  xpathExpr += m_token;
  			  nextToken();
- 			  if (tokenIs(rParen) && !XslTransformEvaluationHelper.isStrHasBalancedParentheses(lParen + xpathExpr, lParen, rParen)) {
+ 			  if (tokenIs(rParen) && !StringUtil.isStrHasBalancedParentheses(lParen + xpathExpr, lParen, rParen)) {
  				  if (lookahead(null, 1)) {
  					  xpathExprPartList.add(xpathExpr);
  					  break;
@@ -6170,7 +6238,7 @@ public class XPathParser
  				  }
  				  nextToken();
  				  if (tokenIs(rParen)) {
- 					  if (XslTransformEvaluationHelper.isStrHasBalancedParentheses(lParen + xpathExpr + rParen, lParen, rParen) 
+ 					  if (StringUtil.isStrHasBalancedParentheses(lParen + xpathExpr + rParen, lParen, rParen) 
  							                                                    									&& !lookahead(rParen, 1)) {
  						  xpathExpr = (lParen + xpathExpr + m_token); 
  						  nextToken();
@@ -6366,7 +6434,11 @@ public class XPathParser
        else if (tokenIs("function")) {
      	   parseFunctionItemSequenceType(xpathSequenceTypeExpr);
      	   if (m_token != null) {
-              setSequenceTypeOccurenceIndicator(xpathSequenceTypeExpr, isXPathInlineFunctionParse);  
+              setSequenceTypeOccurenceIndicator(xpathSequenceTypeExpr, isXPathInlineFunctionParse);
+              if (m_op_group_parse) {
+            	  m_token = ")";
+            	  m_tokenChar = ')';
+              }
            }
        }
        else if (tokenIs("map")) {
@@ -6454,8 +6526,8 @@ public class XPathParser
 		                                                                                  throws TransformerException {
 	   m_isParseSequenceTypeExprWithUserDefinedType = true;
 	   
-	   StylesheetRoot stylesheetRoot = XslTransformSharedDatastore.m_stylesheetRoot;
-	   String xslSystemId = XslTransformSharedDatastore.m_xslSystemId;
+	   StylesheetRoot stylesheetRoot = XslTransformData.m_stylesheetRoot;
+	   String xslSystemId = XslTransformData.m_xslSystemId;
 
 	   String type_namespace = null;
 	   String type_name = null;
@@ -6509,7 +6581,7 @@ public class XPathParser
    private void parseImportSchemaWithChildSchemaContents(XPathSequenceTypeExpr xpathSequenceTypeExpr, String typeNamespace,
 		                                                 String typeName, Node xsSchemaTopMostNode) throws TransformerException {
 	   
-	   StylesheetRoot stylesheetRoot = XslTransformSharedDatastore.m_stylesheetRoot;
+	   StylesheetRoot stylesheetRoot = XslTransformData.m_stylesheetRoot;
 	   XSModel xsModel = stylesheetRoot.getXsModel();
 	   
 	   if (xsModel != null) {
@@ -6556,7 +6628,7 @@ public class XPathParser
    private void parseImportSchemaFromExternalLocation(XPathSequenceTypeExpr xpathSequenceTypeExpr, String xslSystemId,
 		                                              String typeNamespace, String typeName, Node elemTemplateElem) throws TransformerException {
 	   
-	   StylesheetRoot stylesheetRoot = XslTransformSharedDatastore.m_stylesheetRoot;
+	   StylesheetRoot stylesheetRoot = XslTransformData.m_stylesheetRoot;
 	   XSModel xsModel = stylesheetRoot.getXsModel();
 
 	   if (xsModel != null) {
@@ -6832,7 +6904,7 @@ public class XPathParser
  				   nextToken();
  				}
  				else if (tokenIs(',')) {
- 				   if (!XslTransformEvaluationHelper.isStrHasBalancedParentheses(typedFunctionTestParamSpec, '(', ')')) {
+ 				   if (!StringUtil.isStrHasBalancedParentheses(typedFunctionTestParamSpec, '(', ')')) {
  				      typedFunctionTestParamSpec = typedFunctionTestParamSpec + m_token;
  				      nextToken();
  				   }
@@ -6873,9 +6945,19 @@ public class XPathParser
  		  consumeExpected("as");
  		  
  		  String typedFunctionTestReturnType = "";
- 		  while (m_token != null) {
- 			 typedFunctionTestReturnType = typedFunctionTestReturnType + m_token;
- 			 nextToken();
+ 		  if (m_op_group_parse) {
+ 			  while (m_token != null && !(lookahead(null, 1) || lookahead(null, 2))) {
+ 				  typedFunctionTestReturnType = typedFunctionTestReturnType + m_token; 			    
+ 				  nextToken();
+ 			  }
+
+ 			  consumeExpected(')'); 
+ 		  }
+ 		  else {
+ 			  while (m_token != null) {
+ 				  typedFunctionTestReturnType = typedFunctionTestReturnType + m_token;
+ 				  nextToken();
+ 			  } 			  
  		  }
  		  
  		  if (!"".equals(typedFunctionTestReturnType)) {
@@ -6983,9 +7065,29 @@ public class XPathParser
  		  while ((m_token != null) && !tokenIs(')')) {
  			 if (tokenIs(XMLConstants.W3C_XML_SCHEMA_NS_URI)) {
  			    consumeExpected(XMLConstants.W3C_XML_SCHEMA_NS_URI);
- 			    consumeExpected(':'); 			    
- 			    populateSequenceTypeData(arrayItemSequenceType); 			 
- 			    nextToken();
+ 			    consumeExpected(':'); 			     			    
+ 			    if (lookahead(SequenceTypeSupport.Q_MARK, 1)) {
+ 			    	populateSequenceTypeData(arrayItemSequenceType); 			    	
+ 			    	arrayItemSequenceType.setItemTypeOccurrenceIndicator(SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE);
+ 			    	nextToken();
+ 			    	nextToken();
+ 			    }
+ 			    else if (lookahead(SequenceTypeSupport.STAR, 1)) {
+ 			    	populateSequenceTypeData(arrayItemSequenceType);
+ 			    	arrayItemSequenceType.setItemTypeOccurrenceIndicator(SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY);
+ 			    	nextToken();
+ 			    	nextToken();
+ 			    }
+ 			    else if (lookahead(SequenceTypeSupport.PLUS, 1)) {
+ 			    	populateSequenceTypeData(arrayItemSequenceType);
+ 			    	arrayItemSequenceType.setItemTypeOccurrenceIndicator(SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY);
+ 			    	nextToken();
+ 			    	nextToken();
+ 			    }
+ 			    else {
+ 			    	populateSequenceTypeData(arrayItemSequenceType);
+ 			    	nextToken();
+ 			    }
  		     }
  			 else if (tokenIs("map")) {
  				XPathSequenceTypeExpr xpathSequenceTypeExpr2 = new XPathSequenceTypeExpr();  
@@ -6998,6 +7100,26 @@ public class XPathParser
 				parseXdmArraySequenceType(xpathSequenceTypeExpr2, true);
 				SequenceTypeArrayTest seqTypeArrTest = xpathSequenceTypeExpr2.getSequenceTypeArrayTest();
 				arrayItemSequenceType.setSequenceTypeArrayTest(seqTypeArrTest);
+ 			 }
+ 			 else if (tokenIs("item")) {
+ 				nextToken();
+ 				SequenceTypeKindTest seqTypeKindTest = new SequenceTypeKindTest();
+ 				seqTypeKindTest.setKindVal(SequenceTypeSupport.ITEM_KIND);
+ 				arrayItemSequenceType.setSequenceTypeKindTest(seqTypeKindTest);
+ 				consumeExpected('(');
+ 				consumeExpected(')');
+ 				if (tokenIs(SequenceTypeSupport.Q_MARK)) { 			    	
+ 			    	arrayItemSequenceType.setItemTypeOccurrenceIndicator(SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE);
+ 			    	nextToken();
+ 			    }
+ 			    else if (tokenIs(SequenceTypeSupport.STAR)) {
+ 			    	arrayItemSequenceType.setItemTypeOccurrenceIndicator(SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY);
+ 			    	nextToken();
+ 			    }
+ 			    else if (tokenIs(SequenceTypeSupport.PLUS)) {
+ 			    	arrayItemSequenceType.setItemTypeOccurrenceIndicator(SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY);
+ 			    	nextToken();
+ 			    }
  			 }
  		  }
  		  
@@ -7451,7 +7573,7 @@ public class XPathParser
 		else if (lookahead(':', 1)) {
 			TokenQueueScanPosition prevTokQueueScanPosition = new TokenQueueScanPosition(m_queueMark, m_tokenChar, m_token);
 			
-			StylesheetRoot stylesheetRoot = XslTransformSharedDatastore.m_stylesheetRoot;
+			StylesheetRoot stylesheetRoot = XslTransformData.m_stylesheetRoot;
 			String funcNamespaceUri = m_token;			
 			nextToken();
 			consumeExpected(':');
@@ -7647,6 +7769,12 @@ public class XPathParser
     			result = getXPathDefaultNamespace(((ElemApplyTemplates)xpathExprXslParentNode).getParentElem()); 
     		}
     	}
+    	else if (xpathExprXslParentNode instanceof ElemCallTemplate) {
+    		result = ((ElemCallTemplate)xpathExprXslParentNode).getXpathDefaultNamespace();
+    		if (result == null) {
+    			result = getXPathDefaultNamespace(((ElemCallTemplate)xpathExprXslParentNode).getParentElem()); 
+    		}
+    	}    	
     	else if (xpathExprXslParentNode instanceof ElemForEach) {
     		result = ((ElemForEach)xpathExprXslParentNode).getXpathDefaultNamespace();
     		if (result == null) {

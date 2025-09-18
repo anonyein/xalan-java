@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-08-14T16:50:45Z" fail="36" name="expand-text" pass="26" skipped="0" statusUnknown="0" totalRun="62">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-09-16T13:25:25Z" fail="28" name="expand-text" pass="34" skipped="0" statusUnknown="0" totalRun="62">
    <testResult status="pass" testName="cvt-001"/>
    <testResult status="pass" testName="cvt-002"/>
    <testResult status="pass" testName="cvt-003"/>
@@ -19,7 +19,7 @@
             The year was {&lt;bold&gt;$year&lt;/bold&gt;}&#13;
         &lt;/out&gt;</outResult>
    </testResult>
-   <testResult status="fail" testName="cvt-014"/>
+   <testResult status="pass" testName="cvt-014"/>
    <testResult status="fail" testName="cvt-015">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;4 &#13;
         }&lt;/out&gt;</outResult>
@@ -33,20 +33,16 @@
    <testResult status="pass" testName="cvt-020"/>
    <testResult status="pass" testName="cvt-021"/>
    <testResult status="pass" testName="cvt-022"/>
-   <testResult status="fail" testName="cvt-023"/>
-   <testResult status="fail" testName="cvt-024"/>
+   <testResult status="pass" testName="cvt-023"/>
+   <testResult status="pass" testName="cvt-024"/>
    <testResult status="fail" testName="cvt-025">
       <outResult>
-         <errTrace>Variable $d accessed before it is bound!.</errTrace>
+         <errTrace>Variable $d accessed before it is bound!</errTrace>
          <errTrace>java.lang.NullPointerException</errTrace>
       </outResult>
    </testResult>
-   <testResult status="fail" testName="cvt-026"/>
-   <testResult status="fail" testName="cvt-027">
-      <outResult>
-         <errTrace>org.apache.xml.utils.WrappedRuntimeException: XPST0008 : Could not find variable with the name of $</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="cvt-026"/>
+   <testResult status="pass" testName="cvt-027"/>
    <testResult status="fail" testName="cvt-028">
       <outResult>
          <errTrace>java.lang.NullPointerException</errTrace>
@@ -57,7 +53,7 @@
    <testResult status="pass" testName="cvt-031"/>
    <testResult status="fail" testName="cvt-032">
       <outResult>
-         <errTrace>Variable $stylesheet.attributes accessed before it is bound!.</errTrace>
+         <errTrace>Variable $stylesheet.attributes accessed before it is bound!</errTrace>
       </outResult>
    </testResult>
    <testResult status="fail" testName="cvt-033">
@@ -120,10 +116,10 @@
    <testResult status="fail" testName="cvt-040c">
       <outResult/>
    </testResult>
-   <testResult status="fail" testName="cvt-041"/>
-   <testResult status="fail" testName="cvt-042"/>
+   <testResult status="pass" testName="cvt-041"/>
+   <testResult status="pass" testName="cvt-042"/>
    <testResult status="pass" testName="cvt-043"/>
-   <testResult status="fail" testName="cvt-044"/>
+   <testResult status="pass" testName="cvt-044"/>
    <testResult status="pass" testName="cvt-045"/>
    <testResult status="pass" testName="cvt-046"/>
    <testResult status="pass" testName="cvt-047"/>

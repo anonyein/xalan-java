@@ -56,6 +56,7 @@ import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.ElemApplyTemplates;
 import org.apache.xalan.templates.ElemAttribute;
 import org.apache.xalan.templates.ElemAttributeSet;
+import org.apache.xalan.templates.ElemCallTemplate;
 import org.apache.xalan.templates.ElemCharacterMap;
 import org.apache.xalan.templates.ElemChoose;
 import org.apache.xalan.templates.ElemComment;
@@ -90,8 +91,8 @@ import org.apache.xalan.templates.TemplateSubPatternAssociation;
 import org.apache.xalan.templates.XUnresolvedVariable;
 import org.apache.xalan.trace.GenerateEvent;
 import org.apache.xalan.trace.TraceManager;
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
-import org.apache.xalan.xslt.util.XslTransformSharedDatastore;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xml.dtm.DTMManager;
@@ -629,7 +630,7 @@ public class TransformerImpl extends Transformer
       m_xcontext.getSourceTreeManager().reset();
     }
     
-    XslTransformSharedDatastore.reset();
+    XslTransformData.reset();
     SharedLexerState.reset();
   }
 
@@ -775,7 +776,7 @@ public class TransformerImpl extends Transformer
 		m_errorHandler.fatalError(ex);
 		
 		return;
-	}		
+	}
 	
 	updateXPathDefaultNamespace(m_stylesheetRoot, m_stylesheetRoot.getXpathDefaultNamespace());
 	
@@ -2501,7 +2502,7 @@ public class TransformerImpl extends Transformer
           isDefaultTextRule = true;
           break;
         case DTM.DOCUMENT_NODE :
-          template = m_stylesheetRoot.getDefaultRootRule();
+          template = m_stylesheetRoot.getDefaultRootRule();          
           break;
         default :
 
@@ -2771,8 +2772,8 @@ public class TransformerImpl extends Transformer
 			  xctxt.setSAXLocator(t);
 			  m_currentTemplateElements.setElementAt(t,currentTemplateElementsTop);
 			  t.execute(this);
-			  if (XslTransformSharedDatastore.m_xpathInlineFunction != null) {
-				  result = XslTransformSharedDatastore.m_xpathInlineFunction;
+			  if (XslTransformData.m_xpathInlineFunction != null) {
+				  result = XslTransformData.m_xpathInlineFunction;
 				  break;
 			  }
 		  }
@@ -2864,7 +2865,7 @@ public class TransformerImpl extends Transformer
     if (nElems > 0)
       keys = new Vector();
 
-    // March backwards, collecting the sort keys.
+    // March backwards, collecting the sort keys
     for (int i = 0; i < nElems; i++)
     {
       ElemSort sort = foreach.getSortElem(i);
@@ -2927,15 +2928,23 @@ public class TransformerImpl extends Transformer
       {
         caseOrderUpper = false;
       }
-
-      keys.addElement(new NodeSortKey(this, sort.getSelect(), treatAsNumbers,
-                                      descending, langString, caseOrderUpper,
-                                      foreach));
+      
+      XPath xpathSelect = sort.getSelect();
+      if (xpathSelect == null) {
+    	 SourceLocator srcLocator = xctxt.getSAXLocator();
+    	 xpathSelect = new XPath(".", srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null); 
+      }
+      
+      NodeSortKey nodeSortKey = new NodeSortKey(this, xpathSelect, treatAsNumbers,
+                                                descending, langString, caseOrderUpper, 
+                                                foreach);      
+      keys.addElement(nodeSortKey);    	  	  
+      
       if (m_debug)
         getTraceManager().emitTraceEndEvent(sort);
      }
 
-    return keys;
+     return keys;
   }
   
   /**
@@ -4448,11 +4457,23 @@ public class TransformerImpl extends Transformer
 							 Expression matchExpr = matchXPath.getExpression();
 							 if (matchExpr instanceof StepPattern) {
 								 StepPattern stepPattern = (StepPattern)matchExpr;
-								 String targetStr = stepPattern.getTargetString();
-								 TemplateSubPatternAssociation templatePatternAssoc = new TemplateSubPatternAssociation(elemTemplate, 
-										                                                                                          stepPattern, targetStr);
-
-								 patternTable.put(targetStr, templatePatternAssoc);
+								 String targetStr = stepPattern.getTargetString();								 
+								 TemplateSubPatternAssociation templatePatternAssocPrev = (TemplateSubPatternAssociation)(patternTable.get(targetStr));
+								 if (templatePatternAssocPrev != null) {
+									 ElemTemplate elemTemplate2 = templatePatternAssocPrev.getTemplate();
+									 elemTemplate2.setMatch(matchXPath);
+									 TemplateSubPatternAssociation templatePatternAssocNew = new TemplateSubPatternAssociation(elemTemplate2, stepPattern, targetStr);
+									 templatePatternAssocPrev = templatePatternAssocPrev.getNext();
+									 while (templatePatternAssocPrev != null) {
+										 elemTemplate2 = templatePatternAssocPrev.getTemplate();
+										 elemTemplate2.setMatch(matchXPath);
+										 TemplateSubPatternAssociation templatePatternAssoc2 = new TemplateSubPatternAssociation(elemTemplate2, stepPattern, targetStr);
+										 templatePatternAssocNew.setNext(templatePatternAssoc2);									
+										 templatePatternAssocPrev = templatePatternAssocPrev.getNext();									
+									 }									 
+									 
+									 patternTable.put(targetStr, templatePatternAssocNew);
+								 }
 							 }
 							 else if (matchExpr instanceof UnionPattern) {
 								 UnionPattern xpathUnionPattern = (UnionPattern)matchExpr;
@@ -4461,7 +4482,7 @@ public class TransformerImpl extends Transformer
 									 StepPattern stepPattern = (StepPattern)stepPatternArr[i];
 									 String targetStr = stepPattern.getTargetString();
 									 TemplateSubPatternAssociation templatePatternAssoc = new TemplateSubPatternAssociation(elemTemplate, 
-											                                                                                          stepPattern, targetStr);
+											                                                                                          stepPattern, targetStr);									 									 
 									 patternTable.put(targetStr, templatePatternAssoc);
 								 }
 							 }
@@ -4484,6 +4505,14 @@ public class TransformerImpl extends Transformer
 						  xpathDefaultNamespace = ((ElemApplyTemplates)xslElem).getXpathDefaultNamespace();  
 					  }
 				  }
+				  else if (xslElem instanceof ElemCallTemplate) {
+					  if (((ElemCallTemplate)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemCallTemplate)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemCallTemplate)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }				  
 				  else if (xslElem instanceof ElemForEach) {
 					  if (((ElemForEach)xslElem).getXpathDefaultNamespace() == null) {
 						  ((ElemForEach)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
@@ -4705,6 +4734,14 @@ public class TransformerImpl extends Transformer
 					  }
 					  else {
 						  expandText = ((ElemApplyTemplates)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemCallTemplate) {
+					  if (!(((ElemCallTemplate)xslElem).getExpandTextDeclared())) {
+						  ((ElemCallTemplate)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemCallTemplate)xslElem).getExpandText();  
 					  }
 				  }
 				  else if (xslElem instanceof ElemForEach) {

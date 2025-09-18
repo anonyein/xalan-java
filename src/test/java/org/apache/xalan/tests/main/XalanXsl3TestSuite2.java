@@ -63,6 +63,7 @@ import org.apache.xalan.tests.xpath3.XPathMathFunctionTests;
 import org.apache.xalan.tests.xpath3.XPathNodeComparisonTests;
 import org.apache.xalan.tests.xpath3.XPathNodeSequenceCombinationTests;
 import org.apache.xalan.tests.xpath3.XPathOpLiteralSequenceTests;
+import org.apache.xalan.tests.xpath3.XPathPartialFuncApplnTests;
 import org.apache.xalan.tests.xpath3.XPathQuantifiedExprTests;
 import org.apache.xalan.tests.xpath3.XPathRangeExprTests;
 import org.apache.xalan.tests.xpath3.XPathSequenceConstructorMiscTests;
@@ -74,10 +75,13 @@ import org.apache.xalan.tests.xpath3.XPathStringConcatExprTests;
 import org.apache.xalan.tests.xpath3.XPathUriQualifiedNameTests;
 import org.apache.xalan.tests.xpath3.XsDurationComponentExtractionFunctionTests;
 import org.apache.xalan.tests.xpath3.XsGregorianTypeTests;
+import org.apache.xalan.tests.xslt3.XalanJavaExtensionTests;
+import org.apache.xalan.tests.xslt3.XalanJavascriptExtensionTests;
 import org.apache.xalan.tests.xslt3.XslAnalyzeStringTests;
 import org.apache.xalan.tests.xslt3.XslAttributeTests;
 import org.apache.xalan.tests.xslt3.XslCharacterMapTests;
 import org.apache.xalan.tests.xslt3.XslContextItemTests;
+import org.apache.xalan.tests.xslt3.XslCopyTests;
 import org.apache.xalan.tests.xslt3.XslExpandTextTests;
 import org.apache.xalan.tests.xslt3.XslForEachGroupMiscTests;
 import org.apache.xalan.tests.xslt3.XslForEachGroupTests;
@@ -94,6 +98,7 @@ import org.apache.xalan.tests.xslt3.XslMethodOutputJsonTests;
 import org.apache.xalan.tests.xslt3.XslResultDocumentTests;
 import org.apache.xalan.tests.xslt3.XslRtfMigrationTests;
 import org.apache.xalan.tests.xslt3.XslSequenceInstTests;
+import org.apache.xalan.tests.xslt3.XslSortTests;
 import org.apache.xalan.tests.xslt3.XslSourceDocumentTests;
 import org.apache.xalan.tests.xslt3.XslTemplateAttributeAsTests;
 import org.apache.xalan.tests.xslt3.XslTemplateTests;
@@ -112,7 +117,7 @@ import org.junit.runners.Suite.SuiteClasses;
  * @xsl.usage advanced
  */
 @RunWith(Suite.class)
-@SuiteClasses({ XslAnalyzeStringTests.class, XslAttributeTests.class, XslForEachGroupTests.class,
+@SuiteClasses({ XslSortTests.class, XslAnalyzeStringTests.class, XslAttributeTests.class, XslForEachGroupTests.class,
                 XslForEachGroupWithSortTests.class, XslRtfMigrationTests.class, XPathQuantifiedExprTests.class, 
                 FnUnparsedTextTests.class, FnTokenizeTests.class, FnStringJoinTests.class,                 
                 FnIndexOfTests.class, XPathSequenceTraversalTests.class, XPathRangeExprTests.class, XslIterateTests.class,                 
@@ -138,7 +143,8 @@ import org.junit.runners.Suite.SuiteClasses;
                 FnEmptyTests.class, FnFunctionNameTests.class, FnFunctionArityTests.class, XPathDefaultNamespaceTests.class,
                 XPathDefaultNamespaceMiscTests.class, XslFunctionMiscTests.class, XslIncludeTests.class, 
                 XslIncludeMiscTests.class, FnNormalizeUnicodeTests.class, XslExpandTextTests.class,
-                XslJsonValidationTests.class, XPathUriQualifiedNameTests.class, FnRoundHalfToEvenTests.class })
+                XslJsonValidationTests.class, XPathUriQualifiedNameTests.class, FnRoundHalfToEvenTests.class,
+                XPathPartialFuncApplnTests.class, XslCopyTests.class, XalanJavascriptExtensionTests.class, XalanJavaExtensionTests.class })
 public class XalanXsl3TestSuite2 {
 
 }

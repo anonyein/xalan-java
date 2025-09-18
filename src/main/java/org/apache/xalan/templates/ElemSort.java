@@ -20,27 +20,19 @@
  */
 package org.apache.xalan.templates;
 
+import javax.xml.transform.SourceLocator;
+import javax.xml.transform.TransformerException;
+
 import org.apache.xalan.res.XSLTErrorResources;
+import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xpath.XPath;
+import org.apache.xpath.XPathContext;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
 
 /**
- * Implement xsl:sort.
- * <pre>
- * <!ELEMENT xsl:sort EMPTY>
- * <!ATTLIST xsl:sort
- *   select %expr; "."
- *   lang %avt; #IMPLIED
- *   data-type %avt; "text"
- *   order %avt; "ascending"
- *   case-order %avt; #IMPLIED
- * >
- * <!-- xsl:sort cannot occur after any other elements or
- * any non-whitespace character -->
- * </pre>
- * @see <a href="http://www.w3.org/TR/xslt#sorting">sorting in XSLT Specification</a>
- * @xsl.usage advanced
+ * A class definition, to implement XSLT 3.0's xsl:sort 
+ * instruction. 
  */
 public class ElemSort extends ElemTemplateElement
 {
@@ -280,6 +272,76 @@ public class ElemSort extends ElemTemplateElement
   {
     return m_caseorder_avt;
   }
+  
+  /**
+   * This class field, represents an optional collation URI specified 
+   * with xsl:sort instruction.
+   */
+  private String m_collation = null;
+  
+  /**
+   * Get the value of xsl:sort's collation URI.
+   * 
+   * @return				Collation URI value
+   */
+  public String getCollation() {
+	 return m_collation; 
+  }
+  
+  /**
+   * Set the value of xsl:sort's collation URI value.
+   * 
+   * @param collation				Collation URI value
+   */
+  public void setCollation(String collation) {
+	 m_collation = collation; 
+  }
+  
+  /**
+   * This class field, represents an optional 'stable' 
+   * attribute's value (default 'true') specified with xsl:sort 
+   * instruction.
+   * 
+   * XSLT 3.0 spec, section "13.1.1 The Sorting Process" defines
+   * the meaning of a stable sort.
+   */
+  private boolean m_stable = true;
+  
+  /**
+   * A boolean value indicating, whether xsl:sort element has 
+   * declared an attribute named 'stable.
+   */
+  private boolean m_isStableDeclared = false;
+  
+  /**
+   * Get the value of xsl:sort 'stable' attribute's value.
+   * 
+   * @return				'stable' attribute's value
+   */
+  public boolean getStable() {
+	 return m_stable; 
+  }
+  
+  /**
+   * Set the value of xsl:sort 'stable' attribute's value.
+   * 
+   * @param stable				'stable' attribute's value
+   */
+  public void setStable(boolean stable) {
+	 m_stable = stable;
+	 m_isStableDeclared = true;
+  }
+  
+  /**
+   * Check whether, xsl:sort instruction has an attribute 
+   * named 'stable' declared.
+   * 
+   * @return				   Boolean value true, if xsl:sort instruction has 
+   *                           an attribute named 'stable' declared, otherwise false.
+   */
+  public boolean isStableDeclared() {
+	 return m_isStableDeclared; 
+  }
 
   /**
    * Get an int constant identifying the type of element.
@@ -301,6 +363,19 @@ public class ElemSort extends ElemTemplateElement
   {
     return Constants.ELEMNAME_SORT_STRING;
   }
+  
+  public void execute(TransformerImpl transformer) throws TransformerException 
+  {
+	  XPathContext xctxt = transformer.getXPathContext();
+	  
+	  SourceLocator srcLocator = xctxt.getSAXLocator();
+	  
+	  ElemTemplateElement elemTemplateElem = this.getFirstChildElem();
+	  if ((m_selectExpression != null) && (elemTemplateElem != null)) {
+		 throw new javax.xml.transform.TransformerException("XTSE1015 : An xsl:sort instruction with an attribute "
+		 		                                                                              + "'select' should have an empty contained sequence constructor.", srcLocator); 
+	  }
+  }
 
   /**
    * Add a child to the child list.
@@ -313,13 +388,9 @@ public class ElemSort extends ElemTemplateElement
    */
   public Node appendChild(Node newChild) throws DOMException
   {
-
-    error(XSLTErrorResources.ER_CANNOT_ADD,
-          new Object[]{ newChild.getNodeName(),
-                        this.getNodeName() });  //"Can not add " +((ElemTemplateElement)newChild).m_elemName +
-
-    //" to " + this.m_elemName);
-    return null;
+	  super.appendChild(newChild);
+	  
+	  return newChild;
   }
   
   /**
