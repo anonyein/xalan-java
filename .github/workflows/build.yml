@@ -67,7 +67,7 @@ jobs:
         install_jar "libs/JLex/JLex/1.0/jlex-1.0.jar" "Jlex" "Jlex" "1.0"
         install_jar "libs/edu/princeton/cs/java_cup/1.0/java_cup-1.0.jar" "edu.princeton.cs" "java_cup" "1.0"
         install_jar "libs/edu/princeton/cs/cup_runtime/1.0/cup_runtime-1.0.jar" "edu.princeton.cs" "cup_runtime" "1.0"
-        install_jar "libs/org/apache/xsl/xpath31_types/1.0/xpath31_types-1.0.jar" "org.apache.xsl" "xpath31_types" "1.0"
+        install_jar "libs/org/apache/xsl/xalanj_xpath31_types/1.0/xalanj_xpath31_types-1.0.jar" "org.apache.xsl" "xalanj_xpath31_types" "1.0"
         install_jar "libs/org/apache/xerces/xercesImpl/2.12.3_beta/xercesImpl-2.12.3_beta.jar" "org.apache.xerces" "xercesImpl" "2.12.3_beta"
         install_jar "libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar" "org.apache.xerces" "xml-apis" "1.4.02"
         
