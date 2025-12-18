@@ -49,7 +49,7 @@
 			<version>1.4.02</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.xerces</groupId>
+			<groupId>org.apache.xsl</groupId>
 			<artifactId>xpath31_types</artifactId>
 			<version>0.1</version>
 		</dependency>		
