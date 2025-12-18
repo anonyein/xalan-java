@@ -108,6 +108,14 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
   /** Static string to be used for initial template feature */
   public static final String FEATURE_INIT_TEMPLATE =
                              XalanProperties.INIT_TEMPLATE;
+  
+  /** Static string to be used for initial mode feature */
+  public static final String FEATURE_INIT_MODE =
+                             XalanProperties.INIT_MODE;
+  
+  /** Static string to be used for 'assert' feature */
+  public static final String FEATURE_ASSERT =
+                             XalanProperties.ASSERT_ENABLED;
 
   public javax.xml.transform.Templates processFromNode(Node node)
           throws TransformerConfigurationException
@@ -485,9 +493,20 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
   private boolean m_source_location = false;
   
   /**
-   * An XSL stylesheet initial template name.
+   * An XSL transformation's initial template name.
    */
   private String m_init_template_name = null;
+  
+  /**
+   * An XSL transformation's initial mode name.
+   */
+  private String m_init_mode_name = null;
+  
+  /**
+   * An XSL transformation's 'assert' enable, 
+   * status value.
+   */
+  private boolean m_assert;
   
   /**
    * Flag set by FEATURE_INCREMENTAL.
@@ -574,6 +593,14 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
     {
     	m_init_template_name = (String)value; 
     }
+    else if(name.equals(FEATURE_INIT_MODE))
+    {
+    	m_init_mode_name = (String)value; 
+    }
+    else if(name.equals(FEATURE_ASSERT))
+    {
+    	m_assert = (Boolean)value; 
+    }
     else
     {
       throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_NOT_SUPPORTED, new Object[]{name})); //name + "not supported");
@@ -607,6 +634,14 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
     else if (name.equals(FEATURE_INIT_TEMPLATE))
     {
       return m_init_template_name;
+    }
+    else if (name.equals(FEATURE_INIT_MODE))
+    {
+      return m_init_mode_name;
+    }
+    else if (name.equals(FEATURE_ASSERT))
+    {
+      return m_assert;
     }
     else
       throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_ATTRIB_VALUE_NOT_RECOGNIZED, new Object[]{name})); //name + " attribute not recognized");
@@ -878,6 +913,7 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
     else if (source instanceof StreamSource) {
     	if (xslStylesheetSystemId != null) {
     		System.setProperty(Constants.XML_DOCUMENT_BUILDER_FACTORY_KEY, Constants.XML_DOCUMENT_BUILDER_FACTORY_VALUE);
+    		
     		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     		dbf.setNamespaceAware(true);    	
     		Document document = null;
@@ -906,6 +942,7 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
 
       if (source instanceof SAXSource) {    	  
     	  System.setProperty(Constants.XML_DOCUMENT_BUILDER_FACTORY_KEY, Constants.XML_DOCUMENT_BUILDER_FACTORY_VALUE);
+    	  
     	  DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     	  dbf.setNamespaceAware(true);    	
     	  Document document = null;

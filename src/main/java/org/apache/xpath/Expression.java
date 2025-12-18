@@ -28,6 +28,7 @@ import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xml.utils.QName;
@@ -38,6 +39,7 @@ import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
+import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.operations.Equals;
 import org.apache.xpath.operations.Lt;
@@ -45,6 +47,10 @@ import org.apache.xpath.operations.NotEquals;
 import org.apache.xpath.operations.VcGt;
 import org.apache.xpath.res.XPATHErrorResources;
 import org.xml.sax.ContentHandler;
+
+import xml.xpath31.processor.types.XSDouble;
+import xml.xpath31.processor.types.XSNumericType;
+import xml.xpath31.processor.types.XSUntypedAtomic;
 
 /**
  * This abstract class serves as the base for all expression objects.  An
@@ -193,7 +199,53 @@ public abstract class Expression implements java.io.Serializable, ExpressionNode
   public boolean bool(XPathContext xctxt)
           throws javax.xml.transform.TransformerException
   {
-    return execute(xctxt).bool();
+	boolean result = false;
+	
+	XObject xobj1 = execute(xctxt);
+	
+	if (xobj1 instanceof XSUntypedAtomic) {
+		String str1 = ((XSUntypedAtomic)xobj1).stringValue();
+		if (!((str1 == null) || "".equals(str1))) {
+		   result = true;
+		}
+	}    
+	else if (xobj1 instanceof XNumber) {
+		XNumber xNumber = (XNumber)xobj1;
+		double dbl = xNumber.num();
+		if (dbl != 0) {
+		   result = true;
+		}
+	}
+    else if (xobj1 instanceof XSNumericType) {
+    	XSNumericType xsNumericType = (XSNumericType)xobj1;
+    	String str1 = xsNumericType.stringValue();
+    	double dbl = (Double.valueOf(str1)).doubleValue();
+    	if (!Double.isNaN(dbl)) {
+    	   if (dbl == 0) {
+    		   if (xsNumericType instanceof XSDouble) {
+    			   String consFuncArgStr = ((XObject)xsNumericType).getConsFuncArgStr();
+    			   int strLength1 = consFuncArgStr.length();
+    			   for (int idx = 0; idx < strLength1; idx++) {
+    				   char chr1 = consFuncArgStr.charAt(idx);
+    				   if (!((chr1 == '0') || (chr1 == '.'))) {
+    					   // Value of number is not zero
+    					   result = true;
+
+    					   break;
+    				   }
+    			   }
+    		   }
+    	   }
+ 		   else {
+ 			  result = true; 
+ 		   }
+ 		}
+	}
+	else {
+		result = xobj1.bool(); 
+	}
+	
+    return result;
   }
 
   /**
@@ -261,7 +313,15 @@ public abstract class Expression implements java.io.Serializable, ExpressionNode
       
       XObject xObj = execute(xctxt);
       
-      DTMCursorIterator dtmIter = xObj.iter(); 
+      DTMCursorIterator dtmIter = null;
+      if (xObj instanceof ResultSequence) {
+    	  XMLNodeCursorImpl xmlNodeCursorImpl = XslTransformEvaluationHelper.getXNodeSetFromResultSequence(
+    			                                                                                       (ResultSequence)xObj, xctxt);    	  
+    	  dtmIter = xmlNodeCursorImpl.iter();
+      }
+      else {
+          dtmIter = xObj.iter();
+      }
 
       return dtmIter;
     }

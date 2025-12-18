@@ -125,9 +125,22 @@ public class StylesheetRoot extends StylesheetComposed
     private XSModel m_xsModel;
     
     /**
-     * An XSL transformation initial template name.
+     * An XSL transformation's initial template name.
      */
-    private String m_init_template_name = null; 
+    private String m_init_template_name = null;
+    
+    /**
+     * An XSL transformation's initial mode name.
+     */
+    private String m_init_mode_name = null;
+    
+    /**
+     * Value of this variable is true, if XSL assert 
+     * are enabled, otherwise false.
+     */
+    private boolean m_assert;
+    
+    private ErrorListener m_errorListener;
     
   /**
    * Uses an XSL stylesheet document.
@@ -142,6 +155,7 @@ public class StylesheetRoot extends StylesheetComposed
 
     try
     {
+      m_errorListener = errorListener; 
       m_selectDefault = new XPath("node()", this, this, XPath.SELECT, errorListener);
 
       initDefaultRule(errorListener);
@@ -771,7 +785,7 @@ public class StylesheetRoot extends StylesheetComposed
    *
    * @param template An ElemTemplate object to add to the template list.
    */
-  void recomposeTemplates(ElemTemplate template)
+  void recomposeTemplates(ElemTemplate template) throws TransformerException
   {
     m_templateList.setTemplate(template);
   }
@@ -881,8 +895,17 @@ public class StylesheetRoot extends StylesheetComposed
    * @return
    */
   public ElemFunction getXslFunction(QName qname, int arity)
-  {	  
-	  return (ElemFunction)(m_templateList.getXslFunction(qname, arity));
+  {		 
+	  ElemFunction result = null;
+	  
+	  if (m_templateList != null) {
+		 ElemTemplate elemTemplate = m_templateList.getXslFunction(qname, arity);
+		 if (elemTemplate != null) {
+			result = (ElemFunction)elemTemplate;  
+		 }
+	  }
+	  
+	  return result;
   }
   
   /**
@@ -963,7 +986,7 @@ public class StylesheetRoot extends StylesheetComposed
    *
    * @param wsi A WhiteSpaceInfo element to add to the list of WhiteSpaceInfo elements.
    */
-  void recomposeWhiteSpaceInfo(WhiteSpaceInfo wsi)
+  void recomposeWhiteSpaceInfo(WhiteSpaceInfo wsi) throws TransformerException
   {
     if (null == m_whiteSpaceInfoList)
       m_whiteSpaceInfoList = new TemplateList();
@@ -1087,6 +1110,210 @@ public class StylesheetRoot extends StylesheetComposed
   {
     return m_defaultRule;
   }
+  
+  /**
+   * Method definition, to get an XSL stylesheet text only copy template rule.
+   * 
+   * @param mode								An XSL template mode value
+   * @param nodeType                            Node type value
+   * @param currentMode                         Current mode value
+   * @return                                    An xsl:template declaration
+   *                                            object for an XSL stylesheet rule.
+   * @throws TransformerException
+   */
+  public ElemTemplate getTextOnlyCopyRule(QName mode, int nodeType, QName currentMode) throws TransformerException
+  {	  
+	  ElemTemplate result = new ElemTemplate();
+	  
+	  result.setStylesheet(this);	
+	  result.setMode(mode);	  	  
+	  
+	  if (nodeType == DTM.DOCUMENT_NODE) {
+		  result = getDefaultRootRule();		  
+	  }
+	  else if (nodeType == DTM.ELEMENT_NODE) {
+		  XPath xpathMatch = new XPath("*", this, this, XPath.MATCH, m_errorListener);
+		  result.setMatch(xpathMatch);
+		  
+		  ElemApplyTemplates elemApplyTemplates = new ElemApplyTemplates();
+		  elemApplyTemplates.setSelect(m_selectDefault);
+		  elemApplyTemplates.setMode(currentMode);
+		  elemApplyTemplates.setIsDefaultTemplate(true);
+		  result.appendChild(elemApplyTemplates);
+	  }
+	  else if ((nodeType == DTM.TEXT_NODE) || (nodeType == DTM.ATTRIBUTE_NODE)) {
+		  XPath xpathMatch = new XPath("text()|@*", this, this, XPath.MATCH, m_errorListener);
+		  result.setMatch(xpathMatch);
+		  
+		  ElemValueOf elemValueOf = new ElemValueOf();
+		  XPath xpathSelect = new XPath("string(.)", this, this, XPath.SELECT, m_errorListener);
+		  elemValueOf.setSelect(xpathSelect);
+		  result.appendChild(elemValueOf);
+	  }
+	  else if (nodeType == DTM.PROCESSING_INSTRUCTION_NODE) {
+		  XPath xpathMatch = new XPath("processing-instruction()", this, this, XPath.MATCH, m_errorListener);
+		  result.setMatch(xpathMatch);
+	  }
+	  else if (nodeType == DTM.COMMENT_NODE) {
+		  XPath xpathMatch = new XPath("comment()", this, this, XPath.MATCH, m_errorListener);
+		  result.setMatch(xpathMatch);
+	  }
+	  
+	  return result;	  
+  }
+  
+  /**
+   * Method definition, to get an XSL stylesheet deep copy template rule.
+   * 
+   * @param mode								An XSL template mode value
+   * @return                                    An xsl:template declaration
+   *                                            object for an XSL stylesheet rule.
+   * @throws TransformerException
+   */
+  public ElemTemplate getDeepCopyRule(QName mode) throws TransformerException
+  {		  
+	  ElemTemplate result = new ElemTemplate();
+	  
+	  result.setMode(mode);
+	  result.setStylesheet(this);
+	  
+	  XPath xpathMatch = new XPath("node()|@*", this, this, XPath.MATCH, m_errorListener);
+	  result.setMatch(xpathMatch);	  	  
+	  
+	  ElemCopyOf elemCopyOf = new ElemCopyOf();
+	  XPath xpathSelect = new XPath(".", this, this, XPath.SELECT, m_errorListener);
+	  elemCopyOf.setSelect(xpathSelect);
+	  
+	  result.appendChild(elemCopyOf);
+	  
+	  return result;
+  }
+  
+  /**
+   * Method definition, to get an XSL stylesheet shallow copy template rule.
+   * 
+   * @param mode								An XSL template mode value
+   * @param nodeType                            Node type value
+   * @param currentMode                         Current mode value
+   * @return                                    An xsl:template declaration
+   *                                            object for an XSL stylesheet rule.
+   * @throws TransformerException
+   */
+  public ElemTemplate getShallowCopyRule(QName mode, int nodeType, QName currentMode) throws TransformerException
+  {	  
+	  ElemTemplate result = new ElemTemplate();
+	  
+	  result.setMode(mode);
+	  result.setStylesheet(this);	  	  
+	  
+	  if (nodeType == DTM.ATTRIBUTE_NODE) {		  
+		  XPath xpathMatch = new XPath("@*", this, this, XPath.MATCH, m_errorListener);
+		  result.setMatch(xpathMatch);	  	  
+		  
+		  ElemCopyOf elemCopyOf = new ElemCopyOf();
+		  XPath xpathSelect = new XPath(".", this, this, XPath.SELECT, m_errorListener);
+		  elemCopyOf.setSelect(xpathSelect);
+		  
+		  result.appendChild(elemCopyOf);
+	  }
+	  else {
+		  ElemCopy elemCopy = new ElemCopy();
+		  
+		  XPath xpathMatch = new XPath("node()", this, this, XPath.MATCH, m_errorListener);
+		  result.setMatch(xpathMatch);
+
+		  ElemApplyTemplates elemApplyTemplates = new ElemApplyTemplates();
+		  elemApplyTemplates.setMode(mode);
+		  XPath xpathSelect = new XPath("@*", this, this, XPath.SELECT, m_errorListener);
+		  elemApplyTemplates.setSelect(xpathSelect);
+		  elemApplyTemplates.setIsDefaultTemplate(true);
+		  elemCopy.appendChild(elemApplyTemplates);
+		  
+		  elemApplyTemplates = new ElemApplyTemplates();
+		  elemApplyTemplates.setMode(mode);
+		  xpathSelect = new XPath("node()", this, this, XPath.SELECT, m_errorListener);
+		  elemApplyTemplates.setSelect(xpathSelect);
+		  elemApplyTemplates.setIsDefaultTemplate(true);		  
+		  elemCopy.appendChild(elemApplyTemplates);
+		  
+		  result.appendChild(elemCopy);
+	  }	  
+
+	  return result;
+  }
+  
+  /**
+   * Method definition, to get an XSL stylesheet deep skip template rule.
+   * 
+   * @param mode								An XSL template mode value
+   * @param nodeType                            Node type value
+   * @param currentMode                         Current mode value
+   * @return                                    An xsl:template declaration
+   *                                            object for an XSL stylesheet rule.
+   * @throws TransformerException
+   */
+  public ElemTemplate getDeepSkipRule(QName mode, int nodeType, QName currentMode) throws TransformerException
+  {	  
+	  ElemTemplate result = new ElemTemplate();
+	  
+	  result.setMode(mode);	  result.setStylesheet(this);
+
+	  if (nodeType == DTM.DOCUMENT_NODE) {
+		  result = getDefaultRootRule();
+	  }
+	  else {
+		  XPath xpathMatch = new XPath("node()|@*", this, this, XPath.MATCH, m_errorListener);
+		  result.setMatch(xpathMatch);
+	  }
+
+	  return result;
+  }
+  
+  /**
+   * Method definition, to get an XSL stylesheet shallow skip template rule.
+   * 
+   * @param mode								An XSL template mode value
+   * @param nodeType                            Node type value
+   * @param currentMode                         Current mode value
+   * @return                                    An xsl:template declaration
+   *                                            object for an XSL stylesheet rule.
+   * @throws TransformerException
+   */
+  public ElemTemplate getShallowSkipRule(QName mode, int nodeType, QName currentMode) throws TransformerException
+  {	  	  
+	  
+	  ElemTemplate result = new ElemTemplate();
+	  
+	  result.setStylesheet(this);	
+	  result.setMode(mode);	  	  
+	  
+	  if (nodeType == DTM.DOCUMENT_NODE) {		  
+		  result = getDefaultRootRule();
+	  }
+	  else if (nodeType == DTM.ELEMENT_NODE) {
+		  XPath xpathMatch = new XPath("*", this, this, XPath.MATCH, m_errorListener);
+		  result.setMatch(xpathMatch);
+		  
+		  ElemApplyTemplates elemApplyTemplates = new ElemApplyTemplates();
+		  elemApplyTemplates.setMode(currentMode);
+		  XPath xpathSelect = new XPath("@*", this, this, XPath.SELECT, m_errorListener);
+		  elemApplyTemplates.setSelect(xpathSelect);
+		  elemApplyTemplates.setIsDefaultTemplate(true);
+		  result.appendChild(elemApplyTemplates);
+		  		  
+		  elemApplyTemplates = new ElemApplyTemplates();
+		  elemApplyTemplates.setSelect(m_selectDefault);
+		  elemApplyTemplates.setMode(currentMode);
+		  elemApplyTemplates.setIsDefaultTemplate(true);
+		  result.appendChild(elemApplyTemplates);
+	  }
+	  else {
+		  XPath xpathMatch = new XPath("text()|@*", this, this, XPath.MATCH, m_errorListener);
+		  result.setMatch(xpathMatch);
+	  }
+
+	  return result;
+  }
 
   /**
    * The default template to use for the root if we don't find
@@ -1159,8 +1386,8 @@ public class StylesheetRoot extends StylesheetComposed
     childrenElement.setSelect(m_selectDefault);
     m_defaultRule.appendChild(childrenElement);
     
-    m_startRule = m_defaultRule;
-
+    m_startRule = m_defaultRule;               
+    
     // -----------------------------
     m_defaultTextRule = new ElemTemplate();
 
@@ -1665,12 +1892,12 @@ public class StylesheetRoot extends StylesheetComposed
 						}
 					}
 					catch (URISyntaxException ex) {
-						throw new javax.xml.transform.TransformerException("FODC0005 : The schema uri specified with xsl:import-schema instruction "
+						throw new javax.xml.transform.TransformerException("FODC0005 : The schema uri specified with XSL import-schema instruction "
 																										+ "is not a valid absolute uri, or cannot be "
 																										+ "resolved to an absolute uri.");   
 					}
 					catch (MalformedURLException ex) {
-						throw new javax.xml.transform.TransformerException("FODC0005 : The schema uri specified with xsl:import-schema instruction "
+						throw new javax.xml.transform.TransformerException("FODC0005 : The schema uri specified with XSL import-schema instruction "
 																										+ "is not a valid absolute uri, or cannot be "
 																										+ "resolved to an absolute uri."); 
 					}										
@@ -1679,7 +1906,7 @@ public class StylesheetRoot extends StylesheetComposed
 		}
 		else {
 			throw new javax.xml.transform.TransformerException("FODC0005 : An XML Schema validation of input document was requested, but no schema "
-																										+ "document found via xsl:import-schema "
+																										+ "document found via XSL import-schema "
 																										+ "instruction.");
 		}
 	}
@@ -1788,21 +2015,63 @@ public class StylesheetRoot extends StylesheetComposed
 	}
 
 	/**
-	 * Get XSL transformation's initial template name.
+	 * Get XSL transformation's 'initial template' name.
 	 * 
-	 * @return			String value of XSL transformation's initial template name
+	 * @return			                String value of XSL transformation's 
+	 *                                  'initial template' name.
 	 */
 	public String getInitTemplateName() {
 		return m_init_template_name;
 	}
 
 	/**
-	 * Set XSL transformation's initial template name.
+	 * Set XSL transformation's 'initial template' name.
 	 * 
-	 * @param initTemplateName			An XSL transformation's initial template name 
+	 * @param initTemplateName			An XSL transformation's 'initial template' 
+	 *                                  name. 
 	 */
 	public void setInitTemplateName(String initTemplateName) {
 		this.m_init_template_name = initTemplateName;
+	}
+	
+	/**
+	 * Get XSL transformation's 'initial mode' name.
+	 * 
+	 * @return			               String value of XSL transformation's 
+	 *                                 initial mode name.
+	 */
+	public String getInitModeName() {
+		return m_init_mode_name;
+	}
+
+	/**
+	 * Set XSL transformation's 'initial mode' name.
+	 * 
+	 * @param initModeName			  An XSL transformation's initial 
+	 *                                mode name. 
+	 */
+	public void setInitModeName(String initModeName) {
+		this.m_init_mode_name = initModeName;
+	}
+	
+	/**
+	 * Get XSL transformation's 'assert' enable status, value.
+	 * 
+	 * @return			              XSL transformation's 'assert' enable 
+	 *                                boolean, status value.
+	 */
+	public boolean isAssertEnabled() {
+		return m_assert;
+	}
+
+	/**
+	 * Set XSL transformation's 'assert' enable status.
+	 * 
+	 * @param xslAssert			     An XSL transformation's 'assert' 
+	 *                               enable, status. 
+	 */
+	public void setAssertEnabled(boolean xslAssert) {
+		this.m_assert = xslAssert;
 	}
 
 }

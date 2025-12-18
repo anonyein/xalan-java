@@ -27,11 +27,15 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
+import org.apache.xalan.templates.Constants;
+import org.apache.xalan.templates.ElemFunction;
+import org.apache.xalan.templates.ElemParam;
 import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.templates.XMLNSDecl;
-import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xalan.xslt.util.XslTransformData;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xerces.impl.dv.InvalidDatatypeValueException;
 import org.apache.xerces.impl.dv.XSSimpleType;
 import org.apache.xerces.impl.dv.xs.XSSimpleTypeDecl;
@@ -41,22 +45,28 @@ import org.apache.xerces.xs.XSModel;
 import org.apache.xerces.xs.XSTypeDefinition;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
+import org.apache.xml.utils.PrefixResolver;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.XPath;
+import org.apache.xpath.XPathContext;
 import org.apache.xpath.composite.SequenceTypeArrayTest;
 import org.apache.xpath.composite.SequenceTypeData;
 import org.apache.xpath.composite.SequenceTypeKindTest;
 import org.apache.xpath.composite.SequenceTypeMapTest;
 import org.apache.xpath.composite.SequenceTypeSupport;
 import org.apache.xpath.composite.SequenceTypeSupport.OccurrenceIndicator;
+import org.apache.xpath.objects.ElemFunctionItem;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
+import org.apache.xpath.objects.XNodeSetForDOM;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
+import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
+import org.apache.xpath.objects.XdmAttributeItem;
 import org.apache.xpath.types.XMLAttribute;
 import org.apache.xpath.types.XSBase64Binary;
 import org.apache.xpath.types.XSByte;
@@ -131,52 +141,208 @@ public class InstanceOf extends Operation
    */
   public XObject operate(XObject left, XObject right) 
                                                  throws javax.xml.transform.TransformerException
-  {
-      boolean result = false;
+  {            
+            
+      XObject result = null;
+      
+	  XPathContext xctxt = null;      
       
       SequenceTypeData seqTypedData = (SequenceTypeData)right;
       
-      int builtInSeqType = seqTypedData.getBuiltInSequenceType();
+      int builtInSeqType = seqTypedData.getBuiltInSequenceType();      
+      SequenceTypeKindTest sequenceTypeKindTest = seqTypedData.getSequenceTypeKindTest();
+      int seqTypeOccurenceIndicator = seqTypedData.getItemTypeOccurrenceIndicator();      
       
-      if ((left instanceof ResultSequence) && ((ResultSequence)left).size() == 0) {
-    	 if ((seqTypedData.getItemTypeOccurrenceIndicator() == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE) || 
-    		 (seqTypedData.getItemTypeOccurrenceIndicator() == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY)) {
-    		 return XBoolean.S_TRUE; 
-    	 }
-    	 else if (builtInSeqType == SequenceTypeSupport.EMPTY_SEQUENCE) {
-    		 return XBoolean.S_TRUE;
-    	 }
-    	 else if (seqTypedData.getItemTypeOccurrenceIndicator() == SequenceTypeSupport.OccurrenceIndicator.ABSENT) {
-    		 return XBoolean.S_FALSE;
+      if (left instanceof ElemFunctionItem) {
+    	  /**
+    	   * Converting, xsl:function declaration signature, to an 
+    	   * equivalent XPath inline function declaration whose
+    	   * function body is not specified.
+    	   */
+    	  
+    	  java.lang.String xpathInlineFuncDefnStr = "function(";
+    	  
+    	  ElemFunctionItem elemFunctionItem = (ElemFunctionItem)left;
+    	  ElemFunction elemFunction = elemFunctionItem.getElemFunction();
+    	  ElemTemplateElement elemTemplateElement = elemFunction.getFirstChildElem();
+    	  int paramCount = 0;
+    	  while (elemTemplateElement != null) {
+    		 if (elemTemplateElement instanceof ElemParam) {
+    			paramCount++; 
+    			ElemParam elemParam = (ElemParam)elemTemplateElement;
+    			java.lang.String paramAsStr = elemParam.getAs();
+    			xpathInlineFuncDefnStr = xpathInlineFuncDefnStr + "$a" + paramCount + " as " + paramAsStr + ",";
+    		 }
+    		 
+    		 elemTemplateElement = elemTemplateElement.getNextSiblingElem();
+    	  }
+    	  
+    	  if (xpathInlineFuncDefnStr.endsWith(",")) {
+    		  int strLength1 = xpathInlineFuncDefnStr.length();
+    		  xpathInlineFuncDefnStr = xpathInlineFuncDefnStr.substring(0, strLength1 - 1);
+    		  xpathInlineFuncDefnStr = xpathInlineFuncDefnStr + ")";
+    	  }
+    	  else {
+    		  xpathInlineFuncDefnStr = xpathInlineFuncDefnStr + ")"; 
+    	  }
+    	  
+    	  java.lang.String funcReturnTypeAsStr = elemFunction.getAs();
+    	  if (funcReturnTypeAsStr != null) {
+    		  xpathInlineFuncDefnStr = xpathInlineFuncDefnStr + " as " + funcReturnTypeAsStr; 
+    	  }
+    	  
+    	  xpathInlineFuncDefnStr = xpathInlineFuncDefnStr + " { 'no_op' }";
+    	  
+    	  StylesheetRoot stylesheetRoot = XslTransformEvaluationHelper.getXslStylesheetRootFromXslElementRef(this);
+    	  TransformerImpl transformerImpl = stylesheetRoot.getTransformerImpl();
+    	  xctxt = transformerImpl.getXPathContext(); 
+    	  PrefixResolver prefixResolver = xctxt.getNamespaceContext();
+    	  XPath xpathObj = new XPath(xpathInlineFuncDefnStr, this, prefixResolver, XPath.SELECT, null);
+    	  
+    	  left = xpathObj.execute(xctxt, DTM.NULL, prefixResolver);
+      }
+      else if (left instanceof XdmAttributeItem) {
+    	  if ((sequenceTypeKindTest != null) && (sequenceTypeKindTest.getKindVal() == SequenceTypeSupport.ATTRIBUTE_KIND) ||
+    			                                (sequenceTypeKindTest.getKindVal() == SequenceTypeSupport.ITEM_KIND)) {
+    		  result = XBoolean.S_TRUE;
+    	  }
+    	  else {
+    		  result = XBoolean.S_FALSE;
+    	  }
+    	  
+    	  return result;
+      }
+      
+      if (left instanceof XSQName) {
+    	 java.lang.String localPart = ((XSQName)left).getLocalPart();
+    	 if ((Constants.ANONYMOUS_FUNCTION).equals(localPart)) {
+    		 left = new ResultSequence(); 
     	 }
       }
       
-      try {
-         result = isInstanceOf(left, seqTypedData);
+      if (left instanceof ResultSequence) {
+    	 int rSeqLength = ((ResultSequence)left).size();    	 
+    	 if (rSeqLength == 0) {
+    		 if ((seqTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE) || 
+    				                                                                 (seqTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY)) {
+    			 result = XBoolean.S_TRUE; 
+    		 }
+    		 else if (builtInSeqType == SequenceTypeSupport.EMPTY_SEQUENCE) {
+    			 result = XBoolean.S_TRUE;
+    		 }
+    		 else if (seqTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ABSENT) {
+    			 result = XBoolean.S_FALSE;
+    		 }
+    		 
+    		 return result;
+         }
+    	 else if ((sequenceTypeKindTest != null) && (sequenceTypeKindTest.getKindVal() == SequenceTypeSupport.ITEM_KIND)) {
+    		 if (rSeqLength == 1) {
+    			 result = XBoolean.S_TRUE;
+    		 }
+    		 else if ((seqTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) ||
+    				  (seqTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY)) {
+    			 // here, rSeqLength > 1
+    			 result = XBoolean.S_TRUE; 
+    		 }
+    		 else {
+    			 result = XBoolean.S_FALSE;  
+    		 }
+    		 
+    		 return result;
+    	 }
+      }
+      
+      boolean isInstanceOfResult = false;
+      
+      try {    	 
+    	 if (left instanceof XPathInlineFunction) {
+    		ElemTemplateElement elemTemplateElement = (ElemTemplateElement)getExpressionOwner();    		
+            XObject xObj = SequenceTypeSupport.castXdmValueToAnotherType(left, null, seqTypedData, 
+            		                                                                           xctxt, elemTemplateElement.getPrefixTable());
+            if (xObj != null) {
+               isInstanceOfResult = true;	
+            }
+         }
+    	 else if (left instanceof XNodeSetForDOM) {
+    		XNodeSetForDOM xNodeSetForDOM = (XNodeSetForDOM)left;
+    		StylesheetRoot stylesheetRoot = XslTransformEvaluationHelper.getXslStylesheetRootFromXslElementRef(this);
+      	    TransformerImpl transformerImpl = stylesheetRoot.getTransformerImpl();
+      	    xctxt = transformerImpl.getXPathContext();
+    		int nodeHandle = xNodeSetForDOM.asNode(xctxt);
+    		DTM dtm = xctxt.getDTM(nodeHandle);
+    		Node node = dtm.getNode(nodeHandle);
+    		java.lang.String xmlStr = XslTransformEvaluationHelper.serializeXmlDomElementNode(node);
+    		xmlStr = xmlStr.trim();
+    		if ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>".equals(xmlStr)) {
+    			// XPath 'instance of' operator's LHS is an empty sequence    			
+    			boolean isSequenceCardinalityOk = false;    			
+    			if ((seqTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE) || 
+    				                                                                  (seqTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY)) {
+    				isSequenceCardinalityOk = true; 
+    			}
+    			else if (builtInSeqType == SequenceTypeSupport.EMPTY_SEQUENCE) {
+    				isSequenceCardinalityOk = true;
+    			}
+    			else if (seqTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ABSENT) {
+    				isSequenceCardinalityOk = false;
+    			}    			
+
+    			if (isSequenceCardinalityOk) {
+    				result = XBoolean.S_TRUE;
+    			}
+    			else {
+    				result = XBoolean.S_FALSE;
+    			}
+    			
+    			return result;
+    		}
+    		
+    		left = left.getFresh();
+    	 }
+         
+    	 if (!isInstanceOfResult) {
+            isInstanceOfResult = isInstanceOf(left, seqTypedData);
+    	 }
       }
       catch (Exception ex) {    	 
-    	 result = false; 
+    	 isInstanceOfResult = false; 
       }
       
-      return ((result == true) ? XBoolean.S_TRUE : XBoolean.S_FALSE);
+      result = (isInstanceOfResult ? XBoolean.S_TRUE : XBoolean.S_FALSE);  
+      
+      return result;
   }
-
+  
   /**
-   * This method checks whether, an xdm value is an instance of 
-   * a specific type.
+   * Method definition, to check whether, an xdm value is an instance
+   * of a specified xdm sequence type.
+   * 
+   * @param xdmValue				                The supplied xdm value
+   * @param seqTypeData                             The supplied xdm sequence 
+   *                                                type information.
+   * @return                                        Boolean value true or false
+   * @throws ParserConfigurationException
+   * @throws SAXException
+   * @throws IOException
+   * @throws TransformerException
+   * @throws Exception
    */
-  private boolean isInstanceOf(XObject xdmValue, SequenceTypeData seqTypeData) throws ParserConfigurationException, SAXException, 
-                                                                                                             IOException, TransformerException, Exception {
+  private boolean isInstanceOf(XObject xdmValue, SequenceTypeData seqTypeData) 
+		                                                                    throws ParserConfigurationException, SAXException, 
+                                                                                   IOException, TransformerException, Exception {
     
       boolean isInstanceOf = false;
       
       SequenceTypeKindTest sequenceTypeKindTest = seqTypeData.getSequenceTypeKindTest();
       
+      final int seqTypeOccrIndicator = seqTypeData.getItemTypeOccurrenceIndicator();
+      
       boolean isXdmValueString = ((xdmValue instanceof XString) || (xdmValue instanceof XSString));  
       
       if (isXdmValueString && "".equals(XslTransformEvaluationHelper.getStrVal(xdmValue)) && ((sequenceTypeKindTest.getKindVal() == SequenceTypeSupport.DOCUMENT_KIND) && 
-    		                                                                                  ((seqTypeData.getItemTypeOccurrenceIndicator() == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE) || 
-    		                                                                                   (seqTypeData.getItemTypeOccurrenceIndicator() == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY)))) {
+    		                                                                                  ((seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE) || 
+    		                                                                                   (seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY)))) {
     	  isInstanceOf = true;
       }      
       else if ((xdmValue instanceof XSUntypedAtomic) && (seqTypeData.getBuiltInSequenceType() == SequenceTypeSupport.XS_UNTYPED_ATOMIC)) {
@@ -477,13 +643,45 @@ public class InstanceOf extends Operation
     		  }
     	  }
       }
+      else if (sequenceTypeKindTest.getKindVal() == SequenceTypeSupport.ITEM_KIND) {
+    	  if (xdmValue instanceof ResultSequence) {
+    		 ResultSequence rSeq = (ResultSequence)xdmValue;
+    		 int rSeqSize = rSeq.size();
+    		 if ((rSeqSize == 0) && ((seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
+    				                 (seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
+    			isInstanceOf = true; 
+    		 }
+    		 else if (rSeqSize == 1) {
+    			isInstanceOf = true; 
+    		 }
+    		 else if ((seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) ||
+    				  (seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY)) {
+    			 // here, rSeqSize > 1
+    			 isInstanceOf = true; 
+    		 }
+    	  }
+    	  else {
+    		 isInstanceOf = true; 
+    	  }
+      }
     
       return isInstanceOf;
   }
 
+  
   /**
-   * This method checks whether, an xdm nodeset is an instance of 
-   * a specific type.
+   * Method definition, to check whether, an xdm nodeset is an
+   * instance of a specified xdm sequence type. 
+   * 
+   * @param nodeSet										The specified xdm nodeset
+   * @param seqTypeData                                 The specified xdm sequence 
+   *                                                    type information.
+   * @return                                            Boolean value true or false
+   * @throws ParserConfigurationException
+   * @throws SAXException
+   * @throws IOException
+   * @throws TransformerException
+   * @throws Exception
    */
   private boolean isNodesetInstanceOfType(XMLNodeCursorImpl nodeSet, SequenceTypeData seqTypeData) throws 
                                                                          ParserConfigurationException, SAXException, 
@@ -492,9 +690,25 @@ public class InstanceOf extends Operation
 	  boolean isInstanceOf = false;
           
 	  int nodeSetLen = nodeSet.getLength();          
-	  int itemTypeOccurenceIndicator = seqTypeData.getItemTypeOccurrenceIndicator();	  
-
-	  if ((nodeSetLen > 1) && ((itemTypeOccurenceIndicator == 0) || (itemTypeOccurenceIndicator == OccurrenceIndicator.ZERO_OR_ONE))) {
+	  	  	  	  
+	  SequenceTypeKindTest seqTypeKindTest = seqTypeData.getSequenceTypeKindTest();
+	  int itemTypeOccurenceIndicator = seqTypeData.getItemTypeOccurrenceIndicator();
+	  
+	  if ((seqTypeKindTest != null) && (seqTypeKindTest.getKindVal() == SequenceTypeSupport.ITEM_KIND)) {
+		  if ((nodeSetLen == 0) && ((itemTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
+				                                                              (itemTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
+			  isInstanceOf = true; 
+		  }
+		  else if (nodeSetLen == 1) {
+			  isInstanceOf = true; 
+		  }
+		  else if ((itemTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) ||
+				   (itemTypeOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY)) {
+			  // here, nodeSetLen > 1
+			  isInstanceOf = true; 
+		  }
+	  }
+	  else if ((nodeSetLen > 1) && ((itemTypeOccurenceIndicator == 0) || (itemTypeOccurenceIndicator == OccurrenceIndicator.ZERO_OR_ONE))) {
 		  isInstanceOf = false; 
 	  }
 	  else {
@@ -508,18 +722,17 @@ public class InstanceOf extends Operation
 			  java.lang.String nodeName = dtm.getNodeName(nextNode);
 			  java.lang.String nodeNsUri = dtm.getNamespaceURI(nextNode);
 
-			  if (dtm.getNodeType(nextNode) == DTM.DOCUMENT_NODE) {
-				  SequenceTypeKindTest seqTypeKindTest = seqTypeData.getSequenceTypeKindTest();				  
+			  if (dtm.getNodeType(nextNode) == DTM.DOCUMENT_NODE) {				  
 				  if ((seqTypeKindTest != null) && (seqTypeKindTest.getKindVal() == SequenceTypeSupport.DOCUMENT_KIND)) {
 					  nodeSetSequenceTypeKindTestResultList.add(Boolean.valueOf(true)); 
 				  }
 				  else {
 					  isInstanceOf = false;
+					  
 					  break;
 				  }
 			  }
-			  else if (dtm.getNodeType(nextNode) == DTM.ELEMENT_NODE) {
-				  SequenceTypeKindTest seqTypeKindTest = seqTypeData.getSequenceTypeKindTest();				  
+			  else if (dtm.getNodeType(nextNode) == DTM.ELEMENT_NODE) {				  
 				  if (seqTypeKindTest != null) {
 					  XMLNodeCursorImpl xmlNodeCursorImpl = new XMLNodeCursorImpl(nextNode, dtmIter.getDTMManager());
 					  SequenceTypeKindTest seqTypeKindTest2 = xmlNodeCursorImpl.getSeqTypeKindTest();
@@ -544,6 +757,7 @@ public class InstanceOf extends Operation
 							  }
 							  else {
 								  isInstanceOf = false;
+								  
 								  break;
 							  }
 						  }
@@ -565,6 +779,7 @@ public class InstanceOf extends Operation
 								  Node childNode = childNodes.item(idx);
 								  if (childNode.getNodeType() == Node.ELEMENT_NODE) {
 									  isComplexContent = true;
+									  
 									  break;
 								  }
 							  }
@@ -576,6 +791,7 @@ public class InstanceOf extends Operation
 									  java.lang.String nodeNameStr = attrNode.getNodeName();									
 									  if (!"xmlns".equals(nodeNameStr)) {
 										  isComplexContent = true;
+										  
 										  break;
 									  }
 								  }
@@ -583,6 +799,7 @@ public class InstanceOf extends Operation
 							  
 							  if (isComplexContent) {
 								  isInstanceOf = false;
+								  
 								  break;
 							  }
 							  else {
@@ -618,6 +835,7 @@ public class InstanceOf extends Operation
 							  }
 							  catch (TransformerException ex) {
 								  isInstanceOf = false;
+								  
 								  break;
 							  }
 							  if (isInstanceOf) {
@@ -647,6 +865,7 @@ public class InstanceOf extends Operation
 								 // produce 'instance of' result as false, instead of emitting an XPath 
 								 // dynamic error. 
 								 isInstanceOf = false;
+								 
 								 break; 
 							  }
 						  }
@@ -654,6 +873,7 @@ public class InstanceOf extends Operation
 							  // When an XML input document has not been validated with a schema, we produce 
 							  // 'instance of' result as false, instead of emitting an XPath dynamic error.
 							  isInstanceOf = false;
+							  
 							  break; 
 						  }
 					  }
@@ -664,11 +884,11 @@ public class InstanceOf extends Operation
 				  }
 				  else {
 					  isInstanceOf = false;
+					  
 					  break;
 				  }
 			  }
-			  else if (dtm.getNodeType(nextNode) == DTM.ATTRIBUTE_NODE) {
-				  SequenceTypeKindTest seqTypeKindTest = seqTypeData.getSequenceTypeKindTest();				  
+			  else if (dtm.getNodeType(nextNode) == DTM.ATTRIBUTE_NODE) {				  
 				  if (seqTypeKindTest != null) {
 					  java.lang.String attrNodeKindTestNodeName = seqTypeKindTest.getNodeLocalName();
 					  if (attrNodeKindTestNodeName == null || "".equals(attrNodeKindTestNodeName) || 
@@ -690,11 +910,13 @@ public class InstanceOf extends Operation
 								  }
 								  catch (InvalidDatatypeValueException ex) {
 									  isInstanceOf = false;
+									  
 									  break;
 								  }
 							  }
 							  else {
 								  isInstanceOf = false;
+								  
 								  break; 
 							  }
 						  }
@@ -712,10 +934,11 @@ public class InstanceOf extends Operation
 							  }
 							  catch (TransformerException ex) {
 								  isInstanceOf = false;
+								  
 								  break;
 							  }
 							  if (isInstanceOf) {
-								 nodeSetSequenceTypeKindTestResultList.add(Boolean.valueOf(true)); 
+								  nodeSetSequenceTypeKindTestResultList.add(Boolean.valueOf(true)); 
 							  }
 							  else {
 								 break; 
@@ -736,11 +959,14 @@ public class InstanceOf extends Operation
 								 nodeSetSequenceTypeKindTestResultList.add(Boolean.valueOf(true)); 
 							  }
 							  else {
-								 // When an XML input document has been validated with a schema but the schema 
-								 // doesn't have a global attribute declaration for this attribute node, we 
-								 // produce 'instance of' result as false, instead of emitting an XPath 
-								 // dynamic error. 
+                                 /**
+                                  * When an XML input document has been validated with a schema but the schema
+                                  * doesn't have a global attribute declaration for this attribute node, we
+                                  * produce 'instance of' result as false, instead of emitting an XPath
+                                  * dynamic error.
+                                  */
 								 isInstanceOf = false;
+								 
 								 break; 
 							  }
 						  }
@@ -748,6 +974,7 @@ public class InstanceOf extends Operation
 							  // When an XML input document has not been validated with a schema, we produce 
 							  // 'instance of' result as false, instead of emitting an XPath dynamic error.   
 							  isInstanceOf = false;
+							  
 							  break; 
 						  }
 					  }
@@ -758,17 +985,16 @@ public class InstanceOf extends Operation
 				  }
 				  else {
 					  isInstanceOf = false;
+					  
 					  break;
 				  } 
 			  }
-			  else if (dtm.getNodeType(nextNode) == DTM.TEXT_NODE) {
-				  SequenceTypeKindTest seqTypeKindTest = seqTypeData.getSequenceTypeKindTest();				  
+			  else if (dtm.getNodeType(nextNode) == DTM.TEXT_NODE) {				  
 				  if (seqTypeKindTest.getKindVal() == SequenceTypeSupport.TEXT_KIND) {
 					  nodeSetSequenceTypeKindTestResultList.add(Boolean.valueOf(true)); 
 				  }
 			  }
-			  else if (dtm.getNodeType(nextNode) == DTM.NAMESPACE_NODE) {
-				  SequenceTypeKindTest seqTypeKindTest = seqTypeData.getSequenceTypeKindTest();				  
+			  else if (dtm.getNodeType(nextNode) == DTM.NAMESPACE_NODE) {				  
 				  if (seqTypeKindTest.getKindVal() == SequenceTypeSupport.NAMESPACE_NODE_KIND) {
 					  nodeSetSequenceTypeKindTestResultList.add(Boolean.valueOf(true)); 
 				  }
@@ -782,27 +1008,38 @@ public class InstanceOf extends Operation
 	  
 	  return isInstanceOf;
   }
-
+  
   /**
-   * This method checks whether, an xdm sequence is an instance of 
-   * a specific type.
+   * Method definition, to check whether, an xdm sequence object is
+   * an instance of the specified xdm sequence type.
+   * 
+   * @param resultSeq								The supplied xdm sequence
+   * @param seqTypeData                             The supplied xdm sequence 
+   *                                                type information.
+   * @return                                        Boolean value true or false
+   * @throws ParserConfigurationException
+   * @throws SAXException
+   * @throws IOException
+   * @throws TransformerException
+   * @throws Exception
    */
-  private boolean isSequenceInstanceOfType(ResultSequence srcResultSeq, SequenceTypeData seqTypeData) throws ParserConfigurationException, 
-                                                                                                 SAXException, IOException, 
-                                                                                                 TransformerException, Exception {
+  private boolean isSequenceInstanceOfType(ResultSequence resultSeq, SequenceTypeData seqTypeData) 
+		                                                                            throws ParserConfigurationException, 
+                                                                                           SAXException, IOException, 
+                                                                                           TransformerException, Exception {
 	  
-	  boolean isInstanceOf = false;
+	  boolean result = false;
 
-	  int seqLen = srcResultSeq.size();
+	  int seqLen = resultSeq.size();
 
 	  if ((seqLen == 0) && (seqTypeData.getItemTypeOccurrenceIndicator() == OccurrenceIndicator.ONE_OR_MANY)) {
-		  isInstanceOf = false;  
+		  result = false;  
 	  }
 	  else if ((seqLen > 0) && (seqTypeData.getBuiltInSequenceType() == SequenceTypeSupport.EMPTY_SEQUENCE)) {
-		  isInstanceOf = false;  
+		  result = false;  
 	  }
 	  else if ((seqLen > 1) && (seqTypeData.getItemTypeOccurrenceIndicator() == OccurrenceIndicator.ZERO_OR_ONE)) {
-		  isInstanceOf = false;
+		  result = false;
 	  }
 
 	  SequenceTypeData sequenceTypeDataNew = new SequenceTypeData();          
@@ -815,21 +1052,27 @@ public class InstanceOf extends Operation
 
 	  boolean isInstanceOfOnSeqItem = true;
 
-	  for (int idx = 0; idx < srcResultSeq.size(); idx++) {
-		  XObject seqItem = (XObject)(srcResultSeq.item(idx));
+	  for (int idx = 0; idx < resultSeq.size(); idx++) {
+		  XObject seqItem = (XObject)(resultSeq.item(idx));
 		  if (!isInstanceOf(seqItem, sequenceTypeDataNew)) {
 			  isInstanceOfOnSeqItem = false;
+			  
 			  break;
 		  }
 	  }
 
-	  isInstanceOf = isInstanceOfOnSeqItem;
+	  result = isInstanceOfOnSeqItem;
 	  
-	  return isInstanceOf;
+	  return result;
   }
   
   /**
-   * This method checks whether, an xdm map conforms with the specified sequence type.
+   * Method definition, to checks whether, an xdm map conforms with 
+   * the supplied sequence type.
+   * 
+   * @param map								The supplied xdm map object
+   * @param seqTypeData						An xdm sequence type information
+   * @return                                Boolean value true or false
    */
   private boolean isXdmMapConformsWithSeqType(XPathMap map, SequenceTypeData seqTypeData) {
 	  boolean isInstanceOf = false;
@@ -843,9 +1086,14 @@ public class InstanceOf extends Operation
 	  
 	  return isInstanceOf; 
   }
-
+  
   /**
-   * This method checks whether, an xdm array conforms with the specified sequence type.
+   * Method definition, to checks whether, an xdm array conforms with 
+   * the supplied sequence type.
+   * 
+   * @param xpathArr						The supplied xdm array object
+   * @param seqTypeData						An xdm sequence type information
+   * @return                                Boolean value true or false
    */
   private boolean isXdmArrayConformsWithSeqType(XPathArray xpathArr, SequenceTypeData seqTypeData) {
 	  
@@ -868,14 +1116,17 @@ public class InstanceOf extends Operation
 				  }
 				  SequenceTypeData arrayItemTypeInfo = sequenceTypeArrayTest.getArrayItemTypeInfo();
 				  try {
-					  XObject arrayItemTypeCheckResult = SequenceTypeSupport.castXdmValueToAnotherType(arrItem, null, arrayItemTypeInfo, null);
+					  XObject arrayItemTypeCheckResult = SequenceTypeSupport.castXdmValueToAnotherType(
+							                                                                          arrItem, null, arrayItemTypeInfo, null);
 					  if (arrayItemTypeCheckResult == null) {             				
 						  isInstanceOf = false;
+						  
 						  break;
 					  }
 				  }
 				  catch (TransformerException ex) {
 					  isInstanceOf = false;
+					  
 					  break; 
 				  }
 			  } 	

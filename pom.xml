@@ -2,9 +2,12 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	
 	<groupId>org.apache.xsl</groupId>
 	<artifactId>xalan-java</artifactId>
 	<version>3.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+	
 	<name>Apache Xalan-J</name>
 	<description>Apache Xalan-J XSLT 3.0 maven project pom</description>
 
@@ -19,7 +22,7 @@
       </developer>
       <developer>
         <name>Joseph Kesselman</name>
-        <email>jkesselm@apache.org</email>
+        <email>keshlam@alum.mit.edu</email>
         <roles>
           <role>PMC Member</role>
           <role>Committer</role>           
@@ -47,9 +50,9 @@
 			<version>1.4.02</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.xsl</groupId>
-			<artifactId>xpath31_types</artifactId>
-			<version>1.0</version>
+			<groupId>org.apache.xerces</groupId>
+			<artifactId>xalanj_xpath31_types</artifactId>
+			<version>0.1</version>
 		</dependency>		
 		<!-- Apache Bean Scripting framework dependency. This despatches 
 		     Xalan-J's JavaScript extension calls to Mozilla Rhino 
@@ -64,7 +67,7 @@
         <dependency>
 			<groupId>org.mozilla</groupId>
 			<artifactId>rhino</artifactId>
-			<version>1.7.14</version>
+			<version>1.7.15.1</version>
 		</dependency>
 		<!-- Apache Commons Logging framework dependency -->	
 		<dependency>
@@ -101,6 +104,18 @@
 	</dependencies>
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.3.0</version>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Automatic-Module-Name>org.apache.xalan</Automatic-Module-Name>
+						</manifestEntries>
+					</archive>
+				</configuration>
+            </plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.13.0</version>

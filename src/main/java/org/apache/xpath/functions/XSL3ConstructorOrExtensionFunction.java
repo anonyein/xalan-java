@@ -28,6 +28,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan.templates.Constants;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMManager;
@@ -264,9 +265,10 @@ public class XSL3ConstructorOrExtensionFunction extends Function
     			try {
     				String xmlStr1 = XslTransformEvaluationHelper.serializeXmlDomElementNode(node);
 
+    				System.setProperty(Constants.XML_DOCUMENT_BUILDER_FACTORY_KEY, Constants.XML_DOCUMENT_BUILDER_FACTORY_VALUE);
+    				
     				DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     				dbf.setNamespaceAware(true);
-
     				DocumentBuilder dBuilder = dbf.newDocumentBuilder();
 
     				Document document = dBuilder.parse(new ByteArrayInputStream(xmlStr1.getBytes()));
@@ -283,11 +285,11 @@ public class XSL3ConstructorOrExtensionFunction extends Function
     			XObject[] xObjArr = new XObject[seqLength];
     			for (int idx = 0; idx < seqLength; idx++) {
     				XObject seqitem = rSeq.item(idx);
-    				if (seqitem instanceof XSString) {
-    					seqitem = new XString(((XSString)xobj).stringValue());   				   
+    				if (seqitem instanceof XSString) {    					
+    					seqitem = new XString(((XSString)seqitem).stringValue());    					
     				}
-    				else if (seqitem instanceof XSBoolean) {
-    					seqitem = new XBoolean(((XSBoolean)xobj).bool());   				   
+    				else if (seqitem instanceof XSBoolean) {    					
+    					seqitem = new XBoolean(((XSBoolean)seqitem).bool());
     				}
     				else if (seqitem instanceof XSNumericType) {
     					Double dbl = Double.valueOf(((XSNumericType)seqitem).stringValue());
@@ -314,10 +316,10 @@ public class XSL3ConstructorOrExtensionFunction extends Function
     			for (int idx = 0; idx < arrLength; idx++) {
     				XObject seqitem = xpathArr.get(idx);
     				if (seqitem instanceof XSString) {
-    					seqitem = new XString(((XSString)xobj).stringValue());   				   
+    					seqitem = new XString(((XSString)seqitem).stringValue());   				   
     				}
     				else if (seqitem instanceof XSBoolean) {
-    					seqitem = new XBoolean(((XSBoolean)xobj).bool());   				   
+    					seqitem = new XBoolean(((XSBoolean)seqitem).bool());   				   
     				}
     				else if (seqitem instanceof XSNumericType) {
     					Double dbl = Double.valueOf(((XSNumericType)seqitem).stringValue());

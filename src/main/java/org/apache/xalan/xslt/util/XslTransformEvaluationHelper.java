@@ -18,6 +18,7 @@ package org.apache.xalan.xslt.util;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import javax.xml.transform.dom.DOMSource;
 import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.ElemFunction;
 import org.apache.xalan.templates.ElemTemplate;
+import org.apache.xalan.templates.Stylesheet;
 import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.templates.TemplateList;
 import org.apache.xalan.templates.XMLNSDecl;
@@ -41,7 +43,6 @@ import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xml.dtm.DTMManager;
 import org.apache.xml.serializer.CharacterMapConfig;
-import org.apache.xml.utils.DateTimeUtil;
 import org.apache.xml.utils.QName;
 import org.apache.xml.utils.XMLString;
 import org.apache.xpath.Expression;
@@ -49,6 +50,7 @@ import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.XPathCollationSupport;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
+import org.apache.xpath.composite.XPathExprFunctionCallSuffix;
 import org.apache.xpath.composite.XPathForExpr;
 import org.apache.xpath.composite.XPathSequenceConstructor;
 import org.apache.xpath.functions.Function;
@@ -62,10 +64,14 @@ import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XString;
+import org.apache.xpath.objects.XdmAttributeItem;
+import org.apache.xpath.objects.XdmNamespaceItem;
+import org.apache.xpath.operations.Operation;
 import org.apache.xpath.operations.Range;
 import org.apache.xpath.operations.SimpleMapOperator;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.patterns.NodeTest;
+import org.apache.xpath.types.DateTimeUtil;
 import org.w3c.dom.Attr;
 import org.w3c.dom.DOMConfiguration;
 import org.w3c.dom.Document;
@@ -146,7 +152,8 @@ public class XslTransformEvaluationHelper {
     }
     
     /**
-     * Get prefix from namespace uri, declared within XSL transformation context. 
+     * Get prefix from XML namespace uri, declared within XSL transformation 
+     * context. 
      */
     public static String getPrefixFromNsUri(String nsUri, List<XMLNSDecl> nsPrefixTable) {    	
     	String xmlSchemaNsPrefix = null;
@@ -165,22 +172,24 @@ public class XslTransformEvaluationHelper {
     }
     
     /**
-     * Get namespace uri from prefix, declared within XSL transformation context. 
+     * Method definition, to get XML namespace uri from prefix, declared 
+     * within XSL transformation context. 
      */
     public static String getNsUriFromPrefix(String prefix, List<XMLNSDecl> nsPrefixTable) {
-    	String nsUri = null;
     	
-    	if (prefix != null) {
+    	String result = null;
+
+    	if (prefix != null) {    		
     		for (int idx = 0; idx < nsPrefixTable.size(); idx++) {
     			XMLNSDecl xmlNSDecl = nsPrefixTable.get(idx);
     			if (prefix.equals(xmlNSDecl.getPrefix())) {
-    				nsUri = xmlNSDecl.getURI();
+    				result = xmlNSDecl.getURI();
     				break;
     			}
     		}
     	}
-    	
-    	return nsUri; 
+
+    	return result; 
     }
     
     /**
@@ -296,19 +305,39 @@ public class XslTransformEvaluationHelper {
     }
     
     /**
-     * Method definition to convert an XDM sequence to a node set.
+     * Method definition, to convert an xdm sequence to a node set.
      */
     public static XMLNodeCursorImpl getXNodeSetFromResultSequence(ResultSequence resultSeq, DTMManager dtmMgr) {
         
-        XMLNodeCursorImpl nodeSet = null;
+        XMLNodeCursorImpl result = null;
         
         List<Integer> dtmNodeHandleList = new ArrayList<Integer>();
         
-        for (int idx = 0; idx < resultSeq.size(); idx++) {
-           XObject nodeSetItem = resultSeq.item(idx);
-           if (nodeSetItem instanceof XMLNodeCursorImpl) {
-              int nodeDtmHandle = (((XMLNodeCursorImpl)nodeSetItem).iter()).nextNode();
+        int rSeqLength = resultSeq.size();        
+        for (int idx = 0; idx < rSeqLength; idx++) {
+           XObject xObj = resultSeq.item(idx);
+           if (xObj instanceof XMLNodeCursorImpl) {
+              int nodeDtmHandle = (((XMLNodeCursorImpl)xObj).iter()).nextNode();
               dtmNodeHandleList.add(nodeDtmHandle);
+           }
+           else if (xObj instanceof XdmAttributeItem) {
+        	   XdmAttributeItem xdmAttributeItem = (XdmAttributeItem)xObj;        	           	   
+        	   DTM dtm = dtmMgr.getXmlShallowDTMTree(null, xdmAttributeItem, null);
+        	   int docNodeHandle = dtm.getDocument();
+        	   int docElemHandle = dtm.getFirstChild(docNodeHandle);
+        	   String attrNamespace = xdmAttributeItem.getAttrNodeNs();
+        	   String localName = xdmAttributeItem.getAttrLocalName();
+        	   int attNodeHandle = dtm.getAttributeNode(docElemHandle, attrNamespace, localName);
+        	   dtmNodeHandleList.add(attNodeHandle);
+           }
+           else if (xObj instanceof XdmNamespaceItem) {
+        	   XdmNamespaceItem xdmNamespaceItem = (XdmNamespaceItem)xObj;
+        	   DTM dtm = dtmMgr.getXmlShallowDTMTree(null, null, xdmNamespaceItem);
+        	   int docNodeHandle = dtm.getDocument();
+        	   int docElemHandle = dtm.getFirstChild(docNodeHandle);
+        	   String localName = xdmNamespaceItem.getNamespaceNodeName();
+        	   int nsNodeHandle = dtm.getAttributeNode(docElemHandle, "http://www.w3.org/2000/xmlns/", localName);
+        	   dtmNodeHandleList.add(nsNodeHandle);
            }
            else {
               break; 
@@ -316,10 +345,10 @@ public class XslTransformEvaluationHelper {
         }
         
         if (dtmNodeHandleList.size() == resultSeq.size()) {
-           nodeSet = new XMLNodeCursorImpl(dtmNodeHandleList, dtmMgr);
+           result = new XMLNodeCursorImpl(dtmNodeHandleList, dtmMgr);
         }
         
-        return nodeSet; 
+        return result; 
     }
     
     /**
@@ -436,6 +465,63 @@ public class XslTransformEvaluationHelper {
             else if (expr instanceof XPathForExpr) {
                 ResultSequence resultSeq = (ResultSequence)(((XPathForExpr)expr).execute(xctxt));
                 xdmSequenceSize = resultSeq.size();   
+            }
+            else if (expr instanceof Operation) {
+            	Operation opn1 = (Operation)expr;
+            	Expression lOpn = opn1.getLeftOperand();
+            	Expression rOpn = opn1.getRightOperand();            	
+            	XObject lObj1 = lOpn.execute(xctxt);
+            	boolean isLEmpty = false;
+            	if (lObj1 instanceof ResultSequence) {
+            		if (((ResultSequence)lObj1).size() == 0) {
+            			isLEmpty = true;
+            		}
+            	}
+            	else if (lObj1 instanceof XMLNodeCursorImpl) {
+            		XMLNodeCursorImpl nodeRef1 = (XMLNodeCursorImpl)lObj1;
+            		if (nodeRef1.getLength() == 0) {
+            			isLEmpty = true;
+            		}
+            	}
+
+            	XObject rObj1 = rOpn.execute(xctxt);
+            	boolean isREmpty = false;
+            	if (rObj1 instanceof ResultSequence) {
+            		if (((ResultSequence)rObj1).size() == 0) {
+            			isREmpty = true;
+            		}
+            	}
+            	else if (rObj1 instanceof XMLNodeCursorImpl) {
+            		XMLNodeCursorImpl nodeRef1 = (XMLNodeCursorImpl)rObj1;
+            		if (nodeRef1.getLength() == 0) {
+            			isREmpty = true;
+            		}
+            	}
+
+            	if (isLEmpty || isREmpty) {
+            		// If one or both of the LHS and RHS of an XPath binary 
+            		// operation is empty, then count of result sequence is zero.            		
+            		xdmSequenceSize = 0;
+            	}
+            	else {
+            		XObject xObj1 = opn1.execute(xctxt);
+            		if (xObj1 instanceof ResultSequence) {
+            		   xdmSequenceSize = ((ResultSequence)xObj1).size(); 
+            		}
+            		else if (xObj1 instanceof XMLNodeCursorImpl) {
+            		   xdmSequenceSize = ((XMLNodeCursorImpl)xObj1).getLength(); 
+            		}
+            		else {
+            		   xdmSequenceSize = 1;	
+            		}
+            	}
+            }
+            else if (expr instanceof XPathExprFunctionCallSuffix) {
+            	XPathExprFunctionCallSuffix xpathExprFunctionCallSuffix = (XPathExprFunctionCallSuffix)expr;
+            	XObject xObject = xpathExprFunctionCallSuffix.execute(xctxt);            	
+            	if (xObject instanceof ResultSequence) {
+            	   xdmSequenceSize = ((ResultSequence)xObject).size(); 	
+            	}
             }
             else {
                 DTMCursorIterator nl = expr.asIterator(xctxt, xctxt.getCurrentNode());
@@ -719,9 +805,13 @@ public class XslTransformEvaluationHelper {
  	   
  	   try {
  		   xmlStr = XslTransformEvaluationHelper.serializeXmlDomElementNode(node);
+ 		   
+ 		   System.setProperty(Constants.XML_DOCUMENT_BUILDER_FACTORY_KEY, Constants.XML_DOCUMENT_BUILDER_FACTORY_VALUE);
+ 		  
  		   DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
  		   dbFactory.setNamespaceAware(true);
  		   DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
+ 		   
  		   StringReader strReader = new StringReader(xmlStr);
  		   InputSource inpSource = new InputSource(strReader);
  		   Document document = docBuilder.parse(inpSource);
@@ -764,11 +854,63 @@ public class XslTransformEvaluationHelper {
     }
     
     /**
-     * This method produces, numerical sum of xdm sequence items.
+     * Method definition, to get XSL stylesheet root object, from
+     * the supplied XSL stylesheet non-expression node.
+     * 
+     * @param expressionNode						An XSL stylesheet not-expression node
+     * @return										An XSL stylesheet root object
+     */
+    public static StylesheetRoot getXslStylesheetRootFromXslElementRef(ExpressionNode expressionNode) {
+       
+    	StylesheetRoot result = null;
+
+    	ExpressionNode stylesheetRootExprNode = null;
+    	while (expressionNode != null) {
+    		stylesheetRootExprNode = expressionNode;
+    		expressionNode = expressionNode.exprGetParent();                     
+    	}
+
+    	if (stylesheetRootExprNode instanceof Stylesheet) {
+    		Stylesheet stylesheet = (Stylesheet)stylesheetRootExprNode;
+    		result = stylesheet.getStylesheetRoot();    				
+    	}    			
+    	else {
+    		result = (StylesheetRoot)stylesheetRootExprNode;
+    	}
+
+    	return result;
+    }
+    
+    /**
+     * Method definition, to produce a random permutation of
+     * the supplied xdm sequence.
+     * 
+     * @param rSeq                   Supplied xdm sequence, object instance
+     * @return                       Random permutation of the supplied sequence
+     */
+    public static XObject permute(ResultSequence rSeq)
+    {
+    	ResultSequence result = new ResultSequence();
+
+    	int rSeqLength = rSeq.size();
+    	List<XObject> list1 = new ArrayList<XObject>();
+    	for (int idx = 0; idx < rSeqLength; idx++) {
+    		list1.add(rSeq.item(idx));  
+    	}
+
+    	Collections.shuffle(list1);
+    	for (int idx = 0; idx < rSeqLength; idx++) {
+    		result.add(list1.get(idx));  
+    	}
+
+    	return result; 
+    }
+    
+    /**
+     * Method definition, to get numerical sum from xdm sequence items.
      *  
-     * @param resultSeq  An xdm sequence object instance, whose items
-     *                   need to be numerically added to produce a sum. 
-     * @return           The summation value.
+     * @param resultSeq  				An xdm sequence object instance
+     * @return           				The summation value
      */
     private static double sumResultSequence(ResultSequence resultSeq) {
        

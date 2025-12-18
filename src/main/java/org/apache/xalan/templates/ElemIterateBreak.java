@@ -152,7 +152,7 @@ public class ElemIterateBreak extends ElemTemplateElement implements ExpressionO
                 isXslBreakDescendantOfXslIterate = true;    
             }
             else {
-                throw new TransformerException("XTSE3120 : An xsl:break instruction doesn't have xsl:iterate instruction as ancestor.", xctxt.getSAXLocator());   
+                throw new TransformerException("XTSE3120 : An XSL 'break' instruction doesn't have XSL 'iterate' instruction as ancestor.", xctxt.getSAXLocator());   
             }
                       
             if (isXslBreakDescendantOfXslIterate) {              
@@ -160,8 +160,8 @@ public class ElemIterateBreak extends ElemTemplateElement implements ExpressionO
                 transformer.setXslIterateBreakEvaluated(true);
             }
             else {
-                throw new TransformerException("XTSE3120 : An xsl:break instruction is not in a tail position within the sequence "
-                		                                                                      + "constructor of an xsl:iterate instruction.", xctxt.getSAXLocator());    
+                throw new TransformerException("XTSE3120 : An XSL 'break' instruction is not in a tail position within the sequence "
+                		                                                                      + "constructor of an XSL 'iterate' instruction.", xctxt.getSAXLocator());    
             }
        }
 
@@ -177,30 +177,30 @@ public class ElemIterateBreak extends ElemTemplateElement implements ExpressionO
            XPathContext xctxt = transformer.getXPathContext();
            
            if ((xpathSelectPatternStr != null) && (this.m_firstChild != null)) {
-              throw new TransformerException("XTSE3125 : An xsl:break instruction with a 'select' attribute must have an empty "
-              		                                                                         + "sequence constructor.", xctxt.getSAXLocator());          
+        	   throw new TransformerException("XTSE3125 : An XSL 'break' instruction with a 'select' attribute must have "
+        	   		                                                                                 + "an empty sequence constructor.", xctxt.getSAXLocator());          
            }
            else {               
-              if (xpathSelectPatternStr != null) {
-                  SerializationHandler rth = transformer.getResultTreeHandler();
-                  
-                  try {
-                      m_selectExpression.executeCharsToContentHandler(xctxt, rth);
-                  } catch (TransformerException ex) {
-                      throw ex;
-                  } catch (SAXException ex) {
-                      throw new TransformerException(ex);
-                  }
-              }
-              else {
-                  for (ElemTemplateElement elemTemplate = this.m_firstChild; elemTemplate != null; 
-                                                                      elemTemplate = elemTemplate.m_nextSibling) {
-                     xctxt.setSAXLocator(elemTemplate);
-                     transformer.setCurrentElement(elemTemplate);
-                     elemTemplate.execute(transformer);
-                  } 
-              }
-           }
+        	   if (xpathSelectPatternStr != null) {
+        		   SerializationHandler rth = transformer.getResultTreeHandler();
+
+        		   try {
+        			   m_selectExpression.executeCharsToContentHandler(xctxt, rth);
+        		   } catch (TransformerException ex) {
+        			   throw ex;
+        		   } catch (SAXException ex) {
+        			   throw new TransformerException(ex);
+        		   }
+        	   }
+        	   else {
+        		   for (ElemTemplateElement elemTemplate = this.m_firstChild; elemTemplate != null; 
+        				   elemTemplate = elemTemplate.m_nextSibling) {
+        			   xctxt.setSAXLocator(elemTemplate);
+        			   transformer.setCurrentElement(elemTemplate);
+        			   elemTemplate.execute(transformer);
+        		   } 
+        	   }
+           }           
        }
        
        /**

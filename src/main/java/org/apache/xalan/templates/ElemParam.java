@@ -73,6 +73,8 @@ public class ElemParam extends ElemVariable
      return m_tunnelAttr;
   }
   
+  private boolean m_required_declared = false;
+  
   /**
    * An optional "required" attribute.
    */
@@ -84,16 +86,27 @@ public class ElemParam extends ElemVariable
    * @param required
    */
   public void setRequired(boolean required) {
-	  m_required = required; 
+	  m_required = required;
+	  m_required_declared = true;
   }
   
   /**
    * Get the "required" attribute.
    * 
-   * @return
+   * @return				  Boolean value true or false
    */
   public boolean getRequired() {
 	  return m_required;
+  }
+  
+  /**
+   * Check whether, xsl:param instruction's 'required' 
+   * attribute is declared.
+   * 
+   * @return				 Boolean value true or false
+   */
+  public boolean getRequiredDeclared() {
+	  return m_required_declared;
   }
 
   /**
@@ -164,7 +177,7 @@ public class ElemParam extends ElemVariable
     SourceLocator srcLocator = xctx.getSAXLocator();
     
     if (m_tunnelAttr != null && !isValidTunnelParamValue(m_tunnelAttr)) {
-       throw new TransformerException("XTTE0590 : Allowed values for xsl:param's tunnel "
+       throw new TransformerException("XTTE0590 : The allowed values for XSL param's tunnel "
         		                                              + "attribute are : yes, true, 1, no, false, 0. The "
         		                                              + "supplied value is " + m_tunnelAttr + ".", srcLocator); 
     }

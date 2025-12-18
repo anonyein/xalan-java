@@ -498,7 +498,7 @@ public class XSLTErrorResources extends ListResourceBundle
       "sourceNode is null in xsl:apply-imports!"},
 
   {ER_CANNOT_ADD,
-      "Can not add {0} to {1}"},
+      "{2},{3} : An XSL transformation processing could not add ''{0}'' to ''{1}''."},
 
     { ER_NULL_SOURCENODE_HANDLEAPPLYTEMPLATES, 
       "sourceNode is null in handleApplyTemplatesInstruction!"},
@@ -513,7 +513,7 @@ public class XSLTErrorResources extends ListResourceBundle
       "Could not resolve name AVT in xsl:call-template."},
 
     {ER_REQUIRES_ATTRIB,
-     "{0} requires attribute: {1}"},
+     "XTSE0010 : {0} requires attribute: {1}"},
 
     { ER_MUST_HAVE_TEST_ATTRIB, 
       "{0} must have a ''test'' attribute."},
@@ -1082,7 +1082,7 @@ public class XSLTErrorResources extends ListResourceBundle
      "Programmer''s assertion in RedundentExprEliminator: {0}"},
 
     { ER_NOT_ALLOWED_IN_POSITION,
-     "XTSE0260 : {0} is not allowed in this position in the stylesheet"},
+     "XTSE0010 : {0} is not allowed in this position in the stylesheet"},
 
     { ER_NONWHITESPACE_NOT_ALLOWED_IN_POSITION,
      "Non-whitespace text is not allowed in this position in the stylesheet!"},
@@ -1378,8 +1378,10 @@ public class XSLTErrorResources extends ListResourceBundle
   { "optionIN", "   [-IN inputXMLURL]"},
   { "optionXSL", "   [-XSL XSLTransformationURL]"},
   { "optionXSVAL", "   [-XSVAL (Request XML Schema validation of XML input document)]"},
-  { "optionXSLEVALUATE", "   [-XSLEVALUATE (Request xsl:evaluate instruction to be enabled)]"},
+  { "optionXSL_EVALUATE", "   [-XSL_EVALUATE (Request xsl:evaluate instruction to be enabled)]"},
   { "optionINIT_TEMPLATE", "   [-INIT_TEMPLATE (Specify an XSL template's name to select an initial template for transformation)]"},
+  { "optionINIT_MODE", "   [-INIT_MODE (Specify an XSL transformation's initial mode name)]"},
+  { "optionENABLE_ASSERT", "   [-ENABLE_ASSERT value (Specify whether XSL assert is enabled. Value \"true\", \"yes\", \"1\" means enabled otherwise disabled)]"},
   { "optionENCODING", "   [-ENCODING (Specify value of encoding to be used for XML input and stylesheet documents. Use format utf_8 (default), iso_8859_1 etc.)]"},
   { "optionOUT",  "   [-OUT outputFileName]"},
   { "optionLXCIN", "   [-LXCIN compiledStylesheetFileNameIn]"},

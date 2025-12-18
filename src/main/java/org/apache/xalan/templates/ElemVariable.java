@@ -25,6 +25,7 @@ import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
+import org.apache.xalan.serialize.SerializerUtils;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
@@ -38,12 +39,16 @@ import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
+import org.apache.xpath.compiler.FunctionTable;
+import org.apache.xpath.compiler.Keywords;
 import org.apache.xpath.composite.SequenceTypeData;
 import org.apache.xpath.composite.SequenceTypeFunctionTest;
 import org.apache.xpath.composite.SequenceTypeKindTest;
 import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.SequenceTypeSupport.OccurrenceIndicator;
 import org.apache.xpath.composite.XPathArrayConstructor;
 import org.apache.xpath.composite.XPathNamedFunctionReference;
+import org.apache.xpath.composite.XPathTextAndNodeExpr;
 import org.apache.xpath.functions.Function;
 import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
@@ -61,6 +66,10 @@ import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XRTreeFrag;
 import org.apache.xpath.objects.XRTreeFragSelectWrapper;
 import org.apache.xpath.objects.XString;
+import org.apache.xpath.objects.XdmAttributeItem;
+import org.apache.xpath.objects.XdmCommentItem;
+import org.apache.xpath.objects.XdmNamespaceItem;
+import org.apache.xpath.objects.XdmProcessingInstructionItem;
 import org.apache.xpath.operations.ArrowOp;
 import org.apache.xpath.operations.Operation;
 import org.apache.xpath.operations.Range;
@@ -69,6 +78,8 @@ import org.apache.xpath.patterns.NodeTest;
 import org.w3c.dom.NodeList;
 
 import xml.xpath31.processor.types.XSAnyType;
+import xml.xpath31.processor.types.XSInt;
+import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSQName;
 import xml.xpath31.processor.types.XSString;
@@ -81,7 +92,7 @@ import xml.xpath31.processor.types.XSUntypedAtomic;
  * 
  * @author Scott Boag <scott_boag@us.ibm.com>
  * @author Gary L Peskin <garyp@apache.org>
- * @author Joseph Kesselman <jkesselm@apache.org>, Morris Kwan <mkwan@apache.org>,
+ * @author Joseph Kesselman <keshlam@alum.mit.edu>, Morris Kwan <mkwan@apache.org>,
  *         Brian James Minchau <minchau@apache.org>, Henry Zongaro <zongaro@ca.ibm.com>, 
  *         Christine Li <jycli@apache.org>
  *         
@@ -245,13 +256,11 @@ public class ElemVariable extends ElemTemplateElement
 
   /**
    * Tells if this is a top-level variable or param, or not.
-   * @serial
    */
   private boolean m_isTopLevel = false;
 
   /**
    * Set if this is a top-level variable or param, or not.
-   * @see <a href="http://www.w3.org/TR/xslt#top-level-variables">top-level-variables in XSLT Specification</a>
    *
    * @param v Boolean indicating whether this is a top-level variable
    * or param, or not.
@@ -263,7 +272,6 @@ public class ElemVariable extends ElemTemplateElement
 
   /**
    * Get if this is a top-level variable or param, or not.
-   * @see <a href="http://www.w3.org/TR/xslt#top-level-variables">top-level-variables in XSLT Specification</a>
    *
    * @return Boolean indicating whether this is a top-level variable
    * or param, or not.
@@ -433,21 +441,11 @@ public class ElemVariable extends ElemTemplateElement
     if ((m_selectPattern != null) && (m_xpath_default_namespace != null)) {    		
        m_selectPattern = new XPath(m_selectPattern.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
  	}
-    
-    if ((this instanceof ElemParam) && m_isTopLevel) {
-       ElemParam elemParam = (ElemParam)this;
-       boolean isRequired = elemParam.getRequired();
-       if (isRequired && (m_selectPattern == null) && (getFirstChildElem() == null)) {
-    	  QName qName = elemParam.getName();
-    	  throw new TransformerException("XTDE0050 : No value supplied for XSL stylesheet's top level "
-    	  		                                            + "required parameter '" + qName.toString() + "'.", srcLocator);  
-       }
-    }
  
     try {        
       if (m_selectPattern != null) {          
         selectExpression = m_selectPattern.getExpression();
-        
+                
         if (selectExpression instanceof XSL3ConstructorOrExtensionFunction) {        	
         	XSL3ConstructorOrExtensionFunction xpathFunc = (XSL3ConstructorOrExtensionFunction)selectExpression;
         	XSL3FunctionService xslFunctionService = xctxt.getXSLFunctionService();
@@ -469,9 +467,10 @@ public class ElemVariable extends ElemTemplateElement
             	if (m_asAttr != null && !(XSL3FunctionService.XS_VALID_TRUE).equals(evalResultStrValue)) {           	     
                    evalResult = SequenceTypeSupport.castXdmValueToAnotherType(evalResult, m_asAttr, null, xctxt);
                    if (evalResult == null) {
-                	  String xpathPatternStr = m_selectPattern.getPatternString();
-                	  throw new TransformerException("XTTE0570 : The supplied value " + xpathPatternStr + ", doesn't "
-                	  		                                               + "match an expected XPath sequence type " + m_asAttr + ".", srcLocator); 
+                	  String xpathPatternStr = m_selectPattern.getPatternString();                	  
+                	  throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation result, doesn't "
+                	  		                                                                            + "match an expected xdm sequence type " 
+                			                                                                            + m_asAttr + ".", srcLocator); 
                    }
                 }
             	else if (m_asAttr != null && (XSL3FunctionService.XS_VALID_TRUE).equals(evalResultStrValue)) {
@@ -484,9 +483,9 @@ public class ElemVariable extends ElemTemplateElement
             	      evalResult = valToBeValidated; 
             	   }
             	   else {
-            		  String xpathPatternStr = m_selectPattern.getPatternString();
-                 	  throw new TransformerException("XTTE0570 : The supplied value " + xpathPatternStr + ", doesn't "
-                 	  		                                               + "match an expected XPath sequence type " + m_asAttr + ".", srcLocator); 
+            		  throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation result, doesn't "
+																		                                + "match an expected xdm sequence type " 
+																		                                + m_asAttr + ".", srcLocator); 
             	   }
             	}
             	else if (m_asAttr == null && (XSL3FunctionService.XS_VALID_TRUE).equals(evalResultStrValue)) {
@@ -509,8 +508,9 @@ public class ElemVariable extends ElemTemplateElement
                 if (m_asAttr != null) {
                 	evalResult = SequenceTypeSupport.castXdmValueToAnotherType(evalResult, m_asAttr, null, xctxt);
                 	if (evalResult == null) {
-                	   throw new javax.xml.transform.TransformerException("XTTE0570 : An xsl:variable's value is not of an expected "
-                	   		                                                                           + "XPath sequence type " + m_asAttr +".", srcLocator); 
+                		throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation result, doesn't "
+																		                                  + "match an expected xdm sequence type " 
+																		                                  + m_asAttr + ".", srcLocator); 
                 	}                	                      
                 }
                 
@@ -523,7 +523,7 @@ public class ElemVariable extends ElemTemplateElement
             if (m_asAttr != null) {
                evalResult = SequenceTypeSupport.castXdmValueToAnotherType(evalResult, m_asAttr, null, xctxt);
                if (evalResult == null) {
-            	   throw new javax.xml.transform.TransformerException("XTTE0570 : An xsl:variable's value is not of an expected "
+            	   throw new javax.xml.transform.TransformerException("XTTE0570 : An XSL variable's value is not of an expected "
             	   		                                                                           + "XPath sequence type " + m_asAttr +".", srcLocator); 
                }
             }
@@ -536,7 +536,7 @@ public class ElemVariable extends ElemTemplateElement
             if (m_asAttr != null) {
                evalResult = SequenceTypeSupport.castXdmValueToAnotherType(evalResult, m_asAttr, null, xctxt);
                if (evalResult == null) {
-            	   throw new javax.xml.transform.TransformerException("XTTE0570 : An xsl:variable's value is not of an expected "
+            	   throw new javax.xml.transform.TransformerException("XTTE0570 : An XSL variable's value is not of an expected "
             	   		                                                                           + "XPath sequence type " + m_asAttr +".", srcLocator); 
                }
             }
@@ -559,7 +559,9 @@ public class ElemVariable extends ElemTemplateElement
             if (m_asAttr != null) {
                evalResult = SequenceTypeSupport.castXdmValueToAnotherType(evalResult, m_asAttr, null, xctxt);
                if (evalResult == null) {
-            	  throw new javax.xml.transform.TransformerException("XTTE0570 : An xsl:variable's value is not of an expected XPath sequence type " + m_asAttr +".", srcLocator); 
+            	  throw new javax.xml.transform.TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation result, "
+            	  		                                                                           + "doesn't match the specified xdm sequence type " 
+            			                                                                           + m_asAttr +".", srcLocator); 
                }
             }
              
@@ -623,7 +625,7 @@ public class ElemVariable extends ElemTemplateElement
             	   var = resultSeq; 
                }
                else {
-                  var = new XMLNodeCursorImpl(dtmIter);
+            	   var = new XMLNodeCursorImpl(dtmIter);
                }
                
                if (m_asAttr != null) {
@@ -778,9 +780,19 @@ public class ElemVariable extends ElemTemplateElement
         else if (selectExpression instanceof XPathArrayConstructor) {
         	var = ((XPathArrayConstructor)selectExpression).execute(xctxt);
         }
+        else if (selectExpression instanceof XRTreeFragSelectWrapper) {
+        	var = m_selectPattern.execute(xctxt, sourceNode, this);
+        	if (var instanceof XString) {
+        	   ((XString)var).setXrTreeFragSelectWrapperResult(true);
+        	}
+        }
+        else if (selectExpression instanceof XPathTextAndNodeExpr) {
+        	var = ((XPathTextAndNodeExpr)selectExpression).execute(xctxt);
+        }
   
         if (var == null) {        	        	
-           var = m_selectPattern.execute(xctxt, sourceNode, this);           
+           var = m_selectPattern.execute(xctxt, sourceNode, this);
+           
            if (this instanceof ElemParam) {
         	   if (var instanceof XSString) {
         		   var = new XSString((((XSString)var).stringValue()).trim());  
@@ -808,14 +820,283 @@ public class ElemVariable extends ElemTemplateElement
           var = XString.EMPTYSTRING;
       }
       else {
-    	  int rootNodeHandleOfRtf;
+    	  int rootNodeHandleOfRtf = DTM.NULL;
     	  
     	  if (m_parentNode instanceof Stylesheet) {
     		  // Global variable
     		  rootNodeHandleOfRtf = transformer.transformToGlobalRTF(this);
+
+    		  int attrCount = (SerializerUtils.m_xdmAttrList).size();
+    		  if (attrCount > 0) {
+    			  ResultSequence rSeq = new ResultSequence();
+    			  for (int idx = 0; idx < attrCount; idx++) {
+    				  rSeq.add((SerializerUtils.m_xdmAttrList).get(idx)); 
+    			  }
+
+    			  (SerializerUtils.m_xdmAttrList).clear();
+
+    			  var = rSeq;
+
+    			  if (m_asAttr != null) {
+    				  XPath seqTypeXPath = new XPath(m_asAttr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);
+    				  
+    				  XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
+    				  
+    				  SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeExpressionEvalResult;
+    				  SequenceTypeKindTest seqTypeKindTest = seqExpectedTypeData.getSequenceTypeKindTest();
+    				  int seqTypeKindVal = seqTypeKindTest.getKindVal(); 
+    				  
+    				  if (seqTypeKindVal == SequenceTypeSupport.ATTRIBUTE_KIND) {    		    		    		
+    					  if (var instanceof ResultSequence) {
+    						  ResultSequence rSeq2 = (ResultSequence)var;
+    						  int rSeqLength = rSeq2.size();
+    						  int count = 0;
+    						  for (int idx = 0; idx < rSeqLength; idx++) {
+    							  XObject xObj = rSeq2.item(idx);
+    							  if (xObj instanceof XdmAttributeItem) {
+    								  count++;
+    							  }
+    						  }
+
+    						  if ((rSeqLength >= 1) && (count == rSeqLength)) {
+    							  boolean isXdmValueConformsType = false;
+    							  int seqTypeOccrIndicator = seqExpectedTypeData.getItemTypeOccurrenceIndicator();
+    							  if ((seqTypeOccrIndicator == OccurrenceIndicator.ZERO_OR_MANY) 
+    									                                                     || (seqTypeOccrIndicator == OccurrenceIndicator.ONE_OR_MANY)) {
+    								  isXdmValueConformsType = true;
+    							  }
+    							  else if ((seqTypeOccrIndicator == OccurrenceIndicator.ZERO_OR_ONE) && (rSeqLength <= 1)) {
+    								  isXdmValueConformsType = true;
+    							  }
+    							  else if ((seqTypeOccrIndicator == OccurrenceIndicator.ABSENT) && (rSeqLength == 1)) {
+    								  isXdmValueConformsType = true;
+    							  }
+
+    							  if (isXdmValueConformsType) {
+    								  return var;
+    							  }
+    							  else {    								  
+    								  throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+					    								  		                                                        + "result doesn't match the specified "
+					    								  		                                                        + "xdm sequence type " + m_asAttr + ".", srcLocator);
+    							  }
+    						  }    			    			    			
+    					  }
+    				  }
+    			  }
+    		  }
+    		  
+    		  int nsCount = (SerializerUtils.m_xdmNamespaceList).size();
+    		  if (nsCount > 0) {
+    			  ResultSequence rSeq = new ResultSequence();
+    			  for (int idx = 0; idx < nsCount; idx++) {
+    				  rSeq.add((SerializerUtils.m_xdmNamespaceList).get(idx)); 
+    			  }
+
+    			  (SerializerUtils.m_xdmNamespaceList).clear();
+
+    			  var = rSeq;
+
+    			  if (m_asAttr != null) {
+    				  XPath seqTypeXPath = new XPath(m_asAttr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);
+    				  
+    				  XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
+    				  
+    				  SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeExpressionEvalResult;
+    				  SequenceTypeKindTest seqTypeKindTest = seqExpectedTypeData.getSequenceTypeKindTest();
+    				  int seqTypeKindVal = seqTypeKindTest.getKindVal(); 
+    				  
+    				  if (seqTypeKindVal == SequenceTypeSupport.NAMESPACE_NODE_KIND) {    		    		    		
+    					  if (var instanceof ResultSequence) {
+    						  ResultSequence rSeq2 = (ResultSequence)var;
+    						  int rSeqLength = rSeq2.size();
+    						  int count = 0;
+    						  for (int idx = 0; idx < rSeqLength; idx++) {
+    							  XObject xObj = rSeq2.item(idx);
+    							  if (xObj instanceof XdmNamespaceItem) {
+    								  count++;
+    							  }
+    						  }
+
+    						  if ((rSeqLength >= 1) && (count == rSeqLength)) {
+    							  boolean isXdmValueConformsType = false;
+    							  int seqTypeOccrIndicator = seqExpectedTypeData.getItemTypeOccurrenceIndicator();
+    							  if ((seqTypeOccrIndicator == OccurrenceIndicator.ZERO_OR_MANY) 
+    									                                                     || (seqTypeOccrIndicator == OccurrenceIndicator.ONE_OR_MANY)) {
+    								  isXdmValueConformsType = true;
+    							  }
+    							  else if ((seqTypeOccrIndicator == OccurrenceIndicator.ZERO_OR_ONE) && (rSeqLength <= 1)) {
+    								  isXdmValueConformsType = true;
+    							  }
+    							  else if ((seqTypeOccrIndicator == OccurrenceIndicator.ABSENT) && (rSeqLength == 1)) {
+    								  isXdmValueConformsType = true;
+    							  }
+
+    							  if (isXdmValueConformsType) {
+    								  return var;
+    							  }
+    							  else {    								  
+    								  throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+    								  		                                                                            + "result doesn't match the specified "
+    								  		                                                                            + "xdm sequence type " + m_asAttr + ".", srcLocator);
+    							  }
+    						  }    			    			    			
+    					  }
+    				  }
+    			  }
+    		  }
     	  }
     	  else {
-    		  rootNodeHandleOfRtf = transformer.transformToRTF(this);
+    		  ElemTemplateElement elemTemplateElement = getFirstChildElem();
+    		  ResultSequence rSeq = new ResultSequence();
+    		  
+    		  boolean isSeqConstructOk = true;
+    		  
+    		  if (m_asAttr != null) {    			  
+    			  while (elemTemplateElement != null) {
+    				 if (elemTemplateElement instanceof ElemText) {
+    					 ElemTemplateElement elem1 = (ElemTemplateElement)elemTemplateElement; 
+    					 while (elem1 instanceof ElemText) {
+    						 elem1 = elem1.getFirstChildElem();
+    						 if (elem1 instanceof ElemTextLiteral) {
+    							 ElemTextLiteral elemTextLiteral = (ElemTextLiteral)elem1;
+    							 char[] chrArray = elemTextLiteral.getChars();
+    							 String strValue = String.valueOf(chrArray);
+    							 rSeq.add(new XSString(strValue));
+
+    							 elem1 = elem1.getNextSiblingElem();
+    						 }
+    					 }
+    					 
+    					 if (!((elem1 instanceof ElemText) || (elem1 instanceof ElemTextLiteral))) {
+    					    elemTemplateElement = elem1;
+    					 }
+    				 }    				 
+    				 else if (elemTemplateElement instanceof ElemAttribute) {
+    					 ElemAttribute elemAttribute = (ElemAttribute)elemTemplateElement;
+    					 elemAttribute.setIsSerialize(false);
+    					 AVT attrNameAvt = elemAttribute.getName();
+    					 PrefixResolver prefixResolver = xctxt.getNamespaceContext();
+    					 String nodeName = attrNameAvt.evaluate(xctxt, sourceNode, prefixResolver);
+    					 String prefix = QName.getPrefixPart(nodeName);
+    					 String localName = QName.getLocalPart(nodeName); 
+    					 String namespace = prefixResolver.getNamespaceForPrefix(prefix);
+    					 if (namespace == null) {
+    						List<XMLNSDecl> prefixTable = getPrefixTable();
+    						namespace = XslTransformEvaluationHelper.getNsUriFromPrefix(prefix, prefixTable);
+    					 }
+    					 
+    					 elemAttribute.constructNode(nodeName, prefix, namespace, transformer);
+    					 String attrValue = elemAttribute.getAttrVal();
+
+    					 XdmAttributeItem xdmAttributeItem = new XdmAttributeItem(localName, namespace, attrValue);
+    					 rSeq.add(xdmAttributeItem);
+
+    					 elemAttribute.setIsSerialize(true);
+
+    					 elemTemplateElement = elemTemplateElement.getNextSiblingElem();
+    				 }
+    				 else if (elemTemplateElement instanceof ElemComment) {
+    					 ElemComment elemComment = (ElemComment)elemTemplateElement;
+    					 elemComment.setIsSerialize(false);
+    					 elemComment.execute(transformer);
+    					 String commentValue = elemComment.getCommentValue();
+    					 
+    					 XdmCommentItem xdmCommentItem = new XdmCommentItem(commentValue);    					 
+    					 rSeq.add(xdmCommentItem);
+    					 
+    					 elemComment.setIsSerialize(true);
+    					 
+    					 elemTemplateElement = elemTemplateElement.getNextSiblingElem();
+    				 }
+                     else if (elemTemplateElement instanceof ElemPI) {
+                    	 ElemPI elemPi = (ElemPI)elemTemplateElement;
+                    	 elemPi.setIsSerialize(false);
+                    	 elemPi.execute(transformer);
+    					 String piName = elemPi.getPiName();
+    					 String piValue = elemPi.getPiValue();
+    					 
+    					 XdmProcessingInstructionItem xdmPiItem = new XdmProcessingInstructionItem(piName, piValue);
+    					 rSeq.add(xdmPiItem);
+    					 
+    					 elemPi.setIsSerialize(true);
+    					 
+    					 elemTemplateElement = elemTemplateElement.getNextSiblingElem();
+    				 }
+                     else {
+                         isSeqConstructOk = false;
+                    	 
+                    	 break; 
+                     }
+    			  }    			      			  
+    		  }
+    		  
+    		  if ((rSeq.size() > 0) && isSeqConstructOk) {
+    			  XPath seqTypeXPath = new XPath(m_asAttr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);    	    	
+    			  XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());    	
+    			  SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeExpressionEvalResult;
+    			  
+    			  if (seqExpectedTypeData.getBuiltInSequenceType() != 0) {
+    				 int rSeqLength = rSeq.size();
+    				 ResultSequence rSeq2 = new ResultSequence(); 
+    				 for (int idx = 0; idx < rSeqLength; idx++) {
+    					XObject xObj = rSeq.item(idx);
+    					if (xObj instanceof XdmAttributeItem) {
+    					   XdmAttributeItem xdmAttributeItem = (XdmAttributeItem)xObj;
+    					   String attrStrValue = xdmAttributeItem.getAttrStrValue();
+    					   rSeq2.add(new XSString(attrStrValue));
+    					}
+    				 }
+    				 
+    				 if (rSeq2.size() == rSeqLength) {
+    					var = SequenceTypeSupport.castXdmValueToAnotherType(rSeq2, seqExpectedTypeData, false);
+
+    					return var;
+    				 }
+    			  }
+    			  else {
+    				 int rSeqSize = rSeq.size();
+    				 ResultSequence rSeqCopy = new ResultSequence(); 
+ 					 for (int idx = 0; idx < rSeqSize; idx++) {
+ 						 XObject xObj = rSeq.item(idx);
+ 						 if (xObj instanceof XdmAttributeItem) {
+ 							 XdmAttributeItem xdmAttributeItem = (XdmAttributeItem)xObj;
+ 							 String localName = xdmAttributeItem.getAttrLocalName();
+ 							 String namespace = xdmAttributeItem.getAttrNodeNs();
+ 							 QName qName = new QName(namespace, localName);
+ 							 boolean isSeqItemOk = true;
+ 							 for (int idx2 = idx + 1; idx2 < rSeqSize; idx2++) {
+ 								 XObject xObj2 = rSeq.item(idx2);
+ 								 if (xObj2 instanceof XdmAttributeItem) {
+ 									 XdmAttributeItem xdmAttributeItem2 = (XdmAttributeItem)xObj2;
+ 									 String localName2 = xdmAttributeItem2.getAttrLocalName();
+ 									 String namespace2 = xdmAttributeItem2.getAttrNodeNs();
+ 									 QName qName2 = new QName(namespace2, localName2);
+ 									 if (qName2.equals(qName)) {
+ 										isSeqItemOk = false;
+ 										
+ 										break;
+ 									 }
+ 								 }
+ 							 }
+ 							 
+ 							 if (isSeqItemOk) {
+ 								rSeqCopy.add(xObj); 
+ 							 }
+ 						 }
+ 						 else {
+ 						    rSeqCopy.add(xObj);
+ 						 }
+ 					 }    				  
+    				  
+    			     var = SequenceTypeSupport.castXdmValueToAnotherType(rSeqCopy, seqExpectedTypeData, false);
+    			     
+    			     return var;
+    			  }    			      			  
+			  }
+    		  else {
+    		      rootNodeHandleOfRtf = transformer.transformToRTF(this);
+    		  }
     	  }
     	  
     	  if (XslTransformData.m_xpathInlineFunction != null) {
@@ -858,7 +1139,7 @@ public class ElemVariable extends ElemTemplateElement
     			  }
     		  }
     	  }
-    	  else {
+    	  else if (var == null) {
     	     NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, xctxt, this)).convertToNodeset();    	  
     	     var = new XNodeSetForDOM(nodeList, xctxt);    	         	         	         	     
     	  }
@@ -868,21 +1149,21 @@ public class ElemVariable extends ElemTemplateElement
        xctxt.popCurrentNode();
     }
     
-    if (m_asAttr != null) {
+    if (m_asAttr != null) {    	
     	XPath seqTypeXPath = new XPath(m_asAttr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);    	    	
     	
     	XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());    	
     	
     	SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeExpressionEvalResult;
-    	SequenceTypeKindTest seqTypeKindTest = seqExpectedTypeData.getSequenceTypeKindTest();    	    	
+    	SequenceTypeKindTest seqTypeKindTest = seqExpectedTypeData.getSequenceTypeKindTest();
+    	
+    	int seqTypeOccrIndicator = seqExpectedTypeData.getItemTypeOccurrenceIndicator();
 
     	int seqTypeKindVal = 0;    	
     	if (seqTypeKindTest != null) {
     		seqTypeKindVal = seqTypeKindTest.getKindVal();    		
-    		if ((seqTypeKindVal == SequenceTypeSupport.DOCUMENT_KIND) && ((seqExpectedTypeData.getItemTypeOccurrenceIndicator() == 
-    				                                                                                                   SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE) || 
-    			                                                          (seqExpectedTypeData.getItemTypeOccurrenceIndicator() == 
-    			                                                                                                       SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY))) {
+    		if ((seqTypeKindVal == SequenceTypeSupport.DOCUMENT_KIND) && ((seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE) || 
+    			                                                          (seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY))) {
     			if (var.equals(XString.EMPTYSTRING)) {
                    return var;
     			}    			
@@ -895,7 +1176,9 @@ public class ElemVariable extends ElemTemplateElement
     			XslTransformData.m_xpathInlineFunction = null;
     		}
     		else {
-    			throw new TransformerException("XTTE0570 : The supplied xdm item doesn't match an XPath sequence type " + m_asAttr + ".", srcLocator); 
+    			throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																                                  + "result doesn't match the specified "
+																                                  + "xdm sequence type " + m_asAttr + ".", srcLocator); 
     		}
     	}
     	else if (XslTransformData.m_xpathArray != null) {
@@ -904,7 +1187,9 @@ public class ElemVariable extends ElemTemplateElement
     			XslTransformData.m_xpathArray = null;
     		}
     		else {
-    			throw new TransformerException("XTTE0570 : The supplied xdm item doesn't match an XPath sequence type " + m_asAttr + ".", srcLocator); 
+    			throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																	                              + "result doesn't match the specified "
+																	                              + "xdm sequence type " + m_asAttr + ".", srcLocator); 
     		}
     	}
     	else if (XslTransformData.m_xpathMap != null) {
@@ -913,7 +1198,9 @@ public class ElemVariable extends ElemTemplateElement
     			XslTransformData.m_xpathMap = null;
     		}
     		else {
-    			throw new TransformerException("XTTE0570 : The supplied xdm item doesn't match an XPath sequence type " + m_asAttr + ".", srcLocator); 
+    			throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																	                              + "result doesn't match the specified "
+																	                              + "xdm sequence type " + m_asAttr + ".", srcLocator); 
     		}
     	}
     	else if (XslTransformData.m_xslDocumentEvaluationResult != null) {
@@ -922,38 +1209,38 @@ public class ElemVariable extends ElemTemplateElement
     			XslTransformData.m_xslDocumentEvaluationResult = null;
     		}
     		else {
-    			throw new TransformerException("XTTE0570 : The supplied xdm item doesn't match an XPath sequence type " + m_asAttr + ".", srcLocator); 
+    			throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																	                              + "result doesn't match the specified "
+																	                              + "xdm sequence type " + m_asAttr + ".", srcLocator); 
     		}
     	}
     	else if ((XslTransformData.m_xpathNamedFunctionRefSequence).size() > 0) {
     		int funcItemSeqSize = (XslTransformData.m_xpathNamedFunctionRefSequence).size();
     		
     		SequenceTypeFunctionTest sequenceTypeFunctionTest = seqExpectedTypeData.getSequenceTypeFunctionTest();
-    		int seqTypeItemOccurenceIndicator = seqExpectedTypeData.getItemTypeOccurrenceIndicator();
     		boolean isSeqCardinalityOk = false;
-    		if ((funcItemSeqSize == 0) && ((seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
-    				                       (seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
+    		if ((funcItemSeqSize == 0) && ((seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
+    				                       (seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
     		   isSeqCardinalityOk = true;
     		}
-    		else if ((funcItemSeqSize == 1) && ((seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ABSENT) || 
-    				                            (seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
-    				                            (seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY) ||
-    				                            (seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
+    		else if ((funcItemSeqSize == 1) && ((seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ABSENT) || 
+    				                            (seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
+    				                            (seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY) ||
+    				                            (seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
     		   // An XPath sequence type occurrence indicator with value absent, or any 
     		   // other occurrence indicator is ok for this case.
     		   isSeqCardinalityOk = true;
     		}
-    		else if ((seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) ||
-    				 (seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY)) {
+    		else if ((seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) ||
+    				 (seqTypeOccrIndicator == SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY)) {
     		   // funcItemSeqSize > 1
     		   isSeqCardinalityOk = true;
     		}
     		
     		if (!isSeqCardinalityOk) {
-    			throw new TransformerException("XTTE0505 : An xsl:variable " + m_qname.getLocalName() + "'s value doesn't conform to XPath sequence "
-    					                                                                              + "type's occurence indicator, implying that an xdm value's "
-    					                                                                              + "cardinality found as " + funcItemSeqSize + " is incorrect. "
-    					                                                                              + "The sequence type has been specified as " + m_asAttr + ".", srcLocator);
+    			throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																		                          + "result doesn't match the specified "
+																		                          + "xdm sequence type " + m_asAttr + ".", srcLocator);
     		}
     		
     		if (sequenceTypeFunctionTest != null) {
@@ -975,8 +1262,18 @@ public class ElemVariable extends ElemTemplateElement
     			   for (int idx = 0; idx < funcRefCount; idx++) {
     				  XPathNamedFunctionReference funcRef1 = (XPathNamedFunctionReference)((XslTransformData.m_xpathNamedFunctionRefSequence).item(idx));
     				  ElemFunction elemFunction = funcRef1.getXslStylesheetFunction();
-    				  if (elemFunction != null) {
-    					  int xpathNamedFuncRefArity = funcRef1.getArity();
+    				  if (elemFunction != null) {    					  
+    					  String funcLocalName = funcRef1.getFuncName(); 
+    					  String funcNamespace = funcRef1.getFuncNamespace();    					  
+    					  int xpathNamedFuncRefArity = 0;           
+                    	  if ((FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace) && 
+                    			  															(Keywords.FUNC_CONCAT_STRING).equals(funcLocalName)) {
+                    		  xpathNamedFuncRefArity = funcRef1.getConcatArity();
+                    	  }
+                    	  else {
+                    		  xpathNamedFuncRefArity = funcRef1.getArity(); 
+                    	  }
+    					  
     					  int funcTypeSpecArity = funcParamSpecList.size();
     					  if (xpathNamedFuncRefArity == funcTypeSpecArity) {
     						 List<ElemParam> elemFuncParamList = elemFunction.getFuncParamList();
@@ -1006,9 +1303,9 @@ public class ElemVariable extends ElemTemplateElement
                                      	  SequenceTypeData seqExpectedTypeData2 = (SequenceTypeData)seqTypeExpressionEvalResult2;
                                      	  
                                      	  if (!seqExpectedTypeData1.equal(seqExpectedTypeData2)) {
-                                     		 throw new TransformerException("XPTY0004 : An xsl:variable " + m_qname.getLocalName() + "'s value doesn't conform to "
-                                     		 		                                                                               + "xsl:variable's type specification " + m_asAttr + ". The "
-                                     		 		                                                                               + "function parameter specifications doesn't match.", srcLocator);
+                                     		 throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																								                               + "result doesn't match the specified "
+																								                               + "xdm sequence type " + m_asAttr + ".", srcLocator);
                                      	  }
                                        }
                                     }
@@ -1020,9 +1317,9 @@ public class ElemVariable extends ElemTemplateElement
     						 }
     					  }
     					  else {
-    						  throw new TransformerException("XPTY0004 : An xsl:variable " + m_qname.getLocalName() + "'s value doesn't conform to "
-                                                                                                                    + "xsl:variable's type specification " + m_asAttr + ". The "
-                                                                                                                    + "function arities doesn't match.", srcLocator); 
+    						  throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																				                                + "result doesn't match the specified "
+																				                                + "xdm sequence type " + m_asAttr + ".", srcLocator);
     					  }
     					  
     					  String elemFuncAs = elemFunction.getAs();
@@ -1037,10 +1334,10 @@ public class ElemVariable extends ElemTemplateElement
     						  XObject seqTypeExpressionEvalResult2 = seqTypeXPath2.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());                                       	
     						  SequenceTypeData seqExpectedTypeData2 = (SequenceTypeData)seqTypeExpressionEvalResult2;
 
-    						  if (!seqExpectedTypeData1.equal(seqExpectedTypeData2)) {
-    							  throw new TransformerException("XPTY0004 : An xsl:variable " + m_qname.getLocalName() + "'s value doesn't conform to "
-    									                                                                                + "xsl:variable's type specification " + m_asAttr + ". The "
-    									                                                                                + "function return types doesn't match.", srcLocator);
+    						  if (!seqExpectedTypeData1.equal(seqExpectedTypeData2)) {    							      							  
+    							  throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																						                            + "result doesn't match the specified "
+																						                            + "xdm sequence type " + m_asAttr + ".", srcLocator);
     						  }
     					  }
     				  }
@@ -1061,7 +1358,9 @@ public class ElemVariable extends ElemTemplateElement
     		   m_isXPathNamedFunctionRefSequenceVar = true;
     		}
     		else {
-    			throw new TransformerException("XTTE0570 : The supplied xdm item doesn't match an XPath sequence type " + m_asAttr + ".", srcLocator); 
+    		   throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																	                             + "result doesn't match the specified "
+																	                             + "xdm sequence type " + m_asAttr + ".", srcLocator); 
     		}
     	}
     	else if (var instanceof XNodeSetForDOM) {
@@ -1082,6 +1381,25 @@ public class ElemVariable extends ElemTemplateElement
 
     					return var;
     				}
+    			}
+    		}
+    		
+    		if ((seqTypeKindTest != null) && (seqTypeKindTest.getKindVal() == SequenceTypeSupport.TEXT_KIND)) {
+    			XNodeSetForDOM xNodeSetForDom = (XNodeSetForDOM)var;
+    			int nodeHandle = xNodeSetForDom.asNode(xctxt);
+    			DTM dtm = xctxt.getDTM(nodeHandle);
+    			int childNode = dtm.getFirstChild(nodeHandle);
+    			if (childNode == DTM.NULL) {
+    			   return new ResultSequence();
+    			}
+    			else {
+    			   short nodeType = dtm.getNodeType(childNode);
+    			   if ((nodeType == DTM.TEXT_NODE) && (dtm.getNextSibling(childNode) == DTM.NULL)) {    				  
+    				  return var; 
+    			   }
+    			   else {
+    				  var = var.getFresh(); 
+    			   }
     			}
     		}
 
@@ -1143,7 +1461,9 @@ public class ElemVariable extends ElemTemplateElement
     		else {
     			var = SequenceTypeSupport.castXdmValueToAnotherType(var, m_asAttr, null, xctxt);
     			if (var == null) {
-    				throw new TransformerException("XTTE0570 : The supplied xdm item doesn't match an XPath sequence type " + m_asAttr + ".", srcLocator); 
+    				throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																	                                  + "result doesn't match the specified "
+																	                                  + "xdm sequence type " + m_asAttr + ".", srcLocator); 
     			}
     		}
     	}
@@ -1158,19 +1478,32 @@ public class ElemVariable extends ElemTemplateElement
     		   }
     		}
     		else {
-    			throw new TransformerException("XTTE0570 : The supplied xdm item doesn't match an XPath sequence type " + m_asAttr + ".", srcLocator); 
+    			throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																	                              + "result doesn't match the specified "
+																	                              + "xdm sequence type " + m_asAttr + ".", srcLocator); 
   		    }
-    	}
+    	}    	    	    	    	    	    	
     	else {
     		try {
     			var = SequenceTypeSupport.castXdmValueToAnotherType(var, m_asAttr, null, xctxt);
     			if (var == null) {
-    				throw new TransformerException("XTTE0570 : The supplied xdm item doesn't match an XPath sequence type " + m_asAttr + ".", srcLocator); 
+    				throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
+																                                      + "result doesn't match the specified "
+																                                      + "xdm sequence type " + m_asAttr + ".", srcLocator); 
     			}
     		}
     		catch (TransformerException ex) {
     			throw ex; 
     		}
+    	}
+    	
+    	if (var == null) {
+    		if (seqExpectedTypeData.getBuiltInSequenceType() == SequenceTypeSupport.XS_INTEGER) {
+               var = new XSInteger("0");
+    		}
+    		else if (seqExpectedTypeData.getBuiltInSequenceType() == SequenceTypeSupport.XS_INT) {
+               var = new XSInt("0");
+     		}
     	}
     }
         

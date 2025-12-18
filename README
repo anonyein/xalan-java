@@ -17,12 +17,12 @@
 
 Copyright 1999-2025 The Apache Software Foundation
 
-Document last modified : 2025-09-14
+Document last modified : 2025-12-16
 
 Authors:
-   Gary Gregory <ggregory@apache.org>
-   Joseph Kesselman <keshlam@alum.mit.edu>
-   Mukul Gandhi <mukulg@apache.org>
+    Gary Gregory <ggregory@apache.org>
+    Joseph Kesselman <keshlam@alum.mit.edu>
+    Mukul Gandhi <mukulg@apache.org>
 
 This GitHub repos branch has src code configured as Maven (https://maven.apache.org/) build, for 
 Xalan-J's implementation of XSLT 3.0 and XPath 3.1 specifications. XSLT, XPath and XQuery languages
@@ -32,7 +32,7 @@ source code and documents, where we use the name XSL to refer to XSLT 3.0 and XP
 Following are the steps, to run Xalan-J's XSLT 3.0 and XPath 3.1 conformance tests and produce 
 XSLT 3.0 build jar file (containing Xalan-J's XSLT 3.0 and XPath 3.1 run-time processors):  
 
-1) Set JAVA_HOME environment variable referring to JDK's local installation folder. JDK version 1.8/8 has been used
+1) Set JAVA_HOME environment variable referring to JDK's local installation folder. JDK version 1.8 has been used
 to develop and test Xalan-J's src code available within this code base repos branch. JDK versions greater than 1.8 
 shall also work fine to compile and run Xalan-J's XSLT 3.0 processor built from this code base repos branch.
 
@@ -49,11 +49,11 @@ The Maven build results like following shall be produced:
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.apache.xalan.tests.main.AllXalanXSLT3Tests
-[INFO] Tests run: 1307, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 96.73 s - in org.apache.xalan.tests.main.AllXalanXSLT3Tests
+[INFO] Tests run: 1381, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: ..... - in org.apache.xalan.tests.main.AllXalanXSLT3Tests
 [INFO]
 [INFO] Results:
 [INFO]
-[INFO] Tests run: 1307, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 1381, Failures: 0, Errors: 0, Skipped: 0
 [INFO]
 [INFO]
 [INFO] --- jar:3.3.0:jar (default-jar) @ xalan-java ---
@@ -62,7 +62,7 @@ The Maven build results like following shall be produced:
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  02:37 min
+[INFO] Total time:  .....
 
 
 If the user needs to run Xalan-J's XSLT 3.0 implementation via Java application code, the value of JVM's system property 

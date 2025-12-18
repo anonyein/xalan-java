@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.serialize;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.transform.TransformerException;
 
@@ -26,8 +26,11 @@ import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.serializer.NamespaceMappings;
 import org.apache.xml.serializer.SerializationHandler;
+import org.apache.xml.utils.XMLString;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XdmAttributeItem;
+import org.apache.xpath.objects.XdmNamespaceItem;
 import org.xml.sax.SAXException;
 
 /**
@@ -40,6 +43,24 @@ import org.xml.sax.SAXException;
  */
 public class SerializerUtils
 {
+	
+	/**
+	 * Class field, representing a list of xdm attribute items.
+	 * 
+	 * This list stores xdm attribute items, that're not serialized
+	 * but are emitted during an XSL transformation and may need to
+	 * be checked with an xdm sequence type.
+	 */
+	public static List<XdmAttributeItem> m_xdmAttrList = new ArrayList<XdmAttributeItem>();
+	
+	/**
+	 * Class field, representing a list of xdm namespace node items.
+	 * 
+	 * This list stores xdm namespace node items, that're not serialized
+	 * but are emitted during an XSL transformation and may need to
+	 * be checked with an xdm sequence type.
+	 */
+	public static List<XdmNamespaceItem> m_xdmNamespaceList = new ArrayList<XdmNamespaceItem>();
 
     /**
      * Copy an DOM attribute to the created output element, executing
@@ -221,13 +242,13 @@ public class SerializerUtils
 
         if (DTM.NAMESPACE_NODE == dtm.getNodeType(attr))
         {
-
-            // String prefix = dtm.getPrefix(attr);
             String prefix = dtm.getNodeNameX(attr);
             String uri = serializer.getNamespaceURIFromPrefix(prefix);
-            //      String uri = getURI(prefix);
 
-            if ((null != uri) && uri.equals(dtm.getStringValue(attr)))
+            XMLString xmlString = dtm.getStringValue(attr);
+            String str1 = ((xmlString != null) ? xmlString.toString() : null); 
+            
+            if ((null != uri) && uri.equals(str1))
                 return true;
         }
 

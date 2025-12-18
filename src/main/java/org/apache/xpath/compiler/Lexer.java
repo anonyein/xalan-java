@@ -18,11 +18,18 @@
 package org.apache.xpath.compiler;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
+import javax.xml.transform.SourceLocator;
+
+import org.apache.xalan.templates.ElemTemplateElement;
+import org.apache.xalan.templates.XMLNSDecl;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.utils.ObjectVector;
 import org.apache.xml.utils.PrefixResolver;
+import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.res.XPATHErrorResources;
 
 /**
@@ -79,11 +86,13 @@ class Lexer
   
   private boolean isNum = false;
   
-  private String m_ns_unbound_prefix = null;
+  private String m_nsUnboundPrefix = null;
   
   private boolean m_nsBindingRequired = false;
   
   private boolean m_nsBound = false;
+  
+  private SourceLocator m_sourceLocator = null;
 
   /**
    * Create a Lexer object.
@@ -143,9 +152,8 @@ class Lexer
 
     // Nesting of '[' so we can know if the given element should be
     // counted inside the m_patternMap.
-    int nesting = 0;            
+    int nesting = 0;
 
-    // char[] chars = pat.toCharArray();
     for (int i = 0; i < nChars; i++)
     {
       char c = pat.charAt(i);
@@ -644,7 +652,17 @@ class Lexer
       try
       {
         if (prefix.length() > 0) {
-           uName = ((PrefixResolver) m_namespaceContext).getNamespaceForPrefix(prefix);
+           uName = ((PrefixResolver) m_namespaceContext).getNamespaceForPrefix(prefix);           
+           if (uName == null) {
+        	   ExpressionNode exprParent = (ExpressionNode)m_sourceLocator;
+        	   if (exprParent instanceof ElemTemplateElement) {
+        		  List<XMLNSDecl> prefixTable = ((ElemTemplateElement)exprParent).getPrefixTable();
+        		  if (prefixTable != null) {
+        		     uName = XslTransformEvaluationHelper.getNsUriFromPrefix(prefix, prefixTable);
+        		  }
+        	   }
+           }
+                      
            if ((uName == null) && (SharedLexerState.m_nsMap != null)) {
         	   uName = getNsForPrefixLexer(prefix);
            }
@@ -669,7 +687,17 @@ class Lexer
         	   return -1;
            }
            else {
-              uName = ((PrefixResolver) m_namespaceContext).getNamespaceForPrefix(prefix);
+              uName = ((PrefixResolver) m_namespaceContext).getNamespaceForPrefix(prefix);              
+              if (uName == null) {
+            	  ExpressionNode exprParent = (ExpressionNode)m_sourceLocator;
+            	  if (exprParent instanceof ElemTemplateElement) {
+            		  List<XMLNSDecl> prefixTable = ((ElemTemplateElement)exprParent).getPrefixTable();
+            		  if (prefixTable != null) {
+             		     uName = XslTransformEvaluationHelper.getNsUriFromPrefix(prefix, prefixTable);
+             		  }
+            	  }
+              }
+              
               if ((uName == null) && (SharedLexerState.m_nsMap != null)) {
             	  uName = getNsForPrefixLexer(prefix);
               }
@@ -678,7 +706,17 @@ class Lexer
       }
       catch (ClassCastException cce)
       {
-        uName = m_namespaceContext.getNamespaceForPrefix(prefix);
+        uName = m_namespaceContext.getNamespaceForPrefix(prefix);        
+        if (uName == null) {
+        	ExpressionNode exprParent = (ExpressionNode)m_sourceLocator;
+        	if (exprParent instanceof ElemTemplateElement) {
+        		List<XMLNSDecl> prefixTable = ((ElemTemplateElement)exprParent).getPrefixTable();
+        		if (prefixTable != null) {
+       		       uName = XslTransformEvaluationHelper.getNsUriFromPrefix(prefix, prefixTable);
+       		    }
+        	}
+        }
+        
         if ((uName == null) && (SharedLexerState.m_nsMap != null)) {
         	uName = getNsForPrefixLexer(prefix);
         }
@@ -770,7 +808,7 @@ class Lexer
         	   m_nsBound = true;
         	}
         	else {
-        	   m_ns_unbound_prefix = prefix;
+        	   m_nsUnboundPrefix = prefix;
         	}
         }
     }
@@ -971,7 +1009,11 @@ class Lexer
   }
   
   String getNsUnboundPrefix() {
-	  return m_ns_unbound_prefix; 
+	  return m_nsUnboundPrefix; 
+  }
+
+  public void setSourceLocator(SourceLocator sourceLocator) {
+	  this.m_sourceLocator = sourceLocator; 
   }
   
 }

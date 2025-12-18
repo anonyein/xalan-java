@@ -21,13 +21,14 @@ import javax.xml.transform.SourceLocator;
 
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XObject;
 
 import xml.xpath31.processor.types.XSAnyURI;
 import xml.xpath31.processor.types.XSQName;
 
 /**
- * Implementation of XPath 3.1 fn:namespace-uri-from-QName function.
+ * An implementation of, XPath 3.1 function fn:namespace-uri-from-QName.
  * 
  * @author : Mukul Gandhi <mukulg@apache.org>
  * 
@@ -63,7 +64,14 @@ public class FuncNamespaceUriFromQName extends FunctionDef1Arg {
 	  XObject arg0Value = arg0.execute(xctxt);
 	  
 	  if (arg0Value instanceof XSQName) {
-		 result = new XSAnyURI(((XSQName)arg0Value).getNamespaceUri()); 
+		 XSQName xsQName = (XSQName)arg0Value;
+		 String nsUri = xsQName.getNamespaceUri();
+		 if (nsUri != null) {
+		    result = new XSAnyURI(nsUri);
+		 }
+		 else {
+			result = new ResultSequence(); 
+		 }
 	  }
 	  else {
 		 throw new javax.xml.transform.TransformerException("FOAP0001: The first argument within fn:namespace-uri-from-QName "

@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.compiler;
 
 import java.util.Arrays;
@@ -559,6 +556,24 @@ public class FunctionTable
   
   /** The 'round-half-to-even()' id. */
   public static final int FUNC_ROUND_HALF_TO_EVEN = 178;
+  
+  /** The 'error()' id. */
+  public static final int FUNC_ERROR = 179;
+  
+  /** The 'random-number-generator()' id. */
+  public static final int FUNC_RANDOM_NUMBER_GENERATOR = 180;
+  
+  /** The 'adjust-dateTime-to-timezone()' id. */
+  public static final int FUNC_ADJUST_DATETIME_TO_TIMEZONE = 181;
+  
+  /** The 'adjust-date-to-timezone()' id. */
+  public static final int FUNC_ADJUST_DATE_TO_TIMEZONE = 182;
+  
+  /** The 'adjust-time-to-timezone()' id. */
+  public static final int FUNC_ADJUST_TIME_TO_TIMEZONE = 183;
+  
+  /** The 'format-integer()' id. */
+  public static final int FUNC_FORMAT_INTEGER = 184;
 
   // Proprietary
 
@@ -652,7 +667,7 @@ public class FunctionTable
    * Number of built in functions. Please update this, as
    * built-in functions are added.
    */
-  private static final int NUM_BUILT_IN_FUNCS = 179;
+  private static final int NUM_BUILT_IN_FUNCS = 185;
 
   /**
    * Number of built-in functions that may be added.
@@ -826,6 +841,12 @@ public class FunctionTable
 	   m_functions[FUNC_MINUTES_FROM_TIME] = org.apache.xpath.functions.datetime.FuncMinutesFromTime.class;
 	   m_functions[FUNC_SECONDS_FROM_TIME] = org.apache.xpath.functions.datetime.FuncSecondsFromTime.class;
 	   m_functions[FUNC_TIMEZONE_FROM_TIME] = org.apache.xpath.functions.datetime.FuncTimezoneFromTime.class;
+	   
+	   m_functions[FUNC_ADJUST_DATETIME_TO_TIMEZONE] = org.apache.xpath.functions.datetime.FuncAdjustDateTimeToTimezone.class;
+	   m_functions[FUNC_ADJUST_DATE_TO_TIMEZONE] = org.apache.xpath.functions.datetime.FuncAdjustDateToTimezone.class;
+	   m_functions[FUNC_ADJUST_TIME_TO_TIMEZONE] = org.apache.xpath.functions.datetime.FuncAdjustTimeToTimezone.class;
+	   
+	   m_functions[FUNC_FORMAT_INTEGER] = org.apache.xpath.functions.FuncFormatInteger.class;
 
 	   m_functions[FUNC_DEFAULT_COLLATION] = org.apache.xpath.functions.FuncDefaultCollation.class;
 	   m_functions[FUNC_BASE_URI] = org.apache.xpath.functions.FuncBaseUri.class;
@@ -878,6 +899,10 @@ public class FunctionTable
 	   
 	   m_functions[FUNC_FUNCTION_ARITY] = org.apache.xpath.functions.FuncFunctionArity.class;
 	   m_functions[FUNC_FUNCTION_NAME] = org.apache.xpath.functions.FuncFunctionName.class;
+	   
+	   m_functions[FUNC_ERROR] = org.apache.xpath.functions.FuncError.class;
+	   
+	   m_functions[FUNC_RANDOM_NUMBER_GENERATOR] = org.apache.xpath.functions.FuncRandomNumberGenerator.class;
   }
 
   static {
@@ -1027,6 +1052,12 @@ public class FunctionTable
 	  m_functionId.put(Keywords.FUNC_MINUTES_FROM_TIME, new Integer(FunctionTable.FUNC_MINUTES_FROM_TIME));
 	  m_functionId.put(Keywords.FUNC_SECONDS_FROM_TIME, new Integer(FunctionTable.FUNC_SECONDS_FROM_TIME));
 	  m_functionId.put(Keywords.FUNC_TIMEZONE_FROM_TIME, new Integer(FunctionTable.FUNC_TIMEZONE_FROM_TIME));
+	  
+	  m_functionId.put(Keywords.FUNC_ADJUST_DATETIME_TO_TIMEZONE, new Integer(FunctionTable.FUNC_ADJUST_DATETIME_TO_TIMEZONE));
+	  m_functionId.put(Keywords.FUNC_ADJUST_DATE_TO_TIMEZONE, new Integer(FunctionTable.FUNC_ADJUST_DATE_TO_TIMEZONE));
+	  m_functionId.put(Keywords.FUNC_ADJUST_TIME_TO_TIMEZONE, new Integer(FunctionTable.FUNC_ADJUST_TIME_TO_TIMEZONE));
+	  
+	  m_functionId.put(Keywords.FUNC_FORMAT_INTEGER, new Integer(FunctionTable.FUNC_FORMAT_INTEGER));
 
 	  m_functionId.put(Keywords.FUNC_DEFAULT_COLLATION, new Integer(FunctionTable.FUNC_DEFAULT_COLLATION));
 	  m_functionId.put(Keywords.FUNC_BASE_URI, new Integer(FunctionTable.FUNC_BASE_URI));
@@ -1088,6 +1119,10 @@ public class FunctionTable
 	  
 	  m_functionId.put(Keywords.FUNC_FUNCTION_ARITY, new Integer(FunctionTable.FUNC_FUNCTION_ARITY));
 	  m_functionId.put(Keywords.FUNC_FUNCTION_NAME, new Integer(FunctionTable.FUNC_FUNCTION_NAME));
+	  
+	  m_functionId.put(Keywords.FUNC_ERROR, new Integer(FunctionTable.FUNC_ERROR));
+	  
+	  m_functionId.put(Keywords.FUNC_RANDOM_NUMBER_GENERATOR, new Integer(FunctionTable.FUNC_RANDOM_NUMBER_GENERATOR));
   }
   
   /**

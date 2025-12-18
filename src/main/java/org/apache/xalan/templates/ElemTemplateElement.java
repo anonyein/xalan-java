@@ -15,15 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import javax.xml.XMLConstants;
@@ -49,6 +47,8 @@ import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.WhitespaceStrippingElementMatcher;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.axes.SelfIteratorNoPredicate;
+import org.apache.xpath.compiler.Keywords;
 import org.apache.xpath.compiler.XPathParser;
 import org.apache.xpath.composite.SequenceTypeSupport;
 import org.apache.xpath.functions.Function;
@@ -56,12 +56,17 @@ import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XRTreeFrag;
+import org.apache.xpath.objects.XString;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.helpers.NamespaceSupport;
+
+import xml.xpath31.processor.types.XSDouble;
+import xml.xpath31.processor.types.XSString;
 
 /**
  * An instance of this class represents an element inside
@@ -77,7 +82,7 @@ import org.xml.sax.helpers.NamespaceSupport;
  * 
  * @author Scott Boag <scott_boag@us.ibm.com>
  * @author Myriam Midy <mmidy@apache.org>
- * @author Joseph Kesselman <jkesselm@apache.org>
+ * @author Joseph Kesselman <keshlam@alum.mit.edu>
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  *         (XSLT 3.0 specific changes, to this class)
@@ -1808,57 +1813,6 @@ public class ElemTemplateElement extends UnImplNode
   }
   
   /**
-   * Method definition to determine whether, an XSLT instruction is in a sequence constructor's tail position.
-   * 
-   * The XSLT 3.0 spec, provides following definition to determine, whether an XSLT instruction
-   * is in the tail position within an XSLT sequence constructor:
-   * 
-   * An instruction J is in a tail position within a sequence constructor SC if it satisfies 
-   * one of the following conditions:
-     1) J is the last instruction in SC, ignoring any xsl:fallback instructions.
-     2) J is in a tail position within the sequence constructor that forms the body of an xsl:if instruction that 
-        is itself in a tail position within SC.
-     3) J is in a tail position within the sequence constructor that forms the body of an xsl:when or xsl:otherwise 
-        branch of an xsl:choose instruction that is itself in a tail position within SC.
-     4) J is in a tail position within the sequence constructor that forms the body of an xsl:try instruction that 
-        is itself in a tail position within SC (that is, it is immediately followed by an xsl:catch element, ignoring 
-        any xsl:fallback elements).
-     5) J is in a tail position within the sequence constructor that forms the body of an xsl:catch element within 
-        an xsl:try instruction that is itself in a tail position within SC.
-        
-     Currently, we check only points 1), 2) and 3) as mentioned within previous definition above.
-             
-     @param  xslInstr    an XSLT instruction for which we need to find whether, that instruction is in 
-                         a tail position of sequence constructor.                          
-   */
-  protected boolean isXslInstructionInTailPositionOfSequenceConstructor(ElemTemplateElement xslInstr) {
-      
-      boolean result = true;
-      
-      ElemTemplateElement elemTemplateElementNextSubling = xslInstr.m_nextSibling;
-      
-      if (elemTemplateElementNextSubling == null) {
-         ElemTemplateElement xslInstrParentElement = xslInstr.m_parentNode;
-          
-         if (xslInstrParentElement instanceof ElemIf) {
-            result = isXslInstructionInTailPositionOfSequenceConstructor(xslInstrParentElement); 
-         }
-         else if ((xslInstrParentElement instanceof ElemWhen) || (xslInstrParentElement instanceof ElemOtherwise)) {
-             xslInstrParentElement = xslInstrParentElement.m_parentNode;
-             result = isXslInstructionInTailPositionOfSequenceConstructor(xslInstrParentElement);
-         }
-      }
-      else {
-          if (!((elemTemplateElementNextSubling instanceof ElemIterateNextIteration) && 
-                                                                      (elemTemplateElementNextSubling.m_nextSibling == null))) {
-              result = false;   
-          }
-      }
-      
-      return result;
-  }
-  
-  /**
    * During processing of, xsl:for-each or xsl:iterate instruction, when the input data to be
    * processed by these instructions is a 'ResultSequence' object, we use this method to set
    * the XPath context information before each sequence item is processed by these 
@@ -1934,6 +1888,10 @@ public class ElemTemplateElement extends UnImplNode
    */
   public void setXPathContext(XPathContext xpathContext) {
 	 this.m_xpathContext = xpathContext;
+  }
+  
+  public Object getSelect() {
+	  return null;
   }
   
   /**
@@ -2260,6 +2218,9 @@ public class ElemTemplateElement extends UnImplNode
   	else if (elemTemplateElem instanceof ElemForEach) {
   		result = ((ElemForEach)elemTemplateElem).getExpandText();  		
   	}
+  	else if (elemTemplateElem instanceof ElemPerformSort) {
+  		result = ((ElemPerformSort)elemTemplateElem).getExpandText();  		
+  	}
   	else if (elemTemplateElem instanceof ElemForEachGroup) {
   		result = ((ElemForEachGroup)elemTemplateElem).getExpandText();  		
   	}
@@ -2305,13 +2266,36 @@ public class ElemTemplateElement extends UnImplNode
   	else if (elemTemplateElem instanceof ElemElement) {
   		result = ((ElemElement)elemTemplateElem).getExpandText();  		
   	}
-  	
-  	else if (elemTemplateElem instanceof ElemComment) {
-  		result = ((ElemComment)elemTemplateElem).getExpandText();  		
-  	}
   	else if (elemTemplateElem instanceof ElemPI) {
   		result = ((ElemPI)elemTemplateElem).getExpandText();  		
+  	}
+  	else if (elemTemplateElem instanceof ElemComment) {
+  		result = ((ElemComment)elemTemplateElem).getExpandText();  		
+  	}  	
+  	else if (elemTemplateElem instanceof ElemNamespace) {
+  		result = ((ElemNamespace)elemTemplateElem).getExpandText();  		
+  	}
+  	else if (elemTemplateElem instanceof ElemAnalyzeString) {
+  		result = ((ElemAnalyzeString)elemTemplateElem).getExpandText();  		
   	} 
+  	else if (elemTemplateElem instanceof ElemMatchingSubstring) {
+  		result = ((ElemMatchingSubstring)elemTemplateElem).getExpandText();  		
+  	} 
+  	else if (elemTemplateElem instanceof ElemNonMatchingSubstring) {
+  		result = ((ElemNonMatchingSubstring)elemTemplateElem).getExpandText();  		
+  	} 
+  	else if (elemTemplateElem instanceof ElemTry) {
+  		result = ((ElemTry)elemTemplateElem).getExpandText();  		
+  	}
+  	else if (elemTemplateElem instanceof ElemCatch) {
+  		result = ((ElemCatch)elemTemplateElem).getExpandText();  		
+  	}
+  	else if (elemTemplateElem instanceof ElemMessage) {
+  		result = ((ElemMessage)elemTemplateElem).getExpandText();  		
+  	}
+  	else if (elemTemplateElem instanceof ElemAssert) {
+  		result = ((ElemAssert)elemTemplateElem).getExpandText();  		
+  	}
 
   	return result;
   }
@@ -2340,10 +2324,10 @@ public class ElemTemplateElement extends UnImplNode
 
 	  StringBuffer strBuff = new StringBuffer();
 	  
-	  int i = strValue.indexOf('{');
-	  int j = strValue.indexOf('}');
+	  int idx1 = strValue.indexOf('{');
+	  int idx2 = strValue.indexOf('}');
 	  
-	  if (i < j) {
+	  if (idx1 < idx2) {
 		  List<XMLNSDecl> prefixTable = null;
 		  ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();            
 		  if (elemTemplateElement != null) {
@@ -2353,60 +2337,94 @@ public class ElemTemplateElement extends UnImplNode
 		  String str1 = null;
 		  String xpathExprStr = null;
 		  String remainingStr = null;
-		  if (i > -1) {
-			  str1 = strValue.substring(0, i);
-			  if ((strValue.charAt(i + 1) == '{') && (strValue.charAt(j + 1) == '}')) {
+		  if (idx1 > -1) {
+			  str1 = strValue.substring(0, idx1);
+			  if ((strValue.charAt(idx1 + 1) == '{') && (strValue.charAt(idx2 + 1) == '}')) {
 				 /**
 				  * The substring with form {{abc}} is an XSL expand-text escape
 				  * sequence, and results in an output {abc} without evaluating
 				  * an XPath expression.
 				  */
-				 str1 = (str1 + strValue.substring(i + 1, j + 1));
-				 remainingStr = strValue.substring(j + 2);
+				 str1 = (str1 + strValue.substring(idx1 + 1, idx2 + 1));
+				 remainingStr = strValue.substring(idx2 + 2);
 			  }
 			  else {
-			     xpathExprStr = strValue.substring(i + 1, j);
-			     remainingStr = strValue.substring(j + 1);
+			     xpathExprStr = strValue.substring(idx1 + 1, idx2);
+			     remainingStr = strValue.substring(idx2 + 1);
 			  }
 			  
 			  strBuff.append(str1);			   
 		  }
 		  
-		  ElemTemplateElement elemTemplateElem = getParentElem();
+		  ElemTemplateElement elemTemplateElem =  getParentElem();
 		  
 		  String xpathDefaultNamespace = XPathParser.getXPathDefaultNamespace(elemTemplateElem);
 
 		  // Traverse the string value from left to right, and apply expand-text 
 		  // processing to each substring {...} that is found.
-		  while (i > -1) {
+		  while (idx1 > -1) {
 			  if (xpathExprStr != null) {
 				  if (prefixTable != null) {
 					  xpathExprStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathExprStr, prefixTable);
 				  }
-				  XPath xpathObj = new XPath(xpathExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, xpathDefaultNamespace);
-				  if (vars != null) {
-					  xpathObj.fixupVariables(vars, varsGlobalsSize);
-				  }				 
+				  
+				  String str2 = null;
+				  XPath xpath2 = new XPath(xpathExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, xpathDefaultNamespace);
+				  xpath2.setIsConcreteExceptionProcessing(true);
+				  Expression expr1 = xpath2.getExpression();
 
-				  XObject xObj = xpathObj.execute(xctxt, contextNode, xctxt.getNamespaceContext());
-				  String str2 = XslTransformEvaluationHelper.getStrVal(xObj);
+				  if (expr1 instanceof SelfIteratorNoPredicate) {
+					  XObject xpath3CtxtItem = xctxt.getXPath3ContextItem();
+					  if (xpath3CtxtItem != null) {
+						  str2 = XslTransformEvaluationHelper.getStrVal(xpath3CtxtItem);
+					  }
+					  else {
+						  if (vars != null) {
+							  xpath2.fixupVariables(vars, varsGlobalsSize);
+						  }				 
+
+						  XObject xObj = xpath2.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+						  str2 = XslTransformEvaluationHelper.getStrVal(xObj); 
+					  }
+				  }
+				  else {
+					  if (vars != null) {
+						  xpath2.fixupVariables(vars, varsGlobalsSize);
+					  }
+
+					  XObject xObj = xpath2.execute(xctxt, contextNode, xctxt.getNamespaceContext());					  					  
+					  
+					  String xpathPatternStr = xpath2.getPatternString();
+					  if ((xObj instanceof XPathMap) && (xpathPatternStr.startsWith(Keywords.FUNC_RANDOM_NUMBER_GENERATOR + "(") 
+                                                                                   && xpathPatternStr.endsWith("?" + Constants.ATTRVAL_DATATYPE_NUMBER))) {						 
+						  XPathMap xpathMap = (XPathMap)xObj;
+						  Map<XObject,XObject> nativeMap = xpathMap.getNativeMap();
+						  XObject xObj2 = nativeMap.get(new XSString(Constants.ATTRVAL_DATATYPE_NUMBER));
+						  XSDouble xsDouble = (XSDouble)xObj2;
+						  XString xsString = new XString(xsDouble.stringValue());
+						  str2 = xsString.str();					 
+					  }
+					  else {
+						  str2 = XslTransformEvaluationHelper.getStrVal(xObj);
+					  }
+				  }
 
 				  strBuff.append(str2);
 			  }
 
-			  i = remainingStr.indexOf('{');
-			  j = remainingStr.indexOf('}');
+			  idx1 = remainingStr.indexOf('{');
+			  idx2 = remainingStr.indexOf('}');
 			  
-			  if ((i < j) && (i > -1)) {				  
-				  str1 = remainingStr.substring(0, i);
-				  if ((remainingStr.charAt(i + 1) == '{') && (remainingStr.charAt(j + 1) == '}')) {
+			  if ((idx1 < idx2) && (idx1 > -1)) {				  
+				  str1 = remainingStr.substring(0, idx1);
+				  if ((remainingStr.charAt(idx1 + 1) == '{') && (remainingStr.charAt(idx2 + 1) == '}')) {
 					 // An XSL expand-text escape sequence
-					 str1 = (str1 + remainingStr.substring(i + 1, j + 1));
-					 remainingStr = remainingStr.substring(j + 2);
+					 str1 = (str1 + remainingStr.substring(idx1 + 1, idx2 + 1));
+					 remainingStr = remainingStr.substring(idx2 + 2);
 				  }
 				  else {
-				     xpathExprStr = remainingStr.substring(i + 1, j);
-				     remainingStr = remainingStr.substring(j + 1);
+				     xpathExprStr = remainingStr.substring(idx1 + 1, idx2);
+				     remainingStr = remainingStr.substring(idx2 + 1);
 				  }
 				  
 				  strBuff.append(str1);

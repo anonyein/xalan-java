@@ -16,6 +16,9 @@
  */
 package org.apache.xalan.xslt.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
@@ -100,9 +103,22 @@ public class XslTransformData {
     public static XMLNodeCursorImpl m_xslDocumentEvaluationResult;
     
     /**
+     * This class field is used to refer to, list of URI strings 
+     * processed by xsl:result-document instruction.
+     */
+    public static List<String> m_xslResultDocumentUriStrList = new ArrayList<String>();
+    
+    /**
      * Class field, to support Xalan-J's test driver for W3C XSLT 3.0 test suite. 
      */
     public static boolean m_is_xsl_test_invocation = false;
+    
+    /**
+     * Class field, to store XSL stylesheet result from xsl:message 
+     * instructions. These results are emitted as prefix of XSL 
+     * transform's output. 
+     */
+    public static ResultSequence m_xsl_message_rSeq = null;        
     
     /**
 	 * Method definition to reset the variable values specified 
@@ -119,6 +135,7 @@ public class XslTransformData {
 		m_xpathCallingOpCode = Integer.MIN_VALUE;
 		m_xpathNamedFunctionRefSequence.clear();
 		m_xslDocumentEvaluationResult = null;
+		m_xslResultDocumentUriStrList.clear();
 		m_is_xsl_test_invocation = false;
 	}		
 

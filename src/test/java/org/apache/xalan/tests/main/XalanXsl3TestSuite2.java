@@ -16,6 +16,9 @@
  */
 package org.apache.xalan.tests.main;
 
+import org.apache.xalan.tests.xpath3.FnAdjustDateToTimezoneTests;
+import org.apache.xalan.tests.xpath3.FnAdjustDatetimeToTimezoneTests;
+import org.apache.xalan.tests.xpath3.FnAdjustTimeToTimezoneTests;
 import org.apache.xalan.tests.xpath3.FnAvgTests;
 import org.apache.xalan.tests.xpath3.FnCodepointEqualTests;
 import org.apache.xalan.tests.xpath3.FnCodepointsToStringTests;
@@ -29,6 +32,7 @@ import org.apache.xalan.tests.xpath3.FnFilterTests;
 import org.apache.xalan.tests.xpath3.FnFoldLeftTests;
 import org.apache.xalan.tests.xpath3.FnFoldRightTests;
 import org.apache.xalan.tests.xpath3.FnForEachPairTests;
+import org.apache.xalan.tests.xpath3.FnFormatIntegerTests;
 import org.apache.xalan.tests.xpath3.FnFunctionArityTests;
 import org.apache.xalan.tests.xpath3.FnFunctionNameTests;
 import org.apache.xalan.tests.xpath3.FnIndexOfTests;
@@ -59,6 +63,7 @@ import org.apache.xalan.tests.xpath3.XPathIdivTests;
 import org.apache.xalan.tests.xpath3.XPathIfExprTests;
 import org.apache.xalan.tests.xpath3.XPathInstanceOfExprTests;
 import org.apache.xalan.tests.xpath3.XPathLetExprTests;
+import org.apache.xalan.tests.xpath3.XPathLiteralSequenceTests;
 import org.apache.xalan.tests.xpath3.XPathMathFunctionTests;
 import org.apache.xalan.tests.xpath3.XPathNodeComparisonTests;
 import org.apache.xalan.tests.xpath3.XPathNodeSequenceCombinationTests;
@@ -72,6 +77,7 @@ import org.apache.xalan.tests.xpath3.XPathSequenceFunctionTests;
 import org.apache.xalan.tests.xpath3.XPathSequenceTraversalTests;
 import org.apache.xalan.tests.xpath3.XPathSimpleMapOperatorTests;
 import org.apache.xalan.tests.xpath3.XPathStringConcatExprTests;
+import org.apache.xalan.tests.xpath3.XPathTextAndNodePattern;
 import org.apache.xalan.tests.xpath3.XPathUriQualifiedNameTests;
 import org.apache.xalan.tests.xpath3.XsDurationComponentExtractionFunctionTests;
 import org.apache.xalan.tests.xpath3.XsGregorianTypeTests;
@@ -82,6 +88,7 @@ import org.apache.xalan.tests.xslt3.XslAttributeTests;
 import org.apache.xalan.tests.xslt3.XslCharacterMapTests;
 import org.apache.xalan.tests.xslt3.XslContextItemTests;
 import org.apache.xalan.tests.xslt3.XslCopyTests;
+import org.apache.xalan.tests.xslt3.XslDisableOutputEscapingAttrTests;
 import org.apache.xalan.tests.xslt3.XslExpandTextTests;
 import org.apache.xalan.tests.xslt3.XslForEachGroupMiscTests;
 import org.apache.xalan.tests.xslt3.XslForEachGroupTests;
@@ -94,13 +101,17 @@ import org.apache.xalan.tests.xslt3.XslInitialTemplateTests;
 import org.apache.xalan.tests.xslt3.XslIterateTests;
 import org.apache.xalan.tests.xslt3.XslJsonValidationTests;
 import org.apache.xalan.tests.xslt3.XslMergeTests;
+import org.apache.xalan.tests.xslt3.XslMessageTests;
 import org.apache.xalan.tests.xslt3.XslMethodOutputJsonTests;
+import org.apache.xalan.tests.xslt3.XslModeTests;
+import org.apache.xalan.tests.xslt3.XslPerformSortTests;
 import org.apache.xalan.tests.xslt3.XslResultDocumentTests;
 import org.apache.xalan.tests.xslt3.XslRtfMigrationTests;
 import org.apache.xalan.tests.xslt3.XslSequenceInstTests;
 import org.apache.xalan.tests.xslt3.XslSortTests;
 import org.apache.xalan.tests.xslt3.XslSourceDocumentTests;
 import org.apache.xalan.tests.xslt3.XslTemplateAttributeAsTests;
+import org.apache.xalan.tests.xslt3.XslTemplatePriorityTests;
 import org.apache.xalan.tests.xslt3.XslTemplateTests;
 import org.apache.xalan.tests.xslt3.XslTryCatchTests;
 import org.apache.xalan.tests.xslt3.XslVariableAttributeAsTests;
@@ -144,7 +155,10 @@ import org.junit.runners.Suite.SuiteClasses;
                 XPathDefaultNamespaceMiscTests.class, XslFunctionMiscTests.class, XslIncludeTests.class, 
                 XslIncludeMiscTests.class, FnNormalizeUnicodeTests.class, XslExpandTextTests.class,
                 XslJsonValidationTests.class, XPathUriQualifiedNameTests.class, FnRoundHalfToEvenTests.class,
-                XPathPartialFuncApplnTests.class, XslCopyTests.class, XalanJavascriptExtensionTests.class, XalanJavaExtensionTests.class })
+                XPathPartialFuncApplnTests.class, XslCopyTests.class, XalanJavascriptExtensionTests.class, XalanJavaExtensionTests.class,
+                XPathTextAndNodePattern.class, XPathLiteralSequenceTests.class, XslModeTests.class, XslTemplatePriorityTests.class,
+                XslDisableOutputEscapingAttrTests.class, XslMessageTests.class, FnAdjustDatetimeToTimezoneTests.class,
+                FnAdjustDateToTimezoneTests.class, FnAdjustTimeToTimezoneTests.class, FnFormatIntegerTests.class, XslPerformSortTests.class  } )
 public class XalanXsl3TestSuite2 {
 
 }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-09-16T13:24:46Z" fail="31" name="sort" pass="50" skipped="0" statusUnknown="0" totalRun="81">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-12-11T12:34:17Z" fail="29" name="sort" pass="52" skipped="0" statusUnknown="0" totalRun="81">
    <testResult status="pass" testName="sort-003"/>
    <testResult status="pass" testName="sort-001"/>
    <testResult status="pass" testName="sort-002"/>
@@ -28,16 +28,20 @@
    <testResult status="pass" testName="sort-026"/>
    <testResult status="fail" testName="sort-027">
       <outResult>&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;&lt;out lang="default-order"/&gt;&#13;
+&#13;
 </outResult>
    </testResult>
    <testResult status="fail" testName="sort-028">
       <outResult>&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;&lt;out lang="default-order"/&gt;&#13;
+&#13;
 </outResult>
       <outResult>&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;&lt;out lang="default-order"/&gt;&#13;
+&#13;
 </outResult>
    </testResult>
    <testResult status="fail" testName="sort-029">
       <outResult>&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;&lt;out lang="default-order"/&gt;&#13;
+&#13;
 </outResult>
    </testResult>
    <testResult status="pass" testName="sort-030"/>
@@ -77,7 +81,7 @@
    <testResult status="fail" testName="sort-064"/>
    <testResult status="fail" testName="sort-065"/>
    <testResult status="fail" testName="sort-066"/>
-   <testResult status="fail" testName="sort-067"/>
+   <testResult status="pass" testName="sort-067"/>
    <testResult status="fail" testName="sort-068"/>
    <testResult status="fail" testName="sort-069"/>
    <testResult status="fail" testName="sort-070"/>
@@ -90,9 +94,9 @@
    <testResult status="pass" testName="sort-077"/>
    <testResult status="pass" testName="sort-078"/>
    <testResult status="fail" testName="sort-079">
-      <outResult/>
+      <outResult>
+         <errTrace>XTDE0040 : An XSL template named 't:initial-template' doesn't exist.</errTrace>
+      </outResult>
    </testResult>
-   <testResult status="fail" testName="sort-080">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;</outResult>
-   </testResult>
+   <testResult status="pass" testName="sort-080"/>
 </testrun>

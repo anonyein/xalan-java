@@ -207,7 +207,7 @@ public class ElemChoose extends ElemTemplateElement
                 else {
                     strVal = xpath3ContextItem.str(); 
                 }
-                DTM docFragDtm = dtmMgr.createDTMForSimpleXMLDocument(strVal);
+                DTM docFragDtm = dtmMgr.getXmlShallowDTMTree(strVal, null, null);
           
                 int contextNode = docFragDtm.getFirstChild(docFragDtm.getDocument());            
                 xctxtNew.pushCurrentNode(contextNode);
@@ -259,20 +259,23 @@ public class ElemChoose extends ElemTemplateElement
   public ElemTemplateElement appendChild(ElemTemplateElement newChild)
   {
 
-    int type = ((ElemTemplateElement) newChild).getXSLToken();
+	  int type = ((ElemTemplateElement) newChild).getXSLToken();
 
-    switch (type)
-    {
-        case Constants.ELEMNAME_WHEN :
-        case Constants.ELEMNAME_OTHERWISE :
-          break;
-        default :
-          error(XSLTErrorResources.ER_CANNOT_ADD,
-                new Object[]{ newChild.getNodeName(),
-                              this.getNodeName() });
-    }
+	  switch (type)
+	  {
+	  case Constants.ELEMNAME_WHEN :
+	  case Constants.ELEMNAME_OTHERWISE :
+		  break;
+	  default :
+		  String lineNo = String.valueOf(newChild.getLineNumber());
+		  String columnNo = String.valueOf(newChild.getColumnNumber());
 
-    return super.appendChild(newChild);
+		  error(XSLTErrorResources.ER_CANNOT_ADD,
+											  new Object[]{ newChild.getNodeName(),
+													  this.getNodeName(), lineNo, columnNo });
+	  }
+
+	  return super.appendChild(newChild);
   }
   
   /**

@@ -44,6 +44,7 @@ import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xml.dtm.ref.DTMTreeWalker;
 import org.apache.xml.serializer.SerializationHandler;
 import org.apache.xml.utils.QName;
+import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.composite.SequenceTypeSupport;
@@ -56,11 +57,14 @@ import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
+import org.apache.xpath.objects.XdmAttributeItem;
 import org.apache.xpath.types.XMLAttribute;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import xml.xpath31.processor.types.XSAnyAtomicType;
+import xml.xpath31.processor.types.XSQName;
 import xml.xpath31.processor.types.XSUntyped;
 import xml.xpath31.processor.types.XSUntypedAtomic;
 
@@ -277,18 +281,19 @@ public class ElemCopyOf extends ElemTemplateElement
     if (transformer.getDebug())
     	transformer.getTraceManager().emitTraceEvent(this);
 
-    try {      
-      XPathContext xctxt = transformer.getXPathContext();
-        
-      setXPathContext(xctxt);
-        
-      SourceLocator srcLocator = xctxt.getSAXLocator();
-      
+    boolean isXPathExprStrCheck = false;
+    
+    XPathContext xctxt = transformer.getXPathContext();
+    setXPathContext(xctxt);
+    
+    SourceLocator srcLocator = xctxt.getSAXLocator();
+    
+    try {                                
       QName type = getType();
       String validationStr = getValidation();
         
       if ((type != null) && (validationStr != null)) {
-      	  throw new TransformerException("XTTE1540 : An xsl:copy-of instruction cannot have both the attributes "
+      	  throw new TransformerException("XTTE1540 : An XSL copy-of instruction cannot have both the attributes "
       	  																						+ "'type' and 'validation'.", srcLocator); 
       }      
               
@@ -305,7 +310,40 @@ public class ElemCopyOf extends ElemTemplateElement
           value = xpath3ContextItem;  
       }
       else {
-          value = m_selectExpression.execute(xctxt, sourceNode, this);
+    	  String xpathPatternStr = m_selectExpression.getPatternString();
+    	  if ((sourceNode == DTM.NULL) && xpathPatternStr.startsWith("$")) {    		 
+    		  String varRef = null;
+    		  int idx = xpathPatternStr.indexOf('/');
+    		  if (idx == -1) {
+    			  idx = xpathPatternStr.indexOf('['); 	
+    		  }
+    		  if (idx != -1) {
+    			  varRef = xpathPatternStr.substring(0, idx);
+    		  }
+    		  else {
+    			  varRef = xpathPatternStr; 
+    		  }    			
+
+    		  XPath xpath2 = new XPath(varRef, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    		  xpath2.fixupVariables(m_vars, m_globals_size);
+    		  Expression expr2 = xpath2.getExpression();
+    		  XObject xObj2 = expr2.execute(xctxt);
+    		  if (xObj2 instanceof XMLNodeCursorImpl) {
+    			  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xObj2;
+    			  int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
+    			  DTM dtm = xctxt.getDTM(nodeHandle);    			   
+    			  sourceNode = dtm.getParent(nodeHandle);
+    			  isXPathExprStrCheck = true;
+    			  xctxt.pushCurrentNode(sourceNode);    			   
+    			  value = m_selectExpression.execute(xctxt, sourceNode, this);
+    		  }
+    		  else {
+    			  value = xObj2; 
+    		  }
+    	  }
+    	  else {
+             value = m_selectExpression.execute(xctxt, sourceNode, this);
+    	  }
       }
 
       if (transformer.getDebug()) {
@@ -328,7 +366,7 @@ public class ElemCopyOf extends ElemTemplateElement
                   xNodeSet.setTypeAttrForValidation(type);
                   if (validationStr != null) {
                 	  if (!isValidationStrOk(validationStr)) {
-                		 throw new TransformerException("XTTE1540 : An xsl:copy-of instruction's attribute 'validation' can only have one of following "
+                		 throw new TransformerException("XTTE1540 : An XSL copy-of instruction's attribute 'validation' can only have one of following "
                                                                                                           + "values : strict, lax, preserve, strip.", srcLocator);  
                 	  }
                   }
@@ -351,7 +389,7 @@ public class ElemCopyOf extends ElemTemplateElement
                 		}
                 	 }
                   }
-                  copyOfActionOnResultSequence(resultSequence, transformer, rhandler, xctxt, false);          
+                  copyOfActionOnResultSequence(resultSequence, transformer, rhandler, xctxt, false, this);          
                   break;
                 case XObject.CLASS_ARRAY : 
                   XPathArray xpathArray = (XPathArray)value;
@@ -367,7 +405,7 @@ public class ElemCopyOf extends ElemTemplateElement
                 		  }
                 	  }
                   }
-                  copyOfActionOnResultSequence(resultSequenceArr, transformer, rhandler, xctxt, false);
+                  copyOfActionOnResultSequence(resultSequenceArr, transformer, rhandler, xctxt, false, this);
                   break;
                 case XObject.CLASS_UNKNOWN :
                   if (value instanceof XMLAttribute) {
@@ -407,12 +445,12 @@ public class ElemCopyOf extends ElemTemplateElement
                 rhandler.characters(strVal.toCharArray(), 0, strVal.length());
             }
             else if (value instanceof XPathMap) {
-                throw new TransformerException("XTDE0450 : Cannot add a map to an xdm node tree, "
-                                                                             + "via xsl:copy-of instruction.", srcLocator);
+                throw new TransformerException("XTDE0450 : Cannot add an XSL map to an xdm node tree, "
+                                                                             + "via XSL copy-of instruction.", srcLocator);
             }
             else if (value instanceof XPathInlineFunction) {
-                throw new TransformerException("XTDE0450 : Cannot add a function item to an xdm node tree, "
-                                                                             + "via xsl:copy-of instruction.", srcLocator);
+                throw new TransformerException("XTDE0450 : Cannot add an XSL function item to an xdm node tree, "
+                                                                             + "via XSL copy-of instruction.", srcLocator);
             }
       }
 
@@ -423,6 +461,10 @@ public class ElemCopyOf extends ElemTemplateElement
     finally {
       if (transformer.getDebug()) {
          transformer.getTraceManager().emitTraceEndEvent(this);
+      }
+      
+      if (isXPathExprStrCheck) {
+    	 xctxt.popCurrentNode(); 
       }
     }
 
@@ -438,10 +480,14 @@ public class ElemCopyOf extends ElemTemplateElement
   public ElemTemplateElement appendChild(ElemTemplateElement newChild)
   {
 
-    error(XSLTErrorResources.ER_CANNOT_ADD,
-          new Object[]{ newChild.getNodeName(),
-                        this.getNodeName() });
-    return null;
+	  String lineNo = String.valueOf(newChild.getLineNumber());
+	  String columnNo = String.valueOf(newChild.getColumnNumber());
+
+	  error(XSLTErrorResources.ER_CANNOT_ADD,
+										  new Object[]{ newChild.getNodeName(),
+												  this.getNodeName(), lineNo, columnNo });
+	  
+	  return null;
   }
   
   /**
@@ -462,18 +508,18 @@ public class ElemCopyOf extends ElemTemplateElement
    * 
    * @param nodeSet											The supplied XMLNodeCursorImpl object
    * @param transformer										The supplied TransformerImpl object
-   * @param serializationHandler                            The supplied SerializationHandler object
+   * @param handler                                         The supplied SerializationHandler object
    * @param xctxt                                           The supplied XPathContext object
    * @throws TransformerException
    * @throws SAXException
    */
   public static void copyOfActionOnNodeSet(XMLNodeCursorImpl nodeSet, TransformerImpl transformer, 
-                                                                      SerializationHandler serializationHandler, XPathContext xctxt) 
+                                                                      SerializationHandler handler, XPathContext xctxt) 
                                                                                throws TransformerException, SAXException {	  	  	  	  
-	  	  
+	  
 	  DTMCursorIterator dtmIter = nodeSet.iter();
 
-      DTMTreeWalker tw = new TreeWalker2Result(transformer, serializationHandler);
+      DTMTreeWalker tw = new TreeWalker2Result(transformer, handler);
       int pos;
       
       DTM dtm1 = nodeSet.getDtm();
@@ -508,10 +554,10 @@ public class ElemCopyOf extends ElemTemplateElement
           else if (nodeType == DTM.ATTRIBUTE_NODE) {
         	  // Validate an XML attribute node if required by XSL stylesheet, and emit 
         	  // the node to XSL transform's output if validation succeeds.
-        	  validateAndEmitAttributeNode(nodeSet, serializationHandler, xctxt, pos, dtm);
+        	  validateAndEmitAttributeNode(nodeSet, handler, xctxt, pos, dtm);
           }
           else {
-              tw.traverse(pos);
+        	  tw.traverse(pos);
           }
       } 
   }
@@ -521,18 +567,78 @@ public class ElemCopyOf extends ElemTemplateElement
    */
   public static void copyOfActionOnResultSequence(ResultSequence resultSequence, TransformerImpl transformer, 
                                                   SerializationHandler serializationHandler, 
-                                                  XPathContext xctxt, boolean xslSeqProc) throws TransformerException, SAXException {
+                                                  XPathContext xctxt, boolean isXslSeqDelimEmit, 
+                                                  ElemTemplateElement elemTemplateElem) throws TransformerException, SAXException {
       char[] spaceCharArr = new char[1];      
       spaceCharArr[0] = SPACE_CHAR;
       
       String strVal = null;
       
-      for (int idx = 0; idx < resultSequence.size(); idx++) {             
+      int rSeqLength = resultSequence.size();      
+      for (int idx = 0; idx < rSeqLength; idx++) {             
          XObject xdmItem = resultSequence.item(idx);
+         if (xdmItem instanceof XMLNodeCursorImpl) {
+        	 XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xdmItem;
+        	 int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
+        	 DTM dtm = xctxt.getDTM(nodeHandle);
+        	 boolean flg1 = false;
+        	 if (dtm.getNodeType(nodeHandle) == DTM.ELEMENT_NODE) {
+        		 Node node = dtm.getNode(nodeHandle);
+        		 String nodeName = node.getNodeName();
+        		 try {
+        			 if (nodeName.startsWith("b_")) {
+        				 Integer int1 = Integer.valueOf(nodeName.substring(2));
+        				 Element elemNode = (Element)node;
+          				 xdmItem = new XString(elemNode.getTextContent());
+        			 }
+        			 else {
+        				 flg1 = true;
+        			 }
+        		 }
+        		 catch (Exception ex) {
+        			 flg1 = true;
+        		 }        		         		 
+        	 }
+        	 
+        	 if (flg1) {
+        		 xdmItem = resultSequence.item(idx);
+        		 xdmItem = xdmItem.getFresh();
+    		 }
+         }
+         else if (xdmItem instanceof XdmAttributeItem) {
+        	 XdmAttributeItem xdmAttributeItem = (XdmAttributeItem)xdmItem;
+        	 String localName = xdmAttributeItem.getAttrLocalName();
+        	 String namespace = xdmAttributeItem.getAttrNodeNs();
+        	 String attrValueStr = xdmAttributeItem.getAttrStrValue();
+        	         	 
+        	 String rawName = localName;
+        	 List<XMLNSDecl> prefixTable = (List<XMLNSDecl>)elemTemplateElem.getPrefixTable();
+    	     String nsPrefix = XslTransformEvaluationHelper.getPrefixFromNsUri(namespace, prefixTable);
+        	 if (nsPrefix != null) {
+        		rawName = nsPrefix + ":" + rawName;  
+        	 }
+        	 
+        	 serializationHandler.addAttribute(
+						        			 namespace,
+						        			 localName,
+						        			 rawName,
+						                     "CDATA",
+						                     attrValueStr, true);
+         }
+         else if (xdmItem instanceof XSQName) {
+        	 XSQName xsQName = (XSQName)xdmItem;
+        	 String localPart = xsQName.getLocalPart();
+        	 String nsUri = xsQName.getNamespaceUri();        	 
+        	 if (Constants.XSL_ERROR_NAMESACE.equals(nsUri)) {
+        	     List<XMLNSDecl> prefixTable = (List<XMLNSDecl>)elemTemplateElem.getPrefixTable();
+        	     String nsPrefix = XslTransformEvaluationHelper.getPrefixFromNsUri(nsUri, prefixTable);
+        	     xdmItem = new XString(nsPrefix + ":" + localPart);
+        	 }
+         }
          
          if ((xdmItem instanceof XBoolean) || (xdmItem instanceof XNumber) || (xdmItem instanceof XString)) {
              strVal = xdmItem.str();
-             if (xslSeqProc) {
+             if (isXslSeqDelimEmit) {
                  strVal = strVal + ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX;
                  serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
              }
@@ -545,7 +651,7 @@ public class ElemCopyOf extends ElemTemplateElement
          }
          else if (xdmItem instanceof XSAnyAtomicType) {
             strVal = ((XSAnyAtomicType)xdmItem).stringValue();
-            if (xslSeqProc) {
+            if (isXslSeqDelimEmit) {
                 strVal = strVal + ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX;
                 serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
             }
@@ -558,7 +664,7 @@ public class ElemCopyOf extends ElemTemplateElement
          }
          else if (xdmItem instanceof XSUntypedAtomic) {
              strVal = ((XSUntypedAtomic)xdmItem).stringValue();
-             if (xslSeqProc) {
+             if (isXslSeqDelimEmit) {
                  strVal = strVal + ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX;
                  serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
              }
@@ -571,7 +677,7 @@ public class ElemCopyOf extends ElemTemplateElement
           }
          else if (xdmItem instanceof XSUntyped) {
              strVal = ((XSUntyped)xdmItem).stringValue();
-             if (xslSeqProc) {
+             if (isXslSeqDelimEmit) {
                  strVal = strVal + ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX;
                  serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
              }
@@ -586,7 +692,8 @@ public class ElemCopyOf extends ElemTemplateElement
              copyOfActionOnNodeSet((XMLNodeCursorImpl)xdmItem, transformer, serializationHandler, xctxt);
          }
          else if (xdmItem.getType() == XObject.CLASS_RESULT_SEQUENCE) {                 
-             copyOfActionOnResultSequence((ResultSequence)xdmItem, transformer, serializationHandler, xctxt, xslSeqProc);
+             copyOfActionOnResultSequence((ResultSequence)xdmItem, transformer, serializationHandler, xctxt, 
+            		                                                                                      isXslSeqDelimEmit, elemTemplateElem);
          }
       } 
    }
@@ -633,9 +740,9 @@ public class ElemCopyOf extends ElemTemplateElement
 				  }
 			  }
 			  else {
-				  throw new TransformerException("FODC0005 : An xsl:copy-of instruction has 'type' attribute to request "
-																 				   + "validation of xsl:copy-of's result, but an XML input document has not "
-																				   + "been validated using schema supplied via xsl:import-schema instruction.", 
+				  throw new TransformerException("FODC0005 : An XSL copy-of instruction has 'type' attribute to request "
+																 				   + "validation of copy-of's result, but an XML input document has not "
+																				   + "been validated using schema supplied via XSL import-schema instruction.", 
 																				  srcLocator); 
 			  }
 		  }
@@ -654,18 +761,18 @@ public class ElemCopyOf extends ElemTemplateElement
 						  }
 					  }
 					  else {
-						  throw new TransformerException("FODC0005 : An xsl:copy-of instruction has 'validation' attribute with value '" + 
+						  throw new TransformerException("FODC0005 : An XSL copy-of instruction has 'validation' attribute with value '" + 
 																				     Constants.XS_VALIDATION_STRICT_STRING + "' to request validation of "
-																				     + "xsl:copy-of's result, but the schema used to validate "
+																				     + "copy-of's result, but the schema used to validate "
 																				     + "an XML input document doesn't have global element declaration for "
-																				     + "an element node produced by xsl:copy-of instruction.", srcLocator);
+																				     + "an element node produced by copy-of instruction.", srcLocator);
 					  }
 				  }
 				  else {
-					  throw new TransformerException("FODC0005 : An xsl:copy-of instruction has 'validation' attribute to request "
-																	 			    + "validation of xsl:copy-of's result, but an XML input "
+					  throw new TransformerException("FODC0005 : An XSL copy-of instruction has 'validation' attribute to request "
+																	 			    + "validation of copy-of's result, but an XML input "
 																				    + "document has not been validated using schema supplied "
-																				    + "via xsl:import-schema instruction.", srcLocator); 
+																				    + "via XSL import-schema instruction.", srcLocator); 
 				  }
 			  }
 			  else if ((Constants.XS_VALIDATION_LAX_STRING).equals(validation)) {
@@ -698,7 +805,7 @@ public class ElemCopyOf extends ElemTemplateElement
 	  catch (Exception ex) {
 		  String errMesg = ex.getMessage();
 		  throw new TransformerException("XTTE1540 : An error occured while evaluating an XSL stylesheet "
-																				  + "xsl:copy-of instruction." 
+																				  + "copy-of instruction." 
 																				  + ((errMesg != null) ? " " + errMesg : ""), srcLocator);
 	  }
 	  finally {
@@ -739,30 +846,30 @@ public class ElemCopyOf extends ElemTemplateElement
 							  xsSimpleTypeDecl.validate(attrStrValue, null, null);
 						  } 
 						  catch (InvalidDatatypeValueException ex) {							
-							  throw new TransformerException("FODC0005 : An attribute '" + attrLocalName + "' that has to be emitted by xsl:copy-of "
-																						  + "instruction, has a value which is not valid with type '" + 
-																						  type.getLocalName() + "' referred by xsl:copy-of instruction's "
+							  throw new TransformerException("FODC0005 : An XML attribute '" + attrLocalName + "' that has to be emitted by XSL copy-of "
+																						  + "instruction, has a value that is not valid with type '" + 
+																						  type.getLocalName() + "' referred by copy-of instruction's "
 																						  + "'type' attribute. " + ex.getMessage(), srcLocator);
 						  }
 					  }
 					  else {
-						  throw new TransformerException("FODC0005 : An xsl:copy-of instruction refers a type '" + type.getLocalName() + 
-																						  "' that is not a schema simpleType, which cannot be used to validate "
+						  throw new TransformerException("FODC0005 : An XSL copy-of instruction refers a type '" + type.getLocalName() + 
+																						  "' that is not a schema simpleType, that cannot be used to validate "
 																						  + "an attribute value.", srcLocator);
 					  }
 				  }
 				  else {
-					  throw new TransformerException("FODC0005 : An xsl:copy-of instruction has 'type' attribute with "
+					  throw new TransformerException("FODC0005 : An XSL copy-of instruction has 'type' attribute with "
 																						  + "value '" + type.getLocalName() + "' to request "
-																						  + "validation of xsl:copy-of's result, but the schema referred via "
-																						  + "xsl:import-schema instruction does'nt have a global type definition "
+																						  + "validation of copy-of's result, but the schema referred via "
+																						  + "XSL import-schema instruction does'nt have a global type definition "
 																						  + "with name '" + type.getLocalName() + "'.", srcLocator);
 				  }
 			  }
 			  else {
-				  throw new TransformerException("FODC0005 : An xsl:copy-of instruction has 'type' attribute to request "
-																						  + "validation of xsl:copy-of's result, but an XML input document has not "
-																						  + "been validated using schema supplied via xsl:import-schema instruction.", 
+				  throw new TransformerException("FODC0005 : An XSL copy-of instruction has 'type' attribute to request "
+																						  + "validation of copy-of's result, but an XML input document has not "
+																						  + "been validated using schema supplied via XSL import-schema instruction.", 
 																						  srcLocator); 
 			  } 
 		  }
@@ -778,22 +885,22 @@ public class ElemCopyOf extends ElemTemplateElement
 							  xsSimpleTypeDecl.validate(attrStrValue, null, null);
 						  } 
 						  catch (InvalidDatatypeValueException ex) {							
-							  throw new TransformerException("FODC0005 : An attribute '" + attrLocalName + "' that has to be emitted by xsl:copy-of "
-																							  + "instruction, has a value which is not valid with attribute "
+							  throw new TransformerException("FODC0005 : An XML attribute '" + attrLocalName + "' that has to be emitted by XSL copy-of "
+																							  + "instruction, has a value that is not valid with attribute "
 																							  + "declaration available in the schema." + ex.getMessage(), 
 																							  srcLocator);
 						  }
 					  }
 					  else {
-						  throw new TransformerException("FODC0005 : An attribute '" + attrLocalName + "' that has to be emitted by xsl:copy-of "
+						  throw new TransformerException("FODC0005 : An XML attribute '" + attrLocalName + "' that has to be emitted by XSL copy-of "
 																							  + "instruction, doesn't have a corresponding attribute declaration in the "
 																							  + "schema to validate with. The validation 'strict' has been requested.", srcLocator);
 					  }
 				  }
 				  else {
-					  throw new TransformerException("XTTE1540 : An xsl:copy-of instruction's attribute \"validation\" has value 'strict', but "
+					  throw new TransformerException("XTTE1540 : An XSL copy-of instruction's attribute \"validation\" has value 'strict', but "
 																									  + "an XML input document has not been validated with a schema "
-																									  + "using xsl:import-schema instruction.", srcLocator);
+																									  + "using XSL import-schema instruction.", srcLocator);
 				  }
 			  }
 			  else if ((Constants.XS_VALIDATION_LAX_STRING).equals(validation)) {
@@ -806,8 +913,8 @@ public class ElemCopyOf extends ElemTemplateElement
 							  xsSimpleTypeDecl.validate(attrStrValue, null, null);
 						  } 
 						  catch (InvalidDatatypeValueException ex) {							
-							  throw new TransformerException("FODC0005 : An attribute '" + attrLocalName + "' that has to be emitted by xsl:copy-of "
-																									  + "instruction, has a value which is not valid with attribute "
+							  throw new TransformerException("FODC0005 : An XML attribute '" + attrLocalName + "' that has to be emitted by XSL copy-of "
+																									  + "instruction, has a value that is not valid with attribute "
 																									  + "declaration available in the schema." + ex.getMessage(), 
 																									  srcLocator);
 						  }

@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.compiler;
 
 import java.util.Hashtable;
@@ -765,6 +762,24 @@ public class Keywords
   
   /** normalize-unicode function string. */
   public static final String FUNC_NORMALIZE_UNICODE = "normalize-unicode";
+  
+  /** error function string. */
+  public static final String FUNC_ERROR = "error";
+  
+  /** random-number-generator function string. */
+  public static final String FUNC_RANDOM_NUMBER_GENERATOR = "random-number-generator";
+  
+  /** adjust-dateTime-to-timezone function string. */
+  public static final String FUNC_ADJUST_DATETIME_TO_TIMEZONE = "adjust-dateTime-to-timezone";
+  
+  /** adjust-date-to-timezone function string. */
+  public static final String FUNC_ADJUST_DATE_TO_TIMEZONE = "adjust-date-to-timezone";
+  
+  /** adjust-time-to-timezone function string. */
+  public static final String FUNC_ADJUST_TIME_TO_TIMEZONE = "adjust-time-to-timezone";
+  
+  /** format-integer function string. */
+  public static final String FUNC_FORMAT_INTEGER = "format-integer";
   
   // Proprietary, built in functions
 

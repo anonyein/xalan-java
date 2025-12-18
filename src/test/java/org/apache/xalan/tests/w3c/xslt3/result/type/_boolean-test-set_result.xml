@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-09-16T13:25:22Z" fail="25" name="boolean" pass="87" skipped="0" statusUnknown="0" totalRun="112">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-12-10T16:52:23Z" fail="1" name="boolean" pass="104" skipped="7" statusUnknown="0" totalRun="105">
    <testResult status="pass" testName="boolean-001"/>
    <testResult status="pass" testName="boolean-002"/>
    <testResult status="pass" testName="boolean-003"/>
@@ -16,7 +16,7 @@
    <testResult status="pass" testName="boolean-015"/>
    <testResult status="pass" testName="boolean-016"/>
    <testResult status="pass" testName="boolean-017"/>
-   <testResult status="fail" testName="boolean-018"/>
+   <testResult status="pass" testName="boolean-018"/>
    <testResult status="pass" testName="boolean-019"/>
    <testResult status="pass" testName="boolean-020"/>
    <testResult status="pass" testName="boolean-021"/>
@@ -30,7 +30,7 @@
    <testResult status="pass" testName="boolean-029"/>
    <testResult status="pass" testName="boolean-030"/>
    <testResult status="pass" testName="boolean-031"/>
-   <testResult status="pass" testName="boolean-032"/>
+   <testResult feature="backwards_compatibility" status="skipped" testName="boolean-032"/>
    <testResult status="pass" testName="boolean-033"/>
    <testResult status="pass" testName="boolean-034"/>
    <testResult status="pass" testName="boolean-035"/>
@@ -38,15 +38,15 @@
    <testResult status="pass" testName="boolean-037"/>
    <testResult status="pass" testName="boolean-038"/>
    <testResult status="pass" testName="boolean-039"/>
-   <testResult status="fail" testName="boolean-040"/>
-   <testResult status="fail" testName="boolean-041"/>
-   <testResult status="fail" testName="boolean-042"/>
-   <testResult status="fail" testName="boolean-043"/>
-   <testResult status="fail" testName="boolean-044"/>
+   <testResult status="pass" testName="boolean-040"/>
+   <testResult status="pass" testName="boolean-041"/>
+   <testResult status="pass" testName="boolean-042"/>
+   <testResult status="pass" testName="boolean-043"/>
+   <testResult status="pass" testName="boolean-044"/>
    <testResult status="pass" testName="boolean-045"/>
    <testResult status="pass" testName="boolean-046"/>
    <testResult status="pass" testName="boolean-047"/>
-   <testResult status="fail" testName="boolean-048"/>
+   <testResult status="pass" testName="boolean-048"/>
    <testResult status="pass" testName="boolean-049"/>
    <testResult status="pass" testName="boolean-050"/>
    <testResult status="pass" testName="boolean-051"/>
@@ -64,31 +64,30 @@
    <testResult status="pass" testName="boolean-063"/>
    <testResult status="pass" testName="boolean-064"/>
    <testResult status="pass" testName="boolean-065"/>
-   <testResult status="fail" testName="boolean-066"/>
-   <testResult status="fail" testName="boolean-067"/>
-   <testResult status="fail" testName="boolean-068"/>
-   <testResult status="fail" testName="boolean-069"/>
+   <testResult status="pass" testName="boolean-066"/>
+   <testResult status="pass" testName="boolean-067"/>
+   <testResult status="pass" testName="boolean-068"/>
+   <testResult feature="backwards_compatibility" status="skipped" testName="boolean-069"/>
    <testResult status="pass" testName="boolean-070"/>
-   <testResult status="fail" testName="boolean-071"/>
-   <testResult status="fail" testName="boolean-072"/>
-   <testResult status="fail" testName="boolean-073"/>
-   <testResult status="fail" testName="boolean-074"/>
+   <testResult status="pass" testName="boolean-071"/>
+   <testResult status="pass" testName="boolean-072"/>
+   <testResult status="pass" testName="boolean-073"/>
+   <testResult status="pass" testName="boolean-074"/>
    <testResult status="pass" testName="boolean-075"/>
-   <testResult status="fail" testName="boolean-076"/>
-   <testResult status="fail" testName="boolean-077"/>
-   <testResult status="fail" testName="boolean-078">
-      <outResult/>
-   </testResult>
-   <testResult status="fail" testName="boolean-079">
-      <outResult/>
-   </testResult>
+   <testResult status="pass" testName="boolean-076"/>
+   <testResult status="pass" testName="boolean-077"/>
+   <testResult status="pass" testName="boolean-078"/>
+   <testResult status="pass" testName="boolean-079"/>
    <testResult status="pass" testName="boolean-080"/>
-   <testResult status="pass" testName="boolean-081"/>
+   <testResult feature="backwards_compatibility" status="skipped" testName="boolean-081"/>
    <testResult status="fail" testName="boolean-082">
-      <outResult/>
+      <outResult>
+         <errTrace>XPST0003 : An XPath expression compare($non_blank_jcodes/dd:hcfa-jcode[position() &lt; $this_pos]/text(), ./text()) = 0 has syntax error. Unknown op code : 0.</errTrace>
+         <errTrace>java.lang.ArrayIndexOutOfBoundsException</errTrace>
+      </outResult>
    </testResult>
-   <testResult status="pass" testName="boolean-083"/>
-   <testResult status="pass" testName="boolean-084"/>
+   <testResult feature="backwards_compatibility" status="skipped" testName="boolean-083"/>
+   <testResult feature="backwards_compatibility" status="skipped" testName="boolean-084"/>
    <testResult status="pass" testName="boolean-085"/>
    <testResult status="pass" testName="boolean-086"/>
    <testResult status="pass" testName="boolean-087"/>
@@ -99,16 +98,12 @@
    <testResult status="pass" testName="boolean-092"/>
    <testResult status="pass" testName="boolean-093"/>
    <testResult status="pass" testName="boolean-094"/>
-   <testResult status="pass" testName="boolean-095"/>
-   <testResult status="pass" testName="boolean-096"/>
-   <testResult status="fail" testName="boolean-097">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;true&lt;/out&gt;</outResult>
-   </testResult>
-   <testResult status="fail" testName="boolean-098">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;true&lt;/out&gt;</outResult>
-   </testResult>
-   <testResult status="fail" testName="boolean-099"/>
-   <testResult status="fail" testName="boolean-100"/>
+   <testResult feature="backwards_compatibility" status="skipped" testName="boolean-095"/>
+   <testResult feature="backwards_compatibility" status="skipped" testName="boolean-096"/>
+   <testResult status="pass" testName="boolean-097"/>
+   <testResult status="pass" testName="boolean-098"/>
+   <testResult status="pass" testName="boolean-099"/>
+   <testResult status="pass" testName="boolean-100"/>
    <testResult status="pass" testName="boolean-101"/>
    <testResult status="pass" testName="boolean-102"/>
    <testResult status="pass" testName="boolean-103"/>
@@ -117,7 +112,7 @@
    <testResult status="pass" testName="boolean-106"/>
    <testResult status="pass" testName="boolean-107"/>
    <testResult status="pass" testName="boolean-108"/>
-   <testResult status="fail" testName="boolean-109"/>
+   <testResult status="pass" testName="boolean-109"/>
    <testResult status="pass" testName="boolean-110"/>
    <testResult status="pass" testName="boolean-111"/>
    <testResult status="pass" testName="boolean-112"/>

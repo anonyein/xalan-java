@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
 
 import java.text.DecimalFormat;
@@ -56,7 +53,8 @@ import org.xml.sax.SAXException;
 import xml.xpath31.processor.types.XSNumericType;
 
 /**
- * Implement xsl:number.
+ * Implementation of XSLT 3.0 xsl:number instruction. 
+ * 
  * <pre>
  * <!ELEMENT xsl:number EMPTY>
  * <!ATTLIST xsl:number
@@ -67,11 +65,12 @@ import xml.xpath31.processor.types.XSNumericType;
  *    format %avt; '1'
  *    lang %avt; #IMPLIED
  *    letter-value %avt; #IMPLIED
+ *    ordinal %avt; #IMPLIED
  *    grouping-separator %avt; #IMPLIED
  *    grouping-size %avt; #IMPLIED
  * >
  * </pre>
- * @see <a href="http://www.w3.org/TR/xslt#number">number in XSLT Specification</a>
+ * 
  * @xsl.usage advanced
  */
 public class ElemNumber extends ElemTemplateElement 
@@ -336,6 +335,32 @@ public class ElemNumber extends ElemTemplateElement
   {
     return m_format_avt;
   }
+  
+  /**
+   * String value used instead of using m_format_avt, for 
+   * use by XPath function fn:format-integer. 
+   */
+  private String m_formatRawString = null;
+  
+  /**
+   * Method definition, to set the value of class field 
+   * m_formatRawString used by XPath function fn:format-integer. 
+   * 
+   * @param str					     The supplied 'format' string raw value
+   */
+  public void setFormatRawValue(String str) {
+	 m_formatRawString = str;
+  }
+  
+  /**
+   * Get the value of 'format' string raw value, used by 
+   * XPath function fn:format-integer. 
+   * 
+   * @return				   The 'format' string raw value 
+   */
+  public String getFormatRawValue() {
+	 return m_formatRawString; 
+  }
 
   /**
    * When numbering with an alphabetic sequence, the lang attribute
@@ -374,6 +399,32 @@ public class ElemNumber extends ElemTemplateElement
   public AVT getLang()
   {
     return m_lang_avt;
+  }
+  
+  /**
+   * Locale value used instead of using m_lang_avt, for 
+   * use by XPath function fn:format-integer. 
+   */
+  private Locale m_locale = null;
+  
+  /**
+   * Method definition, to set the value of class field 
+   * m_locale used by XPath function fn:format-integer. 
+   * 
+   * @param locale					The supplied Locale value
+   */
+  public void setLocale(Locale locale) {
+	 m_locale = locale;  
+  }
+  
+  /**
+   * Get the value of Locale, use by XPath function 
+   * fn:format-integer. 
+   * 
+   * @return				       The Locale value 
+   */
+  public Locale getLocale() {
+	 return m_locale; 
   }
 
   /**
@@ -476,8 +527,29 @@ public class ElemNumber extends ElemTemplateElement
   }
 
   /**
-   * Shouldn't this be in the transformer?  Big worries about threads...
+   * This class field, represents the value of "ordinal" 
+   * attribute.
    */
+  private AVT m_ordinal_avt;
+
+  /**
+   * Set the value of "ordinal" attribute.
+   *
+   * @param ordinalAvt   Value of the "ordinal" attribute
+   */
+  public void setOrdinal(AVT ordinalAvt)
+  {
+	  m_ordinal_avt = ordinalAvt;
+  }
+
+  /**
+   * Get the value of "ordinal" attribute.
+   *  
+   * @return		  The value of "ordinal" attribute 
+   */
+  public AVT getOrdinal() {
+	  return m_ordinal_avt;
+  }
   
   /**
    * This class field, represents the value of "xpath-default-namespace" 
@@ -625,11 +697,29 @@ public class ElemNumber extends ElemTemplateElement
 		  transformer.getTraceManager().emitTraceEvent(this);
 
 	  XPathContext xctxt = transformer.getXPathContext();
+	  
+	  SourceLocator srcLocator = xctxt.getSAXLocator(); 
 
-	  SourceLocator srcLocator = xctxt.getSAXLocator();
-
-	  int sourceNode = transformer.getXPathContext().getCurrentNode();
-	  String countString = getCountString(transformer, sourceNode);
+	  int sourceNode = xctxt.getCurrentNode();
+	  
+	  boolean isOrdinal = false;	  
+	  if (m_ordinal_avt != null) {
+		  String ordinalStrValue = m_ordinal_avt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext());
+		  ordinalStrValue = ordinalStrValue.trim();
+		  if ("no".equals(ordinalStrValue) || "0".equals(ordinalStrValue) || "false".equals(ordinalStrValue)) {
+			  isOrdinal = false; 
+		  }
+		  else if ("yes".equals(ordinalStrValue) || "1".equals(ordinalStrValue) || "true".equals(ordinalStrValue)) {
+			  isOrdinal = true;
+		  }
+		  else {
+              throw new TransformerException("XTSE0870 : An XSL number instruction 'ordinal' attribute value '" + ordinalStrValue + "' "
+              		                                                                                + "is invalid. The allowed values "
+              		                                                                                + "are no, 0, false, yes, 1, true.", srcLocator);
+		  }
+	  }
+	  
+	  String countString = getCountString(transformer, sourceNode, isOrdinal);
 
 	  try
 	  {
@@ -658,13 +748,14 @@ public class ElemNumber extends ElemTemplateElement
    */
   public ElemTemplateElement appendChild(ElemTemplateElement newChild)
   {
+	  String lineNo = String.valueOf(newChild.getLineNumber());
+	  String columnNo = String.valueOf(newChild.getColumnNumber());
 
-    error(XSLTErrorResources.ER_CANNOT_ADD,
-          new Object[]{ newChild.getNodeName(),
-                        this.getNodeName() });  //"Can not add " +((ElemTemplateElement)newChild).m_elemName +
+	  error(XSLTErrorResources.ER_CANNOT_ADD,
+										   new Object[]{ newChild.getNodeName(),
+												    this.getNodeName(), lineNo, columnNo });
 
-    //" to " + this.m_elemName);
-    return null;
+	  return null;
   }
 
   /**
@@ -855,13 +946,14 @@ public class ElemNumber extends ElemTemplateElement
    * parameters set up by the xsl:number attributes.
    * @param transformer non-null reference to the the current transform-time state.
    * @param sourceNode The source node being counted.
+   * @param isOrdinal 
    *
    * @return The count of nodes
    *
    * @throws TransformerException
    */
-  String getCountString(TransformerImpl transformer, int sourceNode)
-          throws TransformerException
+  String getCountString(TransformerImpl transformer, int sourceNode, 
+		                                                         boolean isOrdinal) throws TransformerException
   {
 
     long[] list = null;
@@ -882,16 +974,33 @@ public class ElemNumber extends ElemTemplateElement
       }
       
       //According to Errata E24
-      double d_count = java.lang.Math.floor(countObj.num()+ 0.5);
-      if (Double.isNaN(d_count)) return "NaN";
-      else if (d_count < 0 && Double.isInfinite(d_count)) return "-Infinity";
-      else if (Double.isInfinite(d_count)) return "Infinity";
-      else if (d_count == 0) return "0";
-      else{
-              long count = (long)d_count;
-              list = new long[1];
-              list[0] = count;              
+      
+      double num1 = 0.0;
+      
+      try {
+         num1 = countObj.num();
+         if (num1 == 0.0) {
+        	 long count = (long)num1;
+        	 list = new long[1];
+        	 list[0] = count;  	 
+         }
+         else {
+        	 double d_count = java.lang.Math.floor(num1 + 0.5);
+        	 
+        	 if (Double.isNaN(d_count)) return "NaN";
+        	 else if (d_count < 0 && Double.isInfinite(d_count)) return "-Infinity";
+        	 else if (Double.isInfinite(d_count)) return "Infinity";
+        	 else {
+        		 long count = (long)d_count;
+        		 list = new long[1];
+        		 list[0] = count;              
+        	 }
+         }
       }
+      catch (TransformerException ex) {
+    	 return "NaN"; 
+      }
+      
     }
     else
     {
@@ -922,7 +1031,7 @@ public class ElemNumber extends ElemTemplateElement
     }
 
     return (null != list)
-           ? formatNumberList(transformer, list, sourceNode) : "";
+           ? formatNumberList(transformer, list, sourceNode, isOrdinal) : "";
   }
 
   /**
@@ -1120,38 +1229,34 @@ public class ElemNumber extends ElemTemplateElement
           throws TransformerException
   {
 
-    Locale locale = null;
+	  Locale locale = null;
 
-    if (null != m_lang_avt)
-    {
-      XPathContext xctxt = transformer.getXPathContext();
-      String langValue = m_lang_avt.evaluate(xctxt, contextNode, this);
+	  if (null != m_lang_avt)
+	  {
+		  XPathContext xctxt = transformer.getXPathContext();
+		  String langValue = m_lang_avt.evaluate(xctxt, contextNode, this);
 
-      if (null != langValue)
-      {
+		  if (null != langValue)
+		  {
 
-        // Not really sure what to do about the country code, so I use the
-        // default from the system.
-        // TODO: fix xml:lang handling.
-        locale = new Locale(langValue.toUpperCase(), "");
+			  // Not really sure what to do about the country code, so I use the
+			  // default from the system.
+			  // TODO: fix xml:lang handling.
+			  locale = new Locale(langValue.toUpperCase(), "");
 
-        //Locale.getDefault().getDisplayCountry());
-        if (null == locale)
-        {
-          transformer.getMsgMgr().warn(this, null, xctxt.getDTM(contextNode).getNode(contextNode),
-                                       XSLTErrorResources.WG_LOCALE_NOT_FOUND,
-                                       new Object[]{ langValue });  //"Warning: Could not find locale for xml:lang="+langValue);
+			  //Locale.getDefault().getDisplayCountry());        
+		  }
+	  }
+	  else if (m_locale != null) {
+		  // To be used by XPath function fn:format-integer		  
+		  locale = m_locale; 
+	  }
+	  else
+	  {
+		  locale = Locale.getDefault();
+	  }
 
-          locale = Locale.getDefault();
-        }
-      }
-    }
-    else
-    {
-      locale = Locale.getDefault();
-    }
-
-    return locale;
+	  return locale;
   }
 
   /**
@@ -1233,6 +1338,7 @@ public class ElemNumber extends ElemTemplateElement
    * @param transformer non-null reference to the the current transform-time state.
    * @param list Array of one or more long integer numbers.
    * @param contextNode The node that "." expresses.
+   * @param isOrdinal 
    * @return String that represents list according to
    * %conversion-atts; attributes.
    * TODO: Optimize formatNumberList so that it caches the last count and
@@ -1240,8 +1346,8 @@ public class ElemNumber extends ElemTemplateElement
    *
    * @throws TransformerException
    */
-  String formatNumberList(
-          TransformerImpl transformer, long[] list, int contextNode)
+  public String formatNumberList(
+          TransformerImpl transformer, long[] list, int contextNode, boolean isOrdinal)
             throws TransformerException
   {
 
@@ -1268,6 +1374,10 @@ public class ElemNumber extends ElemTemplateElement
         ? m_format_avt.evaluate(
         transformer.getXPathContext(), contextNode, this) : null;
 
+      if ((null == formatValue) && (m_formatRawString != null)) {
+    	 formatValue = m_formatRawString; 
+      }
+      
       if (null == formatValue)
         formatValue = "1";
 
@@ -1279,18 +1389,23 @@ public class ElemNumber extends ElemTemplateElement
       for (int i = 0; i < nNumbers; i++)
       {
 
+    	char prevFormatTokenChar = '0';
+    	  
         // Loop to the next digit, letter, or separator.
         if (formatTokenizer.hasMoreTokens())
         {
           formatToken = formatTokenizer.nextToken();
 
           // If the first character of this token is a character or digit, then 
-          // it is a number format directive.
+          // it is a number format directive.                    
           if (Character.isLetterOrDigit(
                   formatToken.charAt(formatToken.length() - 1)))
           {
             numberWidth = formatToken.length();
             numberType = formatToken.charAt(numberWidth - 1);
+            if (numberWidth > 1) {
+               prevFormatTokenChar = formatToken.charAt(numberWidth - 2); 
+            }
           }
 
           // If there is a number format directive ahead, 
@@ -1349,7 +1464,7 @@ public class ElemNumber extends ElemTemplateElement
           formattedNumber.append(lastSep);
 
         getFormattedNumber(transformer, contextNode, numberType, numberWidth,
-                           list[i], formattedNumber);
+                           list[i], prevFormatTokenChar, formattedNumber, isOrdinal);
 
         isFirstToken = false;  // After the first pass, this should be false
       }  // end for loop
@@ -1394,14 +1509,16 @@ public class ElemNumber extends ElemTemplateElement
    * @param numberType Type to format to
    * @param numberWidth Maximum length of formatted number
    * @param listElement Number to format
+   * @param prevFormatTokenChar
    * @param formattedNumber Buffer to store formatted number
+   * @param isOrdinal 
    *
    * @throws javax.xml.transform.TransformerException
    */
   private void getFormattedNumber(
           TransformerImpl transformer, int contextNode, 
           char numberType, int numberWidth, long listElement, 
-          FastStringBuffer formattedNumber)
+          char prevFormatTokenChar, FastStringBuffer formattedNumber, boolean isOrdinal)
             throws javax.xml.transform.TransformerException
   {
 
@@ -1458,6 +1575,14 @@ public class ElemNumber extends ElemTemplateElement
         long2roman(listElement, true).toLowerCase(
           getLocale(transformer, contextNode)));
       break;
+    case 'w' :      
+      EnglishNumberToWords englishNumberToWords = new EnglishNumberToWords(numberType + "", prevFormatTokenChar, isOrdinal);
+      formattedNumber.append(englishNumberToWords.convert(listElement));
+      break;
+    case 'W' :
+        EnglishNumberToWords englishNumberToWords2 = new EnglishNumberToWords(numberType + "", '0', isOrdinal);
+        formattedNumber.append(englishNumberToWords2.convert(listElement));
+        break;      
     case 0x3042 :
     {
 
@@ -1640,18 +1765,42 @@ public class ElemNumber extends ElemTemplateElement
 
       break;
     }
-    default :  // "1"
-      DecimalFormat formatter = getNumberFormatter(transformer, contextNode);
-      String padString = formatter == null ? String.valueOf(0) : formatter.format(0);    
-      String numString = formatter == null ? String.valueOf(listElement) : formatter.format(listElement);
-      int nPadding = numberWidth - numString.length();
+    default :  // "1"                  
+      if (m_locale == null) {
+    	  DecimalFormat formatter = getNumberFormatter(transformer, contextNode);      
+          String padString = formatter == null ? String.valueOf(0) : formatter.format(0);    
+          String numString = formatter == null ? String.valueOf(listElement) : formatter.format(listElement);
+          int nPadding = numberWidth - numString.length();
 
-      for (int k = 0; k < nPadding; k++)
-      {
-        formattedNumber.append(padString);
+          for (int k = 0; k < nPadding; k++)
+          {
+            formattedNumber.append(padString);
+          }
+
+          formattedNumber.append(numString); 
       }
-
-      formattedNumber.append(numString);
+      else if (!isOrdinal) {
+    	  // Used for XPath function call fn:format-integer    	  
+    	  formattedNumber.append(String.valueOf(listElement));
+      }
+      else {
+    	  // Used for XPath function call fn:format-integer    	  
+    	  String[] suffixes = new String[] {"th", "st", "nd", "rd"};
+    	  int normalized = (int)(listElement % 100);
+    	  String str1 = null;
+    	  int num1 = ((normalized - 20) % 10);
+    	  if ((num1 >= 0) && (num1 < 4)) {
+    		 str1 = suffixes[num1];
+    	  }
+    	  else if ((normalized >= 0) && (normalized < 4)) {
+    		 str1 = suffixes[normalized]; 
+    	  }
+    	  else {
+    		 str1 = suffixes[0];  
+    	  }
+    	  
+    	  formattedNumber.append(String.valueOf(listElement) + str1);
+      }
     }
   }
   
@@ -2155,6 +2304,16 @@ public class ElemNumber extends ElemTemplateElement
 
       return str.substring(start, currentPosition);
     }
+    
+    public String peekNextToken() {
+      String result = null;
+      
+      if ((currentPosition + 1) < maxPosition) {
+    	 result = str.substring(currentPosition, currentPosition + 1); 
+      }
+      
+      return result;
+    }
 
     /**
      * Tells if there is a digit or a letter character ahead.
@@ -2240,7 +2399,415 @@ public class ElemNumber extends ElemTemplateElement
       return count;
     }
   }  // end NumberFormatStringTokenizer
+  
+  
+  /**
+   * Class definition, to do XSL transformation of integer and 
+   * long values to their word representation.
+   * 
+   * Ref: The code of this class, is primarily referred from, an answer 
+   *      available on https://stackoverflow.com forum with few changes, 
+   *      for XSLT 3.0 requirements.
+   * 
+   */
+  class EnglishNumberToWords {
+
+	  // Cardinal number words
+	  private final String[] m_tensNames = {
+									    "",
+									    " Ten",
+									    " Twenty",
+									    " Thirty",
+									    " Forty",
+									    " Fifty",
+									    " Sixty",
+									    " Seventy",
+									    " Eighty",
+									    " Ninety"
+	  };
+
+	  // Cardinal number words
+	  private final String[] m_numNames = {
+									    "",
+									    " One",
+									    " Two",
+									    " Three",
+									    " Four",
+									    " Five",
+									    " Six",
+									    " Seven",
+									    " Eight",
+									    " Nine",
+									    " Ten",
+									    " Eleven",
+									    " Twelve",
+									    " Thirteen",
+									    " Fourteen",
+									    " Fifteen",
+									    " Sixteen",
+									    " Seventeen",
+									    " Eighteen",
+									    " Nineteen"
+	  };
+	  
+	  private String m_formatToken;
+	  
+	  private char m_prevFormatTokenChar;
+	  
+	  private boolean m_isOrdinal; 
+
+	  /**
+	   * Class constructor.
+	   */
+	  public EnglishNumberToWords(String formatToken, char prevFormatTokenChar, boolean isOrdinal) {
+		  m_formatToken = formatToken;
+		  m_prevFormatTokenChar = prevFormatTokenChar;		  
+		  m_isOrdinal = isOrdinal;
+	  }
+
+	  public String convertLessThanOneThousand(int number) {		  		  
+		  String soFar;
+
+		  if (number % 100 < 20){
+			  soFar = m_numNames[number % 100];
+			  number /= 100;
+		  }
+		  else {
+			  soFar = m_numNames[number % 10];
+			  number /= 10;
+
+			  soFar = m_tensNames[number % 10] + soFar;
+			  number /= 10;
+		  }
+		  
+
+		  if (number == 0) return soFar;
+		  
+		  return m_numNames[number] + " Hundred and" + soFar;
+	  }
 
 
+	  public String convert(long number) {
+		  // 0 to 999 999 999 999
+		  
+		  String resultStr = null;
+		  
+		  if (number == 0) {			 
+			 if (m_prevFormatTokenChar == 'W') {
+				 if (m_formatToken.equals("w")) {
+					if (!m_isOrdinal) {
+					   resultStr = "Zero";
+					}
+					else {
+					   resultStr = "Zeroth";
+					}									    
+				 }
+			 }
+			 else if (m_formatToken.equals("w")) {
+				 if (!m_isOrdinal) {
+					 resultStr = "zero";
+				 }
+				 else {
+					 resultStr = "zeroth";
+				 }
+			 }
+             else if (m_formatToken.equals("W")) {
+            	 if (!m_isOrdinal) {
+					 resultStr = "ZERO";
+				 }
+				 else {
+					 resultStr = "ZEROTH";
+				 } 
+			 }
+			 
+			 return resultStr;
+		  }
+		  else if (number == 1) {			 
+			  if (m_prevFormatTokenChar == 'W') {
+				  if (m_formatToken.equals("w")) {
+					  if (!m_isOrdinal) {
+						  resultStr = "One";
+					  }
+					  else {
+						  resultStr = "First";
+					  }									    
+				  }
+			  }
+			  else if (m_formatToken.equals("w")) {
+				  if (!m_isOrdinal) {
+					  resultStr = "one";
+				  }
+				  else {
+					  resultStr = "first";
+				  }
+			  }
+			  else if (m_formatToken.equals("W")) {
+				  if (!m_isOrdinal) {
+					  resultStr = "ONE";
+				  }
+				  else {
+					  resultStr = "FIRST";
+				  } 
+			  }
+
+			  return resultStr;
+		  }
+		  else if (number == 2) {			 
+			  if (m_prevFormatTokenChar == 'W') {
+				  if (m_formatToken.equals("w")) {
+					  if (!m_isOrdinal) {
+						  resultStr = "Two";
+					  }
+					  else {
+						  resultStr = "Second";
+					  }									    
+				  }
+			  }
+			  else if (m_formatToken.equals("w")) {
+				  if (!m_isOrdinal) {
+					  resultStr = "two";
+				  }
+				  else {
+					  resultStr = "second";
+				  }
+			  }
+			  else if (m_formatToken.equals("W")) {
+				  if (!m_isOrdinal) {
+					  resultStr = "TWO";
+				  }
+				  else {
+					  resultStr = "SECOND";
+				  } 
+			  }
+
+			  return resultStr;
+		  }
+		  else if (number == 3) {			 
+			  if (m_prevFormatTokenChar == 'W') {
+				  if (m_formatToken.equals("w")) {
+					  if (!m_isOrdinal) {
+						  resultStr = "Three";
+					  }
+					  else {
+						  resultStr = "Third";
+					  }									    
+				  }
+			  }
+			  else if (m_formatToken.equals("w")) {
+				  if (!m_isOrdinal) {
+					  resultStr = "three";
+				  }
+				  else {
+					  resultStr = "third";
+				  }
+			  }
+			  else if (m_formatToken.equals("W")) {
+				  if (!m_isOrdinal) {
+					  resultStr = "THREE";
+				  }
+				  else {
+					  resultStr = "THIRD";
+				  } 
+			  }
+
+			  return resultStr;
+		  }
+		  else if (number == 5) {
+			  if (m_prevFormatTokenChar == 'W') {
+				  if (m_formatToken.equals("w")) {
+					  if (!m_isOrdinal) {
+						  resultStr = "Five";
+					  }
+					  else {
+						  resultStr = "Fifth";
+					  }									    
+				  }
+			  }
+			  else if (m_formatToken.equals("w")) {
+				  if (!m_isOrdinal) {
+					  resultStr = "five";
+				  }
+				  else {
+					  resultStr = "fifth";
+				  }
+			  }
+			  else if (m_formatToken.equals("W")) {
+				  if (!m_isOrdinal) {
+					  resultStr = "FIVE";
+				  }
+				  else {
+					  resultStr = "FIFTH";
+				  } 
+			  }
+
+			  return resultStr;
+		  }
+
+		  String snumber = Long.toString(number);
+
+		  // pad with "0"
+		  String mask = "000000000000";
+		  DecimalFormat df = new DecimalFormat(mask);
+		  snumber = df.format(number);
+
+		  int billions = Integer.parseInt(snumber.substring(0,3));
+
+		  int millions  = Integer.parseInt(snumber.substring(3,6));
+
+		  int hundredThousands = Integer.parseInt(snumber.substring(6,9));
+
+		  int thousands = Integer.parseInt(snumber.substring(9,12));
+
+		  String tradBillions;
+		  switch (billions) {
+		  case 0:
+			  tradBillions = "";
+			  break;
+		  case 1 :
+			  tradBillions = convertLessThanOneThousand(billions) + " Billion ";
+			  break;
+		  default :
+			  tradBillions = convertLessThanOneThousand(billions) + " Billion ";
+		  }
+		  String result =  tradBillions;
+
+		  String tradMillions;
+		  switch (millions) {
+		  case 0:
+			  tradMillions = "";
+			  break;
+		  case 1 :
+			  tradMillions = convertLessThanOneThousand(millions) + " Million ";
+			  break;
+		  default :
+			  tradMillions = convertLessThanOneThousand(millions) + " Million ";
+		  }
+		  
+		  result =  result + tradMillions;
+
+		  String tradHundredThousands;
+		  switch (hundredThousands) {
+		  case 0:
+			  tradHundredThousands = "";
+			  break;
+		  case 1 :
+			  tradHundredThousands = "One Thousand ";
+			  break;
+		  default :
+			  tradHundredThousands = convertLessThanOneThousand(hundredThousands) + " Thousand ";
+		  }
+		  
+		  result =  result + tradHundredThousands;
+
+		  String tradThousand;
+		  tradThousand = convertLessThanOneThousand(thousands);
+		  result =  result + tradThousand;
+		  
+		  String ordinalSuffix = null;
+		  String temp1 = "temp1";
+		  String temp1Caps = "TEMP1";
+		  
+		  if (m_isOrdinal) {
+			  result = result.trim() + temp1;
+			  
+			  String[] suffixes = new String[] {"th", "st", "nd", "rd"};
+	    	  int normalized = (int)(number % 100);	    	  
+	    	  int num1 = ((normalized - 20) % 10);
+	    	  if ((num1 >= 0) && (num1 < 4)) {
+	    		 ordinalSuffix = suffixes[num1];
+	    	  }
+	    	  else if ((normalized >= 0) && (normalized < 4)) {
+	    		 ordinalSuffix = suffixes[normalized]; 
+	    	  }
+	    	  else {
+	    		 ordinalSuffix = suffixes[0];  
+	    	  }	    	  
+		  }
+
+		  if (m_prevFormatTokenChar == 'W') {
+			  if (m_formatToken.equals("w")) {
+				 // no op
+			  }
+		  }
+		  else if (m_formatToken.equals("w")) {
+			  result = result.toLowerCase();
+		  }
+		  else if (m_formatToken.equals("W")) {
+			  result = result.toUpperCase(); 
+		  }
+		  
+		  if (result.endsWith(" and")) {
+			  int idx = result.lastIndexOf(" and");
+			  result = result.substring(0, idx);
+		  }
+		  else if (result.endsWith(" andtemp1")) {
+			  int idx = result.lastIndexOf(" andtemp1");
+			  result = result.substring(0, idx);
+			  result = result + ordinalSuffix;
+		  }
+		  else if (result.endsWith(" AND")) {
+			  int idx = result.lastIndexOf(" AND");
+			  result = result.substring(0, idx);
+		  }
+		  else if (result.endsWith(" ANDTEMP1")) {
+			  int idx = result.lastIndexOf(" ANDTEMP1");
+			  result = result.substring(0, idx);
+			  result = result + ordinalSuffix.toUpperCase();
+		  }
+		  
+		  if (result.endsWith(temp1)) {
+			 result = result.replace(temp1, ordinalSuffix);
+			 
+			 if (result.contains(" and ")) {
+				 result = result.replace("one", "fir");
+				 result = result.replace("ONE", "FIR");			
+				 result = result.replace("One", "Fir");
+
+				 result = result.replace("two", "seco");
+				 result = result.replace("TWO", "SECO");
+				 result = result.replace("Two", "Seco");
+
+				 result = result.replace("three", "thi");
+				 result = result.replace("THREE", "THI");
+				 result = result.replace("Three", "Thi");
+
+				 result = result.replace("five", "fif");
+				 result = result.replace("FIVE", "FIF");
+				 result = result.replace("Five", "Fif");
+
+				 result = result.replace("yth", "ieth");
+				 result = result.replace("YTH", "IETH");
+			 }
+		  }
+		  else if (result.endsWith(temp1Caps)) {
+		     result = result.replace(temp1Caps, ordinalSuffix.toUpperCase());
+		     
+		     if (result.contains(" AND ")) {
+		    	 result = result.replace("one", "fir");
+		    	 result = result.replace("ONE", "FIR");			
+		    	 result = result.replace("One", "Fir");
+
+		    	 result = result.replace("two", "seco");
+		    	 result = result.replace("TWO", "SECO");
+		    	 result = result.replace("Two", "Seco");
+
+		    	 result = result.replace("three", "thi");
+		    	 result = result.replace("THREE", "THI");
+		    	 result = result.replace("Three", "Thi");
+
+		    	 result = result.replace("five", "fif");
+		    	 result = result.replace("FIVE", "FIF");
+		    	 result = result.replace("Five", "Fif");
+
+		    	 result = result.replace("yth", "ieth");
+		    	 result = result.replace("YTH", "IETH");
+		     }
+		  }
+		  
+		  // Remove extra spaces, from result string value
+		  return result.replaceAll("^\\s+", "").replaceAll("\\b\\s{2,}\\b", " ");
+	  }
+
+   }
 
 }

@@ -38,7 +38,6 @@ public class Constants extends org.apache.xml.utils.Constants
   public static final int ELEMNAME_UNDEFINED = -1, ELEMNAME_WITHPARAM = 2,
                           ELEMNAME_ADDATTRIBUTE = 4, ELEMNAME_ANCHOR = 22,
 
-  //  ELEMNAME_ANCHOR_PATTERN = 23,
   ELEMNAME_APPLY_TEMPLATES = 50, ELEMNAME_USE = 34, ELEMNAME_CHILDREN = 6,
                                  ELEMNAME_CHOOSE = 37, ELEMNAME_COMMENT = 59,  // my own
                                  ELEMNAME_CONSTRUCT = 7,  // my own
@@ -47,8 +46,6 @@ public class Constants extends org.apache.xml.utils.Constants
                                  ELEMNAME_DECIMALFORMAT = 83,
                                  ELEMNAME_DEFINEATTRIBUTESET = 40,
 
-  //  ELEMNAME_DEFINECONSTANT = 29,
-  //  ELEMNAME_DEFINEMACRO = 10,
   ELEMNAME_DEFINESCRIPT = 11, ELEMNAME_DISPLAYIF = 12,  // my own
                               ELEMNAME_EMPTY = 14, ELEMNAME_EVAL = 15,
                               ELEMNAME_EXPECTEDCHILDREN = 16,
@@ -74,7 +71,6 @@ public class Constants extends org.apache.xml.utils.Constants
                       ELEMNAME_TARGETATTRIBUTE = 49, ELEMNAME_URL = 52,  // my own
                       ELEMNAME_CALL = 55,  // my own
 
-  //  ELEMNAME_WITHPARAM = 56,
   ELEMNAME_FALLBACK = 57,  // my own
   ELEMNAME_TARGETPI = 60,  // my own
   ELEMNAME_TARGETCOMMENT = 61,  // my own
@@ -89,57 +85,24 @@ public class Constants extends org.apache.xml.utils.Constants
   ELEMNAME_EXTENSIONSCRIPT = 86, ELEMNAME_OUTPUT = 80,
   ELEMNAME_COMPONENT = 81, ELEMNAME_SCRIPT = 82,
   
-  ELEMNAME_FOREACHGROUP = 90,
-
-  ELEMNAME_ANALYZESTRING = 91,
+  ELEMNAME_FOREACHGROUP = 90, ELEMNAME_ANALYZESTRING = 91,  
+  ELEMNAME_MATCHING_SUBSTRING = 92, ELEMNAME_NON_MATCHING_SUBSTRING = 93,  
+  ELEMNAME_ITERATE = 94, ELEMNAME_ITERATE_ONCOMPLETION = 95,  
+  ELEMNAME_ITERATE_NEXTITERATION = 96, ELEMNAME_ITERATE_BREAK = 97,  
+  ELEMNAME_FUNCTION = 98, ELEMNAME_SEQUENCE = 99,  
+  ELEMNAME_IMPORT_SCHEMA = 100, ELEMNAME_EVALUATE = 101,  
+  ELEMNAME_MERGE = 102, ELEMNAME_MERGE_SOURCE = 103,  
+  ELEMNAME_MERGE_KEY = 104, ELEMNAME_MERGE_ACTION = 105,  
+  ELEMNAME_SOURCEDOCUMENT = 106, ELEMNAME_FORK = 107,  
+  ELEMNAME_RESULTDOCUMENT = 108, ELEMNAME_TRY = 109,  
+  ELEMNAME_CATCH = 110, ELEMNAME_CHARACTER_MAP = 111,  
+  ELEMNAME_OUTPUT_CHARACTER = 112, ELEMNAME_CONTEXT_ITEM = 113,  
+  ELEMNAME_DOCUMENT = 114, ELEMNAME_MODE = 115,  
+  ELEMNAME_NAMESPACE = 116,
+  ELEMNAME_ASSERT = 117,
+  ELEMNAME_PERFORMSORT = 118;
   
-  ELEMNAME_MATCHING_SUBSTRING = 92,
-  
-  ELEMNAME_NON_MATCHING_SUBSTRING = 93,
-  
-  ELEMNAME_ITERATE = 94,
-  
-  ELEMNAME_ITERATE_ONCOMPLETION = 95,
-  
-  ELEMNAME_ITERATE_NEXTITERATION = 96,
-  
-  ELEMNAME_ITERATE_BREAK = 97,
-  
-  ELEMNAME_FUNCTION = 98,
-  
-  ELEMNAME_SEQUENCE = 99,
-  
-  ELEMNAME_IMPORT_SCHEMA = 100,
-  
-  ELEMNAME_EVALUATE = 101,
-  
-  ELEMNAME_MERGE = 102,
-  
-  ELEMNAME_MERGE_SOURCE = 103,
-  
-  ELEMNAME_MERGE_KEY = 104,
-  
-  ELEMNAME_MERGE_ACTION = 105,
-  
-  ELEMNAME_SOURCEDOCUMENT = 106,
-  
-  ELEMNAME_FORK = 107,
-  
-  ELEMNAME_RESULTDOCUMENT = 108,
-  
-  ELEMNAME_TRY = 109,
-  
-  ELEMNAME_CATCH = 110,
-  
-  ELEMNAME_CHARACTER_MAP = 111,
-  
-  ELEMNAME_OUTPUT_CHARACTER = 112,
-  
-  ELEMNAME_CONTEXT_ITEM = 113,
-  
-  ELEMNAME_DOCUMENT = 114;
-  
-  // next available number : 115
+  // next available number : 119
 
   /**
    * Literals for XSL element names. Note that there are more
@@ -180,6 +143,7 @@ public class Constants extends org.apache.xml.utils.Constants
       ELEMNAME_EXTENSION_STRING = "functions",
       ELEMNAME_FALLBACK_STRING = "fallback",
       ELEMNAME_FOREACH_STRING = "for-each",
+      ELEMNAME_PERFORMSORT_STRING = "perform-sort",
       ELEMNAME_FOREACHGROUP_STRING = "for-each-group",
       ELEMNAME_SOURCEDOCUMENT_STRING = "source-document",
       ELEMNAME_FORK_STRING = "fork",
@@ -222,6 +186,7 @@ public class Constants extends org.apache.xml.utils.Constants
       ELEMNAME_TARGETPI_STRING = "target-pi",
       ELEMNAME_TARGETTEXT_STRING = "target-text",
       ELEMNAME_TEMPLATE_STRING = "template",
+      
       ELEMNAME_TEXT_STRING = "text",
       ELEMNAME_TRANSFORM_STRING = "transform",
       ELEMNAME_URL_STRING = "uri",  // pattern-by-example support
@@ -246,7 +211,9 @@ public class Constants extends org.apache.xml.utils.Constants
       ELEMNAME_CONTEXT_ITEM_REQUIRED_STRING = "required",
       ELEMNAME_CONTEXT_ITEM_OPTIONAL_STRING = "optional",
       ELEMNAME_CONTEXT_ITEM_ABSENT_STRING = "absent",
-      ELEMNAME_DOCUMENT_STRING ="document";
+      ELEMNAME_DOCUMENT_STRING ="document",
+      ELEMNAME_NAMESPACE_STRING = "namespace",
+      ELEMNAME_ASSERT_STRING = "assert";
   
   /**
    * Literals for EXSLT function elements.
@@ -307,7 +274,7 @@ public class Constants extends org.apache.xml.utils.Constants
       ATTRNAME_MATCH = "match",
       ATTRNAME_METHOD = "calls",
       ATTRNAME_MINUSSIGN = "minus-sign",
-      ATTRNAME_MODE = "mode",
+      ATTRNAME_MODE = "mode",    	          	      
       ATTRNAME_NAME = "name",
       ATTRNAME_NAMESPACE = "namespace",
       ATTRNAME_NAN = "NaN",
@@ -447,6 +414,10 @@ public class Constants extends org.apache.xml.utils.Constants
   /** For Stylesheet-prefix and result-prefix in xsl:namespace-alias          */
   public static final String ATTRVAL_DEFAULT_PREFIX = "#default";
   
+  public static final String ATTRVAL_UNNAMED_PREFIX = "#unnamed";
+  
+  public static final String ATTRVAL_CURRENT_PREFIX = "#current";
+  
   public static final String ATTRVAL_ALL_PREFIX = "#all";
 
  /** Integer equivalents for above        */
@@ -492,9 +463,28 @@ public class Constants extends org.apache.xml.utils.Constants
   
   public static final String XSL_ERROR_NAMESACE = "http://www.w3.org/2005/xqt-errors";
   public static final String XSL_ERROR_CODE = "code";
+  public static final String XSL_ERROR_MODULE = "module";
   public static final String XSL_ERROR_DESCRIPTION = "description";
   public static final String XSL_ERROR_LINE_NUMBER = "line-number";
   public static final String XSL_ERROR_COLUMN_NUMBER = "column-number";
+  public static final String XSL_ERROR_VALUE = "value";
   
+  public static final String ANONYMOUS_FUNCTION = "anonymous_func";
+  
+  public static final String ATTRVAL_TEXT_ONLY_COPY = "text-only-copy".intern(); 
+  public static final String ATTRVAL_DEEP_COPY = "deep-copy".intern();
+  public static final String ATTRVAL_SHALLOW_COPY = "shallow-copy".intern();
+  public static final String ATTRVAL_DEEP_SKIP = "deep-skip".intern();
+  public static final String ATTRVAL_SHALLOW_SKIP = "shallow-skip".intern();
+  public static final String ATTRVAL_FAIL = "fail".intern();
+  public static final String ATTRVAL_USE_LAST = "use-last".intern();
+  
+  // This is an XSLT 3.0 Xalan-J's internal string constant value, for an 
+  // implementation of XPath 3.1 function fn:random-number-generator.
+  public static final String FN_XALAN_RNG_PERMUTE = "'FnXalanPermute'";
+  
+  public static final String FN_XALAN_RNG_NEXT = "next";
+  
+  public static final String FN_XALAN_RNG_PERMUTE_STR = "permute";
   
 }

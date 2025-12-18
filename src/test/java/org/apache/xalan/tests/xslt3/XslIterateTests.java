@@ -351,5 +351,45 @@ public class XslIterateTests extends XslTransformTestsUtil {
         
         runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
     }
+    
+    @Test
+    public void xslIterateTest31() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test29.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test29.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xslIterateTest32() {
+    	String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1.xml"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test30.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test30.out";              
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xslIterateTestIndexOf1() {
+    	String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "iterate_fn_index_of1.xsl"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "iterate_fn_index_of1.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "iterate_fn_index_of.out";              
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
+    
+    @Test
+    public void xslIterateTestIndexOf2() {
+    	String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "iterate_fn_index_of2.xsl"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "iterate_fn_index_of2.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "iterate_fn_index_of.out";              
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }
 
 }

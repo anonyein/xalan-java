@@ -15,25 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
+
+import java.util.Vector;
+
+import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
 import org.w3c.dom.DOMException;
 
 /**
- * Implement xsl:template.
- * This primarily acts as a marker on the element
- * stack to signal that whitespace should be preserved.
- * <pre>
- * <!ELEMENT xsl:text (#PCDATA)>
- * <!ATTLIST xsl:text
- *   disable-output-escaping (yes|no) "no"
- * >
- * </pre>
- * @see <a href="http://www.w3.org/TR/xslt#section-Creating-Text">section-Creating-Text in XSLT Specification</a>
+ * Implementation of XSLT 3.0 xsl:text instruction.
+ * 
  * @xsl.usage advanced
  */
 public class ElemText extends ElemTemplateElement
@@ -42,7 +35,6 @@ public class ElemText extends ElemTemplateElement
 
   /**
    * Tells if this element should disable escaping.
-   * @serial
    */
   private boolean m_disableOutputEscaping = false;
 
@@ -160,6 +152,24 @@ public class ElemText extends ElemTemplateElement
   public boolean getExpandTextDeclared() {
 	  return m_expand_text_declared;
   }
+  
+  private Vector m_vars;
+  
+  private int m_globals_size;
+  
+  public void compose(StylesheetRoot sroot) throws TransformerException
+  {
+	  super.compose(sroot);
+
+	  Vector vars = sroot.getComposeState().getVariableNames(); 
+	  m_vars = (Vector)(vars.clone());
+	  m_globals_size = sroot.getComposeState().getGlobalsSize();
+  }
+
+  public void endCompose(StylesheetRoot sroot) throws TransformerException
+  {    
+	  super.endCompose(sroot);
+  }
 
   /**
    * Get an integer representation of the element type.
@@ -170,7 +180,7 @@ public class ElemText extends ElemTemplateElement
    */
   public int getXSLToken()
   {
-    return Constants.ELEMNAME_TEXT;
+	  return Constants.ELEMNAME_TEXT;
   }
 
   /**
@@ -180,7 +190,7 @@ public class ElemText extends ElemTemplateElement
    */
   public String getNodeName()
   {
-    return Constants.ELEMNAME_TEXT_STRING;
+	  return Constants.ELEMNAME_TEXT_STRING;
   }
 
   /**
@@ -195,23 +205,24 @@ public class ElemText extends ElemTemplateElement
   public ElemTemplateElement appendChild(ElemTemplateElement newChild)
   {
 	  
-	super.appendChild(newChild);	  
+	  super.appendChild(newChild);	  
 
-    int type = ((ElemTemplateElement)newChild).getXSLToken();
+	  int type = ((ElemTemplateElement)newChild).getXSLToken();
 
-    switch (type)
-    {
-    case Constants.ELEMNAME_TEXTLITERALRESULT :
-      break;
-    default :
-      error(XSLTErrorResources.ER_CANNOT_ADD,
-            new Object[]{ newChild.getNodeName(),
-                          this.getNodeName() });  //"Can not add " +((ElemTemplateElement)newChild).m_elemName +
+	  switch (type)
+	  {
+	  case Constants.ELEMNAME_TEXTLITERALRESULT :
+		  break;
+	  default :
+		  String lineNo = String.valueOf(newChild.getLineNumber());
+	  	  String columnNo = String.valueOf(newChild.getColumnNumber());
 
-    //" to " + this.m_elemName);
-    }
+	  	  error(XSLTErrorResources.ER_CANNOT_ADD,
+	  										   new Object[]{ newChild.getNodeName(),
+	  												    this.getNodeName(), lineNo, columnNo });
+	  }
 
-    return newChild;
+	  return newChild;
   }
 
 }

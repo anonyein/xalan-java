@@ -116,7 +116,7 @@ public class ElemForEachGroup extends ElemTemplateElement
   /**
    * The "collation" attribute value.
    */
-  private String m_collationUri = null;
+  private AVT m_collationUri = null;
   
   /**
    * An XPathCollationSupport object value. 
@@ -318,7 +318,7 @@ public class ElemForEachGroup extends ElemTemplateElement
    *
    * @param collation   String value for the "collation" attribute.
    */
-  public void setCollation(String collationUri)
+  public void setCollation(AVT collationUri)
   {
 	  m_collationUri = collationUri;   
   }
@@ -328,7 +328,7 @@ public class ElemForEachGroup extends ElemTemplateElement
    *
    * @return   String value of the "collation" attribute.
    */
-  public String getCollation()
+  public AVT getCollation()
   {
       return m_collationUri;
   }
@@ -578,13 +578,13 @@ public class ElemForEachGroup extends ElemTemplateElement
         if (forEachGroupGroupingAttributesCount == 0) {
             throw new TransformerException("XTSE1080 : None of the attributes 'group-by', 'group-adjacent', "
 										                                              + "'group-starting-with', 'group-ending-with' is present on "
-										                                              + "xsl:for-each-group instruction.", srcLocator);     
+										                                              + "XSL for-each-group instruction.", srcLocator);     
         }
          
         if (forEachGroupGroupingAttributesCount > 1) {
            throw new TransformerException("XTSE1080 : Only one of the attributes 'group-by', 'group-adjacent', "
 									                                                 + "'group-starting-with', 'group-ending-with' can be "
-									                                                 + "present on xsl:for-each-group instruction.", srcLocator);     
+									                                                 + "present on XSL for-each-group instruction.", srcLocator);     
         }
         
         if (m_groupStartingWithExpression != null) {
@@ -595,8 +595,8 @@ public class ElemForEachGroup extends ElemTemplateElement
         			                                                                                    xctxt.getNamespaceContext(), XPath.MATCH, null);
         	}
         	catch (TransformerException ex) {
-        		String errMessageStr = "XTSE0340 : xsl:for-each-group instruction's attribute group-starting-with's "
-        				                                                                   + "stylesheet value has syntax error. " + ex.getMessage() 
+        		String errMessageStr = "XTSE0340 : An XSL for-each-group instruction attribute group-starting-with's "
+        				                                                                   + "value has syntax error. " + ex.getMessage() 
         				                                                                   + ". This value must conform to an XPath pattern.";
         		throw new TransformerException(errMessageStr, srcLocator); 
         	}
@@ -610,8 +610,8 @@ public class ElemForEachGroup extends ElemTemplateElement
         			                                                                                xctxt.getNamespaceContext(), XPath.MATCH, null);
         	}
         	catch (TransformerException ex) {
-        		String errMessageStr = "XTSE0340 : xsl:for-each-group instruction's attribute group-ending-with's "
-																                          + "stylesheet value has syntax error. " + ex.getMessage() 
+        		String errMessageStr = "XTSE0340 : An XSL for-each-group instruction's attribute group-ending-with's "
+																                          + "value has syntax error. " + ex.getMessage() 
 																                          + ". This value must conform to an XPath pattern.";
         		
         		throw new TransformerException(errMessageStr, srcLocator); 
@@ -644,7 +644,7 @@ public class ElemForEachGroup extends ElemTemplateElement
         	}
         }
         
-        final int sourceNode = xctxt.getCurrentNode();
+        final int currentNode = xctxt.getCurrentNode();
         
         DTMCursorIterator sourceNodes = null;
         
@@ -674,7 +674,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 
         		// Construct an XML DOM wrapper over a sequence of input 
         		// atomic values, for the purpose of grouping
-        		DTM dtm = dtmManager.getDTMFromResultSequence(resultSeq);
+        		DTM dtm = dtmManager.getXmlDTMTreeFromResultSequence(resultSeq);
 
         		int docNodeHandle = dtm.getDocument();
         		int topMostElemNodeHandle = dtm.getFirstChild(docNodeHandle);
@@ -702,7 +702,7 @@ public class ElemForEachGroup extends ElemTemplateElement
             sourceNodes = xmlNodeCursorImpl.iter();
         }
         else {
-        	throw new TransformerException("XPTY0004 : An xsl:for-each-group's select expression didn't evaluate "
+        	throw new TransformerException("XPTY0004 : An XSL for-each-group's 'select' expression didn't evaluate "
         			                                                        + "to a sequence or nodeset that could be grouped.", srcLocator);
         }
         
@@ -742,10 +742,30 @@ public class ElemForEachGroup extends ElemTemplateElement
 
         	xctxt.pushSAXLocatorNull();
         	xctxt.pushContextNodeList(sourceNodes);
-        	transformer.pushElemTemplateElement(null);                        
+        	transformer.pushElemTemplateElement(null);
+        	
+        	if (m_sortElems != null) {
+        	   int sortElemCount = m_sortElems.size();
+        	   for (int idx = 0; idx < sortElemCount; idx++) {
+        		  ElemSort elemSort = (ElemSort)(m_sortElems.elementAt(idx));
+        		  AVT stableAvt = elemSort.getStable();
+        		  if (stableAvt != null) {
+        			 String stableValue = stableAvt.evaluate(xctxt, currentNode, xctxt.getNamespaceContext());
+        			 stableValue = stableValue.trim();
+        			 if (!("yes".equals(stableValue) || "1".equals(stableValue) || "true".equals(stableValue) 
+																	        					 || "no".equals(stableValue) || "0".equals(stableValue) 
+																	        					 || "false".equals(stableValue))) {
+        				 throw new javax.xml.transform.TransformerException("XTSE0020 : An XSL 'sort' instruction attribute 'stable''s value " + 
+																			        						 stableValue + " is not valid. The allowed "
+																			        						 + "values for attribute 'stable' are yes,1,true,no,0,false.", 
+																			        						 elemSort);
+        			 }
+        		  }
+        	   }
+        	}
 
         	final Vector sortKeys = (m_sortElems == null) ? null : transformer.processSortKeysForEachGroup(
-        			                                                                                    this, sourceNode);            
+        			                                                                                    this, currentNode);            
         	if (sortKeys != null) {
         		/**
         		 * There are xsl:sort elements within xsl:for-each-group. Sort the groups,
@@ -917,7 +937,7 @@ public class ElemForEachGroup extends ElemTemplateElement
         }
         finally {
         	if (transformer.getDebug()) {
-        		transformer.getTraceManager().emitSelectedEndEvent(sourceNode, this,
+        		transformer.getTraceManager().emitSelectedEndEvent(currentNode, this,
         														   "select", m_selectExpression,
         														   	new org.apache.xpath.objects.XMLNodeCursorImpl(sourceNodes));
         	}
@@ -937,7 +957,7 @@ public class ElemForEachGroup extends ElemTemplateElement
          * context node to the node which was the context node before xsl:for-each-group evaluation 
          * was started.
          */         
-        xctxt.pushCurrentNode(sourceNode);
+        xctxt.pushCurrentNode(currentNode);
   }
   
   /**
@@ -977,7 +997,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 						  addXdmNodeHandleToGroup(xslForEachGroupByMap, nextNode, groupingKeyValue);
 					  }
 					  else {
-						  throw new TransformerException("XTSE1080 : An xsl:for-each-group instruction with attribute "
+						  throw new TransformerException("XTSE1080 : An XSL for-each-group instruction with attribute "
 																										  + "'composite=\"yes\"', resulted in a grouping key "
 																										  + "sequence that is empty.", srcLocator);
 					  }
@@ -1286,7 +1306,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 				  ForEachGroupCompositeGroupingKey groupingKeyObj = (ForEachGroupCompositeGroupingKey)groupingKeyValue;
 				  ResultSequence groupingKeySeq = groupingKeyObj.getValue();
 				  if (groupingKeySeq.size() == 0) {
-					  throw new TransformerException("XTSE1080 : An xsl:for-each-group instruction with attribute "
+					  throw new TransformerException("XTSE1080 : An XSL for-each-group instruction with attribute "
 																	                             + "'composite=\"yes\"', resulted in a grouping key "
 																	                             + "sequence that is empty.", srcLocator);
 				  }
@@ -1423,13 +1443,20 @@ public class ElemForEachGroup extends ElemTemplateElement
   private Object getNormalizedGroupingKeyValue(XPathContext xctxt, XObject groupingKeyValue) throws TransformerException {
       
 	  Object normalizedGroupingKeyValue = null;
+	  
+	  final int contextNode = xctxt.getCurrentNode();
+	  
+	  String collation = null;
+	  if (m_collationUri != null) {
+	     collation = m_collationUri.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
+	  }
       
       if (groupingKeyValue instanceof XString) {
-    	  if (m_collationUri == null) {
+    	  if (collation == null) {
     		 normalizedGroupingKeyValue = groupingKeyValue.str();   
     	  }
-    	  else {
-    	     normalizedGroupingKeyValue = new StringWithCollation(groupingKeyValue.str(), m_collationUri, m_xpathCollationSupport);
+    	  else {    		  
+    	     normalizedGroupingKeyValue = new StringWithCollation(groupingKeyValue.str(), collation, m_xpathCollationSupport);
     	  }
       }
       else if (groupingKeyValue instanceof XSQName) {
@@ -1439,11 +1466,11 @@ public class ElemForEachGroup extends ElemTemplateElement
     	  normalizedGroupingKeyValue = localPart + ((namespaceUri == null) ? "" : ":" + namespaceUri); 
       }
       else if (groupingKeyValue instanceof XSString) {
-    	  if (m_collationUri == null) {
+    	  if (collation == null) {
     		 normalizedGroupingKeyValue = ((XSString)groupingKeyValue).stringValue();   
     	  }
     	  else {
-             normalizedGroupingKeyValue = new StringWithCollation(((XSString)groupingKeyValue).stringValue(), m_collationUri, m_xpathCollationSupport);
+             normalizedGroupingKeyValue = new StringWithCollation(((XSString)groupingKeyValue).stringValue(), collation, m_xpathCollationSupport);
     	  }
       }
       else if (groupingKeyValue instanceof XNumber) {
@@ -1495,11 +1522,11 @@ public class ElemForEachGroup extends ElemTemplateElement
       }
       else if (groupingKeyValue instanceof ResultSequence) {
     	  if (m_collationUri == null) {
-    		  m_collationUri = XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI;   
+    		  collation = XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI;   
     	  }
     	  
     	  normalizedGroupingKeyValue = new ForEachGroupCompositeGroupingKey(xctxt, (ResultSequence)groupingKeyValue, 
-    			                                                									m_collationUri, m_xpathCollationSupport);
+    			                                                                                                 collation, m_xpathCollationSupport);
       }
       else {
           // Any other data type for grouping key, is treated as string
@@ -1532,7 +1559,7 @@ public class ElemForEachGroup extends ElemTemplateElement
         sourceNodes = nodeSequence.cloneWithReset();
      } 
      catch (CloneNotSupportedException ex) {
-        throw new TransformerException("An error occured during XSL grouping with xsl:for-each-group "
+        throw new TransformerException("XTDE0555 : An error occured while performing grouping with XSL 'for-each-group' "
                                                                                             + "instruction.", xctxt.getSAXLocator());
      }
      

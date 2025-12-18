@@ -1,49 +1,134 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-09-16T13:24:44Z" fail="17" name="sequence" pass="8" skipped="1" statusUnknown="1" totalRun="26">
-   <testResult status="fail" testName="sequence-0101"/>
-   <testResult status="fail" testName="sequence-0102"/>
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-12-16T16:54:14Z" fail="30" name="sequence" pass="55" skipped="7" statusUnknown="0" totalRun="85">
+   <testResult status="pass" testName="sequence-0101"/>
+   <testResult status="pass" testName="sequence-0102"/>
    <testResult status="pass" testName="sequence-0103"/>
    <testResult status="pass" testName="sequence-0104"/>
-   <testResult status="fail" testName="sequence-0105"/>
-   <testResult status="fail" testName="sequence-0106">
-      <outResult>
-         <errTrace>XPST0081 : An XML namespace prefix 'xs' hasn't been declared within an XSL stylesheet, or hasn't been set for XPath API invocation.</errTrace>
-      </outResult>
-   </testResult>
-   <testResult status="fail" testName="sequence-0107">
-      <outResult>
-         <errTrace>XPST0081 : An XML namespace prefix 'xs' hasn't been declared within an XSL stylesheet, or hasn't been set for XPath API invocation.</errTrace>
-      </outResult>
-   </testResult>
-   <testResult status="fail" testName="sequence-0108">
-      <outResult>
-         <errTrace>XPST0081 : An XML namespace prefix 'xs' hasn't been declared within an XSL stylesheet, or hasn't been set for XPath API invocation.</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="sequence-0105"/>
+   <testResult status="pass" testName="sequence-0106"/>
+   <testResult status="pass" testName="sequence-0107"/>
+   <testResult status="pass" testName="sequence-0108"/>
    <testResult status="pass" testName="sequence-0109"/>
-   <testResult status="fail" testName="sequence-0110"/>
-   <testResult status="fail" testName="sequence-0111"/>
+   <testResult status="pass" testName="sequence-0110"/>
+   <testResult status="pass" testName="sequence-0111"/>
    <testResult status="pass" testName="sequence-0112"/>
    <testResult status="fail" testName="sequence-0113"/>
-   <testResult status="fail" testName="sequence-0114">
-      <outResult>
-         <errTrace>XPST0081 : An XML namespace prefix 'xs' hasn't been declared within an XSL stylesheet, or hasn't been set for XPath API invocation.</errTrace>
-      </outResult>
-   </testResult>
-   <testResult status="fail" testName="sequence-0115">
-      <outResult>
-         <errTrace>Empty expression!</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="sequence-0114"/>
+   <testResult status="pass" testName="sequence-0115"/>
    <testResult status="pass" testName="sequence-0116"/>
    <testResult status="pass" testName="sequence-0117"/>
    <testResult status="pass" testName="sequence-0118"/>
-   <testResult status="fail" testName="sequence-0119"/>
-   <testResult reason="allowed by xslt 3.0 test suite" status="skipped" testName="sequence-0120"/>
+   <testResult feature="backwards_compatibility" status="skipped" testName="sequence-0119"/>
+   <testResult reason="Xalan configured" status="skipped" testName="sequence-0120"/>
    <testResult status="pass" testName="sequence-0121"/>
-   <testResult status="fail" testName="sequence-0122"/>
-   <testResult status="fail" testName="sequence-0123"/>
+   <testResult status="pass" testName="sequence-0122"/>
+   <testResult status="pass" testName="sequence-0123"/>
    <testResult status="fail" testName="sequence-0124"/>
    <testResult status="fail" testName="sequence-0125"/>
    <testResult status="fail" testName="sequence-0126"/>
-   <testResult testName="sequence-0127"/>
+   <testResult reason="Xalan configured" status="skipped" testName="sequence-0127"/>
+   <testResult status="pass" testName="sequence-0128"/>
+   <testResult status="pass" testName="sequence-0129"/>
+   <testResult status="fail" testName="sequence-0130">
+      <outResult>
+         <errTrace>javax.xml.transform.TransformerException: Variable $q accessed before it is bound!</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="fail" testName="sequence-0131">
+      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;zzz&gt;1,4,9,16,25,36,49,64,81,100&lt;/zzz&gt;&#13;
+&#13;
+</outResult>
+   </testResult>
+   <testResult status="pass" testName="sequence-0132"/>
+   <testResult status="pass" testName="sequence-0133"/>
+   <testResult status="pass" testName="sequence-0134"/>
+   <testResult status="fail" testName="sequence-0135">
+      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;foo/&gt;&#13;
+&#13;
+</outResult>
+   </testResult>
+   <testResult status="fail" testName="sequence-0136">
+      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&#13;
+&#13;
+</outResult>
+   </testResult>
+   <testResult status="skipped" testName="sequence-0137" xsltVersion="XSLT 2.0/1.0 only test case"/>
+   <testResult status="fail" testName="sequence-0137a">
+      <outResult>
+         <errTrace>XTTE0570 : The supplied value cannot be cast to type xs:integer .</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="pass" testName="sequence-0138"/>
+   <testResult status="pass" testName="sequence-0139"/>
+   <testResult status="pass" testName="sequence-0201"/>
+   <testResult status="pass" testName="sequence-0202"/>
+   <testResult status="fail" testName="sequence-0203"/>
+   <testResult status="pass" testName="sequence-0301"/>
+   <testResult status="fail" testName="sequence-0302">
+      <outResult>
+         <errTrace>Expected ), but found: ,</errTrace>
+         <errTrace>java.lang.ClassCastException: org.apache.xpath.objects.XNumber cannot be cast to java.lang.String</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="pass" testName="sequence-0303"/>
+   <testResult status="pass" testName="sequence-0304"/>
+   <testResult status="pass" testName="sequence-0305"/>
+   <testResult status="fail" testName="sequence-0306">
+      <outResult>
+         <errTrace>java.lang.NoSuchMethodException: For extension function, could not find method java.lang.String.untypedAtomic([ExpressionContext,] ).</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="fail" testName="sequence-0307">
+      <outResult>
+         <errTrace>java.lang.NoSuchMethodException: For extension function, could not find method java.lang.String.untypedAtomic([ExpressionContext,] ).</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="pass" testName="sequence-0401"/>
+   <testResult status="pass" testName="sequence-0402"/>
+   <testResult status="fail" testName="sequence-0403"/>
+   <testResult status="fail" testName="sequence-0501"/>
+   <testResult status="fail" testName="sequence-0502"/>
+   <testResult status="fail" testName="sequence-0601">
+      <outResult/>
+   </testResult>
+   <testResult status="pass" testName="sequence-0701"/>
+   <testResult status="pass" testName="sequence-0702"/>
+   <testResult status="pass" testName="sequence-0703"/>
+   <testResult status="pass" testName="sequence-0704"/>
+   <testResult status="pass" testName="sequence-0705"/>
+   <testResult status="pass" testName="sequence-0706"/>
+   <testResult status="pass" testName="sequence-0901"/>
+   <testResult status="pass" testName="sequence-1001"/>
+   <testResult status="pass" testName="sequence-1002"/>
+   <testResult status="pass" testName="sequence-1003"/>
+   <testResult status="pass" testName="sequence-1004"/>
+   <testResult status="pass" testName="sequence-1005"/>
+   <testResult status="fail" testName="sequence-1101"/>
+   <testResult status="fail" testName="sequence-1201">
+      <outResult>
+         <errTrace>Expected ), but found: ,</errTrace>
+         <errTrace>java.lang.ClassCastException</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="pass" testName="sequence-1202"/>
+   <testResult status="pass" testName="sequence-1203"/>
+   <testResult status="pass" testName="sequence-1204"/>
+   <testResult status="pass" testName="sequence-1205"/>
+   <testResult status="pass" testName="sequence-1301"/>
+   <testResult status="fail" testName="sequence-1401"/>
+   <testResult status="fail" testName="sequence-1402"/>
+   <testResult status="fail" testName="sequence-1501"/>
+   <testResult status="fail" testName="sequence-1601"/>
+   <testResult status="fail" testName="sequence-1701"/>
+   <testResult status="fail" testName="sequence-1801"/>
+   <testResult status="fail" testName="sequence-1901"/>
+   <testResult status="fail" testName="sequence-2001"/>
+   <testResult status="fail" testName="sequence-2002"/>
+   <testResult status="fail" testName="sequence-2101"/>
+   <testResult status="fail" testName="sequence-2301"/>
+   <testResult status="skipped" testName="sequence-2401a" xsltVersion="XSLT 2.0/1.0 only test case"/>
+   <testResult status="pass" testName="sequence-2401b"/>
+   <testResult status="skipped" testName="sequence-2402a" xsltVersion="XSLT 2.0/1.0 only test case"/>
+   <testResult status="pass" testName="sequence-2402b"/>
+   <testResult status="skipped" testName="sequence-2403a" xsltVersion="XSLT 2.0/1.0 only test case"/>
+   <testResult status="pass" testName="sequence-2403b"/>
 </testrun>

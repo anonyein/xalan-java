@@ -15,17 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
 
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.Vector;
 
+import javax.xml.transform.ErrorListener;
+import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
@@ -68,8 +66,9 @@ public class TemplateList implements java.io.Serializable
    *
    * @param template				This can be for an xsl:template definition or
    *                                xsl:function definition.
+   * @throws TransformerException 
    */
-  public void setTemplate(ElemTemplate template)
+  public void setTemplate(ElemTemplate template) throws TransformerException
   {    
 	  
     if (!(template instanceof ElemFunction)) {    	
@@ -148,9 +147,9 @@ public class TemplateList implements java.io.Serializable
     		boolean isOverrideExtDecl = newFunc.isOverrideExtensionFunctionAttrDeclared();
     		if (isOverrideDecl && isOverrideExtDecl && (newFunc.getOverride() != newFunc.getOverrideExtensionFunction())) {
     			  QName funcName = newFunc.getName();
-    	    	  template.error("XTSE0020 : An xsl:function instruction " + funcName.toString() + " has both "
+    			  throw new TransformerException("XTSE0020 : An XSL function '" + funcName.toString() + "' has both "
 															                            + "the attributes 'override' and 'override-extension-function', "
-															                            + "but they don't have the same value.");
+															                            + "but they don't have the same value.", newFunc);
     	    }
     		
     		if (!isOverrideDecl) {
@@ -163,18 +162,24 @@ public class TemplateList implements java.io.Serializable
     			newFunc.setOverrideExtensionFunction(true);
     		}
     		
+    		QName funcQName = newFunc.getName();
+    		if ((Constants.XSL_ERROR_NAMESACE).equals(funcQName.getNamespace())) {
+    		   throw new TransformerException("XTSE0740 : An XSL function declaration that has local name '" + funcQName.getLocalName() 
+    		                                                                                            + "', doesn't have function name's namespace.", newFunc);
+    		}
+    		
     		XslFunctionDefinitionKey funcDefnKey = new XslFunctionDefinitionKey(newFunc.getName(), funcArity, newFunc.getOverride());
-    		ElemFunction xslFunctionObj = m_functionDefinitions.get(funcDefnKey);
+    		ElemFunction xslFunctionObj = m_functionDeclarations.get(funcDefnKey);
     		if (xslFunctionObj == null) {
-    			m_functionDefinitions.put(funcDefnKey, newFunc);
+    			m_functionDeclarations.put(funcDefnKey, newFunc);
     		}
     		else {
     			int existingPrecedence = xslFunctionObj.getStylesheetComposed().getImportCountComposed();
     			int newPrecedence = newFunc.getStylesheetComposed().getImportCountComposed();
     			if (newPrecedence == existingPrecedence) {    				
     				if ((isOverrideDecl && newFunc.getOverride()) || (isOverrideExtDecl && newFunc.getOverrideExtensionFunction())) {
-    					m_functionDefinitions.remove(funcDefnKey);
-    					m_functionDefinitions.put(funcDefnKey, newFunc);
+    					m_functionDeclarations.remove(funcDefnKey);
+    					m_functionDeclarations.put(funcDefnKey, newFunc);
     				}
     				else {
     				    template.error(XSLTErrorResources.ER_DUPLICATE_XSL_FUNCTION,
@@ -532,9 +537,9 @@ public class TemplateList implements java.io.Serializable
   public ElemTemplate getXslFunction(QName qname, int arity)
   {
 	  XslFunctionDefinitionKey xslFunctionDefinitionKey = new XslFunctionDefinitionKey(qname, arity, true);
-	  ElemFunction elemFunc = m_functionDefinitions.get(xslFunctionDefinitionKey);
+	  ElemFunction elemFunc = m_functionDeclarations.get(xslFunctionDefinitionKey);
 	  if (elemFunc == null) {
-		  elemFunc = m_functionDefinitions.get(new XslFunctionDefinitionKey(qname, arity, false));  
+		  elemFunc = m_functionDeclarations.get(new XslFunctionDefinitionKey(qname, arity, false));  
 	  }
 
 	  return elemFunc;
@@ -554,10 +559,10 @@ public class TemplateList implements java.io.Serializable
   public TemplateSubPatternAssociation getHead(XPathContext xctxt, 
                                                int targetNode, DTM dtm)
   {
-    short targetNodeType = dtm.getNodeType(targetNode);
     TemplateSubPatternAssociation head;
-
-    switch (targetNodeType)
+    
+    short nodeType = dtm.getNodeType(targetNode);    
+    switch (nodeType)
     {
     case DTM.ELEMENT_NODE :
     case DTM.ATTRIBUTE_NODE :
@@ -594,110 +599,109 @@ public class TemplateList implements java.io.Serializable
   }
   
   /**
-   * Given a target element, find the template that best
-   * matches in the given XSL document, according
-   * to the rules specified within XSLT 3.0 spec. This variation of getTemplate 
-   * assumes the current node and current expression node have already been 
-   * pushed. 
+   * Method definition, to get an XSL template rule object reference, 
+   * that best matches the supplied XML node.
    *
-   * @param xctxt
-   * @param targetNode
-   * @param mode A string indicating the display mode.
-   * @param maxImportLevel The maximum importCountComposed that we should consider or -1
-   *        if we should consider all import levels.  This is used by apply-imports to
-   *        access templates that have been overridden.
-   * @param quietConflictWarnings
-   * @return Rule that best matches targetElem.
-   * @throws XSLProcessorException thrown if the active ProblemListener and XPathContext decide
-   * the error condition is severe enough to halt processing.
-   *
-   * @throws TransformerException
+   * @param xctxt                          An XPath context object reference
+   * @param targetNode				       An xdm node's, integer valued node handle
+   * @param expTypeID                      An ID value, that represents an xdm node's 
+   *                                       expanded name.                                 
+   * @param mode                           A QName value indicating an XSL template mode
+   * @param maxImportLevel                 The maximum importCountComposed that we should consider or -1
+   *                                       if we should consider all import levels. This is used by 
+   *                                       apply-imports to access templates that have been overridden.
+   * @param quietConflictWarnings          If this method argument is true, XSL template conflicts
+   *                                       shall be evaluated and appropriate XSL transform error or 
+   *                                       warning shall be emitted.
+   * @param dtm                            An DTM object instance, for the supplied node reference
+   * @param xslOnMultipleMatchStr
+   * @param xslWarningOnMultipleMatch
+   * @return                               An XSL template rule object reference  
+   * @throws TransformerException 
    */
-  public ElemTemplate getTemplateFast(XPathContext xctxt,
-                                int targetNode,
-                                int expTypeID,
-                                QName mode,
-                                int maxImportLevel,
-                                boolean quietConflictWarnings,
-                                DTM dtm)
-            throws TransformerException
+  public ElemTemplate getTemplateFast(XPathContext xctxt, int targetNode, int expTypeID,
+                                      QName mode, int maxImportLevel, boolean quietConflictWarnings,
+                                      DTM dtm, String xslOnMultipleMatchStr, boolean xslWarningOnMultipleMatch) 
+                                    		                                                                throws TransformerException
   {
     
     TemplateSubPatternAssociation head;
 
-    switch (dtm.getNodeType(targetNode))
+    short nodeType = dtm.getNodeType(targetNode);
+    
+    switch (nodeType)
     {
     case DTM.ELEMENT_NODE :
     case DTM.ATTRIBUTE_NODE :
-      head = (TemplateSubPatternAssociation) m_patternTable.get(
-        dtm.getLocalNameFromExpandedNameID(expTypeID));
-      break;
+    	head = (TemplateSubPatternAssociation) m_patternTable.get(
+    			dtm.getLocalNameFromExpandedNameID(expTypeID));
+    	break;
     case DTM.TEXT_NODE :
     case DTM.CDATA_SECTION_NODE :
-      head = m_textPatterns;
-      break;
+    	head = m_textPatterns;
+    	break;
     case DTM.ENTITY_REFERENCE_NODE :
     case DTM.ENTITY_NODE :
-      head = (TemplateSubPatternAssociation) m_patternTable.get(
-        dtm.getNodeName(targetNode)); // %REVIEW% I think this is right
-      break;
+    	head = (TemplateSubPatternAssociation) m_patternTable.get(
+    			dtm.getNodeName(targetNode)); // %REVIEW% I think this is right
+    	break;
     case DTM.PROCESSING_INSTRUCTION_NODE :
-      head = (TemplateSubPatternAssociation) m_patternTable.get(
-        dtm.getLocalName(targetNode));
-      break;
+    	head = (TemplateSubPatternAssociation) m_patternTable.get(
+    			dtm.getLocalName(targetNode));
+    	break;
     case DTM.COMMENT_NODE :
-      head = m_commentPatterns;
-      break;
+    	head = m_commentPatterns;
+    	break;
     case DTM.DOCUMENT_NODE :
     case DTM.DOCUMENT_FRAGMENT_NODE :
-      head = m_docPatterns;
-      break;
+    	head = m_docPatterns;
+    	break;
     case DTM.NOTATION_NODE :
     default :
-      head = (TemplateSubPatternAssociation) m_patternTable.get(
-        dtm.getNodeName(targetNode)); // %REVIEW% I think this is right
+    	head = (TemplateSubPatternAssociation) m_patternTable.get(
+    			dtm.getNodeName(targetNode)); // %REVIEW% I think this is right
     }
 
     if(null == head)
     {
-      head = m_wildCardPatterns;
-      if(null == head)
-        return null;
+    	head = m_wildCardPatterns;
+    	if(null == head)
+    		return null;
     }                                              
 
-    // XSLT functions, such as xsl:key, need to be able to get to 
-    // current ElemTemplateElement via a cast to the prefix resolver.
-    // Setting this fixes bug idkey03.
     xctxt.pushNamespaceContextNull();
     try
     {
       do
       {
-        if ( (maxImportLevel > -1) && (head.getImportLevel() > maxImportLevel) )
-        {
-          continue;
-        }
-        ElemTemplate template = head.getTemplate();        
-        xctxt.setNamespaceContext(template);
-        
-        if ((head.m_stepPattern.execute(xctxt, targetNode, dtm, expTypeID) != NodeTest.SCORE_NONE)
-                && head.matchMode(mode))
-        {
-          if (quietConflictWarnings)
-            checkConflicts(head, xctxt, targetNode, mode);
+    	  if ( (maxImportLevel > -1) && (head.getImportLevel() > maxImportLevel) )
+    	  {
+    		  continue;
+    	  }
+    	  ElemTemplate template = head.getTemplate();        
+    	  xctxt.setNamespaceContext(template);
+    	  
+    	  if ((head.m_stepPattern.execute(xctxt, targetNode, dtm, expTypeID) != NodeTest.SCORE_NONE)
+    			  																					&& head.matchMode(mode))
+    	  {
+    		  if (quietConflictWarnings) {
+    			  checkConflicts(head, xctxt, targetNode, mode, dtm, expTypeID, 
+    					                                                   xslOnMultipleMatchStr, xslWarningOnMultipleMatch);
+    		  }
 
-          return template;
-        }
+    		  return template;
+    	  }
       }
       while (null != (head = head.getNext()));
     }
     finally
     {
-      xctxt.popNamespaceContext();
+    	xctxt.popNamespaceContext();
     }
 
     return null;
-  }  // end findTemplate
+    
+  }  // end getTemplateFast
 
   /**
    * Given a target element, find the template that best
@@ -726,9 +730,6 @@ public class TemplateList implements java.io.Serializable
 
     if (null != head)
     {
-      // XSLT functions, such as xsl:key, need to be able to get to 
-      // current ElemTemplateElement via a cast to the prefix resolver.
-      // Setting this fixes bug idkey03.
       xctxt.pushNamespaceContextNull();
       xctxt.pushCurrentNodeAndExpression(targetNode, targetNode);
       try
@@ -739,10 +740,12 @@ public class TemplateList implements java.io.Serializable
           xctxt.setNamespaceContext(template);
           
           if ((head.m_stepPattern.execute(xctxt, targetNode) != NodeTest.SCORE_NONE)
-                  && head.matchMode(mode))
+                  																	&& head.matchMode(mode))
           {
-            if (quietConflictWarnings)
-              checkConflicts(head, xctxt, targetNode, mode);
+            if (quietConflictWarnings) {
+                int expTypeID = dtm.getExpandedTypeID(targetNode);
+                checkConflicts(head, xctxt, targetNode, mode, dtm, expTypeID, null, false);
+            }
 
             return template;
           }
@@ -791,9 +794,6 @@ public class TemplateList implements java.io.Serializable
 
     if (null != head)
     {
-      // XSLT functions, such as xsl:key, need to be able to get to 
-      // current ElemTemplateElement via a cast to the prefix resolver.
-      // Setting this fixes bug idkey03.
       xctxt.pushNamespaceContextNull();
       xctxt.pushCurrentNodeAndExpression(targetNode, targetNode);
       try
@@ -810,10 +810,12 @@ public class TemplateList implements java.io.Serializable
           xctxt.setNamespaceContext(template);
           
           if ((head.m_stepPattern.execute(xctxt, targetNode) != NodeTest.SCORE_NONE)
-                  && head.matchMode(mode))
+                  																	&& head.matchMode(mode))
           {
-            if (quietConflictWarnings)
-              checkConflicts(head, xctxt, targetNode, mode);
+            if (quietConflictWarnings) {
+               int exNodeType = dtm.getExpandedTypeID(targetNode);
+               checkConflicts(head, xctxt, targetNode, mode, dtm, exNodeType, null, false);
+            }
 
             return template;
           }
@@ -845,46 +847,131 @@ public class TemplateList implements java.io.Serializable
   }
 
   /**
-   * Check for match conflicts, and warn the stylesheet author.
+   * Method definition, to check for XSL template rule match conflicts.
    *
-   * @param head Template pattern
-   * @param xctxt Current XPath context
-   * @param targetNode Node matching the pattern
-   * @param mode reference, which may be null, to the <a href="http://www.w3.org/TR/xslt#modes">current mode</a>.
+   * @param head                                    The first, TemplateSubPatternAssociation object
+   *                                                instance within template pattern association
+   *                                                linked list.
+   * @param xctxt                                   The current, XPath context object instance
+   * @param targetNode                              Node matching XSL template pattern
+   * @param mode                                    QName object reference, to the current mode
+   * @param dtm										An XML document model instance
+   * @param expTypeID  
+   * @param xslOnMultipleMatchStr                   xsl:mode instruction "on-multiple-match"
+   *                                                attribute's value.
+   * @param xslWarningOnMultipleMatch               xsl:mode instruction "warning-on-multiple-match"
+   *                                                attribute's value.
+   * @throws TransformerException 
    */
-  private void checkConflicts(TemplateSubPatternAssociation head,
-                              XPathContext xctxt, int targetNode, QName mode)
-  {
+  private void checkConflicts(TemplateSubPatternAssociation head, XPathContext xctxt, int targetNode, 
+		                                                          QName mode, DTM dtm, int expTypeID, String xslOnMultipleMatchStr, 
+		                                                          boolean xslWarningOnMultipleMatch) throws TransformerException
+  {	  
+	   
+	  if ((Constants.ATTRVAL_FAIL).equals(xslOnMultipleMatchStr)) {
+		  TemplateSubPatternAssociation next = head;
+		  double headNodePriority = (head.getTemplate()).getPriority();
+		  while ((next = next.getNext()) != null) {
+			  double nextNodePriority = (next.getTemplate()).getPriority();
+			  if ((next.m_stepPattern.execute(xctxt, targetNode) != NodeTest.SCORE_NONE) 
+																					  && next.matchMode(mode) 
+																					  && (nextNodePriority == headNodePriority)) {
+				  /**
+				   * Emit an XSL stylesheet dynamic error, when xsl:mode instruction 
+				   * specifies an attribute "on-multiple-match" with value 'fail'.   
+				   */
 
-    // TODO: Check for conflicts.
+				  int nodeType = dtm.getNodeType(targetNode);
+				  String nodeTypeStr = getNodeTypeString(nodeType);
+
+				  String nodeNameStr = dtm.getNodeName(targetNode);
+
+				  SourceLocator srcLocator1 = (SourceLocator)(head.getTemplate());
+				  int lineNo1 = srcLocator1.getLineNumber(); 
+				  SourceLocator srcLocator2 = (SourceLocator)(next.getTemplate());
+				  int lineNo2 = srcLocator2.getLineNumber();
+
+				  String errMesg = "XTDE0540 : More than one XSL template rule matched an XML " + nodeTypeStr + " node";
+				  if (nodeNameStr != null) {
+					  errMesg = (errMesg + " '" + nodeNameStr + "'."); 
+				  }
+				  else {
+					  errMesg = (errMesg + "."); 
+				  }
+
+				  throw new TransformerException(errMesg + " Conflicting template rule locations are line " + lineNo1 
+						  																				+ " and line " + lineNo2 +".", srcLocator1); 
+			  }
+		  }
+	  }
+	   
+	  if (xslWarningOnMultipleMatch) {
+		  TemplateSubPatternAssociation next = head;
+		  double headNodePriority = (head.getTemplate()).getPriority();
+		  while ((next = next.getNext()) != null) {
+			  double nextNodePriority = (next.getTemplate()).getPriority();
+			  if ((next.m_stepPattern.execute(xctxt, targetNode) != NodeTest.SCORE_NONE) 
+																					  && next.matchMode(mode) 
+																					  && (nextNodePriority == headNodePriority)) {
+				  /**
+				   * Emit an XSL stylesheet processing warning, when xsl:mode instruction 
+				   * specifies an attribute "warning-on-multiple-match" with value true.
+				   */
+
+				  int nodeType = dtm.getNodeType(targetNode);
+				  String nodeTypeStr = getNodeTypeString(nodeType);
+
+				  String nodeNameStr = dtm.getNodeName(targetNode);
+
+				  SourceLocator srcLocator1 = (SourceLocator)(head.getTemplate());
+				  int lineNo1 = srcLocator1.getLineNumber(); 
+				  SourceLocator srcLocator2 = (SourceLocator)(next.getTemplate());
+				  int lineNo2 = srcLocator2.getLineNumber();
+
+				  String errMesg = "Warning : More than one XSL template rule matched an XML " + nodeTypeStr + " node";
+				  if (nodeNameStr != null) {
+					  errMesg = (errMesg + " '" + nodeNameStr + "'."); 
+				  }
+				  else {
+					  errMesg = (errMesg + "."); 
+				  }
+
+				  ErrorListener errorListener = xctxt.getErrorListener();				   
+				  errorListener.warning(new TransformerException(errMesg + " Conflicting template rule locations are line " + lineNo1 
+						  																								+ " and line " + lineNo2 +".", srcLocator1)); 
+			  }
+		  }
+	  }
   }
 
   /**
-   * Add object to vector if not already there.
-   *
-   * @param obj
-   * @param v
+   * Method definition, to get xdm node type string 
+   * value, for the supplied node type integer value.
+   * 
+   * @param nodeType				Node type integer value
+   * @return						Node type string value
    */
-  private void addObjectIfNotFound(Object obj, Vector v)
-  {
+  private String getNodeTypeString(int nodeType) {
+	  
+	  String result = null;
 
-    int n = v.size();
-    boolean addIt = true;
-
-    for (int i = 0; i < n; i++)
-    {
-      if (v.elementAt(i) == obj)
-      {
-        addIt = false;
-
-        break;
-      }
-    }
-
-    if (addIt)
-    {
-      v.addElement(obj);
-    }
+	  if (nodeType == DTM.ELEMENT_NODE) {
+		  result = Constants.ELEMNAME_ELEMENT_STRING;  
+	  }
+	  else if (nodeType == DTM.ATTRIBUTE_NODE) {
+		  result = Constants.ELEMNAME_ATTRIBUTE_STRING;  
+	  }
+	  else if (nodeType == DTM.TEXT_NODE) {
+		  result = Constants.ELEMNAME_TEXT_STRING; 
+	  }
+	  else if (nodeType == DTM.COMMENT_NODE) {
+		  result = Constants.ELEMNAME_COMMENT_STRING;	
+	  }
+	  else if (nodeType == DTM.PROCESSING_INSTRUCTION_NODE) {
+		  result = Constants.ELEMNAME_PI_STRING; 
+	  }
+	  
+	  return result;
   }
 
   /**
@@ -896,10 +983,10 @@ public class TemplateList implements java.io.Serializable
   private Hashtable m_namedTemplates = new Hashtable(89);
   
   /**
-   * An java.util.Map object to store xsl:function definitions 
+   * An java.util.Map object to store xsl:function declarations 
    * within an XSL stylesheet. 
    */
-  private Map<XslFunctionDefinitionKey, ElemFunction> m_functionDefinitions = new HashMap<XslFunctionDefinitionKey, ElemFunction>();
+  private Map<XslFunctionDefinitionKey, ElemFunction> m_functionDeclarations = new HashMap<XslFunctionDefinitionKey, ElemFunction>();
 
   /**
    * This table is keyed on the target elements
@@ -928,34 +1015,6 @@ public class TemplateList implements java.io.Serializable
    * Comment Patterns.
    */
   private TemplateSubPatternAssociation m_commentPatterns = null;
-
-  /**
-   * Get table of named Templates.
-   * These are keyed on template names, and holding values
-   * that are template elements.
-   *
-   * @return A Hashtable dictionary that contains {@link java.lang.String}s 
-   * as the keys, and {@link org.apache.xalan.templates.ElemTemplate}s as the 
-   * values. 
-   */
-  private Hashtable getNamedTemplates()
-  {
-    return m_namedTemplates;
-  }
-
-  /**
-   * Set table of named Templates.
-   * These are keyed on string macro names, and holding values
-   * that are template elements in the XSL DOM tree.
-   *
-   * @param v Hashtable dictionary that contains {@link java.lang.String}s 
-   * as the keys, and {@link org.apache.xalan.templates.ElemTemplate}s as the 
-   * values.
-   */
-  private void setNamedTemplates(Hashtable v)
-  {
-    m_namedTemplates = v;
-  }
 
   /**
    * Get the head of the assocation list that is keyed by target.

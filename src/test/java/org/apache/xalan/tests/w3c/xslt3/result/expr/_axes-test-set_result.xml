@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-09-16T13:25:18Z" fail="18" name="axes" pass="183" skipped="0" statusUnknown="0" totalRun="201">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-12-10T16:52:27Z" fail="10" name="axes" pass="190" skipped="2" statusUnknown="0" totalRun="200">
    <testResult status="pass" testName="axes-001"/>
    <testResult status="pass" testName="axes-002"/>
    <testResult status="pass" testName="axes-003"/>
@@ -41,7 +41,7 @@
    <testResult status="pass" testName="axes-040"/>
    <testResult status="pass" testName="axes-041"/>
    <testResult status="pass" testName="axes-042"/>
-   <testResult status="fail" testName="axes-043"/>
+   <testResult status="pass" testName="axes-043"/>
    <testResult status="pass" testName="axes-044"/>
    <testResult status="pass" testName="axes-045"/>
    <testResult status="pass" testName="axes-046"/>
@@ -50,7 +50,7 @@
    <testResult status="pass" testName="axes-049"/>
    <testResult status="pass" testName="axes-050"/>
    <testResult status="pass" testName="axes-051"/>
-   <testResult status="fail" testName="axes-052"/>
+   <testResult status="pass" testName="axes-052"/>
    <testResult status="pass" testName="axes-053"/>
    <testResult status="pass" testName="axes-054"/>
    <testResult status="pass" testName="axes-055"/>
@@ -62,7 +62,7 @@
    </testResult>
    <testResult status="fail" testName="axes-058"/>
    <testResult status="fail" testName="axes-059"/>
-   <testResult status="fail" testName="axes-060"/>
+   <testResult status="pass" testName="axes-060"/>
    <testResult status="fail" testName="axes-061">
       <outResult>
          <errTrace>XPST0003 : An XPath expression                 /out/u = "2,9,3,4"                /out/u = "9,2,3,4"              has syntax error. Unknown op code : 21.</errTrace>
@@ -127,7 +127,7 @@
    <testResult status="pass" testName="axes-117"/>
    <testResult status="pass" testName="axes-118"/>
    <testResult status="pass" testName="axes-119"/>
-   <testResult status="fail" testName="axes-120"/>
+   <testResult status="pass" testName="axes-120"/>
    <testResult status="pass" testName="axes-121"/>
    <testResult status="fail" testName="axes-122"/>
    <testResult status="pass" testName="axes-123"/>
@@ -140,7 +140,10 @@
    <testResult status="pass" testName="axes-130"/>
    <testResult status="pass" testName="axes-131"/>
    <testResult status="fail" testName="axes-132">
-      <outResult/>
+      <outResult>
+         <errTrace>XPST0003 : An XPath expression f:nn(/comment()[1]) has syntax error. Unknown op code : 0.</errTrace>
+         <errTrace>java.lang.ArrayIndexOutOfBoundsException</errTrace>
+      </outResult>
    </testResult>
    <testResult status="pass" testName="axes-133"/>
    <testResult status="pass" testName="axes-134"/>
@@ -173,17 +176,13 @@
    <testResult status="pass" testName="axes-161"/>
    <testResult status="pass" testName="axes-162"/>
    <testResult status="pass" testName="axes-163"/>
-   <testResult status="fail" testName="axes-164"/>
+   <testResult status="pass" testName="axes-164"/>
    <testResult status="pass" testName="axes-165"/>
-   <testResult status="fail" testName="axes-166"/>
+   <testResult status="pass" testName="axes-166"/>
    <testResult status="pass" testName="axes-167"/>
    <testResult status="pass" testName="axes-168"/>
    <testResult status="pass" testName="axes-169"/>
-   <testResult status="fail" testName="axes-170">
-      <outResult>
-         <errTrace>java.lang.ArrayIndexOutOfBoundsException: -1</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="axes-170"/>
    <testResult status="pass" testName="axes-171"/>
    <testResult status="pass" testName="axes-172"/>
    <testResult status="pass" testName="axes-173"/>
@@ -214,7 +213,6 @@
    <testResult status="pass" testName="axes-198"/>
    <testResult status="pass" testName="axes-199"/>
    <testResult status="pass" testName="axes-200"/>
-   <testResult status="fail" testName="axes-201">
-      <outResult/>
-   </testResult>
+   <testResult reason="Xalan configured" status="skipped" testName="axes-201"/>
+   <testResult reason="Xalan configured" status="skipped" testName="axes-202"/>
 </testrun>

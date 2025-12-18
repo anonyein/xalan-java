@@ -33,7 +33,10 @@ import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.templates.AVT;
 import org.apache.xalan.templates.Constants;
+import org.apache.xalan.templates.ElemApplyTemplates;
 import org.apache.xalan.templates.ElemForEachGroup;
+import org.apache.xalan.templates.ElemFunction;
+import org.apache.xalan.templates.ElemTemplate;
 import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.xslt.util.StringUtil;
 import org.apache.xml.utils.NamespaceSupport2;
@@ -1027,33 +1030,59 @@ public class XSLTAttributeDef
     	  QName qname = null;    	  
     	  if (value.startsWith("Q{")) {
     		 // Support for XPath 3.1 URI qualified names    
-    		 int i = value.indexOf('}');
-    		 if (i > 2) {
-    		    String nsUri = value.substring(2, i);
-    		    String localName = value.substring(i + 1);
+    		 int idx = value.indexOf('}');
+    		 if (idx > 2) {
+    		    String nsUri = value.substring(2, idx);
+    		    String localName = value.substring(idx + 1);
     		    qname = new QName(nsUri, localName, true);
     		 }
+    		 else if ((idx == 2) && (owner instanceof ElemFunction)) {
+    			String localName = value.substring(idx + 1);
+    			qname = new QName(Constants.XSL_ERROR_NAMESACE, localName, true); 
+    		 }
     		 
-    		 if (qname == null) {
+    		 if ((qname == null) && !(owner instanceof ElemFunction)) {
     			handleError(handler,XSLTErrorResources.ER_ABSENT_NAMESPACE_URI, new Object[] {owner.getNodeName()}, null);
     			
     			return null; 
         	 }
     	  }
+    	  else if ((owner instanceof ElemApplyTemplates) && (Constants.ATTRNAME_MODE).equals(name) && 
+    			                                                                                 (Constants.ATTRVAL_DEFAULT_PREFIX).equals(value)) {
+    		  // We use, an XML non-standard namespace for this QName object 
+    		  // instance, because string #default is not a valid QName string.
+    		  qname = new QName("http://xml.apache.org/xalan/java", "default", true); 
+    	  }
+    	  else if ((owner instanceof ElemApplyTemplates) && (Constants.ATTRNAME_MODE).equals(name) && 
+    			                                                                                 (Constants.ATTRVAL_UNNAMED_PREFIX).equals(value)) {
+    		  // We use, an XML non-standard namespace for this QName object 
+    		  // instance, because string #unnamed is not a valid QName string.
+    		  qname = new QName("http://xml.apache.org/xalan/java", "unnamed", true); 
+    	  }
+    	  else if ((owner instanceof ElemApplyTemplates) && (Constants.ATTRNAME_MODE).equals(name) && 
+    			                                                                                 (Constants.ATTRVAL_CURRENT_PREFIX).equals(value)) {
+    		  // We use, an XML non-standard namespace for this QName object 
+    		  // instance, because string #current is not a valid QName string.
+    		  qname = new QName("http://xml.apache.org/xalan/java", "current", true); 
+    	  }
+    	  else if ((owner instanceof ElemTemplate) && (Constants.ATTRNAME_MODE).equals(name) && 
+    			                                                                                 (Constants.ATTRVAL_ALL_PREFIX).equals(value)) {
+    		  // We use, an XML non-standard namespace for this QName object 
+    		  // instance, because string #all is not a valid QName string.
+    		  qname = new QName("http://xml.apache.org/xalan/java", "all", true); 
+    	  }
     	  else {
-   	         qname = new QName(value, handler, true);
-    	  }    	      	  
+    		  qname = new QName(value, handler, true);
+    	  }   	      	  
    	      
           return qname;
         }
         catch (IllegalArgumentException ie)
         {
-            // thrown by QName constructor
             handleError(handler,XSLTErrorResources.INVALID_QNAME, new Object[] {name, value},ie);
             return null;
         }
         catch (RuntimeException re) {
-            // thrown by QName constructor
             handleError(handler,XSLTErrorResources.INVALID_QNAME, new Object[] {name, value},re);
             return null;
         }
@@ -1840,7 +1869,7 @@ public class XSLTAttributeDef
 	  }
 	  
 	  if (!StringUtil.isStrHasBalancedParentheses(result, '(', ')')) {
-		  throw new TransformerException("An xsl:for-each-group instruction's group-by value \"" + 
+		  throw new TransformerException("An XSL for-each-group instruction's group-by value \"" + 
 										                                  groupByStrValue + "\" doesn't have or evaluates to a string "
 										                                  + "having balanced parenthesis pairs '(' and ')'."); 
 	  }

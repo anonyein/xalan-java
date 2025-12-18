@@ -27,19 +27,27 @@ import javax.xml.transform.TransformerException;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
-import org.apache.xml.utils.IntStack;
+import org.apache.xml.serializer.SerializationHandler;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
+import org.apache.xpath.VariableStack;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.functions.Function;
 import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XBoolean;
+import org.apache.xpath.objects.XBooleanStatic;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
+import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
+import org.apache.xpath.objects.XString;
+import org.xml.sax.SAXException;
+
+import xml.xpath31.processor.types.XSAnyAtomicType;
 
 /**
  * Implementation of the XSLT 3.0 xsl:iterate instruction.
@@ -206,7 +214,7 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
        * Get an int constant identifying the type of element.
        * @see org.apache.xalan.templates.Constants
        *
-       * @return The token ID for this element
+       * @return The token id for this element
        */
        public int getXSLToken()
        {
@@ -224,7 +232,7 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
        }
 
        /**
-        * Execute the xsl:iterate transformation.
+        * Execute an xsl:iterate transformation.
         *
         * @param transformer non-null reference to the the current transform-time state.
         *
@@ -232,17 +240,17 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
        */
        public void execute(TransformerImpl transformer) throws TransformerException
        {
-           transformSelectedNodes(transformer);
+           transformSelectedXdmItems(transformer);
        }
-
+       
        /**
-       * @param transformer              non-null reference to the the current transform-time state.
-       *
-       * @throws TransformerException    Thrown in a variety of circumstances.
-       * 
-       * @xsl.usage advanced
-       */
-       private void transformSelectedNodes(TransformerImpl transformer) throws TransformerException {
+        * Method definition, to process an xdm input sequence/array, or an XML node set
+        * with xsl:iterate instruction.
+        * 
+        * @param transformer									Xalan-J's XSL transformation object
+        * @throws TransformerException
+        */
+       private void transformSelectedXdmItems(TransformerImpl transformer) throws TransformerException {
         
            XPathContext xctxt = transformer.getXPathContext();                       
          
@@ -317,6 +325,17 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
               inpXObject = m_selectExpression.execute(xctxt);
            }
            
+           if ((inpXObject instanceof XSAnyAtomicType) || (inpXObject instanceof XNumber) || 
+        		                                          (inpXObject instanceof XString) || 
+        		                                          (inpXObject instanceof XBoolean) || (inpXObject instanceof XBooleanStatic)) {
+        	  // Convert suitable, singleton xdm items to sequence
+        	  ResultSequence rSeq = new ResultSequence();
+        	  XObject xObj1 = inpXObject; 
+        	  rSeq.add(xObj1);
+        	  
+        	  inpXObject = rSeq; 
+           }
+           
            List<XObject> itemsToBeProcessed = null;
                
            if ((inpXObject instanceof ResultSequence) || (inpXObject instanceof XPathArray)) {
@@ -336,16 +355,34 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
                final XObject prevCtxtItem = xctxt.getXPath3ContextItem();
                final int prevCtxtPosition = xctxt.getXPath3ContextPosition();
                
-               try {
+               int xslParamCount = 0;
+               VariableStack varStack = xctxt.getVarStack();
+               try {            	               	   
             	   int inpSeqLength = itemsToBeProcessed.size();
-            	   if (inpSeqLength == 0) {
-            		   /**
-            		    * We do little static type checking (like, variable references which
-            		    * are not in scope) on xsl:on-completion instruction, even if there
-            		    * are no input items to be processed.
-            		    */
+            	   if (inpSeqLength == 0) {            		               		   
             		   for (ElemTemplateElement elemTemplate = this.m_firstChild; elemTemplate != null; 
-            				   elemTemplate = elemTemplate.m_nextSibling) {
+                                                                                  elemTemplate = elemTemplate.m_nextSibling) {
+            			  if (elemTemplate instanceof ElemParam) {
+            				  xslParamCount++; 
+            			  }
+            		   }
+            		   
+            		   if (xslParamCount > 0) {
+            			   int xslParamStackFrame = varStack.link(xslParamCount);
+            			   int pCount = 0;
+            			   for (ElemTemplateElement elemTemplate = this.m_firstChild; elemTemplate != null; 
+                                                                                      elemTemplate = elemTemplate.m_nextSibling) {
+            				   if (elemTemplate instanceof ElemParam) {
+            					  XObject pValue = ((ElemParam)elemTemplate).getValue(transformer, sourceNode);
+            					  varStack.setLocalVariable(pCount, pValue, xslParamStackFrame);
+            				   }
+            				   
+            				   pCount++;
+            			   }
+            		   }
+            		   
+            		   for (ElemTemplateElement elemTemplate = this.m_firstChild; elemTemplate != null; 
+            				                                                      elemTemplate = elemTemplate.m_nextSibling) {            			   
             			   if (elemTemplate instanceof ElemIterateOnCompletion) {            			                                                       
             				   xctxt.setXPath3ContextSize(-1);
             				   xctxt.setXPath3ContextItem(null);
@@ -354,12 +391,8 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
             				   xslOnCompletionTemplate = (ElemIterateOnCompletion)elemTemplate; 
             				   transformer.setXslIterateOnCompletionActive(true);
             				   xctxt.setSAXLocator(xslOnCompletionTemplate);
-            				   transformer.setCurrentElement(xslOnCompletionTemplate);
-
-            				   // This evaluates xsl:on-completion instruction, but doesn't emit 
-            				   // the result to an XSL transformation output.
-            				   int nodeHandle = transformer.transformToRTF(this);                          
-
+            				   transformer.setCurrentElement(xslOnCompletionTemplate);            				   
+            				   elemTemplate.execute(transformer);
             				   transformer.setXslIterateOnCompletionActive(false);
 
             				   return;
@@ -374,20 +407,44 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
             			   resultSeqItem = ((XMLNodeCursorImpl)resultSeqItem).getFresh(); 
             		   }
 
-            		   setXPathContextForXslSequenceProcessing(inpSeqLength, idx, resultSeqItem, xctxt);                                                                     
-            		   for (ElemTemplateElement elemTemplate = this.m_firstChild; elemTemplate != null; 
-            				                                                      elemTemplate = elemTemplate.m_nextSibling) {                	  
-            			   if ((elemTemplate instanceof ElemIterateOnCompletion) && (xslOnCompletionTemplate == null)) {
-            				   xslOnCompletionTemplate = (ElemIterateOnCompletion)elemTemplate;     
+            		   setXPathContextForXslSequenceProcessing(inpSeqLength, idx, resultSeqItem, xctxt);
+            		   
+            		   int count = 0;
+            		   for (ElemTemplateElement t = this.m_firstChild; t != null; t = t.m_nextSibling) {
+            			   count++;
+            			   if ((idx == 0) && (t instanceof ElemParam)) {
+            				   ElemParam elemParam = (ElemParam)t;
+            				   QName paramQname = elemParam.getName();
+            				   Map<QName, XObject> varMap = xctxt.getXPathVarMap();
+            				   if (varMap.get(paramQname) != null) {
+            					  varMap.put(paramQname, null); 
+            				   }
+            			   }
+            			   
+            			   if ((t instanceof ElemIterateOnCompletion) && (xslOnCompletionTemplate == null)) {
+            				   xslOnCompletionTemplate = (ElemIterateOnCompletion)t;     
             			   }
             			   else if (!transformer.isXslIterateBreakEvaluated()) {
-            				   xctxt.setSAXLocator(elemTemplate);
-            				   transformer.setCurrentElement(elemTemplate);
-            				   elemTemplate.execute(transformer); 
+            				   xctxt.setSAXLocator(t);
+            				   transformer.setCurrentElement(t);
+            				   t.execute(transformer);
+            				   if ((t instanceof ElemSequence) && (idx < (inpSeqLength - 1))) {
+            					   XString xString = new XString(" ");
+            					   SerializationHandler handler = transformer.getSerializationHandler();
+            					   try {
+            					      xString.executeCharsToContentHandler(xctxt, handler);            				   
+            					   }
+            					   catch (SAXException ex) {
+            						  throw new javax.xml.transform.TransformerException("XTDE1030 : An XSL tranformation error has occured, while "
+        																		    								   + "processing XSL iterate's "
+        																		    								   + "contained sequence constructor.", srcLocator); 
+            					   }
+            				   }
             			   }
             			   else {                              
             				   resetXPathContextForXslSequenceProcessing(resultSeqItem, xctxt);                               
-            				   isBreakFromXslContentLoop = true;                               
+            				   isBreakFromXslContentLoop = true;
+            				   
             				   break;    
             			   }
             		   }
@@ -398,6 +455,28 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
             		   else {                          
             			   break;
             		   }
+            		   
+            		   boolean isSpaceToEmit = false;
+    				   ElemTemplateElement parentElem = getParentElem();
+    				   if (((count == 1) && (this.m_firstChild instanceof ElemSequence)) && 
+    						                                            !((parentElem instanceof ElemFunction) || 
+    						                                              (parentElem instanceof ElemVariable))) {
+    					   isSpaceToEmit = true; 
+    				   }
+    				   
+    				   if (isSpaceToEmit && (idx < (inpSeqLength - 1)) && !(resultSeqItem instanceof XMLNodeCursorImpl)) {
+    					   // Emit " " separator character, after processing an xdm non-node item
+    					   SerializationHandler handler = transformer.getSerializationHandler();
+    					   String strVal = " ";
+    					   try {
+    						   handler.characters(strVal.toCharArray(), 0, strVal.length());
+    					   }
+    					   catch (SAXException ex) {
+    						   throw new javax.xml.transform.TransformerException("XTDE1030 : An XSL tranformation error has occured, while "
+																		    								   + "processing XSL iterate's "
+																		    								   + "contained sequence constructor.", srcLocator); 
+    					   }
+    				   }
             	   }                                    
 
             	   if ((xslOnCompletionTemplate != null) && !transformer.isXslIterateBreakEvaluated()) {
@@ -418,52 +497,113 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
             	   xctxt.setXPath3ContextSize(prevContextSize);
             	   xctxt.setXPath3ContextItem(prevCtxtItem);
             	   xctxt.setXPath3ContextPosition(prevCtxtPosition);
+            	   if (xslParamCount > 0) {
+            		  varStack.unlink(); 
+            	   }
                }
            }
            else {
                // Evaluate xsl:iterate instruction, when value of its "select" attribute evaluates 
-               // to a node set. 
-               DTMCursorIterator sourceNodes = m_selectExpression.asIterator(xctxt, sourceNode);
+               // to a node set.
+        	   
+        	   Map<QName, XObject> varMap = xctxt.getXPathVarMap();
+        	   
+               DTMCursorIterator sourceNodes = m_selectExpression.asIterator(xctxt, sourceNode); 
         
-               try {               
-                   xctxt.pushCurrentNode(DTM.NULL);
-                   IntStack currentNodes = xctxt.getCurrentNodeStack();
-                   xctxt.pushCurrentExpressionNode(DTM.NULL);
-                   IntStack currentExpressionNodes = xctxt.getCurrentExpressionNodeStack();
-                   xctxt.pushSAXLocatorNull();
-                   xctxt.pushContextNodeList(sourceNodes);
-                   transformer.pushElemTemplateElement(null);                              
-                          
-                   int nextNode;
+               XObject prevContextItem = xctxt.getXPath3ContextItem();
+               int prevContextPos = xctxt.getXPath3ContextPosition();
+               int prevContextSize = xctxt.getXPath3ContextSize();
                
+               try {                          	               	                                            
                    ElemIterateOnCompletion xslOnCompletionTemplate = null;
-               
-                   while ((nextNode = sourceNodes.nextNode()) != DTM.NULL) {
-                      currentNodes.setTop(nextNode);
-                      currentExpressionNodes.setTop(nextNode);
-                                                                        
-                      for (ElemTemplateElement elemTemplate = this.m_firstChild; elemTemplate != null; 
-                                                                          elemTemplate = elemTemplate.m_nextSibling) {
-                          if ((elemTemplate instanceof ElemIterateOnCompletion) && 
-                                                                        (xslOnCompletionTemplate == null)) {
-                              xslOnCompletionTemplate = (ElemIterateOnCompletion)elemTemplate;     
+                   int nodeSetLength = sourceNodes.getLength();
+
+                   int iterCount = 0;
+                   int nextNode;
+                   while ((nextNode = sourceNodes.nextNode()) != DTM.NULL) { 
+                	  iterCount++;
+                      
+                      for (ElemTemplateElement t = this.m_firstChild; t != null; t = t.m_nextSibling) {                    	  
+                    	  if ((iterCount == 1) && (t instanceof ElemParam)) {
+                    		  ElemParam elemParam = (ElemParam)t;
+                    		  QName paramQname = elemParam.getName();
+                    		  varMap = xctxt.getXPathVarMap();
+                    		  if (varMap.get(paramQname) != null) {
+                    			  varMap.put(paramQname, null); 
+                    		  }
+                    	  }
+                    	  
+                    	  if (!(t instanceof ElemParam)) {
+                    		 xctxt.setXPath3ContextItem(null);
+                    		 xctxt.setXPath3ContextPosition(iterCount);
+                    		 xctxt.setXPath3ContextSize(nodeSetLength);                    		 
+                    	     xctxt.pushCurrentNode(nextNode);
+                    	  }
+                    	  
+                    	  if ((t instanceof ElemIterateOnCompletion) && (xslOnCompletionTemplate == null)) {
+                              xslOnCompletionTemplate = (ElemIterateOnCompletion)t;     
                           }
                           else if (!transformer.isXslIterateBreakEvaluated()) {
-                              xctxt.setSAXLocator(elemTemplate);
-                              transformer.setCurrentElement(elemTemplate);
-                              elemTemplate.execute(transformer);
+                        	  if ((iterCount == 1) && (t instanceof ElemParam)) {
+                        		 ElemParam elemParam = (ElemParam)t;
+                        		 QName qName = elemParam.getName();
+                        		 XObject paramValue = null;
+                        		 try {
+                        		     paramValue = elemParam.getValue(transformer, sourceNode);
+                        		 }
+                        		 catch (TransformerException ex) {
+                        			 String errMesg1 = ex.getMessage();
+                        			 int colonIdx = errMesg1.indexOf(':');
+                        			 if (colonIdx != -1) {
+                        				errMesg1 = errMesg1.substring(colonIdx + 1);
+                        				errMesg1 = "XTSE3520 : " + errMesg1;
+                        			 }
+                        			 
+                        			 throw new TransformerException(errMesg1, srcLocator); 
+                        		 }
+                        		 
+                        		 varMap.put(qName, paramValue);
+                        	  }
+                        	  else {
+                        	     xctxt.setSAXLocator(t);
+                        	     transformer.setCurrentElement(t);                        		  
+                        	     t.execute(transformer);                        	     
+                        	     
+                        	     DTM dtm = xctxt.getDTM(nextNode);
+                        	     boolean isXdmElemNode = false;
+                        	     if (dtm.getNodeType(nextNode) == DTM.ELEMENT_NODE) {
+                        	    	isXdmElemNode = true; 
+                        	     }
+                        	     
+                        	     if (!isXdmElemNode && (t instanceof ElemSequence) && (iterCount == (nodeSetLength - 1))) {
+                        	    	SerializationHandler handler = transformer.getSerializationHandler();                        	    	
+                        	    	XString xString = new XString(" "); 
+                        	    	try {
+									   xString.executeCharsToContentHandler(xctxt, handler);
+									}
+                        	    	catch (SAXException ex) {
+                        	    	   throw new javax.xml.transform.TransformerException("XTDE1030 : An XSL tranformation error has occured, while "
+																						    								   + "processing XSL iterate's "
+																						    								   + "contained sequence constructor.", srcLocator);
+									}
+                        	     }
+                        	  }
                           }
-                          else {
+                          else {                        	  
                               break;    
                           }
                       }                                      
                    
                       if (transformer.isXslIterateBreakEvaluated()) {
                           break;   
-                      }
-                   }
+                      }                                            
+                  }
                
                   if ((xslOnCompletionTemplate != null) && !transformer.isXslIterateBreakEvaluated()) {
+                	   xctxt.setXPath3ContextItem(prevContextItem);
+                 	   xctxt.setXPath3ContextPosition(prevContextPos);
+             		   xctxt.setXPath3ContextSize(prevContextSize);
+                       xctxt.pushCurrentNode(sourceNode);
                        transformer.setXslIterateOnCompletionActive(true);
                        xctxt.setSAXLocator(xslOnCompletionTemplate);
                        transformer.setCurrentElement(xslOnCompletionTemplate);
@@ -474,28 +614,27 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
                   transformer.setXslIterateBreakEvaluated(false);
              }
              finally {
-                 xctxt.popSAXLocator();
-                 xctxt.popContextNodeList();
-                 transformer.popElemTemplateElement();
-                 xctxt.popCurrentExpressionNode();
-                 xctxt.popCurrentNode();
-                 sourceNodes.detach();
+            	 xctxt.setXPath3ContextItem(prevContextItem);
+            	 xctxt.setXPath3ContextPosition(prevContextPos);
+            	 xctxt.setXPath3ContextSize(prevContextSize);
+            	 xctxt.popCurrentNode();
+            	 xctxt.pushCurrentNode(sourceNode);            	 
+            	 sourceNodes.detach();
+
+            	 // Clear xsl:iterate xsl:param variable storage
+            	 for (int idx = 0; idx < fXslIterateParamWithparamDataList.size(); idx++) {
+            		 XslIterateParamWithparamData xslIterateParamWithparamData = fXslIterateParamWithparamDataList.get(idx);
+            		 QName varQName = xslIterateParamWithparamData.getName();
+            		 varMap.remove(varQName);
+            	 }
              }
-          }
-           
-          Map<QName, XObject> varMap = xctxt.getXPathVarMap();
+          }          
           
-          // Clear xsl:iterate xsl:param variable storage
-          for (int idx = 0; idx < fXslIterateParamWithparamDataList.size(); idx++) {
-        	 XslIterateParamWithparamData xslIterateParamWithparamData = fXslIterateParamWithparamDataList.get(idx);
-        	 QName varQName = xslIterateParamWithparamData.getNameVal();
-        	 varMap.remove(varQName);
-          }
       }
       
        /**
-        * Method definition to, check XSL 3 spec static constraints for various
-        * XSL elements within xsl:iterate instruction.
+        * Method definition, to check XSLT 3.0 static constraints for various XSL elements 
+        * within xsl:iterate instruction.
         * 
         * @param xctxt								    An XPath context object
         * @throws TransformerException
@@ -516,15 +655,32 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
     		  }
     		  else if (elemTemplate instanceof ElemUnknown) {
     			  throw new TransformerException("XTSE0010 : An XSL stylesheet element occurs at an incorrect "
-															    					  + "position within xsl:iterate instruction (for e.g, "
-															    					  + "xsl:variable followed by xsl:param).", srcLocator);
+															    					  + "position within XSL iterate instruction (for e.g, "
+															    					  + "an XSL variable followed by XSL param).", srcLocator);
     		  }
     		  else {
     			  xslElemNamesList.add(OTHER_ELEM);
     		  }
     	  }
-
-    	  verifyXslNextIterAndBreakConstraints(this);
+    	  
+    	  List<String> errMesgList = new ArrayList<String>();
+    	  verifyXslNextIterAndBreakConstraints(this, errMesgList);
+    	  int errMesgListCount = errMesgList.size();
+    	  if (errMesgListCount > 0) {
+    		  StringBuffer strBuff = new StringBuffer();
+    		  for (int idx = 0; idx < errMesgListCount; idx++) {
+    			  String errMesg = errMesgList.get(idx);
+    			  if (idx < (errMesgListCount - 1)) {
+    				  strBuff.append(errMesg + "\n");
+    			  }
+    			  else {
+    				  strBuff.append(errMesg);
+    			  }
+    		  }
+    		  
+    		  String errMesgStr = strBuff.toString();
+    		  throw new TransformerException(errMesgStr, srcLocator);
+    	  }
 
     	  /**
     	   * Get index of XSLT stylesheet specific element(s)'s, first occurrence within the list object
@@ -536,13 +692,13 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
     	  int otherElemIdx = xslElemNamesList.indexOf(OTHER_ELEM);
 
     	  if ((paramIdx != -1) && (onCompletionIdx != -1) && (paramIdx > onCompletionIdx)) {
-    		  throw new TransformerException("XTSE0010 : An xsl:param element must occur before xsl:on-completion element.", srcLocator);    
+    		  throw new TransformerException("XTSE0010 : An XSL param element must occur before on-completion element.", srcLocator);    
     	  }                    
     	  else if ((paramIdx != -1) && (otherElemIdx != -1) && (paramIdx > otherElemIdx)) {
-    		  throw new TransformerException("XTSE0010 : An xsl:param element must occur before any other element within xsl:iterate element.", srcLocator);
+    		  throw new TransformerException("XTSE0010 : An XSL param element must occur before any other element within XSL iterate element.", srcLocator);
     	  }
     	  else if ((paramIdx != -1) && (otherElemIdx != -1) && (onCompletionIdx != -1) && (paramIdx < otherElemIdx) && (otherElemIdx < onCompletionIdx)) {
-    		  throw new TransformerException("XTSE0010 : An xsl:on-completion element must be the first child element of xsl:iterate after the xsl:param elements.", srcLocator);
+    		  throw new TransformerException("XTSE0010 : An XSL on-completion element must be the first child element of XSL 'iterate' instruction after the param elements.", srcLocator);
     	  }          
 
     	  if (paramIdx != -1) {
@@ -552,11 +708,13 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
     				  ElemParam paramElem = (ElemParam)elemTemplate;
     				  QName paramNameVal = paramElem.getName();
     				  XPath paramSelectXPath = paramElem.getSelect();
+    				  String asAttr = paramElem.getAs();
     				  XslIterateParamWithparamData paramWithparamDataObj = new XslIterateParamWithparamData();
-    				  paramWithparamDataObj.setNameVal(paramNameVal);
-    				  paramWithparamDataObj.setSelectVal(paramSelectXPath);
+    				  paramWithparamDataObj.setName(paramNameVal);
+    				  paramWithparamDataObj.setSelect(paramSelectXPath);
+    				  paramWithparamDataObj.setAsAttrValue(asAttr);
     				  if (fXslIterateParamWithparamDataList.contains(paramWithparamDataObj)) {
-    					  throw new TransformerException("XTSE0580 : The name of an xsl:param '" + paramNameVal + "' is not unique within xsl:iterate.", srcLocator);    
+    					  throw new TransformerException("XTSE0580 : The name of an XSL param '" + paramNameVal + "' is not unique within XSL 'iterate' instruction.", srcLocator);    
     				  }
     				  else {
     					  fXslIterateParamWithparamDataList.add(paramWithparamDataObj);    
@@ -567,41 +725,117 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
     }
 
     /**
-     * Verify within an xsl:iterate instruction, that xsl:next-iteration and xsl:break
-     * instructions are in tail position of xsl:iterate's sequence constructor, and few
-     * other XSL stylesheet constraints as well.
+     * Method definition, to check within an xsl:iterate instruction, that xsl:next-iteration 
+     * or/and xsl:break instructions are in tail position of xsl:iterate's sequence constructor, 
+     * and few other XSL stylesheet xsl:iterate constraints as well.
      * 
-     * @param elemTemplateElem						An xsl:iterate instruction, or an XSL 
-     *                                              instruction within xsl:iterate.
+     * @param elemTemplateElem						      An object representing an xsl:iterate 
+     *                                                    instruction, or another XSL instruction 
+     *                                                    within xsl:iterate.
+     * @param errMesgList                                 A list of error message strings, populated
+     *                                                    by this method.                                                     
      * @throws TransformerException
      */
-	private void verifyXslNextIterAndBreakConstraints(ElemTemplateElement elemTemplateElem) throws TransformerException {
+	private void verifyXslNextIterAndBreakConstraints(ElemTemplateElement elemTemplateElem, List<String> errMesgList) throws TransformerException {				
 		
-		while (elemTemplateElem != null) {
-			SourceLocator srcLocator = (SourceLocator)elemTemplateElem;
+		while (elemTemplateElem != null) {			
 		    if (elemTemplateElem instanceof ElemIterateBreak) {
-		    	if (!isXslInstructionInTailPositionOfSequenceConstructor(elemTemplateElem)) {
-		           throw new TransformerException("XTSE3120 : An xsl:break instruction is not in a tail position of xsl:iterate's sequence constructor.", srcLocator);
+		    	if (!isXslInstIterateRelnInTailPositionOfSeqCons(elemTemplateElem)) {
+		    	   String errMesg = "XTSE3120 : An XSL 'break' instruction is not in a tail position of XSL iterate's "
+		    	   		                                                                         + "sequence constructor.";
+		    	   if (!errMesgList.contains(errMesg)) {
+		    	      errMesgList.add(errMesg);
+		    	   }
 		    	}
 		    	else if ((elemTemplateElem.getParentElem() instanceof ElemLiteralResult) || (elemTemplateElem.getParentElem() instanceof ElemElement)) {
-		    	   throw new TransformerException("XTSE3120 : An xsl:break instruction cannot occur as child of XSL element constructor.", srcLocator);
+		    	   String errMesg = "XTSE3120 : An XSL 'break' instruction cannot occur as child of XSL element constructor.";
+		    	   if (!errMesgList.contains(errMesg)) {
+		    	      errMesgList.add(errMesg);
+		    	   }
 		    	}
 		    	else if (elemTemplateElem.getParentElem() instanceof ElemForEach) {
-			       throw new TransformerException("XTSE3120 : An xsl:break instruction cannot occur as child of xsl:for-each instruction.", srcLocator);
+			       String errMesg = "XTSE3120 : An XSL 'break' instruction cannot occur as child of XSL for-each instruction.";
+		    	   if (!errMesgList.contains(errMesg)) {
+		    	      errMesgList.add(errMesg);
+		    	   }
 			    }
 		    }
-		    else if ((elemTemplateElem instanceof ElemIterateNextIteration) && !isXslInstructionInTailPositionOfSequenceConstructor(elemTemplateElem)) {
-		    	throw new TransformerException("XTSE3120 : An next-iteration instruction is not in a tail position of xsl:iterate's sequence constructor.", srcLocator);
+		    else if ((elemTemplateElem instanceof ElemIterateNextIteration) && !isXslInstIterateRelnInTailPositionOfSeqCons(elemTemplateElem)) {
+		    	String errMesg = "XTSE3120 : An XSL 'next-iteration' instruction is not in a tail position of XSL iterate's "
+		    			                                                                               + "sequence constructor.";
+		    	if (!errMesgList.contains(errMesg)) {
+		    	   errMesgList.add(errMesg);
+		    	}
+		    }
+		    else if (elemTemplateElem instanceof ElemIterateOnCompletion) {
+		    	if (!(elemTemplateElem.getParentElem() instanceof ElemIterate)) {
+		    		String errMesg = "XTSE0010 : An XSL on-completion element can only occur as child of XSL iterate instruction, "
+		    				                                                                                      + "after zero or more XSL param elements.";
+		    		if (!errMesgList.contains(errMesg)) {
+		    			errMesgList.add(errMesg);
+		    		}
+		    	}
 		    }
 		    
 		    ElemTemplateElement elem = elemTemplateElem.getFirstChildElem();
 		    while (elem != null) {
-		       verifyXslNextIterAndBreakConstraints(elem);
+		       verifyXslNextIterAndBreakConstraints(elem, errMesgList);
 		       elem = elem.getNextSiblingElem();
 		    }
 		    
 		    elemTemplateElem = elemTemplateElem.getNextSiblingElem();
 		}  
 	}
-      
+	
+	 /**
+	 * Method definition, to check whether an XSLT instruction is within its contained
+	 * XSL sequence constructor's tail position, with respect to xsl:iterate instruction's 
+	 * processing. This method definition, implements an algorithm for this XSL transformation
+	 * requirement, as specified within XSLT 3.0 spec.
+	 * 
+	 * @param xslInstr      An XSLT stylesheet instruction, that needs to be checked whether
+	 *                      its in the tail position of an XSL sequence constructor. When this 
+	 *                      method is first called, an XSL instruction xslInstr is either 
+	 *                      xsl:break or an xsl:next-iteration instruction.
+	 *                      
+	 * @return				Boolean value true or false, indicating whether an XSLT instruction 
+	 *                      is within its contained XSL sequence constructor's tail position. 
+	 */
+	  private boolean isXslInstIterateRelnInTailPositionOfSeqCons(ElemTemplateElement xslInstr) {
+	      
+		  boolean result = true;
+
+		  ElemTemplateElement elemTemplateElementNextSubling = xslInstr.getNextSiblingElem();
+		  // Ignore sequence of one or more xsl:fallback instructions 
+		  while (elemTemplateElementNextSubling instanceof ElemFallback) {
+			  elemTemplateElementNextSubling = elemTemplateElementNextSubling.getNextSiblingElem(); 
+		  }
+		  
+		  if (elemTemplateElementNextSubling == null) {
+			  ElemTemplateElement parentElem = xslInstr.getParentElem();
+			  if (parentElem instanceof ElemIf) {
+				 result = isXslInstIterateRelnInTailPositionOfSeqCons((ElemIf)parentElem);
+			  }
+			  else if ((parentElem instanceof ElemWhen) || (parentElem instanceof ElemOtherwise)) {
+			     result = isXslInstIterateRelnInTailPositionOfSeqCons((ElemChoose)(parentElem.getParentElem())); 
+			  }
+			  else if (parentElem instanceof ElemTry) {
+				 result = isXslInstIterateRelnInTailPositionOfSeqCons((ElemTry)parentElem);  
+			  }
+			  else if (parentElem instanceof ElemCatch) {
+				 result = isXslInstIterateRelnInTailPositionOfSeqCons((ElemTry)(parentElem.getParentElem()));  
+			  }			  
+		  }
+		  else {
+			  if (elemTemplateElementNextSubling instanceof ElemCatch) {
+				 result = isXslInstIterateRelnInTailPositionOfSeqCons((ElemTry)(elemTemplateElementNextSubling.getParentElem())); 
+			  }
+			  else {
+			     result = false;
+			  }
+		  }
+	      
+	      return result;
+	  }
+	  
 }

@@ -19,6 +19,7 @@ package org.apache.xalan.transformer;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -53,10 +54,13 @@ import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.templates.AVT;
 import org.apache.xalan.templates.Constants;
+import org.apache.xalan.templates.ElemAnalyzeString;
 import org.apache.xalan.templates.ElemApplyTemplates;
+import org.apache.xalan.templates.ElemAssert;
 import org.apache.xalan.templates.ElemAttribute;
 import org.apache.xalan.templates.ElemAttributeSet;
 import org.apache.xalan.templates.ElemCallTemplate;
+import org.apache.xalan.templates.ElemCatch;
 import org.apache.xalan.templates.ElemCharacterMap;
 import org.apache.xalan.templates.ElemChoose;
 import org.apache.xalan.templates.ElemComment;
@@ -69,16 +73,21 @@ import org.apache.xalan.templates.ElemFunction;
 import org.apache.xalan.templates.ElemIf;
 import org.apache.xalan.templates.ElemIterate;
 import org.apache.xalan.templates.ElemLiteralResult;
+import org.apache.xalan.templates.ElemMatchingSubstring;
+import org.apache.xalan.templates.ElemMessage;
+import org.apache.xalan.templates.ElemNonMatchingSubstring;
 import org.apache.xalan.templates.ElemNumber;
 import org.apache.xalan.templates.ElemOtherwise;
 import org.apache.xalan.templates.ElemOutputCharacter;
 import org.apache.xalan.templates.ElemPI;
+import org.apache.xalan.templates.ElemPerformSort;
 import org.apache.xalan.templates.ElemSequence;
 import org.apache.xalan.templates.ElemSort;
 import org.apache.xalan.templates.ElemTemplate;
 import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.ElemText;
 import org.apache.xalan.templates.ElemTextLiteral;
+import org.apache.xalan.templates.ElemTry;
 import org.apache.xalan.templates.ElemValueOf;
 import org.apache.xalan.templates.ElemVariable;
 import org.apache.xalan.templates.ElemWhen;
@@ -123,7 +132,12 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.compiler.SharedLexerState;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
+import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XMLNodeCursorImpl;
+import org.apache.xpath.objects.XNodeSetForDOM;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XRTreeFrag;
+import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.Operation;
 import org.apache.xpath.patterns.StepPattern;
 import org.apache.xpath.patterns.UnionPattern;
@@ -136,6 +150,8 @@ import org.xml.sax.SAXNotRecognizedException;
 import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.ext.DeclHandler;
 import org.xml.sax.ext.LexicalHandler;
+
+import xml.xpath31.processor.types.XSString;
 
 /**
  * This class implements the {@link javax.xml.transform.Transformer} interface, 
@@ -168,6 +184,9 @@ public class TransformerImpl extends Transformer
 
   /** The base URL of the source tree. */
   private String m_urlOfSource = null;
+  
+  /** The absolute URI string value of an XSL stylesheet. */
+  private String m_uriStrOfXslStylesheet = null;
 
   /** The Result object at the start of the transform, if any. */
   private Result m_outputTarget = null;
@@ -350,16 +369,14 @@ public class TransformerImpl extends Transformer
   private boolean m_source_location = false;
   
   /**
-   * An XSL stylesheet initial template name.
+   * An XSL transformation's initial template name.
    */
   private String m_init_template_name = null;
   
   /**
-   * This variable having boolean value true means that, an 
-   * XSL transformation's initial template name has been provided 
-   * and an XML input source is absent.
+   * An XSL transformation's initial mode name.
    */
-  private boolean m_xmlSourceAbsent = false;
+  private String m_init_mode_name = null;
     
   /**
    * This is a compile-time flag to turn off calling
@@ -468,6 +485,18 @@ public class TransformerImpl extends Transformer
    * that is used for an XSL transformation.
    */
   private Source m_source;
+  
+  /**
+   * This object instance, contains XSL transformation's result,
+   * when an XSL stylesheet contains one or more xsl:message 
+   * instructions. This object instance, doesn't contain result
+   * of xsl:message instructions, but preserves XSL transform's 
+   * output order.
+   * 
+   * An XSL transform's xsl:message instruction results are
+   * available within an xdm sequence object XslTransformData.m_xsl_message_rSeq.
+   */
+  private XNodeSetForDOM m_xsl_transform_result_with_message = null;
 
   //==========================================================
   // SECTION: Constructor
@@ -485,6 +514,7 @@ public class TransformerImpl extends Transformer
     m_incremental = stylesheet.getIncremental();
     m_source_location = stylesheet.getSource_location();
     m_init_template_name = stylesheet.getInitTemplateName();
+    m_init_mode_name = stylesheet.getInitModeName();
     setStylesheet(stylesheet);
     XPathContext xPath = new XPathContext(this);
     xPath.setIncremental(m_incremental);
@@ -836,9 +866,11 @@ public class TransformerImpl extends Transformer
          ((SAXSource)source).getXMLReader()==null )||
          (source instanceof DOMSource && ((DOMSource)source).getNode()==null)){
         try {
-          DocumentBuilderFactory builderF = 
-                   DocumentBuilderFactory.newInstance();
-          DocumentBuilder builder = builderF.newDocumentBuilder();
+          System.setProperty(Constants.XML_DOCUMENT_BUILDER_FACTORY_KEY, Constants.XML_DOCUMENT_BUILDER_FACTORY_VALUE);
+        	
+          DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+          DocumentBuilder builder = dbf.newDocumentBuilder();
+          
           String systemID = source.getSystemId();
           source = new DOMSource(builder.newDocument());
 
@@ -862,17 +894,25 @@ public class TransformerImpl extends Transformer
 
       try
       {
-      	 // NOTE: This will work because this is _NOT_ a shared DTM, and thus has
-      	 // only a single Document node. If it could ever be an RTF or other
-      	 // shared DTM, look at dtm.getDocumentRoot(nodeHandle).
-    	 
+    	  // NOTE: This will work because this is _NOT_ a shared DTM, and thus has
+    	  // only a single Document node. If it could ever be an RTF or other
+    	  // shared DTM, look at dtm.getDocumentRoot(nodeHandle).
+    	  
+    	  OutputProperties outputProperties = m_stylesheetRoot.getOutputComposed();
+    	  
+    	  if (XslTransformData.m_xsl_message_rSeq != null) {
+    		 // Do not emit XML declaration to output, if an XSL 
+    		 // stylesheet contains one or more xsl:message instructions.
+		     outputProperties.setProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+    	  }
+
     	  if (source != null) {
     		  // Validate an XML input document, if validation parameter is set 
     		  // on the transformer.    	
     		  if (m_enabledPropertyList.contains(XML_VALIDATION_PROPERTY)) { 
     			  m_stylesheetRoot.validateXmlInputDoc(base);
-    		  }
-
+    		  }    		      		      		  
+    		  
     		  this.transformNode(dtm.getDocument());
     	  }
     	  else if (m_init_template_name != null) {
@@ -883,12 +923,101 @@ public class TransformerImpl extends Transformer
     		   */
     		  this.transformNode(DTM.NULL);
     	  }
+
+    	  final Writer writer = m_serializationHandler.getWriter();
+
+    	  String osName = System.getProperty("os.name");
+    	  String newLineSeq = null;
+		  if (osName.startsWith("Windows")) {
+			  newLineSeq = "\r\n"; 
+		  }
+		  else {
+			  newLineSeq = "\n";
+		  }
+    	  
+    	  if ((XslTransformData.m_xsl_message_rSeq != null) && ((XslTransformData.m_xsl_message_rSeq).size() > 0)) {    		  
+    		  ResultSequence rSeq = XslTransformData.m_xsl_message_rSeq;
+    		  int rSeqLength = rSeq.size();
+    		  for (int idx = 0; idx < rSeqLength; idx++) {
+    			  XSString xsString = (XSString)(rSeq.item(idx));
+    			  String strValue = null;
+    			  if (((XObject)xsString).isUseStrictValue()) {
+    			     strValue = xsString.stringValue();
+    			  }
+    			  else {
+    				 strValue = ((xsString.stringValue()).trim());
+    			  }
+    			  
+    			  if (writer != null) {
+    				  try {
+    					  writer.write(strValue + newLineSeq);
+    				  }
+    				  catch (IOException ex) {
+    					  throw new SAXException(ex);	
+    				  }
+    			  }
+    			  else {
+    				  m_serializationHandler.processingInstruction(javax.xml.transform.Result.
+    						                                                                 PI_DISABLE_OUTPUT_ESCAPING, "");
+    				  XString xString = new XString(strValue + newLineSeq);
+    				  xString.dispatchCharactersEvents(m_serializationHandler);
+    				  m_serializationHandler.processingInstruction(javax.xml.transform.Result.
+    						                                                                 PI_DISABLE_OUTPUT_ESCAPING, "");
+    			  }
+    		  }
+    		  
+    		  String xslTransformMethod = outputProperties.getProperty(OutputKeys.METHOD);
+
+    		  if ((org.apache.xml.serializer.Method.XML).equals(xslTransformMethod)) {
+    			  Properties xslOutputProps = m_stylesheetRoot.getOutputProperties();
+    			  Object version = xslOutputProps.get("version");
+    			  Object encoding = xslOutputProps.get("encoding");
+    			  Object standalone = xslOutputProps.get("standalone");
+    			  String versionStr = (version != null) ? (String)version : "1.0";
+    			  String encodingStr = (encoding != null) ? (String)encoding : "UTF-8";    		  
+    			  String standaloneStr = null;
+    			  if (standalone != null) {
+    				  standaloneStr = " standalone=\"" + (String)standalone + "\""; 
+    			  }
+    			  else {
+    				  standaloneStr = "";
+    			  }
+
+    			  StringBuffer strBuff = new StringBuffer();
+
+    			  strBuff.append("<?xml version=\"");
+    			  strBuff.append(versionStr);
+    			  strBuff.append("\" encoding=\"");
+    			  strBuff.append(encodingStr);
+    			  strBuff.append('\"');
+    			  strBuff.append(standaloneStr);
+    			  strBuff.append("?>");
+
+    			  m_serializationHandler.processingInstruction(javax.xml.transform.Result.
+    					                                                                 PI_DISABLE_OUTPUT_ESCAPING, "");
+    			  XString xString = new XString(strBuff.toString() + newLineSeq);
+    			  xString.dispatchCharactersEvents(m_serializationHandler);
+    			  m_serializationHandler.processingInstruction(javax.xml.transform.Result.
+    					                                                                PI_DISABLE_OUTPUT_ESCAPING, "");
+    		  }
+    	  }
+
+    	  if (m_xsl_transform_result_with_message != null) {    		      		      		  
+    		  int resultNodeHandle = m_xsl_transform_result_with_message.asNode(m_xcontext);
+    		  XMLNodeCursorImpl xmlNodeCursorImpl = new XMLNodeCursorImpl(resultNodeHandle, m_xcontext); 
+
+    		  ElemCopyOf.copyOfActionOnNodeSet(xmlNodeCursorImpl, this, m_serializationHandler, m_xcontext);  
+    	  }
       }
       finally
-      {
-        if (shouldRelease && (dtm != null)) {
-          mgr.release(dtm, hardDelete);
-        }
+      {   	
+    	  m_init_mode_name = null;
+    	  
+    	  XslTransformData.m_xsl_message_rSeq = null;
+
+    	  if (shouldRelease && (dtm != null)) {
+    		  mgr.release(dtm, hardDelete);
+    	  }                
       }
 
       // Kick off the parse.  When the ContentHandler gets 
@@ -946,7 +1075,6 @@ public class TransformerImpl extends Transformer
     {
       m_hasTransformThreadErrorCatcher = false;
 
-      // This looks to be redundent to the one done in TransformNode.
       reset();
     }
   }
@@ -1592,12 +1720,7 @@ public class TransformerImpl extends Transformer
         else
         {
           m_errorHandler.fatalError(new TransformerException(se));
-        }
-        
-      }
-      finally
-      {
-        this.reset();
+        }        
       }
     }
   }
@@ -1702,10 +1825,10 @@ public class TransformerImpl extends Transformer
    * 
    * @param name The name of the parameter.
    * @param namespace The namespace of the parameter.
-   * @param value The value object.  This can be any valid Java object
-   * -- it's up to the processor to provide the proper
-   * coersion to the object, or simply pass it on for use
-   * in extensions.
+   * @param value The value object. This can be any valid Java object,
+   *              and it's up to XSL processor to provide the proper
+   *              coercion (i.e, type conversion) to the object, or 
+   *              simply pass it on for use in extensions.
    */
   public void setParameter(String name, String namespace, Object value)
   {
@@ -1720,9 +1843,9 @@ public class TransformerImpl extends Transformer
     while (--i >= 0)
     {
       ElemVariable variable = (ElemVariable)vars.elementAt(i);
-      if(variable.getXSLToken() == Constants.ELEMNAME_PARAMVARIABLE && 
+      if (variable.getXSLToken() == Constants.ELEMNAME_PARAMVARIABLE && 
          variable.getName().equals(qname))
-      {
+      {    	  
           varstack.setGlobalVariable(i, xobject);
       }
     }
@@ -2434,7 +2557,8 @@ public class TransformerImpl extends Transformer
         		 initTemplateQName = new QName(initTemplateName);  
         	 }
         	 
-             template = m_stylesheetRoot.getTemplateComposed(initTemplateQName);             
+             template = m_stylesheetRoot.getTemplateComposed(initTemplateQName);
+             
              if (template != null) {
             	 m_xcontext.pushNamespaceContext(template);
             	 pushElemTemplateElement(template);
@@ -2447,7 +2571,18 @@ public class TransformerImpl extends Transformer
                  m_xcontext.setSAXLocator(template);
            	     m_xcontext.getVarStack().link(template.m_frameSize);
            	     
-           	     executeChildTemplates(template, true);
+           	     if (XslTransformData.m_xsl_message_rSeq == null) {
+           	         // An XSL stylesheet doesn't contain xsl:message
+           		     // instruction.
+           	    	 executeChildTemplates(template, true);
+           	     }
+           	     else { 
+           	         // An XSL stylesheet contains one or more xsl:message
+           		     // instructions.
+           	    	 int rootNodeHandleOfRtf = this.transformToRTF(template);
+           	    	 NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, xctxt, template)).convertToNodeset();    	  
+           	    	 m_xsl_transform_result_with_message = new XNodeSetForDOM(nodeList, xctxt);
+           	     }
 
            	     if (m_debug)
            		    getTraceManager().emitTraceEndEvent(template);
@@ -2459,7 +2594,13 @@ public class TransformerImpl extends Transformer
              }                          
           }          
           else {
-        	  QName mode = this.getMode();
+        	  QName mode = null;        	  
+        	  if (m_init_mode_name != null) {
+        		 mode = new QName(m_init_mode_name);        		         		 
+        	  }
+        	  else {
+        	     mode = this.getMode();
+        	  }
 
         	  if (isApplyImports)
         		  template = m_stylesheetRoot.getTemplateComposed(xctxt, child, mode,
@@ -2509,7 +2650,8 @@ public class TransformerImpl extends Transformer
           // No default rules for processing instructions and the like.
           return false;
         }
-      }
+      }      
+      
     }
 
     // If we are processing the default text rule, then just clone 
@@ -2520,7 +2662,6 @@ public class TransformerImpl extends Transformer
       m_xcontext.pushCurrentNode(child);
       pushPairCurrentMatched(template, child);
       
-      // Fix copy copy29 test.
       if (!isApplyImports) {
           DTMCursorIterator cnl = new org.apache.xpath.NodeSetDTM(child, m_xcontext.getDTMManager());
           m_xcontext.pushContextNodeList(cnl);
@@ -2557,7 +2698,19 @@ public class TransformerImpl extends Transformer
     	  // that entry point.)
     	  m_xcontext.setSAXLocator(template);
     	  m_xcontext.getVarStack().link(template.m_frameSize);
-    	  executeChildTemplates(template, true);
+    	  
+    	  if (XslTransformData.m_xsl_message_rSeq == null) {
+    		  // An XSL stylesheet doesn't contain xsl:message
+    		  // instruction.
+    		  executeChildTemplates(template, true);
+    	  }
+    	  else {
+    		  // An XSL stylesheet contains one or more xsl:message
+    		  // instructions.
+    		  int rootNodeHandleOfRtf = this.transformToRTF(template);
+    		  NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, m_xcontext, template)).convertToNodeset();    	  
+    		  m_xsl_transform_result_with_message = new XNodeSetForDOM(nodeList, m_xcontext);
+    	  }
 
     	  if (m_debug)
     		  getTraceManager().emitTraceEndEvent(template);
@@ -2578,6 +2731,10 @@ public class TransformerImpl extends Transformer
       popCurrentMatched();
       
       popElemTemplateElement();
+    }
+    
+    if (m_init_mode_name != null) {
+       m_init_mode_name = null;
     }
 
     return true;
@@ -2607,8 +2764,9 @@ public class TransformerImpl extends Transformer
 
     try
     {
-      if(null != mode)
+      if((null != mode) && (m_init_mode_name == null)) {
         pushMode(mode);
+      }
       xctxt.pushCurrentNode(xctxt.getDTMHandleFromNode(context));
       executeChildTemplates(elem, handler);
     }
@@ -2618,8 +2776,9 @@ public class TransformerImpl extends Transformer
       
       // I'm not sure where or why this was here.  It is clearly in 
       // error though, without a corresponding pushMode().
-      if (null != mode)
+      if((null != mode) && (m_init_mode_name == null)) {
         popMode();
+      }
     }
   }
 
@@ -2707,7 +2866,6 @@ public class TransformerImpl extends Transformer
 
         xctxt.setSAXLocator(t);
         m_currentTemplateElements.setElementAt(t,currentTemplateElementsTop);
-        t.setXMLSourceAbsent(m_xmlSourceAbsent);
         t.execute(this);        
       }
     }
@@ -2854,13 +3012,20 @@ public class TransformerImpl extends Transformer
    * @throws TransformerException
    * @xsl.usage advanced
    */
-  public Vector processSortKeys(ElemForEach foreach, int sourceNodeContext)
+  public Vector processSortKeys(Object foreach, int sourceNodeContext)
           throws TransformerException
   {
 
     Vector keys = null;
     XPathContext xctxt = m_xcontext;
-    int nElems = foreach.getSortElemCount();
+    
+    int nElems;
+    if (foreach instanceof ElemForEach) {
+       nElems = ((ElemForEach)foreach).getSortElemCount();
+    }
+    else {
+       nElems = ((ElemPerformSort)foreach).getSortElemCount();
+    }
 
     if (nElems > 0)
       keys = new Vector();
@@ -2868,39 +3033,86 @@ public class TransformerImpl extends Transformer
     // March backwards, collecting the sort keys
     for (int i = 0; i < nElems; i++)
     {
-      ElemSort sort = foreach.getSortElem(i);
+      ElemSort sort = null;
+      
+      if (foreach instanceof ElemForEach) {
+    	  sort = ((ElemForEach)foreach).getSortElem(i);
+      }
+      else {
+    	  sort = ((ElemPerformSort)foreach).getSortElem(i);
+      }
       
       if (m_debug)
         getTraceManager().emitTraceEvent(sort);
      
-      String langString =
-        (null != sort.getLang())
-        ? sort.getLang().evaluate(xctxt, sourceNodeContext, foreach) : null;
-      String dataTypeString = sort.getDataType().evaluate(xctxt,
-                                sourceNodeContext, foreach);
+      String langString = null;
+      if (foreach instanceof ElemForEach) {
+    	  langString =
+    			  (null != sort.getLang())
+    			  ? sort.getLang().evaluate(xctxt, sourceNodeContext, (ElemForEach)foreach) : null;
+      }
+      else {
+    	  langString =
+    			  (null != sort.getLang())
+    			  ? sort.getLang().evaluate(xctxt, sourceNodeContext, (ElemPerformSort)foreach) : null; 
+      }
+      
+      String dataTypeString = null;
+      if (foreach instanceof ElemForEach) {
+    	  dataTypeString = sort.getDataType().evaluate(xctxt,
+    			  sourceNodeContext, (ElemForEach)foreach);
+      }
+      else {
+    	  dataTypeString = sort.getDataType().evaluate(xctxt,
+    			  sourceNodeContext, (ElemPerformSort)foreach);
+      }
 
       if (dataTypeString.indexOf(":") >= 0)
         System.out.println(
           "TODO: Need to write the hooks for QNAME sort data type");
       else if (!(dataTypeString.equalsIgnoreCase(Constants.ATTRVAL_DATATYPE_TEXT))
                &&!(dataTypeString.equalsIgnoreCase(
-                 Constants.ATTRVAL_DATATYPE_NUMBER)))
-        foreach.error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
-                      new Object[]{ Constants.ATTRNAME_DATATYPE,
-                                    dataTypeString });
+                 Constants.ATTRVAL_DATATYPE_NUMBER))) {
+    	  if (foreach instanceof ElemForEach) {    	  
+    		  ((ElemForEach)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+    				  new Object[]{ Constants.ATTRNAME_DATATYPE,
+    						  dataTypeString });
+    	  }
+    	  else {
+    		  ((ElemPerformSort)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+    				  new Object[]{ Constants.ATTRNAME_DATATYPE,
+    						  dataTypeString });
+    	  }
+      }
 
       boolean treatAsNumbers =
         ((null != dataTypeString) && dataTypeString.equals(
         Constants.ATTRVAL_DATATYPE_NUMBER)) ? true : false;
-      String orderString = sort.getOrder().evaluate(xctxt, sourceNodeContext,
-                             foreach);
+      
+      String orderString = null;
+      if (foreach instanceof ElemForEach) { 
+    	  orderString = sort.getOrder().evaluate(xctxt, sourceNodeContext,
+    			  (ElemForEach)foreach);
+      }
+      else {
+    	  orderString = sort.getOrder().evaluate(xctxt, sourceNodeContext,
+    			  (ElemPerformSort)foreach);
+      }
 
       if (!(orderString.equalsIgnoreCase(Constants.ATTRVAL_ORDER_ASCENDING))
               &&!(orderString.equalsIgnoreCase(
-                Constants.ATTRVAL_ORDER_DESCENDING)))
-        foreach.error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+                Constants.ATTRVAL_ORDER_DESCENDING))) {
+    	  if (foreach instanceof ElemForEach) {    	  
+    		  ((ElemForEach)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
                       new Object[]{ Constants.ATTRNAME_ORDER,
                                     orderString });
+    	  }
+    	  else {
+    		  ((ElemPerformSort)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+                      new Object[]{ Constants.ATTRNAME_ORDER,
+                                    orderString });
+    	  }
+      }
 
       boolean descending =
         ((null != orderString) && orderString.equals(
@@ -2910,15 +3122,30 @@ public class TransformerImpl extends Transformer
 
       if (null != caseOrder)
       {
-        String caseOrderString = caseOrder.evaluate(xctxt, sourceNodeContext,
-                                                    foreach);
+    	  String caseOrderString = null;
+    	  if (foreach instanceof ElemForEach) {
+    		  caseOrderString = caseOrder.evaluate(xctxt, sourceNodeContext,
+    				  (ElemForEach)foreach);
+    	  }
+    	  else {
+    		  caseOrderString = caseOrder.evaluate(xctxt, sourceNodeContext,
+    				  (ElemPerformSort)foreach);  
+    	  }
 
         if (!(caseOrderString.equalsIgnoreCase(Constants.ATTRVAL_CASEORDER_UPPER))
                 &&!(caseOrderString.equalsIgnoreCase(
-                  Constants.ATTRVAL_CASEORDER_LOWER)))
-          foreach.error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+                  Constants.ATTRVAL_CASEORDER_LOWER))) {
+        	if (foreach instanceof ElemForEach) {
+        		((ElemForEach)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
                         new Object[]{ Constants.ATTRNAME_CASEORDER,
                                       caseOrderString });
+        	}
+        	else {
+        		((ElemPerformSort)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+                        new Object[]{ Constants.ATTRNAME_CASEORDER,
+                                      caseOrderString });
+        	}
+        }
 
         caseOrderUpper =
           ((null != caseOrderString) && caseOrderString.equals(
@@ -2935,9 +3162,18 @@ public class TransformerImpl extends Transformer
     	 xpathSelect = new XPath(".", srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null); 
       }
       
-      NodeSortKey nodeSortKey = new NodeSortKey(this, xpathSelect, treatAsNumbers,
-                                                descending, langString, caseOrderUpper, 
-                                                foreach);      
+      NodeSortKey nodeSortKey = null;
+      if (foreach instanceof ElemForEach) {
+    	  nodeSortKey = new NodeSortKey(this, xpathSelect, treatAsNumbers,
+    			  descending, langString, caseOrderUpper, 
+    			  (ElemForEach)foreach);
+      }
+      else {
+    	  nodeSortKey = new NodeSortKey(this, xpathSelect, treatAsNumbers,
+    			  descending, langString, caseOrderUpper, 
+    			  (ElemPerformSort)foreach);
+      }
+      
       keys.addElement(nodeSortKey);    	  	  
       
       if (m_debug)
@@ -3675,42 +3911,66 @@ public class TransformerImpl extends Transformer
 
     throw new SAXNotRecognizedException(name);
   }
-
-  // %TODO% Doc
-
+  
   /**
-   * NEEDSDOC Method getMode 
-   *
-   *
-   * NEEDSDOC (getMode) @return
+   * Get an XSL transformation's present mode value.
+   *  
+   * @return						QName object reference of the mode 
    */
   public QName getMode()
   {
-    return m_modes.isEmpty() ? null : (QName) m_modes.peek();
+	  QName result = null;
+	  
+	  if (m_init_mode_name != null) {
+		 result = new QName(m_init_mode_name); 
+	  }
+	  else {
+		 result = m_modes.isEmpty() ? null : (QName) m_modes.peek();
+	  }
+	  
+	  return result;
   }
-
-  // %TODO% Doc
-
+  
   /**
-   * NEEDSDOC Method pushMode 
-   *
-   *
-   * NEEDSDOC @param mode
+   * Push an XSL mode reference, to mode stack.
+   * 
+   * @param mode					QName object value of the mode
    */
   public void pushMode(QName mode)
   {
     m_modes.push(mode);
   }
 
-  // %TODO% Doc
-
   /**
-   * NEEDSDOC Method popMode 
-   *
+   * Pop an XSL mode reference, from mode stack.
    */
   public void popMode()
   {
-    m_modes.pop();
+	if (!m_modes.empty()) {
+       m_modes.pop();
+	}
+  }
+  
+  /**
+   * Method definition, to get XSL transformation's current mode 
+   * reference, for the given XSL evaluation context.
+   * 
+   * @return				QName object reference of the mode
+   */
+  public QName getCurrentMode() {
+	  
+	  QName result = null;
+	  
+	  if (!m_modes.isEmpty()) {
+		 Object stackTop = m_modes.pop();
+		 if ((stackTop != null) && !m_modes.isEmpty()) {
+			result = (QName)m_modes.peek();
+			
+			m_modes.push(stackTop);
+		 }
+	  }
+	  
+	  return result;
   }
 
   /**
@@ -4200,14 +4460,6 @@ public class TransformerImpl extends Transformer
 	public void setSource(Source source) {
 		this.m_source = source;
 	}
-
-	public void setXMLSourceAbsent(boolean xmlSourceAbsent) {
-		m_xmlSourceAbsent = xmlSourceAbsent; 		
-	}
-	
-	public boolean getXMLSourceAbsent() {
-	    return m_xmlSourceAbsent;	
-	}
 	
 	/**
 	 * Method definition to populate CharacterMapConfig run-time 
@@ -4261,8 +4513,8 @@ public class TransformerImpl extends Transformer
 				}
 				
 				if (xslCharacterMapDefnAbsent) {
-					throw new javax.xml.transform.TransformerException("XTSE1590 : An xsl:character-map with name '" + 
-				                                                                                  charMapNameStr + "' has not been defined in the stylesheet.");					
+					throw new javax.xml.transform.TransformerException("XTSE1590 : An XSL 'character-map' instruction with name '" + 
+				                                                                                  charMapNameStr + "' has not been declared within the stylesheet.");					
 				}
 			}
 			
@@ -4374,7 +4626,7 @@ public class TransformerImpl extends Transformer
 				if (elemTemplate == null) {
 					throw new TransformerException("XPST0017 : An XSL stylesheet function call " + qName.toString() + " referred within "
 							                                                                     + "an XPath expression, doesn't have a corresponding "
-							                                                                     + "xsl:function definition in the stylesheet.", 
+							                                                                     + "XSL function definition within the stylesheet.", 
 							                                                                     xpathExpr.getExpressionOwner()); 
 				}
 			}
@@ -4403,6 +4655,10 @@ public class TransformerImpl extends Transformer
 	private void updateXPathDefaultNamespace(ElemTemplateElement elemTemplateElem, String xpathDefaultNamespace) 
 			                                                                    throws javax.xml.transform.TransformerException {
 		
+		  if ("".equals(xpathDefaultNamespace)) {
+			 xpathDefaultNamespace = null;  
+		  }
+		  
 		  if (elemTemplateElem != null) {		  
 			  ElemTemplateElement xslElem = elemTemplateElem; 
 			  while (xslElem != null) {
@@ -4519,6 +4775,14 @@ public class TransformerImpl extends Transformer
 					  }
 					  else {
 						  xpathDefaultNamespace = ((ElemForEach)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemPerformSort) {
+					  if (((ElemPerformSort)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemPerformSort)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemPerformSort)xslElem).getXpathDefaultNamespace();  
 					  }
 				  }
 				  else if (xslElem instanceof ElemForEachGroup) {
@@ -4681,6 +4945,62 @@ public class TransformerImpl extends Transformer
 						  xpathDefaultNamespace = ((ElemPI)xslElem).getXpathDefaultNamespace();  
 					  }
 				  }
+				  else if (xslElem instanceof ElemAnalyzeString) {
+					  if (((ElemAnalyzeString)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemAnalyzeString)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemAnalyzeString)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemMatchingSubstring) {
+					  if (((ElemMatchingSubstring)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemMatchingSubstring)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemMatchingSubstring)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemNonMatchingSubstring) {
+					  if (((ElemNonMatchingSubstring)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemNonMatchingSubstring)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemNonMatchingSubstring)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemTry) {
+					  if (((ElemTry)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemTry)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemTry)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemCatch) {
+					  if (((ElemCatch)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemCatch)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemCatch)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemMessage) {
+					  if (((ElemMessage)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemMessage)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemMessage)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemAssert) {
+					  if (((ElemAssert)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemAssert)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemAssert)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
 				  
 				  ElemTemplateElement elemTemplateChild = xslElem.getFirstChildElem();
 				  updateXPathDefaultNamespace(elemTemplateChild, xpathDefaultNamespace);
@@ -4750,6 +5070,14 @@ public class TransformerImpl extends Transformer
 					  }
 					  else {
 						  expandText = ((ElemForEach)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemPerformSort) {
+					  if (!(((ElemPerformSort)xslElem).getExpandTextDeclared())) {
+						  ((ElemPerformSort)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemPerformSort)xslElem).getExpandText();  
 					  }
 				  }
 				  else if (xslElem instanceof ElemForEachGroup) {
@@ -4879,8 +5207,7 @@ public class TransformerImpl extends Transformer
 					  else {
 						  expandText = ((ElemComment)xslElem).getExpandText();  
 					  }
-				  }
-				  
+				  }				  
 				  else if (xslElem instanceof ElemPI) {
 					  if (!(((ElemPI)xslElem).getExpandTextDeclared())) {
 						  ((ElemPI)xslElem).setExpandText(expandText);
@@ -4889,6 +5216,62 @@ public class TransformerImpl extends Transformer
 						  expandText = ((ElemPI)xslElem).getExpandText();  
 					  }
 				  }
+				  else if (xslElem instanceof ElemAnalyzeString) {
+					  if (!(((ElemAnalyzeString)xslElem).getExpandTextDeclared())) {
+						  ((ElemAnalyzeString)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemAnalyzeString)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemMatchingSubstring) {
+					  if (!(((ElemMatchingSubstring)xslElem).getExpandTextDeclared())) {
+						  ((ElemMatchingSubstring)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemMatchingSubstring)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemNonMatchingSubstring) {
+					  if (!(((ElemNonMatchingSubstring)xslElem).getExpandTextDeclared())) {
+						  ((ElemNonMatchingSubstring)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemNonMatchingSubstring)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemTry) {
+					  if (!(((ElemTry)xslElem).getExpandTextDeclared())) {
+						  ((ElemTry)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemTry)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemCatch) {
+					  if (!(((ElemCatch)xslElem).getExpandTextDeclared())) {
+						  ((ElemCatch)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemCatch)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemMessage) {
+					  if (!(((ElemMessage)xslElem).getExpandTextDeclared())) {
+						  ((ElemMessage)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemMessage)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemAssert) {
+					  if (!(((ElemAssert)xslElem).getExpandTextDeclared())) {
+						  ((ElemAssert)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemAssert)xslElem).getExpandText();  
+					  }
+				  }				  
 
 				  ElemTemplateElement elemTemplateChild = xslElem.getFirstChildElem();
 				  updateExpandTextAttrValue(elemTemplateChild, expandText);
@@ -4897,6 +5280,14 @@ public class TransformerImpl extends Transformer
 			  }		 
 		 }
    }
+
+	  public String getUriStrOfXslStylesheet() {
+		  return m_uriStrOfXslStylesheet;
+	  }
+
+	  public void setUriStrOfXslStylesheet(String uriStrOfXslStylesheet) {
+		  this.m_uriStrOfXslStylesheet = uriStrOfXslStylesheet;
+	  }
 
 }  // end TransformerImpl class
 

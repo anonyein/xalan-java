@@ -484,8 +484,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
     "XPST0003 : Unclosed XPath expression comment"},
   
   { ER_NS_BINDING,
-    "XPST0081 : An XML namespace prefix ''{0}'' hasn''t been declared within an "
-                + "XSL stylesheet, or hasn''t been set for XPath API invocation."},
+    "XPST0081 : An XML namespace binding for prefix ''{0}'' is not available."},
   
   { ER_EXPECTED_CLOSING_SQUARE_BRACKET,
      "Could not find token ]"},
@@ -749,7 +748,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   // consists of an NCName followed by a colon and an asterisk or that consists
   // of a QName was expected, but was not found.
   { ER_EXPECTED_NODE_TEST,
-       "A node test that matches either NCName:* or QName was expected."},
+       "XTSE0340 : A node test that matches either NCName:* or QName was expected."},
 
   // Note to translators:  A step pattern is part of an XPath expression.
   // The message indicates that syntactically such an expression was expected,

@@ -28,6 +28,7 @@ import javax.xml.transform.TransformerException;
 import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.templates.ElemTemplateElement;
+import org.apache.xalan.xslt.util.StringUtil;
 import org.apache.xml.utils.IntStack;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
@@ -374,9 +375,30 @@ public class XSLTElementProcessor extends ElemTemplateElement
     			}
     			else
     			{
-    				boolean success = attrDef.setAttrValue(handler, attrUri, attrLocalName,
-    						attributes.getQName(i), attributes.getValue(i),
-    						target);
+    				String attrName = attributes.getQName(i);
+    				String attrValue = attributes.getValue(i);
+
+    				// Remove any available XPath comments, from an XML 
+    				// attribute value.
+    				if (StringUtil.isStrHasXPathBalancedCommentDelim(attrValue)) {  
+    					attrValue = StringUtil.removeXPathComments(attrValue);
+    				}
+    				    				    				    			
+    				// Remove AVT references having XPath empty expressions, from 
+    				// XML attribute value.
+    				if (attrDef.getSupportsAVT()) {    					
+    					attrValue = attrValue.replaceAll("\\{\\s*\\}", "");    				   
+    				}
+
+    				boolean success = true;
+    				if ((attrDef.getType() == XSLTAttributeDef.T_URL) && "".equals(attrValue)) {
+    					success = false;  
+    				}
+
+    				if (success) {
+    					success = attrDef.setAttrValue(handler, attrUri, attrLocalName, attrName, attrValue, target);
+    				}    				
+
     				// Now we only add the element if it passed a validation check
     				if (success)
     					processedDefs.add(attrDef);
