@@ -51,7 +51,7 @@
 		<dependency>
 			<groupId>org.apache.xsl</groupId>
 			<artifactId>xpath31_types</artifactId>
-			<version>0.1</version>
+			<version>1.0</version>
 		</dependency>		
 		<!-- Apache Bean Scripting framework dependency. This despatches 
 		     Xalan-J's JavaScript extension calls to Mozilla Rhino 
