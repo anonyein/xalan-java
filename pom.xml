@@ -50,7 +50,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.apache.xerces</groupId>
-			<artifactId>xalanj_xpath31_types</artifactId>
+			<artifactId>xpath31_types</artifactId>
 			<version>0.1</version>
 		</dependency>		
 		<!-- Apache Bean Scripting framework dependency. This despatches 
