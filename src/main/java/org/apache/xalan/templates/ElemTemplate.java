@@ -254,7 +254,7 @@ public class ElemTemplate extends ElemTemplateElement
   /**
    * The value of the "as" attribute.
    */
-  private String m_asAttr;
+  private String m_asAttr = null;
 
   /**
    * Set the "as" attribute.
@@ -306,7 +306,7 @@ public class ElemTemplate extends ElemTemplateElement
   }
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
@@ -337,7 +337,7 @@ public class ElemTemplate extends ElemTemplateElement
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -371,10 +371,53 @@ public class ElemTemplate extends ElemTemplateElement
   }
   
   /**
+   * Class field, to refer to xsl:template instruction's 
+   * attribute "visibility".
+   */
+  private String m_visibility = null;
+  
+  public void setVisibility(String v)
+  {
+	  m_visibility = v;
+  }
+  
+  public String getVisibility()
+  {
+	  return m_visibility;
+  }
+  
+  /**
+   * An XPath expression for 'use-when' attribute. 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
+  }
+  
+  /**
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for the element
+   * @return The token id for the element
    */
   public int getXSLToken()
   {

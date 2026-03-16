@@ -24,7 +24,7 @@ import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
-import org.apache.xpath.XPathArithmeticOperation;
+import org.apache.xpath.XPathArithmeticOp;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
@@ -37,6 +37,7 @@ import org.apache.xpath.objects.XObject;
 
 import xml.xpath31.processor.types.XSDate;
 import xml.xpath31.processor.types.XSDateTime;
+import xml.xpath31.processor.types.XSDayTimeDuration;
 import xml.xpath31.processor.types.XSDecimal;
 import xml.xpath31.processor.types.XSDouble;
 import xml.xpath31.processor.types.XSInteger;
@@ -54,7 +55,7 @@ import xml.xpath31.processor.types.XSYearMonthDuration;
  * @author Mukul Gandhi <mukulg@apache.org>
  *         (XPath 3.1 specific changes, to this class)
  */
-public class Minus extends XPathArithmeticOperation
+public class Minus extends XPathArithmeticOp
 {
    static final long serialVersionUID = -5297672838170871043L;
 
@@ -399,6 +400,11 @@ public class Minus extends XPathArithmeticOperation
       }
       else if ((left instanceof XSYearMonthDuration) && (right instanceof XSYearMonthDuration)) {
           result = ((XSYearMonthDuration)left).subtract((XSYearMonthDuration)right);
+          
+          return result;
+      }
+      else if ((left instanceof XSDayTimeDuration) && (right instanceof XSDayTimeDuration)) {
+          result = ((XSDayTimeDuration)left).subtract((XSDayTimeDuration)right);
           
           return result;
       }

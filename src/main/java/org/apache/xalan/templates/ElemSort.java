@@ -37,7 +37,7 @@ public class ElemSort extends ElemTemplateElement
 
   /**
    * xsl:sort has a select attribute whose value is an expression.
-   * @serial
+   * 
    */
   private XPath m_selectExpression = null;
 
@@ -85,7 +85,7 @@ public class ElemSort extends ElemTemplateElement
 
   /**
    * lang specifies the language of the sort keys.
-   * @serial
+   * 
    */
   private AVT m_lang_avt = null;
 
@@ -118,7 +118,7 @@ public class ElemSort extends ElemTemplateElement
   /**
    * data-type specifies the data type of the
    * strings to be sorted.
-   * @serial
+   * 
    */
   private AVT m_dataType_avt = null;
 
@@ -199,7 +199,7 @@ public class ElemSort extends ElemTemplateElement
   /**
    * order specifies whether the strings should be sorted in ascending
    * or descending order.
-   * @serial
+   * 
    */
   private AVT m_order_avt = null;
 
@@ -232,7 +232,7 @@ public class ElemSort extends ElemTemplateElement
   /**
    * case-order has the value upper-first or lower-first.
    * The default value is language dependent.
-   * @serial
+   * 
    */
   private AVT m_caseorder_avt = null;
 
@@ -247,7 +247,7 @@ public class ElemSort extends ElemTemplateElement
    *
    * @param v The value to set for the "case-order" attribute
    * 
-   * @serial
+   * 
    */
   public void setCaseOrder(AVT v)
   {
@@ -271,7 +271,7 @@ public class ElemSort extends ElemTemplateElement
   }
   
   /**
-   * This class field, represents an optional collation URI specified 
+   * Class field, that represents an optional collation URI specified 
    * with xsl:sort instruction.
    */
   private AVT m_collation = null;
@@ -295,7 +295,7 @@ public class ElemSort extends ElemTemplateElement
   }
   
   /**
-   * This class field, represents an optional 'stable' 
+   * Class field, that represents an optional 'stable' 
    * attribute's value (default 'true') specified with xsl:sort 
    * instruction.
    * 
@@ -344,7 +344,7 @@ public class ElemSort extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID of the element
+   * @return The token id of the element
    */
   public int getXSLToken()
   {
@@ -418,15 +418,15 @@ public class ElemSort extends ElemTemplateElement
     super.compose(sroot);
     StylesheetRoot.ComposeState cstate = sroot.getComposeState();
     java.util.Vector vnames = cstate.getVariableNames();
-    if(null != m_caseorder_avt)
+    if (null != m_caseorder_avt)
       m_caseorder_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_dataType_avt)
+    if (null != m_dataType_avt)
       m_dataType_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_lang_avt)
+    if (null != m_lang_avt)
       m_lang_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_order_avt)
+    if (null != m_order_avt)
       m_order_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_selectExpression)
+    if (null != m_selectExpression)
       m_selectExpression.fixupVariables(vnames, cstate.getGlobalsSize());
   }
   

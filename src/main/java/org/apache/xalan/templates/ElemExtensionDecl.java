@@ -48,7 +48,7 @@ public class ElemExtensionDecl extends ElemTemplateElement
   }
 
   /** Prefix string for this extension element.
-   *  @serial         */
+   *           */
   private String m_prefix = null;
 
   /**
@@ -74,7 +74,7 @@ public class ElemExtensionDecl extends ElemTemplateElement
   }
 
   /** StringVector holding the names of functions defined in this extension.
-   *  @serial     */
+   *       */
   private StringVector m_functions = new StringVector();
 
   /**
@@ -130,7 +130,7 @@ public class ElemExtensionDecl extends ElemTemplateElement
   }
 
   /** StringVector of elements defined in this extension.
-   *  @serial         */
+   *           */
   private StringVector m_elements = null;
 
   /**
@@ -189,7 +189,7 @@ public class ElemExtensionDecl extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {

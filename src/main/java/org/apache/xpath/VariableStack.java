@@ -82,19 +82,19 @@ public class VariableStack implements Cloneable
 
   /**
    * The stack frame where all variables and params will be kept.
-   * @serial
+   * 
    */
   XObject[] _stackFrames;
 
   /**
    * The top of the stack frame (<code>_stackFrames</code>).
-   * @serial
+   * 
    */
   int _frameTop;
 
   /**
    * The bottom index of the current frame (relative to <code>_stackFrames</code>).
-   * @serial
+   * 
    */
   private int _currentFrameBottom;
 
@@ -102,7 +102,7 @@ public class VariableStack implements Cloneable
    * The stack of frame positions.  I call 'em links because of distant
    * <a href="http://math.millikin.edu/mprogers/Courses/currentCourses/CS481-ComputerArchitecture/cs481.Motorola68000.html">
    * Motorola 68000 assembler</a> memories.  :-)
-   * @serial
+   * 
    */
   int[] _links;
 
@@ -310,7 +310,7 @@ public class VariableStack implements Cloneable
 
     XObject val = _stackFrames[index];
     
-    if(null == val)
+    if (null == val)
       throw new TransformerException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_VARIABLE_ACCESSED_BEFORE_BIND, null),
                      xctxt.getSAXLocator());
       // "Variable accessed before it is bound!", xctxt.getSAXLocator());
@@ -367,7 +367,7 @@ public class VariableStack implements Cloneable
 
     XObject val = _stackFrames[index];
     
-    if(null == val)
+    if (null == val)
       throw new TransformerException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_VARIABLE_ACCESSED_BEFORE_BIND, null),
                      xctxt.getSAXLocator());
       // "Variable accessed before it is bound!", xctxt.getSAXLocator());
@@ -472,7 +472,7 @@ public class VariableStack implements Cloneable
 
     XObject val = _stackFrames[index];
 
-    // Lazy execution of variables.
+    // Lazy dereference of variables
     if (val.getType() == XObject.CLASS_UNRESOLVEDVARIABLE)
       return (_stackFrames[index] = val.execute(xctxt));
 

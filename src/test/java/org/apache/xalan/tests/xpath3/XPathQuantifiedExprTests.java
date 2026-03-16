@@ -57,7 +57,7 @@ public class XPathQuantifiedExprTests extends XslTransformTestsUtil {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1_a.xml"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test1.out";
+        String goldFilePath = getXslTransformGoldFilePath(XSL_TRANSFORM_GOLD_DIRPATH + "test1.out");
         
         m_fileComparisonType = XSLTestConstants.TEXT;
         
@@ -81,7 +81,7 @@ public class XPathQuantifiedExprTests extends XslTransformTestsUtil {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1_c.xml"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test3.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test3.out";
+        String goldFilePath = getXslTransformGoldFilePath(XSL_TRANSFORM_GOLD_DIRPATH + "test3.out");
         
         m_fileComparisonType = XSLTestConstants.TEXT;
         
@@ -105,7 +105,7 @@ public class XPathQuantifiedExprTests extends XslTransformTestsUtil {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test1_c.xml"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test5.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test5.out";
+        String goldFilePath = getXslTransformGoldFilePath(XSL_TRANSFORM_GOLD_DIRPATH + "test5.out");
         
         m_fileComparisonType = XSLTestConstants.TEXT;
         

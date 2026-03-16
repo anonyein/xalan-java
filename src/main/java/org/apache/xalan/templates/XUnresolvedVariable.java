@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
 
 import org.apache.xalan.res.XSLTErrorResources;
@@ -33,7 +30,8 @@ import org.apache.xpath.objects.XObject;
  */
 public class XUnresolvedVariable extends XObject
 {  
-    static final long serialVersionUID = -256779804767950188L;
+  static final long serialVersionUID = -256779804767950188L;
+  
   /** The node context for execution. */
   transient private int m_context;
   
@@ -52,7 +50,7 @@ public class XUnresolvedVariable extends XObject
   transient private int m_varStackContext;
   
   /** true if this variable or parameter is a global.
-   *  @serial */
+   *   */
   private boolean m_isGlobal;
   
   /** true if this variable or parameter is not currently being evaluated. */
@@ -77,20 +75,20 @@ public class XUnresolvedVariable extends XObject
   public XUnresolvedVariable(ElemVariable obj, int sourceNode, 
                              TransformerImpl transformer,
                              int varStackPos, int varStackContext,
-                             boolean isGlobal)
-  {
-    super(obj);
-    m_context = sourceNode;
-    m_transformer = transformer;
-    
-    // For globals, this value will have to be updated once we 
-    // have determined how many global variables have been pushed.
-    m_varStackPos = varStackPos;
-    
-    // For globals, this should zero.
-    m_varStackContext = varStackContext;
-    
-    m_isGlobal = isGlobal;
+                             boolean isGlobal) {
+	  super(obj);
+
+	  m_context = sourceNode;
+	  m_transformer = transformer;
+
+	  // For globals, this value will have to be updated once we 
+	  // have determined how many global variables have been pushed.
+	  m_varStackPos = varStackPos;
+
+	  // For globals, this should zero
+	  m_varStackContext = varStackContext;
+
+	  m_isGlobal = isGlobal;
   }
     
   /**
@@ -104,37 +102,32 @@ public class XUnresolvedVariable extends XObject
    */
   public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
   {
-    if (!m_doneEval) 
-    {
-      this.m_transformer.getMsgMgr().error      
-        (xctxt.getSAXLocator(), XSLTErrorResources.ER_REFERENCING_ITSELF, 
-          new Object[]{((ElemVariable)this.object()).getName().getLocalName()}); 
-    }
-    VariableStack vars = xctxt.getVarStack();
-    
-    // These three statements need to be combined into one operation.
-    int currentFrame = vars.getStackFrame();
-    //// vars.setStackFrame(m_varStackPos);
-   
+	  if (!m_doneEval) 
+	  {
+		  this.m_transformer.getMsgMgr().error      
+		  (xctxt.getSAXLocator(), XSLTErrorResources.ER_REFERENCING_ITSELF, 
+				  new Object[]{((ElemVariable)this.object()).getName().getLocalName()}); 
+	  }
 
-    ElemVariable velem = (ElemVariable)m_obj;
-    try
-    {
-      m_doneEval = false;
-      if(-1 != velem.m_frameSize)
-      	vars.link(velem.m_frameSize);
-      XObject var = velem.getValue(m_transformer, m_context);
-      m_doneEval = true;
-      return var;
-    }
-    finally
-    {
-      // These two statements need to be combined into one operation.
-      // vars.setStackFrame(currentFrame);
-      
-      if(-1 != velem.m_frameSize)
-	  	vars.unlink(currentFrame);
-    }
+	  VariableStack vars = xctxt.getVarStack();
+
+	  int currentFrame = vars.getStackFrame();
+
+	  ElemVariable velem = (ElemVariable)m_obj;
+	  try
+	  {
+		  m_doneEval = false;
+		  if (-1 != velem.m_frameSize)
+			  vars.link(velem.m_frameSize);
+		  XObject var = velem.getValue(m_transformer, m_context);
+		  m_doneEval = true;
+		  return var;
+	  }
+	  finally
+	  {
+		  if (-1 != velem.m_frameSize)
+			  vars.unlink(currentFrame);
+	  }
   }
   
   /**

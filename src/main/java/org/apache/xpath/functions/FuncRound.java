@@ -53,7 +53,7 @@ public class FuncRound extends Function2Args
       }
     
       /**
-       * Execute the function. The function must return a valid object.
+       * Evaluate the function. The function must return a valid object.
        * 
        * @param xctxt The current execution context.
        * @return A valid XObject.
@@ -71,6 +71,12 @@ public class FuncRound extends Function2Args
           if ((strValueOfArg0 == null) || "".equals(strValueOfArg0.trim())) {
               throw new javax.xml.transform.TransformerException("FORG0006 : The first argument to function "
                                                                                                           + "fn:round() is empty.", srcLocator);
+          }
+          
+          if ("INF".equals(strValueOfArg0) || "-INF".equals(strValueOfArg0)) {
+        	  throw new javax.xml.transform.TransformerException("FOAR0001 : An XPath function 'round''s call has an argument to be "
+        	  		                                                                                      + "rounded as INF, or -INF, which was probably "
+        	  		                                                                                      + "evaluated as result of division by zero.", srcLocator); 
           }
           
           if (m_arg1 == null) {

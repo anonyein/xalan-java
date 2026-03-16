@@ -105,7 +105,7 @@ public class XPathMathFunctionTests extends XslTransformTestsUtil {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test6.xsl"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test6.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test6.out";
+        String goldFilePath = getXslTransformGoldFilePath(XSL_TRANSFORM_GOLD_DIRPATH + "test6.out");
         
         m_fileComparisonType = XSLTestConstants.HTML;
         

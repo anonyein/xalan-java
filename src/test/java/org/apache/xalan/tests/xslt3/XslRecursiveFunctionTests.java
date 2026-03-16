@@ -68,19 +68,16 @@ public class XslRecursiveFunctionTests extends XslTransformTestsUtil {
         
         runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
     }
-
-    // Commenting this test case for now. This produces following Maven build results 
-    // sometimes : [ERROR]   XslRecursiveFunctionTests.xslRecursiveFunctionTest3 » 
-    // StackOverflow 
-    /*@Test
+    
+    @Test
     public void xslRecursiveFunctionTest3() {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test3.xsl"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test3.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test1.out";                
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test3.out";                
         
         runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
-    }*/
+    }
     
     @Test
     public void xslRecursiveFunctionTest4() {
@@ -131,5 +128,15 @@ public class XslRecursiveFunctionTests extends XslTransformTestsUtil {
         
         runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
     }
+    
+    @Test
+    public void xslRecursiveFunctionTest9() {
+        String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test9.xsl"; 
+        String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test9.xsl";
+        
+        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test9.out";                
+        
+        runXslTransformAndAssertOutput(xmlFilePath, xslFilePath, goldFilePath, null);
+    }        
 
 }

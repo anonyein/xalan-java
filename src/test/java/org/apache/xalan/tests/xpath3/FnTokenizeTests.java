@@ -153,7 +153,7 @@ public class FnTokenizeTests extends XslTransformTestsUtil {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test11.xsl"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test11.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test11.out";
+        String goldFilePath = getXslTransformGoldFilePath(XSL_TRANSFORM_GOLD_DIRPATH + "test11.out");
         
         m_fileComparisonType = XSLTestConstants.TEXT;
         

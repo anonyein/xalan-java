@@ -34,7 +34,7 @@ public abstract class UnaryOperation extends Expression implements ExpressionOwn
     static final long serialVersionUID = 6536083808424286166L;
 
   /** The operand for the operation.
-   *  @serial */
+   *   */
   protected Expression m_right;
   
   /**
@@ -121,7 +121,7 @@ public abstract class UnaryOperation extends Expression implements ExpressionOwn
    */
   public void callVisitors(ExpressionOwner owner, XPathVisitor visitor)
   {
-  	if(visitor.visitUnaryOperation(owner, this))
+  	if (visitor.visitUnaryOperation(owner, this))
   	{
   		m_right.callVisitors(this, visitor);
   	}
@@ -150,10 +150,10 @@ public abstract class UnaryOperation extends Expression implements ExpressionOwn
    */
   public boolean deepEquals(Expression expr)
   {
-  	if(!isSameClass(expr))
+  	if (!isSameClass(expr))
   		return false;
   		
-  	if(!m_right.deepEquals(((UnaryOperation)expr).m_right))
+  	if (!m_right.deepEquals(((UnaryOperation)expr).m_right))
   		return false;
   		
   	return true;

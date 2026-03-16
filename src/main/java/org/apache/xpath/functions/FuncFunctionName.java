@@ -33,6 +33,7 @@ import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionNode;
+import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.composite.XPathNamedFunctionReference;
@@ -64,7 +65,7 @@ public class FuncFunctionName extends FunctionDef1Arg
 	}
 
 	/**
-	 * Execute the function. The function must return a valid object.
+	 * Evaluate the function. The function must return a valid object.
 	 * 
 	 * @param xctxt The current execution context.
 	 * @return A valid XObject.
@@ -188,7 +189,7 @@ public class FuncFunctionName extends FunctionDef1Arg
 		String namespace = xpathNamedFunctionReference.getFuncNamespace();
 		String prefix = null;
 		Short arity = xpathNamedFunctionReference.getArity();
-		if ((FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI).equals(namespace)) {
+		if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(namespace)) {
 			prefix = "fn";
 			Object funcId = funcTable.getFunctionId(localName);
 			if (funcId != null) {
@@ -209,7 +210,7 @@ public class FuncFunctionName extends FunctionDef1Arg
 
 			result = new XSQName(prefix, localName, namespace);
 		}
-		else if ((FunctionTable.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(namespace)) {
+		else if ((XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(namespace)) {
 			prefix = "math";
 			Object funcId = funcTable.getFunctionId(localName);
 			if (funcId != null) {
@@ -230,7 +231,7 @@ public class FuncFunctionName extends FunctionDef1Arg
 
 			result = new XSQName(prefix, localName, namespace);
 		}
-		else if ((FunctionTable.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(namespace)) {
+		else if ((XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(namespace)) {
 			prefix = "map";
 			Object funcId = funcTable.getFunctionId(localName);
 			if (funcId != null) {
@@ -251,7 +252,7 @@ public class FuncFunctionName extends FunctionDef1Arg
 
 			result = new XSQName(prefix, localName, namespace);
 		}
-		else if ((FunctionTable.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(namespace)) {
+		else if ((XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(namespace)) {
 			prefix = "array";
 			Object funcId = funcTable.getFunctionId(localName);
 			if (funcId != null) {

@@ -82,28 +82,28 @@ public class ElemMode extends ElemTemplateElement
   }
 
   /**
-   * An xsl:mode element's 'name' attribute.
+   * An xsl:mode element's "name" attribute.
    */
   private QName m_name = null;
   
   /**
-   * An xsl:mode element's 'on-no-match' attribute.
+   * An xsl:mode element's "on-no-match" attribute.
    * 
-   * This has default value "text-only-copy", which may be 
+   * This has default value 'text-only-copy', which may be 
    * overridden by XSL stylesheet's xsl:mode declaration. 
    */
   private String m_onNoMatch = Constants.ATTRVAL_TEXT_ONLY_COPY;
   
   /**
-   * An xsl:mode element's 'on-multiple-match' attribute.
+   * An xsl:mode element's "on-multiple-match" attribute.
    * 
-   * This has default value "use-last", which may be overridden 
+   * This has default value 'use-last', which may be overridden 
    * by XSL stylesheet's xsl:mode declaration.
    */
   private String m_onMultipleMatch = Constants.ATTRVAL_USE_LAST;
   
   /**
-   * An xsl:mode element's 'warning-on-no-match' attribute.
+   * An xsl:mode element's "warning-on-no-match" attribute.
    * 
    * Xalan's default value for this attribute is false.
    */
@@ -111,12 +111,12 @@ public class ElemMode extends ElemTemplateElement
   
   /**
    * This has boolean value true, if xsl:mode instruction's attribute 
-   * 'warning-on-no-match' is declared within an XSL stylesheet. 
+   * "warning-on-no-match" is declared within an XSL stylesheet. 
    */
   private boolean m_warningOnNoMatchDeclared = false;
   
   /**
-   * An xsl:mode element's 'warning-on-multiple-match' attribute.
+   * An xsl:mode element's "warning-on-multiple-match" attribute.
    * 
    * Xalan's default value for this attribute is false.
    */
@@ -124,7 +124,7 @@ public class ElemMode extends ElemTemplateElement
   
   /**
    * This has boolean value true, if xsl:mode instruction's attribute 
-   * 'warning-on-multiple-match' is declared within an XSL stylesheet. 
+   * "warning-on-multiple-match" is declared within an XSL stylesheet. 
    */
   private boolean m_warningOnMultipleMatchDeclared = false;
 
@@ -233,12 +233,28 @@ public class ElemMode extends ElemTemplateElement
   public boolean isWarningOnMultipleMatchDeclared() {
 	  return m_warningOnMultipleMatchDeclared;
   }
+  
+  /**
+   * Class field, to refer to xsl:mode instruction's 
+   * attribute "visibility".
+   */
+  private String m_visibility = "private";
+  
+  public void setVisibility(String v)
+  {
+	  m_visibility = v;
+  }
+  
+  public String getVisibility()
+  {
+	  return m_visibility;
+  }
 
-/**
+  /**
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for the element
+   * @return The token id for the element
    */
   public int getXSLToken()
   {
@@ -282,7 +298,7 @@ public class ElemMode extends ElemTemplateElement
    * @throws TransformerException
    */
   public void execute(TransformerImpl transformer) throws TransformerException {    
-	  // NO OP    
+	  // no op    
   }
 
 }

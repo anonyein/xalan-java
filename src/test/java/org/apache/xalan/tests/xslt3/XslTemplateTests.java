@@ -213,7 +213,7 @@ public class XslTemplateTests extends XslTransformTestsUtil {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test17.xsl"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test17.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test17.out";
+        String goldFilePath = getXslTransformGoldFilePath(XSL_TRANSFORM_GOLD_DIRPATH + "test17.out");
         
         m_fileComparisonType = XSLTestConstants.HTML;
         
@@ -225,7 +225,7 @@ public class XslTemplateTests extends XslTransformTestsUtil {
         String xmlFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test18.xsl"; 
         String xslFilePath = XSL_TRANSFORM_INPUT_DIRPATH + "test18.xsl";
         
-        String goldFilePath = XSL_TRANSFORM_GOLD_DIRPATH + "test18.out";
+        String goldFilePath = getXslTransformGoldFilePath(XSL_TRANSFORM_GOLD_DIRPATH + "test18.out");
         
         m_fileComparisonType = XSLTestConstants.HTML;
         

@@ -59,7 +59,7 @@ public class ElemAnalyzeString extends ElemTemplateElement implements Expression
   protected Expression m_selectExpression = null;
   
   /**
-   * Class field to store, XPath expression for subsequent 
+   * Class field to refer to, XPath expression for subsequent 
    * processing.
    */
   protected XPath m_xpath = null;
@@ -130,7 +130,7 @@ public class ElemAnalyzeString extends ElemTemplateElement implements Expression
   }
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
@@ -161,7 +161,7 @@ public class ElemAnalyzeString extends ElemTemplateElement implements Expression
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -192,6 +192,33 @@ public class ElemAnalyzeString extends ElemTemplateElement implements Expression
    */
   public boolean getExpandTextDeclared() {
 	  return m_expand_text_declared;
+  }
+  
+  /**
+   * An XPath expression for 'use-when' attribute. 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
   }
 
   /**
@@ -226,7 +253,7 @@ public class ElemAnalyzeString extends ElemTemplateElement implements Expression
   /**
    * Get an int constant identifying the type of element.
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken() {
       return Constants.ELEMNAME_ANALYZESTRING;
@@ -249,7 +276,29 @@ public class ElemAnalyzeString extends ElemTemplateElement implements Expression
    * @throws TransformerException
    */
   public void execute(TransformerImpl transformer) throws TransformerException {
-      transformSelectedNodes(transformer);
+	  
+	  XPathContext xctxt = transformer.getXPathContext();
+
+	  final int sourceNode = xctxt.getCurrentNode();
+	  
+	  SourceLocator srcLocator = xctxt.getSAXLocator();
+	    
+	  if (m_useWhen != null) {
+		  boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+		  if (result1) {
+			  XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+			  if (useWhenResult.bool()) {
+				  transformSelectedNodes(transformer);
+			  }
+		  }
+		  else {
+			  throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+					                                                                                                     + "used within XPath static expression.", srcLocator);
+		  }
+	  }
+	  else {
+         transformSelectedNodes(transformer);
+	  }
   }
 
   /**
@@ -313,7 +362,7 @@ public class ElemAnalyzeString extends ElemTemplateElement implements Expression
     	  regex_flags_str = m_regex_flags.evaluate(xctxt, contextNode, xctxt.getNamespaceContext()); 
        }
        
-       if (regex_flags_str != null && !RegexEvaluationSupport.isFlagStrValid(regex_flags_str)) {
+       if ((regex_flags_str != null) && !RegexEvaluationSupport.isFlagStrValid(regex_flags_str)) {
            throw new javax.xml.transform.TransformerException("XTDE1145 : Incorrect regex flag value(s) are present as value of 'flags' "
            		                                                                  									 + "attribute of an XSL analyze-string element.", srcLocator);    
        }
@@ -347,9 +396,22 @@ public class ElemAnalyzeString extends ElemTemplateElement implements Expression
        }
        
        if (strToBeAnalyzed.length() > 0) {
-    	   String regexStr = m_regex.evaluate(xctxt, xctxt.getContextNode(), this);
-    	   Matcher regexMatcher = RegexEvaluationSupport.compileAndExecute(RegexEvaluationSupport.transformRegexStrForSubtractionOp(regexStr), 
-    			   																															regex_flags_str, strToBeAnalyzed);
+    	   String regexStr = m_regex.evaluate(xctxt, contextNode, this);
+    	   
+    	   Matcher regexMatcher = null;
+    			   
+    	   try {
+    	       regexMatcher = RegexEvaluationSupport.compileAndExecute(RegexEvaluationSupport.transformRegexStrForSubtractionOp(regexStr),
+    	    		                                                                                                                    regex_flags_str, strToBeAnalyzed);
+    	   }
+    	   catch (Exception ex) {    		   
+    		   String errMesg = "FORX0002: An XSL instruction analyze-string's regex syntax is invalid.";        		
+
+    		   String mesg1 = ex.getMessage();
+    		   errMesg = (mesg1 != null) ? (errMesg + " " + mesg1) : errMesg;  
+
+    		   throw new javax.xml.transform.TransformerException(errMesg, srcLocator);
+       	   }
 
     	   List<RegexMatchInfo> regexMatchInfoList = new ArrayList<RegexMatchInfo>();
 
@@ -631,7 +693,7 @@ public class ElemAnalyzeString extends ElemTemplateElement implements Expression
 	   * Class constructor.
 	   */
 	  public RegexMatchInfo() {
-		  // NO OP
+		  // no op
 	  }
 
 	  public int getStartIdx() {

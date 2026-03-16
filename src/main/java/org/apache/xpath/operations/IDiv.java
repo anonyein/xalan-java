@@ -34,7 +34,7 @@ import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.utils.PrefixResolver;
-import org.apache.xpath.XPathArithmeticOperation;
+import org.apache.xpath.XPathArithmeticOp;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.XPath;
@@ -50,13 +50,14 @@ import xml.xpath31.processor.types.XSDecimal;
 import xml.xpath31.processor.types.XSDouble;
 import xml.xpath31.processor.types.XSFloat;
 import xml.xpath31.processor.types.XSInteger;
+import xml.xpath31.processor.types.XSString;
 
 /**
  * An XPath 'idiv' operation implementation.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  */
-public class IDiv extends XPathArithmeticOperation
+public class IDiv extends XPathArithmeticOp
 {
 
   private static final long serialVersionUID = 5138215729063791579L;
@@ -119,7 +120,8 @@ public class IDiv extends XPathArithmeticOperation
 	  if ((left instanceof XSInteger) || (left instanceof XSDecimal) || 
 			                                                      (left instanceof XSFloat) || 
 			                                                      (left instanceof XSDouble) || 
-	                                                              (left instanceof XNumber)) {
+	                                                              (left instanceof XNumber) ||
+	                                                              (left instanceof XSString)) {
 		 arg0Str = XslTransformEvaluationHelper.getStrVal(left);		 
 	  }
 	  

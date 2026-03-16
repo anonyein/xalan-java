@@ -22,6 +22,7 @@ package org.apache.xml.utils;
 
 /**
  * Primary constants used by the XSLT Processor
+ * 
  * @xsl.usage advanced
  */
 public class Constants
@@ -111,8 +112,15 @@ public class Constants
   public static final double XSLTVERSUPPORTED = 1.0;
   
   /**
-   * The following values specify details about, Xerces-J's XML document builder factory and
-   * XML Schema factory that're used by Xalan-J. 
+   * Xalan's XSLT 3.0 JAXP factory object information.
+   */
+  
+  public static final String XSL_TRANSFORM_FACTORY_KEY = "javax.xml.transform.TransformerFactory";
+  
+  public static final String XSL_TRANSFORM_FACTORY_VALUE = "org.apache.xalan.processor.XSL3TransformerFactoryImpl";
+  
+  /**
+   * XML parser and XML Schema JAXP factory object information.
    */
   
   public static final String XML_DOCUMENT_BUILDER_FACTORY_KEY = "javax.xml.parsers.DocumentBuilderFactory";

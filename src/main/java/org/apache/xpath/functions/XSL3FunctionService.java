@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -34,14 +35,25 @@ import java.util.Set;
 import java.util.Vector;
 
 import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.SourceLocator;
+import javax.xml.transform.Templates;
 import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.dom.DOMSource;
 
+import org.apache.xalan.templates.AVT;
 import org.apache.xalan.templates.Constants;
+import org.apache.xalan.templates.ElemAccept;
+import org.apache.xalan.templates.ElemExpose;
 import org.apache.xalan.templates.ElemFunction;
 import org.apache.xalan.templates.ElemParam;
 import org.apache.xalan.templates.ElemTemplate;
 import org.apache.xalan.templates.ElemTemplateElement;
+import org.apache.xalan.templates.ElemUsePackage;
+import org.apache.xalan.templates.Stylesheet;
 import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.templates.TemplateList;
 import org.apache.xalan.templates.XMLNSDecl;
@@ -53,11 +65,13 @@ import org.apache.xerces.impl.dv.xs.XSSimpleTypeDecl;
 import org.apache.xerces.impl.xs.XSLoaderImpl;
 import org.apache.xerces.xs.XSModel;
 import org.apache.xerces.xs.XSTypeDefinition;
+import org.apache.xml.utils.DefaultErrorHandler;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.compiler.Keywords;
@@ -102,6 +116,7 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.bootstrap.DOMImplementationRegistry;
 import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSSerializer;
+import org.xml.sax.InputSource;
 
 import xml.xpath31.processor.types.XSAnyURI;
 import xml.xpath31.processor.types.XSBoolean;
@@ -120,6 +135,7 @@ import xml.xpath31.processor.types.XSQName;
 import xml.xpath31.processor.types.XSString;
 import xml.xpath31.processor.types.XSTime;
 import xml.xpath31.processor.types.XSToken;
+import xml.xpath31.processor.types.XSUntypedAtomic;
 import xml.xpath31.processor.types.XSYearMonthDuration;
 
 /**
@@ -165,6 +181,8 @@ public class XSL3FunctionService {
     	XObject evalResult = null;
 
     	SourceLocator srcLocator = xctxt.getSAXLocator();
+    	
+    	final int sourceNode = xctxt.getCurrentNode();
 
     	try {        
     		XSL3ConstructorOrExtensionFunction funcObj = xpathExpr;
@@ -213,18 +231,43 @@ public class XSL3FunctionService {
     						else {
     							xslFuncArgVal = argExpr.execute(xctxt); 	
     						}
+    						
     						xslFuncArgSequence.add(xslFuncArgVal);
     						xslFuncArgCount++;
     					}
     				}
 
     				ElemTemplate elemTemplate = templateList.getXslFunction(new QName(funcNamespace, funcName), xslFuncArgCount);
+    				
+    				if (elemTemplate == null) { 
+    					elemTemplate = getXslFunctionDeclUsingXslPackage(transformerImpl, funcNamespace, 
+    							                                                                      funcName, xslFuncArgCount);
+    			    }
 
     				if ((elemTemplate != null) && (elemTemplate instanceof ElemFunction)) {
-    					// Evaluate XSL stylesheet function call    					
+    					// Evaluate an XSL stylesheet function call
+    					
     					ElemFunction elemFunction = (ElemFunction)elemTemplate;
-
-    					evalResult = elemFunction.evaluateXslFunction(transformerImpl, xslFuncArgSequence);
+    					    					
+    					XPath useWhenExpr = elemFunction.getUseWhen();
+                        if (useWhenExpr != null) {
+                        	XObject xObj = useWhenExpr.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+                        	if (xObj.bool()) {
+                        	   evalResult = elemFunction.evaluateXslFunction(transformerImpl, xslFuncArgSequence);
+                        	}                        	
+                        }
+                        else {
+                        	Stylesheet stylesheet3 = elemTemplate.getStylesheet();
+                        	if (stylesheet3 != null) {
+                        	   StylesheetRoot stylesheetRoot2 = stylesheet3.getStylesheetRoot();
+                        	   transformerImpl = stylesheetRoot2.getTransformerImpl();
+                        	   if (transformerImpl == null) {
+                        	      transformerImpl = new TransformerImpl(stylesheetRoot2);
+                        	   }
+                        	}
+                        	
+    					    evalResult = elemFunction.evaluateXslFunction(transformerImpl, xslFuncArgSequence);
+                        }
 
     					if ((evalResult instanceof XPathNamedFunctionReference) && (funcExtArgStrList != null)) {
     						XPathNamedFunctionReference xpathNamedFunctionReference = (XPathNamedFunctionReference)evalResult;    					   
@@ -232,9 +275,9 @@ public class XSL3FunctionService {
     						String namespace = xpathNamedFunctionReference.getFuncNamespace();
     						Short arity = xpathNamedFunctionReference.getArity();    					   
     						if ((int)arity == funcExtArgStrList.size()) {
-    							if ((FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI).equals(namespace) || (FunctionTable.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(namespace) ||
-    									                                                             (FunctionTable.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(namespace) || 
-    									                                                             (FunctionTable.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(namespace)) {
+    							if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(namespace) || (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(namespace) ||
+    									                                                                   (XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(namespace) || 
+    									                                                                   (XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(namespace)) {
     								FunctionTable funcTable = xctxt.getFunctionTable();
     								Object funcId = funcTable.getFunctionId(localName);
     								if (funcId != null) {
@@ -249,7 +292,7 @@ public class XSL3FunctionService {
     												function.setArg(argXPath.getExpression(), idx);
     											} 
     											catch (WrongNumberArgsException ex) {
-    												// NO OP
+    												// no op
     											}    									
     										}
 
@@ -312,12 +355,12 @@ public class XSL3FunctionService {
     					}
 
     					return evalResult;
-    				}
+    			    }    				
     			}
 
     			if (XMLConstants.W3C_XML_SCHEMA_NS_URI.equals(funcNamespace)) {                
     				// Evaluate XPath constructor function call, for schema types 
-    				// in XML Schema namespace.
+    				// within XML Schema namespace.
 
     				ResultSequence argSequence = new ResultSequence();
     				ResultSequence evalResultSequence = null;
@@ -603,8 +646,13 @@ public class XSL3FunctionService {
     						}
 
     						break;
+    					case Keywords.XS_UNTYPED_ATOMIC :
+    						Expression funcArg = funcObj.getArg(0);    						
+							String argStr = getXPathBuiltInConstructorFunctionArgStr(funcArg, xctxt);
+    						
+    						evalResult = new XSUntypedAtomic(argStr);
     					default:
-    						// NO OP
+    						// no op
     					}
     				}
     				catch (Exception ex) {
@@ -778,7 +826,13 @@ public class XSL3FunctionService {
     		}
     	}
     	catch (TransformerException ex) {
-    		throw new TransformerException(ex.getMessage(), srcLocator); 
+    		String errMesg = ex.getMessage();
+    		SourceLocator srcLocatorTemp = ex.getLocator();
+    		if (srcLocatorTemp == null) {
+    			srcLocatorTemp = srcLocator; 	
+    		}
+    		
+    		throw new TransformerException(errMesg, srcLocatorTemp);
     	}
 
     	return evalResult;        
@@ -837,8 +891,8 @@ public class XSL3FunctionService {
     	String funcNamespace = xpathNamedFuncRef.getFuncNamespace();
     	String funcLocalName = xpathNamedFuncRef.getFuncName();
     	int funcArity = 0;           
-    	if ((FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace) && 
-    																		(Keywords.FUNC_CONCAT_STRING).equals(funcLocalName)) {
+    	if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace) && 
+    																		     (Keywords.FUNC_CONCAT_STRING).equals(funcLocalName)) {
     		funcArity = xpathNamedFuncRef.getConcatArity();
     	}
     	else {
@@ -850,16 +904,16 @@ public class XSL3FunctionService {
     	FunctionTable funcTable = xctxt.getFunctionTable();
 
     	Object funcIdObj = null;
-    	if (FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace)) {
+    	if (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace)) {
     		funcIdObj = funcTable.getFunctionId(funcLocalName);
     	}
-    	else if (FunctionTable.XPATH_BUILT_IN_MATH_FUNCS_NS_URI.equals(funcNamespace)) {
+    	else if (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI.equals(funcNamespace)) {
     		funcIdObj = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcLocalName);
     	}
-    	else if (FunctionTable.XPATH_BUILT_IN_MAP_FUNCS_NS_URI.equals(funcNamespace)) {
+    	else if (XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI.equals(funcNamespace)) {
     		funcIdObj = funcTable.getFunctionIdForXPathBuiltinMapFuncs(funcLocalName);
     	}
-    	else if (FunctionTable.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI.equals(funcNamespace)) {
+    	else if (XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI.equals(funcNamespace)) {
     		funcIdObj = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcLocalName);
     	}
 
@@ -881,7 +935,7 @@ public class XSL3FunctionService {
     		if (argList != null) {
     		   argCount = argList.size();
     		}
-    		else {
+    		else if (argSeq != null) {
     		   argCount = argSeq.size();	
     		}
     		
@@ -1009,22 +1063,22 @@ public class XSL3FunctionService {
         
         FunctionTable funcTable = xctxt.getFunctionTable();
         
-        if ((FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace)) {
+        if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace)) {
            Object funcId = funcTable.getFunctionIdForXPathBuiltinFuncs(funcName);
            int funcIdValue = (int)Integer.valueOf(funcId.toString());
            result = funcTable.getFunction(funcIdValue);
         }
-        else if ((FunctionTable.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(funcNamespace)) {
+        else if ((XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(funcNamespace)) {
            Object funcId = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcName);
            int funcIdValue = (int)Integer.valueOf(funcId.toString());
            result = funcTable.getFunction(funcIdValue);
         }
-        else if ((FunctionTable.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(funcNamespace)) {
+        else if ((XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(funcNamespace)) {
            Object funcId = funcTable.getFunctionIdForXPathBuiltinMapFuncs(funcName);
            int funcIdValue = (int)Integer.valueOf(funcId.toString());
            result = funcTable.getFunction(funcIdValue);
         }
-        else if ((FunctionTable.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(funcNamespace)) {
+        else if ((XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(funcNamespace)) {
            Object funcId = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcName);
            int funcIdValue = (int)Integer.valueOf(funcId.toString());
            result = funcTable.getFunction(funcIdValue);
@@ -1374,7 +1428,7 @@ public class XSL3FunctionService {
 			Expression funcArg = funcObj.getArg(idx);    						
 			String argStr = getXPathBuiltInConstructorFunctionArgStr(funcArg, xctxt);
 			Constructor cons = dataType.getConstructor(new Class[] {String.class});
-			Object obj = cons.newInstance(new String[] {argStr});
+			Object obj = cons.newInstance(new Object[] {argStr});
 			argSequence.add((XObject)obj);
 		}
     	
@@ -1411,6 +1465,272 @@ public class XSL3FunctionService {
     	}
     	
     	return argStr;
+    }
+    
+    /**
+     * Method definition, to check whether the supplied xsl:function object,
+     * can be used to resolve the function call.
+     * 
+     * @param elemFunction                      The supplied xsl:function object reference
+     * @param componentNames					The allowed Vector information for
+     *                                          xsl:function names.
+     * @param funcCallNs                        xsl:function name's namespace from
+     *                                          function call reference.
+     * @param funcCallName                      xsl:function name's local-name from
+     *                                          function call reference.
+     * @param funcCallArgCount                  The function arity information, from
+     *                                          function call reference.
+     *                                          
+     * @return                                  Boolean value true or false
+     */
+    private boolean isElemFunctionEligible(ElemFunction elemFunction, Vector componentNames, 
+    		                                                          String funcCallNs, String funcCallName, 
+    		                                                          int funcCallArgCount) throws TransformerException {
+        
+    	boolean result = false;
+        
+        Enumeration enum1 = componentNames.elements();
+        
+        QName fqName = elemFunction.getName();
+        String fLocalName = fqName.getLocalName();
+        String fUri = fqName.getNamespace();
+        int fArity = elemFunction.getArity();
+        
+        XPath useWhenExpr = elemFunction.getUseWhen();
+        if (useWhenExpr != null) {
+           boolean result1 = ((ElemTemplateElement)elemFunction).isXPathExpressionStatic(useWhenExpr.getExpression());
+           if (!result1) {
+        	   throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                       																										  + "used within XPath static expression.", elemFunction); 
+           }
+        }
+        
+        while (enum1.hasMoreElements()) {
+			QName qName2 = (QName)(enum1.nextElement());
+			String localName2 = qName2.getLocalName();
+			String namespace2 = qName2.getNamespace();
+			if (localName2.indexOf('#') != -1) {
+				int arity = Integer.valueOf(localName2.substring(localName2.indexOf('#') + 1));
+				String localName = localName2.substring(0, localName2.indexOf('#')); 
+				if (fLocalName.equals(localName) && fUri.equals(namespace2) && fUri.equals(funcCallNs) 
+						                         && (fArity == arity) && (arity == funcCallArgCount)) {
+					result = true;
+
+					break;
+				}				
+			}    														
+		}
+        
+        return result;
+    }
+    
+    /**
+     * Method definition, to get xsl:function declaration object, for the supplied
+     * xsl:function call reference information.
+     * 
+     * @param transformerImpl                                      An XSL run-time TransformerImpl 
+     *                                                             object instance. 
+     * @param funcNamespace                                        An xsl:function declaration's desired 
+     *                                                             XML namespace value.
+     * @param funcName                                             An xsl:function declaration's desired
+     *                                                             local name.
+     * @param xslFuncExpectedArity                                 An xsl:function declaration's desired
+     *                                                             arity.
+     * @return                                                     An xsl:function declaration object,
+     *                                                             or null.
+     * @throws TransformerException
+     * @throws TransformerFactoryConfigurationError
+     */
+    private ElemTemplate getXslFunctionDeclUsingXslPackage(TransformerImpl transformerImpl, String funcNamespace, 
+    		                                                                                     String funcName, 
+    		                                                                                     int xslFuncExpectedArity) throws TransformerException, 
+                                                                                                                     TransformerFactoryConfigurationError {
+    	ElemTemplate result = null;
+    	    	    	
+    	XPathContext xctxt = transformerImpl.getXPathContext();
+    	    	    	
+    	SourceLocator srcLocator = xctxt.getSAXLocator();
+    	
+    	final int sourceNode = xctxt.getCurrentNode();
+    	
+    	Stylesheet sroot = transformerImpl.getStylesheet();
+    	
+    	ElemTemplateElement elemTemplateElement1 = sroot.getFirstChildElem();
+    	
+    	Stylesheet stylesheet2 = null;
+		
+		while (elemTemplateElement1 != null) {
+			if (elemTemplateElement1 instanceof ElemUsePackage) {
+				// Resolve function call reference				
+				ElemUsePackage elemUsePackage2 = (ElemUsePackage)elemTemplateElement1;
+				XPath useWhenExpr = elemUsePackage2.getUseWhen();
+				if (useWhenExpr != null) {
+					XObject xObj = useWhenExpr.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+					if (!xObj.bool()) {
+						elemTemplateElement1 = elemTemplateElement1.getNextSiblingElem();
+
+						continue;
+					}
+				}
+				
+				System.setProperty(Constants.XSL_TRANSFORM_FACTORY_KEY, Constants.XSL_TRANSFORM_FACTORY_VALUE);
+
+				try {
+					TransformerFactory tfactory = TransformerFactory.newInstance();
+					tfactory.setErrorListener(new DefaultErrorHandler(true));
+
+					ElemUsePackage elemUsePackage = (ElemUsePackage)elemTemplateElement1;
+					AVT packageAvt = elemUsePackage.getName();
+					String packageName = packageAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext());
+
+					DocumentBuilderFactory dfactory = DocumentBuilderFactory.newInstance();
+					dfactory.setNamespaceAware(true);
+					dfactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+					DocumentBuilder docBuilder = dfactory.newDocumentBuilder();    							    							
+
+					URL resolvedUrl = null;
+					URI uri = new URI(packageName);
+					if (uri.isAbsolute()) {
+						resolvedUrl = new URL(packageName); 
+					}
+					else {
+						String stylesheetSystemId = srcLocator.getSystemId();    				            	
+						if (stylesheetSystemId != null) {
+							URI resolvedUriArg = (new URI(stylesheetSystemId)).resolve(packageName);
+							resolvedUrl = resolvedUriArg.toURL();
+						}
+						else {
+							resolvedUrl = new URL(packageName);
+						}
+					}
+
+					String xslResolverUrlStr = resolvedUrl.toString();
+
+					InputSource inpSrc = new InputSource(xslResolverUrlStr);
+
+					Document xslDocument = docBuilder.parse(inpSrc);
+
+					Templates templates = tfactory.newTemplates(new DOMSource(xslDocument, xslResolverUrlStr));
+
+					/**
+					 * This shall provide to us XSL expanded component definitions.
+					 * We need to verify, that which of these components to use,
+					 * using xsl:accept instruction, information from xsl:use-package.
+					 */
+					stylesheet2 = (Stylesheet)templates;
+
+					ElemTemplateElement elem1 = elemUsePackage.getFirstChildElem();
+					while ((elem1 != null) && (elem1 instanceof ElemAccept)) {
+						ElemAccept elemAccept = (ElemAccept)elem1;
+						String component = elemAccept.getComponent();    								
+						if ("function".equals(component)) {
+							Vector componentNames = elemAccept.getNames();
+							String compVisibilityValue = elemAccept.getVisibility();
+							if ("public".equals(compVisibilityValue)) {    								    
+								int xslTemplateCount = stylesheet2.getTemplateCount();
+								for (int idx = 0; idx < xslTemplateCount; idx++) {
+									ElemTemplate template = stylesheet2.getTemplate(idx);
+									if (template instanceof ElemFunction) {
+										ElemFunction elemFunction = (ElemFunction)template;
+										if (isElemFunctionEligible(elemFunction, componentNames, 
+												                                 funcNamespace, funcName, xslFuncExpectedArity)) {
+										   result = elemFunction;
+										   
+										   break;
+										}    													
+									}
+								}
+								
+								if (result != null) {
+								   break;	
+								}
+							}
+						}
+						
+						if (result != null) {
+						    break;	
+					    }
+
+						elem1 = elem1.getNextSiblingElem();
+				    }
+				}	
+				catch (Exception ex) {
+					// no op	
+				}
+			}
+
+			if (result != null) {
+				break;	
+			}
+
+			elemTemplateElement1 = elemTemplateElement1.getNextSiblingElem();
+		}
+		
+		if (result != null) {
+			// Verify xsl:function declaration object found via xsl:use-package 
+			// instruction, with xsl:expose instruction.
+
+			ElemTemplateElement elemTemplateElem = stylesheet2.getFirstChildElem();
+			boolean isXslExposeAllows = false;
+									
+			while (elemTemplateElem != null) {
+				if (elemTemplateElem instanceof ElemExpose) {
+					ElemExpose elemExpose = (ElemExpose)elemTemplateElem;					
+					String componentType = elemExpose.getComponent();
+					Vector nameVector = elemExpose.getNames();
+					String visibility = elemExpose.getVisibility();
+					if ("public".equals(visibility) && ("function".equals(componentType) || "*".equals(componentType))) {
+						Enumeration enum1 = nameVector.elements();
+						while (enum1.hasMoreElements()) {
+							QName qNameExposeValue1 = (QName)(enum1.nextElement());
+																					
+							String ns1 =  qNameExposeValue1.getNamespace();
+							String localName1 = qNameExposeValue1.getLocalName();
+							int arity = -1;
+							if (localName1.contains("#")) {
+							   int idx = localName1.indexOf('#');
+							   arity = Integer.valueOf(localName1.substring(idx + 1));
+							   localName1 = localName1.substring(0, idx);
+							   qNameExposeValue1 = new QName(ns1, localName1);							   
+							}
+							
+							QName qNameFuncDeclValue1 = result.getName();
+							String ns2 = qNameFuncDeclValue1.getNamespace();
+							String localName2 = qNameFuncDeclValue1.getLocalName();
+	
+							isXslExposeAllows = (new QName(ns2, localName2)).equals(new QName(ns1, localName1));
+							if (isXslExposeAllows) {
+								ElemFunction elemFunc = (ElemFunction)result;
+								if ((arity != -1) && !(arity == elemFunc.getArity())) {
+									isXslExposeAllows = false;
+								}
+							}
+							
+							if (isXslExposeAllows) {
+								break; 
+							}
+						}						
+					}
+
+					if (isXslExposeAllows) {
+						break;	
+					}
+				}
+
+				elemTemplateElem = elemTemplateElem.getNextSiblingElem();
+			}
+
+			if (!isXslExposeAllows) {
+				result = null; 
+			}			
+		}
+		
+		if ((result != null) && (stylesheet2 != null)) {
+			StylesheetRoot stylesheetRoot = (StylesheetRoot)stylesheet2;
+			result.setStylesheet(stylesheetRoot);
+		}
+		
+		return result;
     }
     
 }

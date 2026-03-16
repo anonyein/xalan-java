@@ -25,6 +25,7 @@ import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.xslt.util.StringUtil;
 import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
@@ -55,12 +56,14 @@ import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.Div;
 import org.apache.xpath.operations.Operation;
 import org.apache.xpath.operations.Variable;
+import org.apache.xpath.types.DateTimeUtil;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import xml.xpath31.processor.types.XSAnyType;
+import xml.xpath31.processor.types.XSDateTime;
 import xml.xpath31.processor.types.XSDayTimeDuration;
 import xml.xpath31.processor.types.XSDecimal;
 import xml.xpath31.processor.types.XSDouble;
@@ -162,7 +165,7 @@ public class ElemValueOf extends ElemTemplateElement {
 
   /**
    * Tells if this element should disable escaping.
-   * @serial
+   * 
    */
   private boolean m_disableOutputEscaping = false;
 
@@ -217,7 +220,7 @@ public class ElemValueOf extends ElemTemplateElement {
   }
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
@@ -248,7 +251,7 @@ public class ElemValueOf extends ElemTemplateElement {
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -280,6 +283,33 @@ public class ElemValueOf extends ElemTemplateElement {
   public boolean getExpandTextDeclared() {
 	  return m_expand_text_declared;
   }
+  
+  /**
+   * An XPath expression for 'use-when' attribute. 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
+  }
 
   /**
    * Get an integer representation of the element type.
@@ -292,12 +322,6 @@ public class ElemValueOf extends ElemTemplateElement {
   {
     return Constants.ELEMNAME_VALUEOF;
   }
-  
-  /**
-   * This class field's value denotes the constant string "XSL_SEQ" which 
-   * is used during processing of xsl:sequence instruction.
-   */
-  private static final String XSL_SEQ = "XSL_SEQ";
 
   /**
    * This function is called after everything else has been
@@ -355,6 +379,22 @@ public class ElemValueOf extends ElemTemplateElement {
     XPathContext xctxt = transformer.getXPathContext();
     
     SourceLocator srcLocator = xctxt.getSAXLocator();
+    
+    final int sourceNode = xctxt.getCurrentNode();
+    
+    if (m_useWhen != null) {
+    	boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+    	if (result1) {
+    		XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+    		if (!useWhenResult.bool()) {
+    			return;
+    		}
+    	}
+    	else {
+    		throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                    																									+ "used within XPath static expression.", srcLocator);
+    	}
+    }
     
     SerializationHandler rth = transformer.getResultTreeHandler();
 
@@ -421,7 +461,7 @@ public class ElemValueOf extends ElemTemplateElement {
         		  return;
         	  }
         	  catch (Exception ex) {
-        		  // NO OP 
+        		  // no op 
         	  }
           }
 
@@ -657,7 +697,7 @@ public class ElemValueOf extends ElemTemplateElement {
                       }
                       else if (evalResult instanceof ResultSequence) {
                     	 strValue = getEffectiveSequenceStrValue((ResultSequence)evalResult, separatorStrValue); 
-                      }
+                      }                      
                       else if (evalResult instanceof XMLNodeCursorImpl) {                    	  
                     	  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)evalResult;
                     	  DTMCursorIterator iter = xmlNodeCursorImpl.iterRaw();                    	  
@@ -701,13 +741,24 @@ public class ElemValueOf extends ElemTemplateElement {
                 		}
                 	 }
                 	 
-                	 if ((expr instanceof Div) && (evalResult == null)) {
-                		 evalResult = new XSString("NaN"); 
+                	 String strValue = null;
+                	 
+                	 if (expr instanceof Div) {
+                		 if (evalResult == null) {
+                			 strValue = "NaN";
+                		 }
+                		 else {
+                			 strValue = XslTransformEvaluationHelper.getStrVal(evalResult);
+                		 }
                 	 }
-                     
-                     String strValue = null;
-                     
-                     if (evalResult instanceof ResultSequence) {                         
+                	 else if (evalResult instanceof XSDayTimeDuration) {
+                		 strValue = DateTimeUtil.getFormattedStrXsDaytimeDuration((XSDayTimeDuration)evalResult);
+                	 }
+                	 else if (evalResult instanceof XSDateTime) {                		 
+                		 XSDateTime xsDateTime = (XSDateTime)evalResult;                		 
+                		 strValue = xsDateTime.stringValue();
+                	 } 
+                	 else if (evalResult instanceof ResultSequence) {                         
                          strValue = getEffectiveSequenceStrValue((ResultSequence)evalResult, separatorStrValue);
                      }                     
                      else {
@@ -996,7 +1047,7 @@ public class ElemValueOf extends ElemTemplateElement {
                         		   }
                         	   }
                         	   catch (Exception ex) {
-                        		   // NO OP
+                        		   // no op
                         	   }
                            }
                         }
@@ -1067,11 +1118,14 @@ public class ElemValueOf extends ElemTemplateElement {
                 					  str1 = xmlNodeCursorImpl.str();  
                 				  }
                 			  }
+                			  else if (xObj instanceof XSDayTimeDuration) {
+                				  str1 = DateTimeUtil.getFormattedStrXsDaytimeDuration((XSDayTimeDuration)xObj); 
+                			  }
                 			  else {
                 				  str1 = XslTransformEvaluationHelper.getStrVal(xObj);
                 			  }
 
-                			  if (str1 != null) {
+                			  if ((str1 != null) && !((idx == 0) && "".equals(str1))) {                			  
                 				  if (idx < (rSeqLngth - 1)) {
                 					  strBuff = strBuff.append(str1 + separatorStrValue); 
                 				  }
@@ -1141,7 +1195,7 @@ public class ElemValueOf extends ElemTemplateElement {
    */
   protected void callChildVisitors(XSLTVisitor visitor, boolean callAttrs)
   {
-  	  if(callAttrs)
+  	  if (callAttrs)
   		 m_selectExpression.getExpression().callVisitors(m_selectExpression, visitor);
       super.callChildVisitors(visitor, callAttrs);
   }
@@ -1156,8 +1210,8 @@ public class ElemValueOf extends ElemTemplateElement {
   private String preProcessStrBeforeXslSerialization(String str) {
 	 String resultStr = str;
 	 
-	 if (resultStr.contains(ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX)) {
-	     resultStr = resultStr.replace(ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX, "");
+	 if (resultStr.contains(ElemSequence.STRING_VAL_SER_SUFFIX)) {
+	     resultStr = resultStr.replace(ElemSequence.STRING_VAL_SER_SUFFIX, "");
 	 }
 	 
 	 return resultStr;
@@ -1169,13 +1223,31 @@ public class ElemValueOf extends ElemTemplateElement {
    * available.
    */
   private String getEffectiveSequenceStrValue(ResultSequence seq, String separatorStrValue) {	
-	String strValue = seq.str();
-	
-	if (separatorStrValue != null) {
-	   strValue = strValue.replace(" ", separatorStrValue);
+		  
+    String result = null;	  
+	  
+	StringBuffer strBuff = new StringBuffer();
+	int size1 = seq.size();
+	for (int idx = 0; idx < size1; idx++) {
+	   XObject xObj = seq.item(idx);
+	   String str1 = XslTransformEvaluationHelper.getStrVal(xObj);
+	   if (idx < (size1 - 1)) {
+		   if (separatorStrValue != null) {
+			  strBuff.append(str1 + separatorStrValue);
+		   }
+		   else {
+			  strBuff.append(str1 + " ");
+		   }
+	   }
+	   else {
+		   strBuff.append(str1);
+	   }
 	}
 	
-	return strValue;
+	result = strBuff.toString(); 
+	
+	return result;
+	
   }
   
   /**
@@ -1214,23 +1286,43 @@ public class ElemValueOf extends ElemTemplateElement {
 		  }
 
 		  String nodeStrVal = (nodeStrValBuff.toString()).trim();
-		  if (nodeStrVal.contains(XSL_SEQ)) {
-			  nodeStrVal = nodeStrVal.replace(XSL_SEQ, "");
-			  if (separatorStrValue != null) {        				
-				  nodeStrVal = nodeStrVal.replace(" ", separatorStrValue);
-				  nodeStrVal = nodeStrVal.substring(0, (nodeStrVal.length() - 1));
-				  String rTrimmedSeparator = strRtrim(separatorStrValue);
-				  if (!separatorStrValue.equals(rTrimmedSeparator)) {
-					  int lIdx = nodeStrVal.lastIndexOf(rTrimmedSeparator);
-					  if (lIdx > 0) {
-						  nodeStrVal = nodeStrVal.substring(0, lIdx);
-					  } 
-				  }
-			  }
-			  else {
-				  nodeStrVal = nodeStrVal.trim();
+		  boolean status1 = false;		  
+		  if (nodeStrVal.contains(ElemSequence.SER_INTEGER_SUFFIX_ID)) {
+			  nodeStrVal = nodeStrVal.replace(ElemSequence.SER_INTEGER_SUFFIX_ID, "");
+			  status1 = true;
+		  }
+		  else if (nodeStrVal.contains(ElemSequence.SER_DOUBLE_SUFFIX_ID)) {
+			  nodeStrVal = nodeStrVal.replace(ElemSequence.SER_DOUBLE_SUFFIX_ID, "");
+			  status1 = true;
+		  }
+		  else if (nodeStrVal.contains(ElemSequence.SER_DECIMAL_SUFFIX_ID)) {
+			  nodeStrVal = nodeStrVal.replace(ElemSequence.SER_DECIMAL_SUFFIX_ID, "");
+			  status1 = true;
+		  }
+		  else if (nodeStrVal.contains(ElemSequence.SER_FLOAT_SUFFIX_ID)) {
+			  nodeStrVal = nodeStrVal.replace(ElemSequence.SER_FLOAT_SUFFIX_ID, "");
+			  status1 = true;
+		  }
+		  else if (nodeStrVal.contains(ElemSequence.SER_SUFFIX_ID)) {
+			  nodeStrVal = nodeStrVal.replace(ElemSequence.SER_SUFFIX_ID, "");
+			  status1 = true;
+		  }
+
+		  if (status1 && (separatorStrValue != null)) {        				
+			  nodeStrVal = nodeStrVal.replace(" ", separatorStrValue);
+			  nodeStrVal = nodeStrVal.substring(0, (nodeStrVal.length() - 1));
+			  String rTrimmedSeparator = StringUtil.strRtrim(separatorStrValue);
+			  if (!separatorStrValue.equals(rTrimmedSeparator)) {
+				  int lIdx = nodeStrVal.lastIndexOf(rTrimmedSeparator);
+				  if (lIdx > 0) {
+					  nodeStrVal = nodeStrVal.substring(0, lIdx);
+				  } 
 			  }
 		  }
+		  else {
+			  nodeStrVal = nodeStrVal.trim();
+		  }
+
 		  (new XString(nodeStrVal)).dispatchCharactersEvents(rth);
 	  }
 	  else {
@@ -1240,38 +1332,6 @@ public class ElemValueOf extends ElemTemplateElement {
 		  String nodeStrVal = node.getTextContent();
 		  (new XString(nodeStrVal)).dispatchCharactersEvents(rth);
 	  }
-   }
-  
-   /**
-    * Method definition to trim whitespace characters from RHS of 
-    * an input string, and returning resulting string.
-    */
-   private String strRtrim(String str) {
-	  String resultStr = null;
-	  
-	  if (str.length() == 0) {
-		 resultStr = "";  
-	  }
-	  else if (str.length() == 1) {
-		 if (Character.isWhitespace(str.charAt(0))) {
-			resultStr = ""; 
-		 }
-		 else {
-			resultStr = str;
-		 }
-	  }
-	  else {
-		 char chr = str.charAt(str.length() - 1);
-		 if (Character.isWhitespace(chr)) {
-			resultStr = str.substring(0, str.length() - 1);
-			resultStr = strRtrim(resultStr); 
-		 }
-		 else {
-			resultStr = str; 
-		 }
-	  }
-	  
-	  return resultStr;
    }
    
    /**

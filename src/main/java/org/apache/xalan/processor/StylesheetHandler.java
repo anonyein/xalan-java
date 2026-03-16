@@ -106,6 +106,12 @@ public class StylesheetHandler extends DefaultHandler
   private boolean m_assert;
   
   /**
+   * Value indicating, whether XSL transformation
+   * initial context node is set.
+   */
+  private boolean m_initial_context_node;
+  
+  /**
    * Create a StylesheetHandler object, creating a root stylesheet
    * as the target.
    *
@@ -141,7 +147,9 @@ public class StylesheetHandler extends DefaultHandler
        m_init_mode_name = ((String)processor.getAttribute(XSL3TransformerFactoryImpl.FEATURE_INIT_MODE)).toString();
     }
     
-    m_assert = (Boolean)(processor.getAttribute(XSL3TransformerFactoryImpl.FEATURE_ASSERT)); 
+    m_assert = (Boolean)(processor.getAttribute(XSL3TransformerFactoryImpl.FEATURE_ASSERT));
+    
+    m_initial_context_node = (Boolean)(processor.getAttribute(XSL3TransformerFactoryImpl.INIT_CONTEXT_NODE));
     
     init(processor);
   }
@@ -649,7 +657,7 @@ public class StylesheetHandler extends DefaultHandler
     XSLTElementProcessor elemProcessor = getProcessorFor(uri, localName,
                                            rawName);
 
-    if(null != elemProcessor)  // defensive, for better multiple error reporting. -sb
+    if (null != elemProcessor)  // defensive, for better multiple error reporting. -sb
     {
       this.pushProcessor(elemProcessor);
       elemProcessor.startElement(this, uri, localName, rawName, attributes);
@@ -797,7 +805,7 @@ public class StylesheetHandler extends DefaultHandler
     
     String prefix="",ns="", localName=target;
     int colon=target.indexOf(':');
-    if(colon>=0)
+    if (colon>=0)
     {
       ns=getNamespaceForPrefix(prefix=target.substring(0,colon));
       localName=target.substring(colon+1);
@@ -812,14 +820,14 @@ public class StylesheetHandler extends DefaultHandler
       // the testcase we're trying to support is inconsistant in whether
       // it binds the prefix, I'm going to make this sloppy for
       // testing purposes.
-      if(
+      if (
         "xalan-doc-cache-off".equals(target) ||
         "xalan:doc-cache-off".equals(target) ||
 	   ("doc-cache-off".equals(localName) &&
 	    ns.equals("org.apache.xalan.xslt.extensions.Redirect") )
 	 )
       {
-	if(!(m_elems.peek() instanceof ElemForEach))
+	if (!(m_elems.peek() instanceof ElemForEach))
           throw new TransformerException
 	    ("xalan:doc-cache-off not allowed here!", 
 	     getLocator());
@@ -1235,6 +1243,7 @@ public class StylesheetHandler extends DefaultHandler
 	  m_stylesheetRoot.setInitTemplateName(m_init_template_name);
 	  m_stylesheetRoot.setInitModeName(m_init_mode_name);
 	  m_stylesheetRoot.setAssertEnabled(m_assert);
+	  m_stylesheetRoot.setInitialContextNode(m_initial_context_node);
 
 	  return m_stylesheetRoot;
   }
@@ -1697,15 +1706,15 @@ public class StylesheetHandler extends DefaultHandler
     throws org.xml.sax.SAXParseException
   {    
     String value = attrs.getValue("xml:space");
-    if(null == value)
+    if (null == value)
     {
       m_spacePreserveStack.push(m_spacePreserveStack.peekOrFalse());
     }
-    else if(value.equals("preserve"))
+    else if (value.equals("preserve"))
     {
       m_spacePreserveStack.push(true);
     }
-    else if(value.equals("default"))
+    else if (value.equals("default"))
     {
       m_spacePreserveStack.push(false);
     }

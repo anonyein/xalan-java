@@ -36,12 +36,19 @@
         </roles>
       </developer>
     </developers>
+    
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>        
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.xerces</groupId>
 			<artifactId>xercesImpl</artifactId>
-			<version>2.12.3_beta</version>
+			<version>2.12.3_dev2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.xerces</groupId>
@@ -52,7 +59,7 @@
 			<groupId>org.apache.xsl</groupId>
 			<artifactId>xpath31_types</artifactId>
 			<version>1.0</version>
-		</dependency>		
+		</dependency>
 		<!-- Apache Bean Scripting framework dependency. This despatches 
 		     Xalan-J's JavaScript extension calls to Mozilla Rhino 
 		     JavaScript implementation. -->				
@@ -126,7 +133,7 @@
 					<includes>
 						<include>**/*.java</include>
 					</includes>
-					<argLine>-Dfile.encoding=utf-8</argLine>
+					<argLine>-Xss2m -Dfile.encoding=utf-8</argLine>
 				</configuration>
 			</plugin>
 			<plugin>

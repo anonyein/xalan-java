@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
 
 import java.util.List;
@@ -47,6 +44,7 @@ import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.composite.SequenceTypeSupport;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XBoolean;
@@ -64,6 +62,10 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import xml.xpath31.processor.types.XSAnyAtomicType;
+import xml.xpath31.processor.types.XSDecimal;
+import xml.xpath31.processor.types.XSDouble;
+import xml.xpath31.processor.types.XSFloat;
+import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSQName;
 import xml.xpath31.processor.types.XSUntyped;
 import xml.xpath31.processor.types.XSUntypedAtomic;
@@ -95,13 +97,13 @@ public class ElemCopyOf extends ElemTemplateElement
   private boolean m_isDot = false;
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -250,7 +252,7 @@ public class ElemCopyOf extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -295,7 +297,14 @@ public class ElemCopyOf extends ElemTemplateElement
       if ((type != null) && (validationStr != null)) {
       	  throw new TransformerException("XTTE1540 : An XSL copy-of instruction cannot have both the attributes "
       	  																						+ "'type' and 'validation'.", srcLocator); 
-      }      
+      }
+      
+      if (validationStr != null) {
+    	  if (!isValidationStrOk(validationStr)) {
+    		 throw new TransformerException("XTTE1540 : An XSL copy-of instruction's attribute 'validation' can only have one of following "
+                                                                                                + "values : strict, lax, preserve, strip.", srcLocator);  
+    	  }
+      }
               
       int sourceNode = xctxt.getCurrentNode();
       
@@ -305,12 +314,64 @@ public class ElemCopyOf extends ElemTemplateElement
     	  m_selectExpression = new XPath(m_selectExpression.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
       }
       
+      Expression expr1 = m_selectExpression.getExpression();
+      if (expr1 instanceof LocPathIterator) {
+    	  LocPathIterator locPathIterator = (LocPathIterator)expr1;    	      	  
+    	  
+    	  int nextNode = DTM.NULL;
+    	  if (sourceNode != DTM.NULL) {
+    	     nextNode = locPathIterator.asNode(xctxt);
+    	  }
+    	  
+    	  if (!((transformer.getStylesheet()).isInitContextNodeSet()) && (nextNode == DTM.NULL)) {   		  
+    		  ElemTemplateElement elemTemplateElement = getParentElem();
+    		  QName templateName = null;
+    		  boolean isError = false;
+    		  while (elemTemplateElement != null) {
+    			  if (elemTemplateElement instanceof ElemTemplate) {
+    				  ElemTemplate elemTemplate = (ElemTemplate)elemTemplateElement;
+    				  templateName = elemTemplate.getName();
+    			  }
+    			  else if (elemTemplateElement instanceof StylesheetRoot) {
+    				  StylesheetRoot stylesheetRoot = (StylesheetRoot)elemTemplateElement;
+    				  String initTemplateName = stylesheetRoot.getInitTemplateName();
+    				  if (initTemplateName != null) {
+    					  QName qName = new QName(initTemplateName);
+    					  if (qName.equals(templateName)) {
+    						  isError = true;
+
+    						  break;
+    					  }
+    				  }
+    			  }
+
+    			  elemTemplateElement = elemTemplateElement.getParentElem();
+    		  }
+
+    		  if (isError) {
+    			  throw new TransformerException("XPDY0002 : An XSL transformation attempts to access XPath focus with copy-of "
+																								    					  + "instruction, but intial context "
+																								    					  + "node is not set.", srcLocator);
+    		  }
+    	  }
+      }
+      
+      String xpathPatternStr = m_selectExpression.getPatternString();
+      if (xpathPatternStr.startsWith("/") && !xpathPatternStr.startsWith("//")) {
+    	  DTM dtm = xctxt.getDTM(sourceNode);
+    	  int documentNodeHandle = dtm.getDocument();
+    	  if (documentNodeHandle == DTM.NULL) {
+    		  throw new TransformerException("XPDY0050 : An XPath expression string " + xpathPatternStr + " cannot be "
+    		  		                                                                                    + "evaluated, because xdm tree containing "
+    		  		                                                                                    + "the context item is not a document node.", srcLocator); 
+    	  }
+      }
+      
       XObject xpath3ContextItem = xctxt.getXPath3ContextItem();
       if (m_isDot && (xpath3ContextItem != null)) {
           value = xpath3ContextItem;  
       }
-      else {
-    	  String xpathPatternStr = m_selectExpression.getPatternString();
+      else {    	  
     	  if ((sourceNode == DTM.NULL) && xpathPatternStr.startsWith("$")) {    		 
     		  String varRef = null;
     		  int idx = xpathPatternStr.indexOf('/');
@@ -342,7 +403,7 @@ public class ElemCopyOf extends ElemTemplateElement
     		  }
     	  }
     	  else {
-             value = m_selectExpression.execute(xctxt, sourceNode, this);
+              value = m_selectExpression.execute(xctxt, sourceNode, this);
     	  }
       }
 
@@ -359,53 +420,46 @@ public class ElemCopyOf extends ElemTemplateElement
     
             switch (xObjectType) {           
                 case XObject.CLASS_NODESET :
-                  XMLNodeCursorImpl xNodeSet = (XMLNodeCursorImpl)value;
-                  if (!m_copy_namespaces) {					  					 					  
-                	 xNodeSet = XslTransformEvaluationHelper.stripNamespacesNodeSet(xNodeSet, xctxt);
+                  XMLNodeCursorImpl nodeSet = (XMLNodeCursorImpl)value;                  
+                                    
+                  if (!m_copy_namespaces) {
+                	 copyOfNodeSetStripNsNodes(nodeSet, transformer, xctxt, type, validationStr, rhandler);                	                 	 
                   }
-                  xNodeSet.setTypeAttrForValidation(type);
-                  if (validationStr != null) {
-                	  if (!isValidationStrOk(validationStr)) {
-                		 throw new TransformerException("XTTE1540 : An XSL copy-of instruction's attribute 'validation' can only have one of following "
-                                                                                                          + "values : strict, lax, preserve, strip.", srcLocator);  
-                	  }
+                  else {
+                	 nodeSet.setTypeAttrForValidation(type);                                                      
+                	 nodeSet.setValidationAttrForValidation(validationStr);
+              		
+                	 copyOfActionOnNodeSet(nodeSet, transformer, rhandler, xctxt); 
                   }
-                  xNodeSet.setValidationAttrForValidation(validationStr);
-                  copyOfActionOnNodeSet(xNodeSet, transformer, rhandler, xctxt);          
+                  
                   break;
                 case XObject.CLASS_RTREEFRAG :
-                  SerializerUtils.outputResultTreeFragment(
-                                                        rhandler, value, transformer.getXPathContext());
+                  SerializerUtils.outputResultTreeFragment(rhandler, value, transformer.getXPathContext());
+                  
                   break;
                 case XObject.CLASS_RESULT_SEQUENCE :         
-                  ResultSequence resultSequence = (ResultSequence)value;
+                  ResultSequence rSeq = (ResultSequence)value;
+                  
                   if (!m_copy_namespaces) {
-                	 int rSeqLength = resultSequence.size();
-                	 for (int idx = 0; idx < rSeqLength; idx++) {
-                		XObject xObj = resultSequence.item(idx);
-                		if (xObj instanceof XMLNodeCursorImpl) {
-                		   XMLNodeCursorImpl nodeSet1 = XslTransformEvaluationHelper.stripNamespacesNodeSet((XMLNodeCursorImpl)xObj, xctxt);
-                		   resultSequence.set(idx, nodeSet1);
-                		}
-                	 }
+                	  copyOfXdmSequenceStripNsNodes(rSeq, transformer, xctxt, type, validationStr, rhandler);
                   }
-                  copyOfActionOnResultSequence(resultSequence, transformer, rhandler, xctxt, false, this);          
+                  else {
+                	  copyOfActionOnResultSequence(rSeq, transformer, rhandler, xctxt, false, this);
+                  }
+                  
                   break;
                 case XObject.CLASS_ARRAY : 
                   XPathArray xpathArray = (XPathArray)value;
                   List<XObject> nativeArr = xpathArray.getNativeArray();
                   ResultSequence resultSequenceArr = getResultSequenceFromXPathArray(nativeArr);
+                  
                   if (!m_copy_namespaces) {
-                	  int rSeqLength = resultSequenceArr.size();
-                	  for (int idx = 0; idx < rSeqLength; idx++) {
-                		  XObject xObj = resultSequenceArr.item(idx);
-                		  if (xObj instanceof XMLNodeCursorImpl) {
-                			  XMLNodeCursorImpl nodeSet1 = XslTransformEvaluationHelper.stripNamespacesNodeSet((XMLNodeCursorImpl)xObj, xctxt);
-                			  resultSequenceArr.set(idx, nodeSet1);
-                		  }
-                	  }
+                	  copyOfXdmSequenceStripNsNodes(resultSequenceArr, transformer, xctxt, type, validationStr, rhandler);
                   }
-                  copyOfActionOnResultSequence(resultSequenceArr, transformer, rhandler, xctxt, false, this);
+                  else {
+                      copyOfActionOnResultSequence(resultSequenceArr, transformer, rhandler, xctxt, false, this);
+                  }
+                  
                   break;
                 case XObject.CLASS_UNKNOWN :
                   if (value instanceof XMLAttribute) {
@@ -422,6 +476,7 @@ public class ElemCopyOf extends ElemTemplateElement
                 			             "CDATA", 
                 			             attrValue, false);
                   }
+                  
                   break;	
                 default :
                   // no op
@@ -520,11 +575,11 @@ public class ElemCopyOf extends ElemTemplateElement
 	  DTMCursorIterator dtmIter = nodeSet.iter();
 
       DTMTreeWalker tw = new TreeWalker2Result(transformer, handler);
-      int pos;
       
-      DTM dtm1 = nodeSet.getDtm();
+      DTM dtm1 = nodeSet.getDtm();      
+      int pos = dtmIter.nextNode();
 
-      while ((pos = dtmIter.nextNode()) != DTM.NULL) {    	  
+      while (pos != DTM.NULL) {    	  
           DTM dtm = null;
           
           if (dtm1 == null) {
@@ -555,10 +610,12 @@ public class ElemCopyOf extends ElemTemplateElement
         	  // Validate an XML attribute node if required by XSL stylesheet, and emit 
         	  // the node to XSL transform's output if validation succeeds.
         	  validateAndEmitAttributeNode(nodeSet, handler, xctxt, pos, dtm);
-          }
+          }          
           else {
         	  tw.traverse(pos);
           }
+          
+          pos = dtmIter.nextNode();
       } 
   }
   
@@ -579,6 +636,12 @@ public class ElemCopyOf extends ElemTemplateElement
          XObject xdmItem = resultSequence.item(idx);
          if (xdmItem instanceof XMLNodeCursorImpl) {
         	 XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xdmItem;
+        	 
+        	 String nodeStrValue = xmlNodeCursorImpl.str();
+        	 if ((Constants.XSL_DOCUMENT_INSTRUCTION_MARKER).equals(nodeStrValue)) {
+        		continue; 
+        	 }
+        	 
         	 int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
         	 DTM dtm = xctxt.getDTM(nodeHandle);
         	 boolean flg1 = false;
@@ -586,8 +649,8 @@ public class ElemCopyOf extends ElemTemplateElement
         		 Node node = dtm.getNode(nodeHandle);
         		 String nodeName = node.getNodeName();
         		 try {
-        			 if (nodeName.startsWith("b_")) {
-        				 Integer int1 = Integer.valueOf(nodeName.substring(2));
+        			 if (nodeName.startsWith("b_")) {        				 
+        				 Integer int1 = Integer.valueOf(nodeName.substring(2));        				 
         				 Element elemNode = (Element)node;
           				 xdmItem = new XString(elemNode.getTextContent());
         			 }
@@ -636,10 +699,10 @@ public class ElemCopyOf extends ElemTemplateElement
         	 }
          }
          
-         if ((xdmItem instanceof XBoolean) || (xdmItem instanceof XNumber) || (xdmItem instanceof XString)) {
+         if ((xdmItem instanceof XBoolean) || (xdmItem instanceof XString)) {
              strVal = xdmItem.str();
              if (isXslSeqDelimEmit) {
-                 strVal = strVal + ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX;
+                 strVal = strVal + ElemSequence.STRING_VAL_SER_SUFFIX;
                  serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
              }
              else {
@@ -649,23 +712,10 @@ public class ElemCopyOf extends ElemTemplateElement
                  } 
              }
          }
-         else if (xdmItem instanceof XSAnyAtomicType) {
-            strVal = ((XSAnyAtomicType)xdmItem).stringValue();
-            if (isXslSeqDelimEmit) {
-                strVal = strVal + ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX;
-                serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
-            }
-            else {
-                serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
-                if (idx < (resultSequence.size() - 1)) {                     
-                   serializationHandler.characters(spaceCharArr, 0, 1);
-                }
-            }
-         }
-         else if (xdmItem instanceof XSUntypedAtomic) {
-             strVal = ((XSUntypedAtomic)xdmItem).stringValue();
-             if (isXslSeqDelimEmit) {
-                 strVal = strVal + ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX;
+         else if ((xdmItem instanceof XNumber) || (xdmItem instanceof XSDouble)) {
+        	 strVal = XslTransformEvaluationHelper.getStrVal(xdmItem);
+        	 if (isXslSeqDelimEmit) {
+                 strVal = strVal + ElemSequence.STRING_VAL_SER_DOUBLE_SUFFIX;
                  serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
              }
              else {
@@ -674,11 +724,76 @@ public class ElemCopyOf extends ElemTemplateElement
                     serializationHandler.characters(spaceCharArr, 0, 1);
                  }
              }
-          }
+         }
+         else if (xdmItem instanceof XSInteger) {
+        	 strVal = XslTransformEvaluationHelper.getStrVal(xdmItem);
+        	 if (isXslSeqDelimEmit) {
+                 strVal = strVal + ElemSequence.STRING_VAL_SER_INTEGER_SUFFIX;
+                 serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+             }
+             else {
+                 serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+                 if (idx < (resultSequence.size() - 1)) {                     
+                    serializationHandler.characters(spaceCharArr, 0, 1);
+                 }
+             }
+         }
+         else if (xdmItem instanceof XSDecimal) {
+        	 strVal = XslTransformEvaluationHelper.getStrVal(xdmItem);
+        	 if (isXslSeqDelimEmit) {
+                 strVal = strVal + ElemSequence.STRING_VAL_SER_DECIMAL_SUFFIX;
+                 serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+             }
+             else {
+                 serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+                 if (idx < (resultSequence.size() - 1)) {                     
+                    serializationHandler.characters(spaceCharArr, 0, 1);
+                 }
+             }
+         }
+         else if (xdmItem instanceof XSFloat) {
+        	 strVal = XslTransformEvaluationHelper.getStrVal(xdmItem);
+        	 if (isXslSeqDelimEmit) {
+                 strVal = strVal + ElemSequence.STRING_VAL_SER_FLOAT_SUFFIX;
+                 serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+             }
+             else {
+                 serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+                 if (idx < (resultSequence.size() - 1)) {                     
+                    serializationHandler.characters(spaceCharArr, 0, 1);
+                 }
+             }
+         }
+         else if (xdmItem instanceof XSUntypedAtomic) {
+             strVal = ((XSUntypedAtomic)xdmItem).stringValue();
+             if (isXslSeqDelimEmit) {
+                 strVal = strVal + ElemSequence.STRING_VAL_SER_SUFFIX;
+                 serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+             }
+             else {
+                 serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+                 if (idx < (resultSequence.size() - 1)) {                     
+                    serializationHandler.characters(spaceCharArr, 0, 1);
+                 }
+             }
+         }
+         else if (xdmItem instanceof XSAnyAtomicType) {
+            strVal = ((XSAnyAtomicType)xdmItem).stringValue();
+            if (isXslSeqDelimEmit) {
+                strVal = strVal + ElemSequence.STRING_VAL_SER_SUFFIX;
+                serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+            }
+            else {
+                serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
+                if (idx < (resultSequence.size() - 1)) {                     
+                   serializationHandler.characters(spaceCharArr, 0, 1);
+                }
+            }
+         }         
          else if (xdmItem instanceof XSUntyped) {
              strVal = ((XSUntyped)xdmItem).stringValue();
              if (isXslSeqDelimEmit) {
-                 strVal = strVal + ElemSequence.STRING_VAL_SERIALIZATION_SUFFIX;
+                 strVal = strVal + ElemSequence.STRING_VAL_SER_SUFFIX;
                  serializationHandler.characters(strVal.toCharArray(), 0, strVal.length());
              }
              else {
@@ -934,6 +1049,91 @@ public class ElemCopyOf extends ElemTemplateElement
 		  nodeSet.setTypeAttrForValidation(null);
 		  nodeSet.setValidationAttrForValidation(null);
 	  }
+   }
+   
+   /**
+    * Method definition, to copy a supplied xdm sequence, to XSL result tree,
+    * where all xdm element nodes within the sequence are stripped with their
+    * XML namespace nodes before copying them to an XSL result tree.
+    * 
+    * @param rSeq                                 The supplied xdm sequence object.
+    * @param transformer                          An XSL TransformerImpl object
+    * @param xctxt                                An XPath context object
+    * @param type                                 An xdm type's qname value  if available,
+    *                                             for validation of an xdm node.
+    * @param validationStr                        The value of xsl:copy-of's 'validation'
+    *                                             attribute of available, with possible
+    *                                             values 'strict', 'lax', 'preserve', 'strip'.
+    * @param rhandler                             Xalan's XSL SerializationHandler object instance.
+    * @throws TransformerException
+    * @throws SAXException
+    */
+   private void copyOfXdmSequenceStripNsNodes(ResultSequence rSeq, TransformerImpl transformer, XPathContext xctxt, QName type,
+ 		                                                                                        String validationStr, SerializationHandler rhandler)
+ 				                                                                                                    throws TransformerException, SAXException {	  
+ 	  int rSeqLength = rSeq.size();
+ 	  ResultSequence rSeq2 = new ResultSequence(); 
+ 	  for (int idx = 0; idx < rSeqLength; idx++) {
+ 		  XObject xObj = rSeq.item(idx);
+ 		  if (xObj instanceof XMLNodeCursorImpl) {
+ 			  XMLNodeCursorImpl nodeSet = (XMLNodeCursorImpl)xObj;
+ 			  DTMCursorIterator dtmCursorIterator = nodeSet.iter();
+ 			  int nextNode;
+ 			  while ((nextNode = dtmCursorIterator.nextNode()) != DTM.NULL) {
+ 				  XMLNodeCursorImpl xdmNode = new XMLNodeCursorImpl(nextNode, xctxt);
+ 				  DTM dtm = xctxt.getDTM(nextNode);
+ 				  if (dtm.getNodeType(nextNode) == DTM.ELEMENT_NODE) {
+ 					  xdmNode = XslTransformEvaluationHelper.stripNsNodesFromXdmElementNode(xdmNode, xctxt);
+ 				  }
+
+ 				  xdmNode.setTypeAttrForValidation(type);                                                      
+ 				  xdmNode.setValidationAttrForValidation(validationStr);
+
+ 				  rSeq2.add(xdmNode);
+ 			  } 
+ 		  }
+ 		  else {
+ 			  rSeq2.add(xObj);
+ 		  }
+ 	  }
+
+ 	  copyOfActionOnResultSequence(rSeq2, transformer, rhandler, xctxt, false, this);
+   }
+
+   /**
+    * Method definition, to copy a supplied xdm node set, to XSL result tree,
+    * and stripping XML namespace nodes from supplied element nodes before copying 
+    * the supplied nodeset to an XSL result tree.
+    * 
+    * @param nodeset                              The supplied xdm nodeset object.
+    * @param transformer                          An XSL TransformerImpl object
+    * @param xctxt                                An XPath context object
+    * @param type                                 An xdm type's qname value  if available,
+    *                                             for validation of an xdm node.
+    * @param validationStr                        The value of xsl:copy-of's 'validation'
+    *                                             attribute of available, with possible
+    *                                             values 'strict', 'lax', 'preserve', 'strip'.
+    * @param rhandler                             Xalan's XSL SerializationHandler object instance.
+    * @throws TransformerException
+    * @throws SAXException
+    */
+   private void copyOfNodeSetStripNsNodes(XMLNodeCursorImpl nodeset, TransformerImpl transformer, XPathContext xctxt, QName type,
+ 		                                                                                          String validationStr, SerializationHandler rhandler)
+ 				                                                                                                         throws TransformerException, SAXException {
+ 	  DTMCursorIterator dtmCursorIterator = nodeset.iter();
+ 	  int nextNode;
+ 	  while ((nextNode = dtmCursorIterator.nextNode()) != DTM.NULL) {
+ 		  XMLNodeCursorImpl xdmNode = new XMLNodeCursorImpl(nextNode, xctxt);
+ 		  DTM dtm = xctxt.getDTM(nextNode);
+ 		  if (dtm.getNodeType(nextNode) == DTM.ELEMENT_NODE) {
+ 			  xdmNode = XslTransformEvaluationHelper.stripNsNodesFromXdmElementNode(xdmNode, xctxt);
+ 		  }
+
+ 		  xdmNode.setTypeAttrForValidation(type);                                                      
+ 		  xdmNode.setValidationAttrForValidation(validationStr);
+
+ 		  copyOfActionOnNodeSet(xdmNode, transformer, rhandler, xctxt);
+ 	  }
    }
 
 }

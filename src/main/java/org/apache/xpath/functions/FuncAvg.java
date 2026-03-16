@@ -46,7 +46,7 @@ public class FuncAvg extends FunctionOneArg
   }
 
   /**
-   * Execute the function. The function must return
+   * Evaluate the function. The function must return
    * a valid object.
    * @param xctxt The current execution context.
    * @return A valid XObject.
@@ -60,7 +60,7 @@ public class FuncAvg extends FunctionOneArg
       XNumber sumOfValues = XslTransformEvaluationHelper.getSumOfValues(
                                                                      m_arg0, xctxt);
       
-      XNumber countOfSeqItems = XslTransformEvaluationHelper.getCountOfSequenceItems(
+      XNumber countOfSeqItems = XslTransformEvaluationHelper.getSequenceItemCount(
                                                                      m_arg0, xctxt);
       if (countOfSeqItems.num() > 0) {
          result = new XNumber(sumOfValues.num() / countOfSeqItems.num()); 

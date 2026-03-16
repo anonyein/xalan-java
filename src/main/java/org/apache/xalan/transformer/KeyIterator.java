@@ -44,7 +44,7 @@ public class KeyIterator extends OneStepIteratorForward
     static final long serialVersionUID = -1349109910100249661L;
 
   /** Key name.
-   *  @serial           */
+   *             */
   private QName m_name;
 
   /**
@@ -59,7 +59,7 @@ public class KeyIterator extends OneStepIteratorForward
   }
 
   /** Vector of Key declarations in the stylesheet.
-   *  @serial          */
+   *            */
   private Vector m_keyDeclarations;
 
   /**
@@ -133,7 +133,7 @@ public class KeyIterator extends OneStepIteratorForward
 
         return DTMCursorIterator.FILTER_ACCEPT;
 
-      } // end for(int i = 0; i < nDeclarations; i++)
+      } // end for (int i = 0; i < nDeclarations; i++)
     }
     catch (TransformerException se)
     {

@@ -19,9 +19,11 @@ package org.apache.xalan.templates;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.EmptyStackException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 import java.util.Vector;
 
 import javax.xml.XMLConstants;
@@ -47,18 +49,27 @@ import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.WhitespaceStrippingElementMatcher;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.Keywords;
 import org.apache.xpath.compiler.XPathParser;
 import org.apache.xpath.composite.SequenceTypeSupport;
 import org.apache.xpath.functions.Function;
+import org.apache.xpath.functions.Function2Args;
+import org.apache.xpath.functions.Function3Args;
+import org.apache.xpath.functions.FunctionMultiArgs;
+import org.apache.xpath.functions.FunctionOneArg;
 import org.apache.xpath.functions.XPathDynamicFunctionCall;
+import org.apache.xpath.functions.context.FuncLast;
+import org.apache.xpath.functions.context.FuncPosition;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XRTreeFrag;
 import org.apache.xpath.objects.XString;
+import org.apache.xpath.operations.Operation;
+import org.apache.xpath.operations.Variable;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -94,20 +105,27 @@ public class ElemTemplateElement extends UnImplNode
                    WhitespaceStrippingElementMatcher, XSLTVisitable
 {
    static final long serialVersionUID = 4440018597841834447L;
+   
+   /**
+    * This class field refers to, an XPath context object.
+    */
+   private XPathContext m_xpathContext;
+   
+   private boolean m_xmlSourceAbsent;
+   
+   /**
+    * This class field refers to, xsl:for-each-group instruction's 
+    * grouping key stack. Having stack for keeping fn:current-grouping-key
+    * values, helps solve issue of nested xsl:for-each-group instructions.
+    */
+   static Stack<Object> m_groupingKeyStack = new Stack<Object>();  
     
    /**
-    * This class field supports implementation of, xsl:for-each-group's grouping key. 
-    * An instance of this class, stores this value for a specific xsl:for-each-group  
-    * element within an XSL stylesheet.
+    * This class field refers to, xsl:for-each-group instruction's 
+    * current group stack. Having stack for keeping fn:current-group
+    * values, helps solve issue of nested xsl:for-each-group instructions.
     */
-   private Object m_groupingKey = null;
-    
-   /**
-    * This class field supports implementation of, xsl:for-each-group's current-group 
-    * contents. An instance of this class, stores this value for a specific 
-    * xsl:for-each-group element within an XSL stylesheet. 
-    */
-   private List<Integer> m_groupNodesDtmHandles = null;
+   static Stack<List<Integer>> m_groupNodesDtmHandlesStack = new Stack<List<Integer>>();
    
    /**
     * This class field refers to xsl:merge evaluation's merge key
@@ -124,12 +142,6 @@ public class ElemTemplateElement extends UnImplNode
     */
    private List<XObject> m_tunnelParamObjList = new ArrayList<XObject>();
    
-   /**
-    * This class field stores an XPath context object.
-    */
-   private XPathContext m_xpathContext;
-   
-   private boolean m_xmlSourceAbsent;
 
   /**
    * Construct a template element instance.
@@ -199,12 +211,12 @@ public class ElemTemplateElement extends UnImplNode
   protected String ATTRIBUTE = "ATTRIBUTE";
   
   /**
-   * Class field to store value of an attribute named 'type'.
+   * Class field to refer to, value of an attribute named 'type'.
    */
   private QName m_type = null;
   
   /**
-   * Class field to store value of an attribute named 'validation'.
+   * Class field to refer to, value of an attribute named 'validation'.
    */
   private String m_validation = null;
   
@@ -237,6 +249,13 @@ public class ElemTemplateElement extends UnImplNode
   public String getValidation() {
 	 return m_validation;  
   }
+  
+  /**
+   * Value of this class field, refers to the fact that,
+   * xsl:for-each-group instruction is been used to group
+   * sequence of xdm atomic values.
+   */
+  private boolean m_isGroupingXdmAtomicValues;
 
   /**
    * This function will be called on top-level elements
@@ -557,13 +576,13 @@ public class ElemTemplateElement extends UnImplNode
    */
   public Node insertBefore(Node newChild, Node refChild) throws DOMException
   {
-  	if(null == refChild)
+  	if (null == refChild)
   	{
   		appendChild(newChild);
   		return newChild;
   	}
   	
-  	if(newChild == refChild)
+  	if (newChild == refChild)
   	{
   		// hmm...
   		return newChild;
@@ -576,9 +595,9 @@ public class ElemTemplateElement extends UnImplNode
     while (null != node)
     {
     	// If the newChild is already in the tree, it is first removed.
-    	if(newChild == node)
+    	if (newChild == node)
     	{
-    		if(null != prev)
+    		if (null != prev)
     			((ElemTemplateElement)prev).m_nextSibling = 
     				(ElemTemplateElement)node.getNextSibling();
     		else
@@ -586,9 +605,9 @@ public class ElemTemplateElement extends UnImplNode
     		node = node.getNextSibling();
     		continue; // prev remains the same.
     	}
-    	if(refChild == node)
+    	if (refChild == node)
     	{
-    		if(null != prev)
+    		if (null != prev)
     		{
     			((ElemTemplateElement)prev).m_nextSibling = (ElemTemplateElement)newChild;
     		}
@@ -607,7 +626,7 @@ public class ElemTemplateElement extends UnImplNode
     	node = node.getNextSibling();
     }
     
-    if(!foundit)
+    if (!foundit)
     	throw new DOMException(DOMException.NOT_FOUND_ERR, 
     		"refChild was not found in insertBefore method!");
     else
@@ -717,10 +736,10 @@ public class ElemTemplateElement extends UnImplNode
   {
   	ElemTemplateElement el = this;
   	int type = el.getXSLToken();
-  	while((null != el) && (type != Constants.ELEMNAME_TEMPLATE))
+  	while ((null != el) && (type != Constants.ELEMNAME_TEMPLATE))
   	{
     	el = el.getParentElem();
-    	if(null != el)
+    	if (null != el)
   			type = el.getXSLToken();
   	}
   	return (ElemTemplate)el;
@@ -759,11 +778,11 @@ public class ElemTemplateElement extends UnImplNode
   }
 
   /** line number where the current document event ends.
-   *  @serial         */
+   *           */
   private int m_lineNumber;
 
   /** line number where the current document event ends.
-   *  @serial         */
+   *           */
   private int m_endLineNumber;
 
   /**
@@ -791,11 +810,11 @@ public class ElemTemplateElement extends UnImplNode
   }
 
   /** the column number where the current document event ends.
-   *  @serial        */
+   *          */
   private int m_columnNumber;
 
   /** the column number where the current document event ends.
-   *  @serial        */
+   *          */
   private int m_endColumnNumber;
 
   /**
@@ -877,19 +896,19 @@ public class ElemTemplateElement extends UnImplNode
   /**
    * Tell if this element has the default space handling
    * turned off or on according to the xml:space attribute.
-   * @serial
+   * 
    */
   private boolean m_defaultSpace = true;
 
   /**
    * Tell if this element only has one text child, for optimization purposes.
-   * @serial
+   * 
    */
   private boolean m_hasTextLitOnly = false;
 
   /**
    * Tell if this element only has one text child, for optimization purposes.
-   * @serial
+   * 
    */
   protected boolean m_hasVariableDecl = false;
   
@@ -931,7 +950,7 @@ public class ElemTemplateElement extends UnImplNode
 
   /**
    * The list of namespace declarations for this element only.
-   * @serial
+   * 
    */
   private List m_declaredPrefixes;
 
@@ -1041,7 +1060,7 @@ public class ElemTemplateElement extends UnImplNode
     if (null != nsDecls)
     {
       int n = nsDecls.size();
-      if(prefix.equals(Constants.ATTRVAL_DEFAULT_PREFIX))
+      if (prefix.equals(Constants.ATTRVAL_DEFAULT_PREFIX))
       {
         prefix = "";
       }
@@ -1062,7 +1081,7 @@ public class ElemTemplateElement extends UnImplNode
     // JJK: No ancestors; try implicit
     // %REVIEW% Are there literals somewhere that we should use instead?
     // %REVIEW% Is this really the best place to patch?
-    if("xml".equals(prefix))
+    if ("xml".equals(prefix))
       return "http://www.w3.org/XML/1998/namespace";
 
     // No parent, so no definition
@@ -1072,7 +1091,7 @@ public class ElemTemplateElement extends UnImplNode
   /**
    * The table of {@link XMLNSDecl}s for this element
    * and all parent elements, screened for excluded prefixes.
-   * @serial
+   * 
    */
   private List m_prefixTable;
 
@@ -1104,7 +1123,7 @@ public class ElemTemplateElement extends UnImplNode
   public boolean containsExcludeResultPrefix(String prefix, String uri)
   {
     ElemTemplateElement parent = this.getParentElem();
-    if(null != parent)
+    if (null != parent)
       return parent.containsExcludeResultPrefix(prefix, uri);
       
     return false;
@@ -1172,7 +1191,7 @@ public class ElemTemplateElement extends UnImplNode
         XMLNSDecl decl = (XMLNSDecl) m_declaredPrefixes.get(i);
         String prefix = decl.getPrefix();
         String uri = decl.getURI();
-        if(null == uri)
+        if (null == uri)
           uri = "";
         boolean shouldExclude = excludeResultNSDecl(prefix, uri);
 
@@ -1181,7 +1200,7 @@ public class ElemTemplateElement extends UnImplNode
             setPrefixTable(new ArrayList());
 
         NamespaceAlias nsAlias = stylesheet.getNamespaceAliasComposed(uri);
-        if(null != nsAlias)
+        if (null != nsAlias)
         {
           // Should I leave the non-aliased element in the table as 
           // an excluded element?
@@ -1375,7 +1394,7 @@ public class ElemTemplateElement extends UnImplNode
   }
   
   /** The *relative* document order number of this element.
-   *  @serial */
+   *   */
   protected int m_docOrderNumber = -1;
   
   /**
@@ -1401,7 +1420,7 @@ public class ElemTemplateElement extends UnImplNode
 
   /**
    * Parent node.
-   * @serial
+   * 
    */
   protected ElemTemplateElement m_parentNode;
 
@@ -1437,7 +1456,7 @@ public class ElemTemplateElement extends UnImplNode
 
   /**
    * Next sibling.
-   * @serial
+   * 
    */
   ElemTemplateElement m_nextSibling;
 
@@ -1526,7 +1545,7 @@ public class ElemTemplateElement extends UnImplNode
 
   /**
    * First child.
-   * @serial
+   * 
    */
   ElemTemplateElement m_firstChild;
 
@@ -1744,7 +1763,7 @@ public class ElemTemplateElement extends UnImplNode
    */
   public void callVisitors(XSLTVisitor visitor)
   {
-  	if(accept(visitor))
+  	if (accept(visitor))
   	{
 		callChildVisitors(visitor);
   	}
@@ -1779,21 +1798,59 @@ public class ElemTemplateElement extends UnImplNode
   public boolean handlesNullPrefixes() {
       return false;
   }
-
-  public Object getGroupingKey() {
-      return m_groupingKey;
+  
+  public List<Integer> getGroupNodesDtmHandles() {	  
+	  
+	  List<Integer> result = null;
+	  
+	  try {
+		 result = m_groupNodesDtmHandlesStack.peek();
+	  }
+	  catch (EmptyStackException ex) {
+		 // no op 
+	  }
+	  
+	  return result;
   }
 
-  public void setGroupingKey(Object groupingKey) {
-      this.m_groupingKey = groupingKey;
+  public void setGroupNodesDtmHandles(List<Integer> groupNodesDtmHandles) {	  
+	  m_groupNodesDtmHandlesStack.push(groupNodesDtmHandles);
+  }
+  
+  public void popGroupNodesDtmHandles() {	  
+	  try {
+		  m_groupNodesDtmHandlesStack.pop(); 
+	  }
+	  catch (EmptyStackException ex) {
+		  // no op  
+	  }
   }
 
-  public List<Integer> getGroupNodesDtmHandles() {
-      return m_groupNodesDtmHandles;
+  public Object getGroupingKey() {	  	  
+	  
+	  Object result = null;
+	  
+	  try {
+		 result = m_groupingKeyStack.peek();
+	  }
+	  catch (EmptyStackException ex) {
+		 // no op 
+	  }
+	  
+	  return result;
   }
 
-  public void setGroupNodesDtmHandles(List<Integer> groupNodesDtmHandles) {
-      this.m_groupNodesDtmHandles = groupNodesDtmHandles;
+  public void setGroupingKey(Object groupingKey) {      
+	  m_groupingKeyStack.push(groupingKey);
+  }
+  
+  public void popGroupingKey() {  	  
+	  try {
+		  m_groupingKeyStack.pop(); 
+	  }
+	  catch (EmptyStackException ex) {
+		  // no op  
+	  }
   }
   
   public Object getMergeKey() {
@@ -2440,6 +2497,512 @@ public class ElemTemplateElement extends UnImplNode
 	  }
 
 	  return result;
+  }
+
+  public void setIsGroupingXdmAtomicValues(boolean isInpSeqAllAtomicValues) {
+	  m_isGroupingXdmAtomicValues = isInpSeqAllAtomicValues;	
+  }
+  
+  public boolean getIsGroupingXdmAtomicValues() {
+	  return m_isGroupingXdmAtomicValues;
+  }
+  
+  /**
+   * Method definition, to check whether the supplied XPath expression 
+   * is statically typed. Wrt this, XSLT 3.0 spec, requires that, if there 
+   * are any variable references within an XPath expression, those variable 
+   * references resolve to xsl:variable declaration that has attribute "static"
+   * with value 'yes'. Also, by definition, XSLT static variable and parameter
+   * declarations are specified as XSLT top-level declarations. 
+   * 
+   * @param expr1					    The supplied XPath expression
+   * @return                            Boolean value true or false
+   * @throws TransformerException 
+   */
+  public boolean isXPathExpressionStatic(Expression expr1) throws TransformerException {	 
+
+	   boolean result = true;
+
+	   if (expr1 instanceof Variable) {
+		   Variable var = (Variable)expr1;
+		   ElemVariable elemVariable = getElemVariable(var);
+		   if (elemVariable != null) {			   
+			   result = isXslVariableExprStatic(elemVariable);
+			   
+			   return result;
+		   }
+		   else {
+               throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+		                                                                                    + (var.getQName()).toString() + " not found. "
+		                                                                                    + "This is required within an XSL run-time context "
+		                                                                                    + "requiring static variable/param.");
+		   }
+	   }
+	   else if (expr1 instanceof Operation) {
+		   result = isXPathBinaryOpStatic(expr1);
+	   }
+	   else if (expr1 instanceof Function) {
+		   result = isXPathFuncCallStatic(expr1);
+	   }
+	   else if (expr1 instanceof LocPathIterator) {
+		   result = false;
+	   }
+
+	   return result;
+  }
+
+  /**
+   * Method definition, to check whether the supplied XPath function
+   * call expression is statically typed. The method checks, whether
+   * XPath function call's all the argument expressions are static.
+   * 
+   * @param xpathFuncCallExpr1	                The supplied XPath function
+   *                                            call expression.
+   * @return                                    Boolean value true or false
+   * @throws TransformerException
+   */
+  private boolean isXPathFuncCallStatic(Expression xpathFuncCallExpr1) throws TransformerException {
+	
+	  boolean result = true;
+
+	  Function function = (Function)xpathFuncCallExpr1;
+	  	  	  	  
+	  if (function instanceof FunctionMultiArgs) {
+		  FunctionMultiArgs func = (FunctionMultiArgs)function;
+
+		  Expression arg0 = func.getArg0();
+		  Expression arg1 = func.getArg1();
+		  Expression arg2 = func.getArg2();
+
+		  Expression[] funcMoreArgs = func.getArgs();
+
+		  if (arg0 instanceof Variable) {
+			  Variable var = (Variable)arg0;
+			  ElemVariable elemVariable = getElemVariable(var);
+			  if (elemVariable != null) {			   
+				  result = isXslVariableExprStatic(elemVariable);
+
+				  return result;
+			  }
+			  else {
+				  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																										  + (var.getQName()).toString() + " not found. "
+																										  + "This is required within an XSL run-time context "
+																										  + "requiring static variable/param.");
+			  }
+		  }
+		  else if (arg0 instanceof Operation) {
+			  result = isXPathBinaryOpStatic(arg0);
+		  }
+		  else if (arg0 instanceof Function) {
+			  result = isXPathFuncCallStatic(arg0);
+		  }
+		  else if (arg0 instanceof LocPathIterator) {
+			  result = false; 
+		  }
+
+		  if (result) {
+			  if (arg1 instanceof Variable) {
+				  Variable var = (Variable)arg1;
+				  ElemVariable elemVariable = getElemVariable(var);
+				  if (elemVariable != null) {			   
+					  result = isXslVariableExprStatic(elemVariable);
+
+					  return result;
+				  }
+				  else {
+					  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																										  + (var.getQName()).toString() + " not found. "
+																										  + "This is required within an XSL run-time context "
+																										  + "requiring static variable/param.");
+				  }
+			  }
+			  else if (arg1 instanceof Operation) {
+				  result = isXPathBinaryOpStatic(arg1);
+			  }
+			  else if (arg1 instanceof Function) {
+				  result = isXPathFuncCallStatic(arg1);
+			  }
+			  else if (arg1 instanceof LocPathIterator) {
+				  result = false; 
+			  }
+		  }
+
+		  if (result) {
+			  if (arg2 instanceof Variable) {
+				  Variable var = (Variable)arg2;
+				  ElemVariable elemVariable = getElemVariable(var);
+				  if (elemVariable != null) {			   
+					  result = isXslVariableExprStatic(elemVariable);
+
+					  return result;
+				  }
+				  else {
+					  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																										  + (var.getQName()).toString() + " not found. "
+																										  + "This is required within an XSL run-time context "
+																										  + "requiring static variable/param.");
+				  }
+			  }
+			  else if (arg2 instanceof Operation) {
+				  result = isXPathBinaryOpStatic(arg2);
+			  }
+			  else if (arg2 instanceof Function) {
+				  result = isXPathFuncCallStatic(arg2);
+			  }
+			  else if (arg2 instanceof LocPathIterator) {
+				  result = false; 
+			  }
+		  }
+
+		  if (result) {
+			  int length1 = funcMoreArgs.length;
+			  for (int idx = 0; idx < length1; idx++) {
+				  Expression expr = funcMoreArgs[idx];
+				  if (expr instanceof Variable) {
+					  Variable var = (Variable)expr;
+					  ElemVariable elemVariable = getElemVariable(var);
+					  if (elemVariable != null) {			   
+						  result = isXslVariableExprStatic(elemVariable);
+
+						  return result;
+					  }
+					  else {
+						  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																											  + (var.getQName()).toString() + " not found. "
+																											  + "This is required within an XSL run-time context "
+																											  + "requiring static variable/param.");
+					  }
+				  }
+				  else if (expr instanceof Operation) {
+					  result = isXPathBinaryOpStatic(expr);
+				  }
+				  else if (expr instanceof Function) {
+					  result = isXPathFuncCallStatic(expr);
+				  }
+				  else if (expr instanceof LocPathIterator) {
+					  result = false; 
+				  }
+			  }
+		  }
+	  }
+	  else if (function instanceof Function3Args) {
+		  Function3Args func = (Function3Args)function;
+
+		  Expression arg0 = func.getArg0();
+		  Expression arg1 = func.getArg1();
+		  Expression arg2 = func.getArg2();
+
+		  if (arg0 instanceof Variable) {
+			  Variable var = (Variable)arg0;
+			  ElemVariable elemVariable = getElemVariable(var);
+			  if (elemVariable != null) {			   
+				  result = isXslVariableExprStatic(elemVariable);
+
+				  return result;
+			  }
+			  else {
+				  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																										  + (var.getQName()).toString() + " not found. "
+																										  + "This is required within an XSL run-time context "
+																										  + "requiring static variable/param.");
+			  }
+		  }
+		  else if (arg0 instanceof Operation) {
+			  result = isXPathBinaryOpStatic(arg0);
+		  }
+		  else if (arg0 instanceof Function) {
+			  result = isXPathFuncCallStatic(arg0);
+		  }
+		  else if (arg0 instanceof LocPathIterator) {
+			  result = false; 
+		  }
+
+		  if (result) {
+			  if (arg1 instanceof Variable) {
+				  Variable var = (Variable)arg1;
+				  ElemVariable elemVariable = getElemVariable(var);
+				  if (elemVariable != null) {			   
+					  result = isXslVariableExprStatic(elemVariable);
+
+					  return result;
+				  }
+				  else {
+					  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																									   + (var.getQName()).toString() + " not found. "
+																									   + "This is required within an XSL run-time context "
+																									   + "requiring static variable/param.");
+				  }
+			  }
+			  else if (arg1 instanceof Operation) {
+				  result = isXPathBinaryOpStatic(arg1);
+			  }
+			  else if (arg1 instanceof Function) {
+				  result = isXPathFuncCallStatic(arg1);
+			  }
+			  else if (arg1 instanceof LocPathIterator) {
+				  result = false; 
+			  }
+		  }
+
+		  if (result) {
+			  if (arg2 instanceof Variable) {
+				  Variable var = (Variable)arg2;
+				  ElemVariable elemVariable = getElemVariable(var);
+				  if (elemVariable != null) {			   
+					  result = isXslVariableExprStatic(elemVariable);
+
+					  return result;
+				  }
+				  else {
+					  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																								    + (var.getQName()).toString() + " not found. "
+																								    + "This is required within an XSL run-time context "
+																								    + "requiring static variable/param.");
+				  }
+			  }
+			  else if (arg2 instanceof Operation) {
+				  result = isXPathBinaryOpStatic(arg2);
+			  }
+			  else if (arg2 instanceof Function) {
+				  result = isXPathFuncCallStatic(arg2);
+			  }
+			  else if (arg2 instanceof LocPathIterator) {
+				  result = false; 
+			  }
+		  }
+	  }
+	  else if (function instanceof Function2Args) {
+		  Function2Args func = (Function2Args)function;
+
+		  Expression arg0 = func.getArg0();
+		  Expression arg1 = func.getArg1();
+
+		  if (arg0 instanceof Variable) {
+			  Variable var = (Variable)arg0;
+			  ElemVariable elemVariable = getElemVariable(var);
+			  if (elemVariable != null) {			   
+				  result = isXslVariableExprStatic(elemVariable);
+
+				  return result;
+			  }
+			  else {
+				  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																										  + (var.getQName()).toString() + " not found. "
+																										  + "This is required within an XSL run-time context "
+																										  + "requiring static variable/param.");
+			  }
+		  }
+		  else if (arg0 instanceof Operation) {
+			  result = isXPathBinaryOpStatic(arg0);
+		  }
+		  else if (arg0 instanceof Function) {
+			  result = isXPathFuncCallStatic(arg0);
+		  }
+		  else if (arg0 instanceof LocPathIterator) {
+			  result = false; 
+		  }
+
+		  if (result) {
+			  if (arg1 instanceof Variable) {
+				  Variable var = (Variable)arg1;
+				  ElemVariable elemVariable = getElemVariable(var);
+				  if (elemVariable != null) {			   
+					  result = isXslVariableExprStatic(elemVariable);
+
+					  return result;
+				  }
+				  else {
+					  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																									    + (var.getQName()).toString() + " not found. "
+																									    + "This is required within an XSL run-time context "
+																									    + "requiring static variable/param.");
+				  }
+			  }
+			  else if (arg1 instanceof Operation) {
+				  result = isXPathBinaryOpStatic(arg1);
+			  }
+			  else if (arg1 instanceof Function) {
+				  result = isXPathFuncCallStatic(arg1);
+			  }
+			  else if (arg1 instanceof LocPathIterator) {
+				  result = false; 
+			  }
+		  }
+	  }
+	  else if (function instanceof FunctionOneArg) {
+		  FunctionOneArg functionOneArg = (FunctionOneArg)function;
+		  Expression arg0 = functionOneArg.getArg0();
+		  if (arg0 instanceof Variable) {
+			  Variable var = (Variable)arg0;
+			  ElemVariable elemVariable = getElemVariable(var);				   
+			  if (elemVariable != null) {			   
+				  result = isXslVariableExprStatic(elemVariable);
+
+				  return result;
+			  }
+			  else {
+				  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																										  + (var.getQName()).toString() + " not found. "
+																										  + "This is required within an XSL run-time context "
+																										  + "requiring static variable/param.");
+			  }
+		  }
+		  else if (arg0 instanceof Operation) {
+			  result = isXPathBinaryOpStatic(arg0);
+		  }
+		  else if (arg0 instanceof Function) {
+			  result = isXPathFuncCallStatic(arg0); 
+		  }
+		  else if (arg0 instanceof LocPathIterator) {
+			  result = false; 
+		  }
+	  }
+	  else if ((function instanceof FuncPosition) || (function instanceof FuncLast)) {
+		  result = false;
+	  }
+
+	  return result;
+  }
+
+  /**
+   * Method definition, to check whether an xsl:variable
+   * declaration's XPath "select" expression is statically
+   * typed.
+   * 
+   * @param elemVariable			The supplied xsl:variable object
+   *                                instance.
+   * @return                        Boolean value true or false
+   */
+  private boolean isXslVariableExprStatic(ElemVariable elemVariable) {
+	
+	  boolean result = true;
+
+	  XPath selectXPath = elemVariable.getSelect();
+	  String patttrnStr = selectXPath.getPatternString();
+	  if (!".".equals(patttrnStr)) {
+		  result = elemVariable.getStatic() ? true : false;
+	  }
+	  else {
+		  result = false;
+	  }
+
+	  return result;
+  }
+
+  /**
+   * Method definition, to check whether an XPath binary 
+   * operator expression evaluation is statically typed.
+   * 
+   * @param expr1                         The supplied XPath binary
+   *                                      operator expression.
+   * @return                              Boolean value true or false
+   * @throws TransformerException
+   */
+  private boolean isXPathBinaryOpStatic(Expression expr1) throws TransformerException {
+	
+	  boolean result = true;
+
+	  Expression lOpn = ((Operation)expr1).getLeftOperand(); 
+	  Expression rOpn = ((Operation)expr1).getRightOperand();
+
+	  if (lOpn instanceof Variable) {
+		  Variable var = (Variable)lOpn;
+		  ElemVariable elemVariable = getElemVariable(var);			   			   
+		  if (elemVariable != null) {			   
+			  result = isXslVariableExprStatic(elemVariable);
+
+			  return result;
+		  }
+		  else {
+			  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																										  + (var.getQName()).toString() + " not found. "
+																										  + "This is required within an XSL run-time context "
+																										  + "requiring static variable/param.");
+		  }
+	  }
+	  else if (lOpn instanceof Operation) {
+		  result = isXPathBinaryOpStatic(lOpn); 
+	  }
+	  else if (lOpn instanceof Function) {
+		  result = isXPathFuncCallStatic(lOpn);
+	  }
+	  else if (lOpn instanceof LocPathIterator) {
+		  result = false;
+	  }
+
+	  if (result) {
+		  /**
+		   * An XPath binary operator's lhs expression
+		   * is static. We need to check whether XPath
+		   * rhs expression is static.
+		   */
+		  if (rOpn instanceof Variable) {
+			  Variable var = (Variable)rOpn;
+			  ElemVariable elemVariable = getElemVariable(var);			   			   
+			  if (elemVariable != null) {			   
+				  result = isXslVariableExprStatic(elemVariable);
+
+				  return result;
+			  }
+			  else {
+				  throw new TransformerException("XPST0008 : An XSL top-level variable/param declaration for variable reference " 
+																											  + (var.getQName()).toString() + " not found. "
+																											  + "This is required within an XSL run-time context "
+																											  + "requiring static variable/param.");
+			  }
+		  }
+		  else if (rOpn instanceof Operation) {
+			  result = isXPathBinaryOpStatic(rOpn); 
+		  }
+		  else if (rOpn instanceof Function) {
+			  result = isXPathFuncCallStatic(rOpn);
+		  }
+		  else if (rOpn instanceof LocPathIterator) {
+			  result = false;
+		  }
+	  }
+	  
+	  return result;	
+  }
+
+  /**
+   * Method definition, to find an xsl:variable top-level
+   * declaration corresponding to an XSL stylesheet variable 
+   * reference.
+   * 
+   * @param var1					    The supplied XSL variable reference 
+   *                                    object.
+   * @return                            An xsl:variable declaration object, 
+   *                                    or null if variable reference doesn't 
+   *                                    resolve to a declaration.
+   */
+  private ElemVariable getElemVariable(Variable var1) {
+	   
+	   ElemVariable result = null;
+	   
+	   QName qname1 = var1.getQName();
+	   ElemTemplateElement elemTemplateElem = (ElemTemplateElement)(var1.getExpressionOwner());
+	   while (elemTemplateElem != null) {
+		   if ((elemTemplateElem instanceof ElemVariable) && ((ElemVariable)elemTemplateElem).getIsTopLevel()) {
+			   ElemVariable elemVariable2 = (ElemVariable)elemTemplateElem;
+			   QName qName2 = elemVariable2.getName();
+			   if (qName2.equals(qname1)) {
+				   result = (ElemVariable)elemTemplateElem;
+				   
+				   return result;
+			   }
+		   }
+		   		   
+		   if (elemTemplateElem.getPreviousSiblingElem() != null) {
+			   elemTemplateElem = elemTemplateElem.getPreviousSiblingElem();   
+		   }
+		   else {
+			   elemTemplateElem = elemTemplateElem.getParentElem(); 
+		   }
+	   }
+	   
+	   return result;
   }
 
 }

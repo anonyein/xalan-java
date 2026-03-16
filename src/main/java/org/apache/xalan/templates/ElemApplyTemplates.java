@@ -77,7 +77,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
   static final long serialVersionUID = 2903125371542621004L;
   
   /**
-   * Class field to store, XPath expression for subsequent 
+   * Class field to refer to, XPath expression for subsequent 
    * processing.
    */
   private XPath m_xpath2 = null;
@@ -100,13 +100,13 @@ public class ElemApplyTemplates extends ElemCallTemplate
   private boolean m_isDefaultTemplate = false;
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -382,7 +382,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
 				  XObject xObj = resultSeq.item(idx);
 				  if (xObj instanceof XMLNodeCursorImpl) {
 					  sourceNodes = ((XMLNodeCursorImpl)xObj).iterRaw();					  
-					  xslApplyTemplatesOnNodes(transformer, xctxt, contextNode, sourceNodes, srcLocator);
+					  xslApplyTemplatesToNodes(transformer, xctxt, contextNode, sourceNodes, srcLocator);
 				  }
 				  else {
 					  ResultSequence rSeq = new ResultSequence();
@@ -473,8 +473,8 @@ public class ElemApplyTemplates extends ElemCallTemplate
 		  }
 	  }
 
-	  if (sourceNodes != null) {
-	     xslApplyTemplatesOnNodes(transformer, xctxt, contextNode, sourceNodes, srcLocator);
+	  if (sourceNodes != null) {		 
+	     xslApplyTemplatesToNodes(transformer, xctxt, contextNode, sourceNodes, srcLocator);
 	  }
   }
 
@@ -489,8 +489,9 @@ public class ElemApplyTemplates extends ElemCallTemplate
    * @param srcLocator                             XPath SourceLocator object instance
    * @throws TransformerException
    */
-  private void xslApplyTemplatesOnNodes(TransformerImpl transformer, XPathContext xctxt, int contextNode,
-		                                DTMCursorIterator sourceNodes, SourceLocator srcLocator) throws TransformerException {
+  private void xslApplyTemplatesToNodes(TransformerImpl transformer, XPathContext xctxt, int contextNode,
+		                                                                        DTMCursorIterator sourceNodes, SourceLocator srcLocator) 
+		                                                                        		                                             throws TransformerException {
 	  
 	  VariableStack vars = xctxt.getVarStack();
 	  int nParams = getParamElemCount();
@@ -545,8 +546,6 @@ public class ElemApplyTemplates extends ElemCallTemplate
 		  final SerializationHandler rth = transformer.getSerializationHandler();
 		  final StylesheetRoot sroot = transformer.getStylesheet();
 		  final TemplateList tl = sroot.getTemplateListComposed();
-
-		  // final boolean quiet = transformer.getQuietConflictWarnings();
 
 		  // Should be able to get this from the iterator 
 		  // but there might be a codebase issue.
@@ -656,6 +655,31 @@ public class ElemApplyTemplates extends ElemCallTemplate
 		  }
 
 		  int child;
+		  
+		  boolean isXdmParentlessSiblingNodes = false;
+		  List<Integer> nodeHandleList = new ArrayList<Integer>();
+		  DTM dtm2 = dtm;
+		  while (DTM.NULL != (child = sourceNodes.nextNode()))
+		  {
+			  nodeHandleList.add(child);
+			  dtm = xctxt.getDTM(child); 
+			  String str2 = dtm.getNodeValue(child);			  
+			  if ((Constants.XSL_DOCUMENT_INSTRUCTION_MARKER).equals(str2)) {
+				  isXdmParentlessSiblingNodes = true;	    			 	    			 
+			  }
+		  }
+		  
+		  if (!isXdmParentlessSiblingNodes) {
+			  dtm = dtm2; 
+		  }
+		  
+		  xctxt.popContextNodeList();
+
+		  XMLNodeCursorImpl nodeList = new XMLNodeCursorImpl(nodeHandleList, xctxt);
+		  sourceNodes = nodeList.iterRaw();
+		  
+		  xctxt.pushContextNodeList(sourceNodes);
+		  
 		  while (DTM.NULL != (child = sourceNodes.nextNode()))
 		  {
 			  currentNodes.setTop(child);
@@ -669,9 +693,15 @@ public class ElemApplyTemplates extends ElemCallTemplate
 			  final int exNodeType = dtm.getExpandedTypeID(child);
 
 			  final int nodeType = dtm.getNodeType(child);
+			  
+			  String str2 = dtm.getNodeValue(child);			  			  
+    		  if ((Constants.XSL_DOCUMENT_INSTRUCTION_MARKER).equals(str2)) {
+    			 continue; 
+    		  }
 
 			  ElemTemplate template = tl.getTemplateFast(xctxt, child, exNodeType, mode, -1, true, dtm, 
-					  																		xslOnMultipleMatchStr, xslWarningOnMultipleMatch);			 
+					  																		xslOnMultipleMatchStr, 
+					  																		xslWarningOnMultipleMatch, isXdmParentlessSiblingNodes);			 
 
 			  // If that didn't locate an XSL stylesheet user written template rule, 
 			  // fall back to a default template rule.
@@ -1087,28 +1117,29 @@ public class ElemApplyTemplates extends ElemCallTemplate
 								  ElemWithParam ewp = m_paramElems[i];
 								  if (ewp.m_qnameID == ep.m_qnameID)                  
 								  {
-									  XObject obj = vars.getLocalVariable(i, argsFrame);
-
-									  XObject argConvertedVal = null;
+									  XObject obj = vars.getLocalVariable(i, argsFrame);									  
 									  String paramAsAttrStrVal = ep.getAs();
-
 									  if (paramAsAttrStrVal != null) {
-										  argConvertedVal = getParamValueAsAttributeProcessing(obj, templateMatchPatternStr, elem.getPrefixTable(), 
+										  XObject argConvertedVal = getParamValueAsAttributeProcessing(obj, templateMatchPatternStr, elem.getPrefixTable(), 
 												  																				i, paramAsAttrStrVal, transformer, srcLocator);
-									  }
-									  else {
-										  argConvertedVal = obj;  
-									  }
-
-									  if (argConvertedVal instanceof ResultSequence) {                
-										  XMLNodeCursorImpl nodeSet = XslTransformEvaluationHelper.getXNodeSetFromResultSequence((ResultSequence)argConvertedVal, 
-												  																												xctxt);
-										  if (nodeSet != null) {
-											  argConvertedVal = nodeSet;  
+										  if (argConvertedVal != null) {
+											  if ((obj instanceof XMLNodeCursorImpl) && !(argConvertedVal instanceof XSAnyAtomicType)) {
+												  obj = obj.getFresh();
+												  vars.setLocalVariable(paramIndex, obj);
+											  }
+											  else {
+												  vars.setLocalVariable(paramIndex, argConvertedVal); 
+											  }
+										  }
+										  else {
+											  throw new TransformerException("XPTY0004 : An XSL apply-templates with-param value doesn't match the specified "
+                                                                                                                                     + "xdm sequence type " + paramAsAttrStrVal + ".", srcLocator); 
 										  }
 									  }
-
-									  vars.setLocalVariable(paramIndex, argConvertedVal);
+									  else {
+										  vars.setLocalVariable(paramIndex, obj);
+									  }
+									  
 									  break;
 								  }
 							  }              
@@ -1139,8 +1170,8 @@ public class ElemApplyTemplates extends ElemCallTemplate
 
 					  int dtmNodeHandle = transformer.transformToGlobalRTF(template);
 
-					  NodeList nodeList = (new XRTreeFrag(dtmNodeHandle, xctxt, template)).convertToNodeset();             
-					  XObject templateEvalResultForAsAttr = new XNodeSetForDOM(nodeList, xctxt);
+					  NodeList nodeList2 = (new XRTreeFrag(dtmNodeHandle, xctxt, template)).convertToNodeset();             
+					  XObject templateEvalResultForAsAttr = new XNodeSetForDOM(nodeList2, xctxt);
 
 					  templateEvalResultForAsAttr = SequenceTypeSupport.castXdmValueToAnotherType(templateEvalResultForAsAttr, templateAsAttrVal, 
 							  																													null, xctxt);
@@ -1303,7 +1334,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
 						  }
 					  }
 					  catch (TransformerException ex) {
-						  // NO OP
+						  // no op
 					  }
 				  }
 			  }
@@ -1617,7 +1648,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
 	   * Default constructor.
 	   */
 	  public TemplateDefnPriorityPair() {
-		 // NO OP  
+		 // no op  
 	  }
 	  
 	  /**

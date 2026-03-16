@@ -56,13 +56,13 @@ public class AVT implements java.io.Serializable, XSLTVisitable
   
   /**
    * If the AVT is not complex, just hold the simple string.
-   * @serial
+   * 
    */
   private String m_simpleString = null;
 
   /**
    * If the AVT is complex, hold a Vector of AVTParts.
-   * @serial
+   * 
    */
   private Vector m_parts = null;
   
@@ -70,7 +70,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
 
   /**
    * The name of the attribute.
-   * @serial
+   * 
    */
   private String m_rawName;
 
@@ -96,7 +96,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
 
   /**
    * The name of the attribute.
-   * @serial
+   * 
    */
   private String m_name;
 
@@ -122,7 +122,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
 
   /**
    * The namespace URI of the owning attribute.
-   * @serial
+   * 
    */
   private String m_uri;
 
@@ -181,7 +181,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
     {
       FastStringBuffer buffer = null;
       FastStringBuffer exprBuffer = null;
-      if(USE_OBJECT_POOL){
+      if (USE_OBJECT_POOL){
         buffer = StringBufferPool.get(); 
         exprBuffer = StringBufferPool.get();
       }else{
@@ -239,7 +239,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
                 }
 
                 /*
-                else if(lookahead.equals("\"") || lookahead.equals("\'"))
+                else if (lookahead.equals("\"") || lookahead.equals("\'"))
                 {
                 // Error. Expressions can not begin with quotes.
                 error = "Expressions can not begin with quotes.";
@@ -332,7 +332,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
 
                       lookahead = tokenizer.nextToken();
                     }
-                  }  // end while(!lookahead.equals("}"))
+                  }  // end while (!lookahead.equals("}"))
 
                   if (error != null)
                   {
@@ -409,7 +409,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
 
             break;
           }
-        }  // end while(tokenizer.hasMoreTokens())
+        }  // end while (tokenizer.hasMoreTokens())
 
         if (buffer.length() > 0)
         {
@@ -419,7 +419,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
       }
       finally
       {
-        if(USE_OBJECT_POOL){
+        if (USE_OBJECT_POOL){
              StringBufferPool.free(buffer);
              StringBufferPool.free(exprBuffer);
          }else{
@@ -460,7 +460,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
       }
       out = buf.toString();
     }finally{
-      if(USE_OBJECT_POOL){
+      if (USE_OBJECT_POOL){
          StringBufferPool.free(buf);
      }else{
         buf.setLength(0); 
@@ -500,7 +500,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
         }
        out = buf.toString();
       }finally{
-          if(USE_OBJECT_POOL){
+          if (USE_OBJECT_POOL){
              StringBufferPool.free(buf);
          }else{
            buf.setLength(0); 
@@ -583,7 +583,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
    */
   public void callVisitors(XSLTVisitor visitor)
   {
-  	if(visitor.visitAVT(this) && (null != m_parts))
+  	if (visitor.visitAVT(this) && (null != m_parts))
   	{
       int n = m_parts.size();
 
@@ -605,7 +605,7 @@ public class AVT implements java.io.Serializable, XSLTVisitable
   }
   
   private final FastStringBuffer getBuffer(){
-    if(USE_OBJECT_POOL){
+    if (USE_OBJECT_POOL){
       return StringBufferPool.get();
     }else{
       return new FastStringBuffer(INIT_BUFFER_CHUNK_BITS);

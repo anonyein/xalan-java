@@ -20,6 +20,7 @@
  */
 package org.apache.xalan.templates;
 
+import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.transformer.TransformerImpl;
@@ -48,7 +49,7 @@ public class ElemIf extends ElemTemplateElement
 
   /**
    * The xsl:if element must have a test attribute, which specifies an expression.
-   * @serial
+   * 
    */
   private XPath m_test = null;
 
@@ -106,7 +107,7 @@ public class ElemIf extends ElemTemplateElement
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -138,6 +139,33 @@ public class ElemIf extends ElemTemplateElement
   public boolean getExpandTextDeclared() {
 	  return m_expand_text_declared;
   }
+  
+  /**
+   * An XPath expression for 'use-when' attribute. 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
+  }
 
   /**
    * This function is called after everything else has been
@@ -164,7 +192,7 @@ public class ElemIf extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -196,7 +224,24 @@ public class ElemIf extends ElemTemplateElement
   {
 
     XPathContext xctxt = transformer.getXPathContext();
+    
+    SourceLocator srcLocator = xctxt.getSAXLocator(); 
+    
     int sourceNode = xctxt.getCurrentNode();
+    
+    if (m_useWhen != null) {
+    	boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+    	if (result1) {
+    		XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+    		if (!useWhenResult.bool()) {
+    			return;
+    		}
+    	}
+    	else {
+    		throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                    																									+ "used within XPath static expression.", srcLocator);
+    	}
+    }
     
     if (m_xpath_default_namespace != null) {
        m_test = new XPath(m_test.getPatternString(), xctxt.getSAXLocator(), xctxt.getNamespaceContext(), XPath.SELECT, null);
@@ -229,10 +274,6 @@ public class ElemIf extends ElemTemplateElement
       //    transformer.getTraceManager().emitSelectedEvent(sourceNode, this,
       //            "endTest", m_test, test);
     }
-    /*else if (m_test.bool(xctxt, sourceNode, this))
-    {
-      transformer.executeChildTemplates(this, true);
-    }*/
     else {
         XObject xpath3ContextItem = xctxt.getXPath3ContextItem();        
         if (xpath3ContextItem != null) {
@@ -272,7 +313,7 @@ public class ElemIf extends ElemTemplateElement
    */
   protected void callChildVisitors(XSLTVisitor visitor, boolean callAttrs)
   {
-  	if(callAttrs)
+  	if (callAttrs)
   		m_test.getExpression().callVisitors(m_test, visitor);
     super.callChildVisitors(visitor, callAttrs);
   }

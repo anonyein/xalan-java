@@ -90,7 +90,7 @@ public class ElemOutputCharacter extends ElemTemplateElement
 	 * Get an int constant identifying the type of element.
 	 * @see org.apache.xalan.templates.Constants
 	 *
-	 * @return The token ID for the element
+	 * @return The token id for the element
 	 */
 	public int getXSLToken()
 	{
@@ -130,7 +130,7 @@ public class ElemOutputCharacter extends ElemTemplateElement
 	 * Execute an XSL xsl:output-character transformation.
 	 */
 	public void execute(TransformerImpl transformer) throws TransformerException {	    
-		// NO OP
+		// no op
 	}
 	
 	/**
@@ -157,13 +157,13 @@ public class ElemOutputCharacter extends ElemTemplateElement
 
 	@Override
 	public Expression getExpression() {
-		// NO OP
+		// no op
 		return null;
 	}
 
 	@Override
 	public void setExpression(Expression exp) {		
-		// NO OP		
+		// no op		
 	}
 
 }

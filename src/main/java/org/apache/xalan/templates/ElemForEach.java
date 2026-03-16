@@ -23,9 +23,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
 
+import javax.xml.XMLConstants;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
+import org.apache.xalan.transformer.NodeSortKey;
 import org.apache.xalan.transformer.NodeSorter;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
@@ -42,6 +44,7 @@ import org.apache.xpath.XPathCollationSupport;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
+import org.apache.xpath.compiler.Keywords;
 import org.apache.xpath.composite.SequenceTypeData;
 import org.apache.xpath.composite.SequenceTypeSupport;
 import org.apache.xpath.composite.XPathForExpr;
@@ -110,19 +113,19 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
   protected Expression m_selectExpression = null;
   
   /**
-   * Class field to store, XPath expression for subsequent 
+   * Class field to refer to, XPath expression for subsequent 
    * processing.
    */
   protected XPath m_xpath = null;
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -199,6 +202,33 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
    */
   public boolean getExpandTextDeclared() {
 	  return m_expand_text_declared;
+  }
+  
+  /**
+   * An XPath expression for 'use-when' attribute. 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
   }
   
   private Vector m_vars;
@@ -303,7 +333,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token id for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -338,7 +368,28 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 
     try
     {
-        transformXdmItems(transformer);
+    	XPathContext xctxt = transformer.getXPathContext();
+    	
+    	final int sourceNode = xctxt.getCurrentNode();
+    	
+    	SourceLocator srcLocator = xctxt.getSAXLocator();
+    	
+    	if (m_useWhen != null) {
+    		boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+    		if (result1) {
+    			XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+    			if (useWhenResult.bool()) {
+    				transformXdmItems(transformer);
+    			}
+    		}
+    		else {
+    			throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                        																									+ "used within XPath static expression.", srcLocator);
+    		}
+    	}
+    	else {
+            transformXdmItems(transformer);
+    	}
     }
     finally
     {
@@ -362,37 +413,57 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
   }
 
   /**
-   * Sort the given xdm nodes.
+   * Sort the, supplied xdm XML nodes.
    *
-   * @param xctxt The XPath runtime state for the sort.
-   * @param keys Vector of sort keyx
-   * @param sourceNodes Iterator of nodes to sort
+   * @param xctxt                        The XPath runtime state for the sort
+   * @param keys                         Vector of sort keys
+   * @param sourceNodes                  Iterator of nodes to sort
    *
    * @return iterator of sorted nodes
    *
    * @throws TransformerException
    */
-  public DTMCursorIterator sortNodes(
-          XPathContext xctxt, Vector keys, DTMCursorIterator sourceNodes)
-            throws TransformerException
-  {
+  public DTMCursorIterator sortNodes(XPathContext xctxt, Vector keys, DTMCursorIterator sourceNodes)
+                                                                                                   throws TransformerException {
+	  NodeSorter sorter = new NodeSorter(xctxt);
+	  sourceNodes.setShouldCacheNodes(true);
+	  sourceNodes.runTo(-1);
+	  xctxt.pushContextNodeList(sourceNodes);
 
-    NodeSorter sorter = new NodeSorter(xctxt);
-    sourceNodes.setShouldCacheNodes(true);
-    sourceNodes.runTo(-1);
-    xctxt.pushContextNodeList(sourceNodes);
+	  try
+	  {
+		  sorter.sort(sourceNodes, keys, xctxt);
+		  
+		  sourceNodes.setCurrentPos(0);
+	  }
+	  finally
+	  {
+		  xctxt.popContextNodeList();
+	  }
 
-    try
-    {
-      sorter.sort(sourceNodes, keys, xctxt);
-      sourceNodes.setCurrentPos(0);
-    }
-    finally
-    {
-      xctxt.popContextNodeList();
-    }
+	  return sourceNodes;
+  }
+  
+  /**
+   * Sort the, supplied xdm sequence of items.
+   *
+   * @param xctxt                         The XPath runtime state for the sort
+   * @param keys                          Vector of sort keys
+   * @param rSeq                          An xdm sequence to sort
+   *
+   * @return The sorted xdm sequence object
+   *
+   * @throws TransformerException
+   */
+  public ResultSequence sortXdmSequence(XPathContext xctxt, Vector keys, ResultSequence rSeq)
+				                                                                            throws TransformerException {
+	  ResultSequence result = null;	  
 
-    return sourceNodes;
+	  NodeSorter sorter = new NodeSorter(xctxt);
+	  
+	  result = sorter.sort(rSeq, keys, xctxt);
+
+	  return result;
   }
 
   /**
@@ -426,10 +497,23 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     	    if (idx > 0) {
     	       if (elemSort.isStableDeclared()) {
     	    	  throw new javax.xml.transform.TransformerException("XTSE1017 : Only the first XSL 'sort' element within a sequence of "
-    	    	  		                                                                       + "'sort' elements can have an attribute named "
-    	    	  		                                                                       + "'stable'.", srcLocator);	
+					    	    	  		                                                                            + "'sort' elements can have an attribute named "
+					    	    	  		                                                                            + "'stable'.", elemSort);	
     	       }
-    	    }    	    
+    	    }
+    	    
+    	    XPath xslSortSelect = elemSort.getSelect();
+    	    if (xslSortSelect != null) {
+    	    	Expression xpathExpr = xslSortSelect.getExpression();
+    	    	if (xpathExpr instanceof XSL3ConstructorOrExtensionFunction) {
+    	    		XSL3ConstructorOrExtensionFunction xsl3ConstructorOrExtFunc = (XSL3ConstructorOrExtensionFunction)xpathExpr;
+    	    		String funcName = xsl3ConstructorOrExtFunc.getFunctionName();
+    	    		String namespace = xsl3ConstructorOrExtFunc.getNamespace();
+    	    		if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace) && (Keywords.XS_DURATION).equals(funcName)) {
+    	    			throw new javax.xml.transform.TransformerException("XTDE1030 : An XSL instruction for-each's sort key cannot be of XML Schema type 'duration'.", elemSort);
+    	    		}
+    	    	}
+    	    }
     	}
     }
     
@@ -617,7 +701,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
                      indexVal = Integer.valueOf(xpathIndexExprStr);
                   }
                   catch (NumberFormatException ex) {
-                	 // NO OP
+                	 // no op
                   }
                   
                   ResultSequence rSeq = new ResultSequence();
@@ -670,10 +754,18 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     	    ElemSort elemSort = (ElemSort)m_sortElems.get(idx);    	    
     	    AVT langAvt = elemSort.getLang();
     	    
-    	    String collation = null;
+    	    String collationValueStr = null;
     	    AVT collationAvt = elemSort.getCollation();
-    	    if (collationAvt != null) {
-    	       collation = collationAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
+    	    
+    	    if ((collationAvt != null) && (langAvt != null)) {    	    	
+    	       String langStr = langAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());    	    	
+    	       collationValueStr = collationAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
+    	       
+    	       if (XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI.equals(collationValueStr) && "en".equals(langStr)) {
+    	          langAvt = null;
+    	       }
+    	       
+    	       collationValueStr = collationAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());    	           	       
     	    }
     	    
     	    if (langAvt != null) {    	    	    	           	       
@@ -681,12 +773,12 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     	       if (!"en".equals(langStr)) {
     	    	  bool1 = true;
     	       }
-    	       else if ((collation != null) && XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI.equals(collation)) {
+    	       else if ((collationValueStr != null) && XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI.equals(collationValueStr)) {
     	    	  bool1 = true; 
     	       }
     	    }
     	    
-    	    if (!bool1 && (collation != null)) {
+    	    if (!bool1 && (collationValueStr != null)) {
     	       bool1 = true;
     	    }
     	}
@@ -705,7 +797,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     			if (expression instanceof XSL3ConstructorOrExtensionFunction) {
     				XSL3ConstructorOrExtensionFunction func1 = (XSL3ConstructorOrExtensionFunction)expression;
     				String namespace = func1.getNamespace();
-    				if (!Constants.S_EXTENSIONS_JAVA_URL.equals(namespace)) {
+    				if (!((Constants.S_EXTENSIONS_JAVA_URL).equals(namespace) || (XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace))) {
     					bool2 = true;
     					
     					break;
@@ -731,8 +823,59 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
                                                           : transformer.processSortKeys(this, contextNode);
     		
     		// Sort if we need to
-    		if (sortKeys != null)
-    		    sourceNodes = sortNodes(xctxt, sortKeys, sourceNodes);
+    		if (sortKeys != null) {
+    		   int sortKeyCount = sortKeys.size();
+    		   boolean isSortNew = false;
+    		   for (int idx = 0; idx < sortKeyCount; idx++) {
+    			   NodeSortKey nodeSortKey = (NodeSortKey)(sortKeys.get(idx));
+    			   XPath xpathObj1 = nodeSortKey.getSelectPattern();
+    			   Expression xpathExpr = xpathObj1.getExpression();
+    			   if (xpathExpr instanceof XSL3ConstructorOrExtensionFunction) {
+     				  XSL3ConstructorOrExtensionFunction xsl3ConstructorOrExtFunc = (XSL3ConstructorOrExtensionFunction)xpathExpr;
+     				  String namespace = xsl3ConstructorOrExtFunc.getNamespace();
+     				  if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace)) {
+     					 isSortNew = true; 
+     				  }
+     				  else {
+     					 isSortNew = false;
+     					 
+     					 break;
+     				  }
+    			   }
+    			   else {
+    				  isSortNew = false;
+    				  
+    				  break;
+    			   }
+    		   }
+    		   
+    		   if (isSortNew) {    			       			   
+    			   int nextNode;
+    			   ResultSequence rSeq = new ResultSequence();
+    			   int seqLength = 0;
+    			   while ((nextNode = sourceNodes.nextNode()) != DTM.NULL) {
+    				   XMLNodeCursorImpl xmlNodeCursorImpl = new XMLNodeCursorImpl(nextNode, xctxt);
+    				   rSeq.add(xmlNodeCursorImpl);    						
+    				   seqLength++;
+    			   }
+
+    			   ResultSequence rSeq1 = sortXdmSequence(xctxt, sortKeys, rSeq);
+
+    			   List<Integer> nodeHandleList = new ArrayList<Integer>();
+    			   for (int idx = 0; idx < seqLength; idx++) {
+    				   XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)(rSeq1.item(idx));
+    				   int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
+    				   nodeHandleList.add(Integer.valueOf(nodeHandle));
+    			   }
+
+    			   XMLNodeCursorImpl nodeSetResult = new XMLNodeCursorImpl(nodeHandleList, xctxt);
+
+    			   sourceNodes = nodeSetResult.iter(); 
+    		   }
+    		   else {
+    			   sourceNodes = sortNodes(xctxt, sortKeys, sourceNodes);
+    		   }
+    		}
 
     		if (transformer.getDebug())
     		{                
@@ -915,6 +1058,8 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 	   
 	   SourceLocator srcLocator = xctxt.getSAXLocator();
 	   
+	   final int sourceNode = xctxt.getCurrentNode();
+	   
 	   if (evalResult instanceof ResultSequence) {
 		   ResultSequence resultSeq = (ResultSequence)evalResult;
 		   xdmItemList = resultSeq.getResultSequenceItems();   
@@ -988,7 +1133,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   String sortOrderStr = null;
 					   AVT sortOrderAvt = elemSort.getOrder();
 					   if (sortOrderAvt != null) {
-						   sortOrderStr = sortOrderAvt.evaluate(xctxt, DTM.NULL, xctxt.getNamespaceContext());
+						   sortOrderStr = sortOrderAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext());
 					   }
 
 					   // This can be absent, or specified as "upper-first" | "lower-first".
@@ -996,7 +1141,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   String caseOrderStr = null;		  
 					   AVT caseOrderAvt = elemSort.getCaseOrder();
 					   if (caseOrderAvt != null) {
-						   caseOrderStr = caseOrderAvt.evaluate(xctxt, DTM.NULL, xctxt.getNamespaceContext()); 
+						   caseOrderStr = caseOrderAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext()); 
 					   }			   			   			   
 
 					   // This can be absent (which will be default "text"), or specified as 
@@ -1004,13 +1149,13 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   String dataTypeStr = null;          
 					   AVT dataTypeAvt = elemSort.getDataType();
 					   if (dataTypeAvt != null) {
-						   dataTypeStr = dataTypeAvt.evaluate(xctxt, DTM.NULL, xctxt.getNamespaceContext()); 
+						   dataTypeStr = dataTypeAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext()); 
 					   }
 
 					   String langStr = null;
 					   AVT langAvt = elemSort.getLang();
 					   if (langAvt != null) {
-						   langStr = langAvt.evaluate(xctxt, DTM.NULL, xctxt.getNamespaceContext());  
+						   langStr = langAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext());  
 					   }					   
 
 					   if ((dataTypeStr != null) && !("text".equals(dataTypeStr) || "number".equals(dataTypeStr))) {							  
@@ -1428,7 +1573,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 			   }			   			   
 		   }
 		   catch (TransformerException ex) {
-			   // NO OP			  
+			   // no op			  
 		   }
 		   
 		   return result;

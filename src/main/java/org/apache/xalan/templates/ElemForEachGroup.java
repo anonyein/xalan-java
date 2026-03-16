@@ -47,7 +47,8 @@ import org.apache.xpath.XPath;
 import org.apache.xpath.XPathCollationSupport;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.NodeCursor;
-import org.apache.xpath.functions.FuncPosition;
+import org.apache.xpath.functions.FuncReverse;
+import org.apache.xpath.functions.context.FuncPosition;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XBooleanStatic;
@@ -56,7 +57,7 @@ import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.Variable;
-import org.apache.xpath.types.ForEachGroupCompositeGroupingKey;
+import org.apache.xpath.types.XslForEachGroupCompositeGroupingKey;
 import org.apache.xpath.types.StringWithCollation;
 import org.w3c.dom.Node;
 
@@ -65,6 +66,7 @@ import xml.xpath31.processor.types.XSBoolean;
 import xml.xpath31.processor.types.XSDate;
 import xml.xpath31.processor.types.XSDateTime;
 import xml.xpath31.processor.types.XSDecimal;
+import xml.xpath31.processor.types.XSDouble;
 import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSQName;
 import xml.xpath31.processor.types.XSString;
@@ -129,19 +131,30 @@ public class ElemForEachGroup extends ElemTemplateElement
   private Vector m_sortElems = null;
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
   
   /**
-   * The class constructor.
+   * An XPath expression for 'use-when' attribute. 
+   */
+  private XPath m_useWhen = null;
+  
+  /**
+   * Class field, that represents xsl:for-each-group instruction's
+   * sorted list of groups.
+   */
+  private List<GroupingKeyAndGroupPair> m_sortedGroups = null;
+  
+  /**
+   * Class constructor.
    */
   public ElemForEachGroup() {}
   
@@ -366,6 +379,28 @@ public class ElemForEachGroup extends ElemTemplateElement
   public boolean getExpandTextDeclared() {
 	  return m_expand_text_declared;
   }
+  
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
+  }
 
   /**
    * This function is called after everything else has been
@@ -430,7 +465,7 @@ public class ElemForEachGroup extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -463,7 +498,29 @@ public class ElemForEachGroup extends ElemTemplateElement
         }
     
         try {
-            transformSelectedNodes(transformer);
+        	XPathContext xctxt = transformer.getXPathContext();
+        	
+        	SourceLocator srcLocator = xctxt.getSAXLocator();
+        	
+        	final int sourceNode = xctxt.getCurrentNode();
+        	
+        	if (m_useWhen != null) {
+        		boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+            	if (result1) {
+            		XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+            		if (useWhenResult.bool()) {
+            			transformSelectedNodes(transformer);
+            		}
+            	}
+            	else {
+            		throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                            																									+ "used within XPath static expression.", srcLocator);
+            	}
+        	}
+        	else {
+                transformSelectedNodes(transformer);
+        	}
+            
         }
         finally {
             if (transformer.getDebug()) {
@@ -477,24 +534,20 @@ public class ElemForEachGroup extends ElemTemplateElement
   /**
    * Sort the provided xsl:for-each-group groups.
    *
+   * @param xctxt             An XPath context object
+   * @param sortKeys          Vector of sort keys
+   * @param forEachGroups     An object instance representing, groups 
+   *                          to be sorted.
    *
-   * @param xctxt             the XPath runtime state for the sort
-   * @param sortKeys          vector of sort keys
-   * @param forEachGroups     an object representing, groups to be sorted
-   *
-   * @return a list of sorted groups
+   * @return                  void
    *
    * @throws TransformerException
    */
-  public List<GroupingKeyAndGroupPair> sortGroups(XPathContext xctxt, Vector sortKeys, Object forEachGroups)
-                                                            throws TransformerException {
-        List<GroupingKeyAndGroupPair> sortedGroups = null;
-      
+  public void sortGroups(XPathContext xctxt, Vector sortKeys, Object forEachGroups)
+                                                                                throws TransformerException {      
         ForEachGroupXslSortSorter sorter = new ForEachGroupXslSortSorter(xctxt, this);
         
-        sortedGroups = sorter.sort(forEachGroups, sortKeys, xctxt);
-    
-        return sortedGroups;
+        m_sortedGroups = sorter.sort(forEachGroups, sortKeys, xctxt);
   }
 
   /**
@@ -506,17 +559,14 @@ public class ElemForEachGroup extends ElemTemplateElement
    */
   public ElemTemplateElement appendChild(ElemTemplateElement newChild)
   {
-        int type = ((ElemTemplateElement) newChild).getXSLToken();
-    
-        if (type == Constants.ELEMNAME_SORT)
-        {
-            setSortElem((ElemSort) newChild);
+        int type = ((ElemTemplateElement)newChild).getXSLToken();
         
-            return newChild;
+        if (type == Constants.ELEMNAME_SORT) {
+        	ElemSort elemSort = (ElemSort)newChild;        
+        	setSortElem(elemSort);
         }
-        else {
-            return super.appendChild(newChild);
-        }
+        
+        return super.appendChild(newChild);
   }
   
   /**
@@ -526,14 +576,14 @@ public class ElemForEachGroup extends ElemTemplateElement
    */
   public void callChildVisitors(XSLTVisitor visitor, boolean callAttributes)
   {
-      	if(callAttributes && (null != m_selectExpression))
+      	if (callAttributes && (m_selectExpression != null))
       		m_selectExpression.callVisitors(this, visitor);
       		
         int length = getSortElemCount();
     
-        for (int i = 0; i < length; i++)
+        for (int idx = 0; idx < length; idx++)
         {
-           getSortElem(i).callVisitors(visitor);
+           (getSortElem(idx)).callVisitors(visitor);
         }
     
         super.callChildVisitors(visitor, callAttributes);
@@ -545,7 +595,6 @@ public class ElemForEachGroup extends ElemTemplateElement
   public Expression getExpression()
   {
 	  return m_selectExpression.getExpression();
-      // return m_selectExpression;
   }
 
   /**
@@ -600,6 +649,12 @@ public class ElemForEachGroup extends ElemTemplateElement
         				                                                                   + ". This value must conform to an XPath pattern.";
         		throw new TransformerException(errMessageStr, srcLocator); 
         	}
+        	
+        	if ((m_collationUri != null) || m_composite) {
+        	    throw new TransformerException("XTSE1090 : An XSL for-each-group instruction cannot specify "
+			        	   		                                                           + "attributes 'collation' or 'composite' "
+			        	   		                                                           + "except with group-by/adjacent.", srcLocator);
+        	}
         }
         
         if (m_groupEndingWithExpression != null) {
@@ -616,6 +671,12 @@ public class ElemForEachGroup extends ElemTemplateElement
         		
         		throw new TransformerException(errMessageStr, srcLocator); 
         	}
+        	
+        	if ((m_collationUri != null) || m_composite) {
+         	    throw new TransformerException("XTSE1090 : An XSL for-each-group instruction cannot specify "
+			         	   		                                                          + "attributes 'collation' or 'composite' "
+			         	   		                                                          + "except with group-by/adjacent.", srcLocator);
+         	}
         }
         
         if (m_xpath_default_namespace != null) {
@@ -664,9 +725,11 @@ public class ElemForEachGroup extends ElemTemplateElement
         if (selectExprResult instanceof ResultSequence) {
         	ResultSequence resultSeq = (ResultSequence)selectExprResult;
         	
-        	if (!XslTransformEvaluationHelper.isSequenceContainsAllXDMAtomicValues(resultSeq)) {
+        	if (!XslTransformEvaluationHelper.isSequenceContainsAllXdmAtomicValues(resultSeq)) {
         		// We assume here that, an xsl:for-each-group's input sequence has all 
-        		// values as nodes.            	
+        		// values as nodes.        		
+        		isInpSeqAllAtomicValues = false;
+        		
         		sourceNodes = getSourceNodesFromResultSequence(resultSeq, xctxt);
         	}
         	else {
@@ -727,13 +790,15 @@ public class ElemForEachGroup extends ElemTemplateElement
         	constructGroupsForGroupBy(xctxt, sourceNodes, xslForEachGroupMap);
         }        
         else if (m_groupStartingWithExpression != null) {
-        	constructGroupsForGroupStartingWith(xctxt, sourceNodes, xslForEachGroupStartingWithEndingWith, isInpSeqAllAtomicValues);
+        	boolean isReverse = (selectExpr instanceof FuncReverse);
+        	constructGroupsForGroupStartingWith(xctxt, sourceNodes, xslForEachGroupStartingWithEndingWith, isInpSeqAllAtomicValues, isReverse);
         }
-        else if (m_groupEndingWithExpression != null) {                          
-        	constructGroupsForGroupEndingWith(xctxt, sourceNodes, xslForEachGroupStartingWithEndingWith, isInpSeqAllAtomicValues);
+        else if (m_groupEndingWithExpression != null) {
+        	boolean isReverse = (selectExpr instanceof FuncReverse);
+        	constructGroupsForGroupEndingWith(xctxt, sourceNodes, xslForEachGroupStartingWithEndingWith, isInpSeqAllAtomicValues, isReverse);
         }
         else if (m_groupAdjacentExpression != null) {
-        	constructGroupsForGroupAdjacent(xctxt, sourceNodes, xslForEachGroupAdjacentList);
+        	constructGroupsForGroupAdjacent(xctxt, sourceNodes, xslForEachGroupAdjacentList, isInpSeqAllAtomicValues);
         }
         
         try {
@@ -760,6 +825,12 @@ public class ElemForEachGroup extends ElemTemplateElement
 																			        						 + "values for attribute 'stable' are yes,1,true,no,0,false.", 
 																			        						 elemSort);
         			 }
+        			 
+        			 if (idx > 0) {
+        				 throw new javax.xml.transform.TransformerException("XTSE1017 : An XSL for-each-group instruction can specify, "
+        				 		                                                                          + "attribute 'stable' only on for-each-group's "
+        				 		                                                                          + "first XSL sort.", elemSort); 
+        			 }
         		  }
         	   }
         	}
@@ -781,29 +852,36 @@ public class ElemForEachGroup extends ElemTemplateElement
         			forEachGroups = xslForEachGroupStartingWithEndingWith;   
         		}
 
-        		List<GroupingKeyAndGroupPair> groupingKeyAndGroupPairList = sortGroups(xctxt, sortKeys, forEachGroups);
+        		sortGroups(xctxt, sortKeys, forEachGroups);
+        		
+        		int xslGroupCount = m_sortedGroups.size();
 
-        		for (int idx = 0; idx < groupingKeyAndGroupPairList.size(); idx++) {
-        			GroupingKeyAndGroupPair groupingKeyAndGroupPair = groupingKeyAndGroupPairList.get(idx);
+        		for (int idx = 0; idx < xslGroupCount; idx++) {
+        			GroupingKeyAndGroupPair groupingKeyAndGroupPair = m_sortedGroups.get(idx);
         			Object groupingKey = groupingKeyAndGroupPair.getGroupingKey();
-        			List<Integer> groupNodesDtmHandles = groupingKeyAndGroupPair.getGroupNodesDtmHandles();
+        			List<Integer> groupNodesDtmHandles = groupingKeyAndGroupPair.getGroupNodeDtmHandles();
 
         			xctxt.setPos(idx + 1);    							// Set value of fn:position() function within xsl:for-each-group
-        			xctxt.setLast(groupingKeyAndGroupPairList.size());        // Set value of the number of groups formed
+        			xctxt.setLast(m_sortedGroups.size());               // Set value of the number of groups formed
 
-        			for (ElemTemplateElement templateElem = this.m_firstChild; templateElem != null; 
-        					templateElem = templateElem.m_nextSibling) {
+        			try {
         				/**
         				 * Set context item for whole of group contents evaluation, to the initial
         				 * item of the group.
         				 */
         				xctxt.pushCurrentNode((groupNodesDtmHandles.get(0)).intValue());
 
-        				templateElem.setGroupingKey(groupingKey);
-        				templateElem.setGroupNodesDtmHandles(groupNodesDtmHandles);
-        				xctxt.setSAXLocator(templateElem);
-        				transformer.setCurrentElement(templateElem);                   
-        				templateElem.execute(transformer);
+        				for (ElemTemplateElement templateElem = this.m_firstChild; templateElem != null; 
+        						                                                            templateElem = templateElem.m_nextSibling) {        				
+        					templateElem.setGroupingKey(groupingKey);
+        					templateElem.setGroupNodesDtmHandles(groupNodesDtmHandles);
+        					xctxt.setSAXLocator(templateElem);
+        					transformer.setCurrentElement(templateElem);                   
+        					templateElem.execute(transformer);
+        				}
+        			}
+        			finally {
+        				xctxt.popCurrentNode();
         			}
         		}
         	}
@@ -844,28 +922,35 @@ public class ElemForEachGroup extends ElemTemplateElement
         			 * Loop through these groups formed by xsl:for-each-group instruction, and process
         			 * the XSL contents of each group.
         			 */
-        			for (int idx = 0; idx < groupingKeyAndNodeHandlePairList.size(); idx++) {
+        			
+        			int size1 = groupingKeyAndNodeHandlePairList.size();        			
+        			for (int idx = 0; idx < size1; idx++) {
         				GroupingKeyAndNodeHandlePair groupingKeyNodeHandlePair = groupingKeyAndNodeHandlePairList.get(idx);
 
         				Object groupingKey = groupingKeyNodeHandlePair.getGroupingKey();              // current-grouping-key() value, for this group
         				List<Integer> groupNodesDtmHandles = xslForEachGroupMap.get(groupingKey);     // current-group() contents, for this group
 
         				xctxt.setPos(idx + 1);										      // Set value of fn:position() function within xsl:for-each-group
-        				xctxt.setLast(groupingKeyAndNodeHandlePairList.size());		          // Set value of the number of groups formed                        
+        				xctxt.setLast(size1);		                                      // Set value of the number of groups formed                        
 
-        				for (ElemTemplateElement templateElem = this.m_firstChild; templateElem != null; 
-        																						templateElem = templateElem.m_nextSibling) {
+        				try {
         					/**
         					 * Set context item for whole of group contents evaluation, to the
         					 * initial item of the group.
         					 */
         					xctxt.pushCurrentNode((groupNodesDtmHandles.get(0)).intValue());
 
-        					templateElem.setGroupingKey(groupingKey);
-        					templateElem.setGroupNodesDtmHandles(groupNodesDtmHandles);
-        					xctxt.setSAXLocator(templateElem);
-        					transformer.setCurrentElement(templateElem);                   
-        					templateElem.execute(transformer);
+        					for (ElemTemplateElement templateElem = this.m_firstChild; templateElem != null; 
+        							                                                             templateElem = templateElem.m_nextSibling) {        					
+        						templateElem.setGroupingKey(groupingKey);
+        						templateElem.setGroupNodesDtmHandles(groupNodesDtmHandles);
+        						xctxt.setSAXLocator(templateElem);
+        						transformer.setCurrentElement(templateElem);                   
+        						templateElem.execute(transformer);
+        					}
+        				}
+        				finally {
+        					xctxt.popCurrentNode();
         				}
         			}
         		}
@@ -874,28 +959,36 @@ public class ElemForEachGroup extends ElemTemplateElement
         			 * Loop through the groups formed by xsl:for-each-group instruction using 
         			 * 'group-adjacent' attribute, and process the XSL contents of each group.
         			 */
-        			for (int idx = 0; idx < xslForEachGroupAdjacentList.size(); idx++) {
+        			
+        			int size1 = xslForEachGroupAdjacentList.size();
+        			for (int idx = 0; idx < size1; idx++) {
         				GroupingKeyAndGroupPair groupingKeyAndGroupPair = xslForEachGroupAdjacentList.get(idx);
 
         				Object groupingKey = groupingKeyAndGroupPair.getGroupingKey();                             // current-grouping-key() value, for this group
-        				List<Integer> groupNodesDtmHandles = groupingKeyAndGroupPair.getGroupNodesDtmHandles();    // current-group() contents, for this group
+        				List<Integer> groupNodesDtmHandles = groupingKeyAndGroupPair.getGroupNodeDtmHandles();     // current-group() contents, for this group
 
         				xctxt.setPos(idx + 1);										                   // Set value of fn:position() function within xsl:for-each-group
-        				xctxt.setLast(xslForEachGroupAdjacentList.size());		                           // Set value of the number of groups formed                        
+        				xctxt.setLast(size1);		                                                   // Set value of the number of groups formed                        
 
-        				for (ElemTemplateElement templateElem = this.m_firstChild; templateElem != null; 
-        																						templateElem = templateElem.m_nextSibling) {
+        				try {
         					/**
         					 * Set context item for whole of group contents evaluation, to the
         					 * initial item of the group.
         					 */
         					xctxt.pushCurrentNode((groupNodesDtmHandles.get(0)).intValue());
 
-        					templateElem.setGroupingKey(groupingKey);
-        					templateElem.setGroupNodesDtmHandles(groupNodesDtmHandles);
-        					xctxt.setSAXLocator(templateElem);
-        					transformer.setCurrentElement(templateElem);                   
-        					templateElem.execute(transformer);
+        					for (ElemTemplateElement templateElem = this.m_firstChild; templateElem != null; 
+        							                                                            templateElem = templateElem.m_nextSibling) {        					
+        						templateElem.setGroupingKey(groupingKey);
+        						templateElem.setGroupNodesDtmHandles(groupNodesDtmHandles);
+        						setIsGroupingXdmAtomicValues(isInpSeqAllAtomicValues);
+        						xctxt.setSAXLocator(templateElem);
+        						transformer.setCurrentElement(templateElem);                   
+        						templateElem.execute(transformer);
+        					}
+        				}
+        				finally {
+        					xctxt.popCurrentNode();
         				}
         			}
         		}
@@ -906,30 +999,36 @@ public class ElemForEachGroup extends ElemTemplateElement
         			 * instruction, and process the XSL contents of each group.
         			 */
 
-        			for (int idx = 0; idx < xslForEachGroupStartingWithEndingWith.size(); idx++) {
+        			int size1 = xslForEachGroupStartingWithEndingWith.size();
+        			for (int idx = 0; idx < size1; idx++) {
         				List<Integer> groupNodesDtmHandles = xslForEachGroupStartingWithEndingWith.get(idx);
 
         				xctxt.setPos(idx + 1);											// Set value of fn:position() function within xsl:for-each-group
-        				xctxt.setLast(xslForEachGroupStartingWithEndingWith.size());	        // Set value of the number of groups formed                       
+        				xctxt.setLast(size1);	                                        // Set value of the number of groups formed                       
 
-        				for (ElemTemplateElement templateElem = this.m_firstChild; templateElem != null; 
-        																						templateElem = templateElem.m_nextSibling) {                   
+        				try {
         					/**
         					 * Set context item for whole of group contents evaluation, to the initial
         					 * item of the group.
         					 */
         					xctxt.pushCurrentNode((groupNodesDtmHandles.get(0)).intValue());
 
-        					/**
-        					 * The grouping key is absent when, attributes 'group-starting-with' or
-        					 * 'group-ending-with' are used.
-        					 */
-        					templateElem.setGroupingKey(FuncCurrentGroupingKey.XSL_GROUPING_KEY_ABSENT);
-        					
-        					templateElem.setGroupNodesDtmHandles(groupNodesDtmHandles);
-        					xctxt.setSAXLocator(templateElem);
-        					transformer.setCurrentElement(templateElem);                   
-        					templateElem.execute(transformer);
+        					for (ElemTemplateElement templateElem = this.m_firstChild; templateElem != null; 
+        							                                                             templateElem = templateElem.m_nextSibling) {                           					
+        						/**
+        						 * The grouping key is absent when, attributes 'group-starting-with' or
+        						 * 'group-ending-with' are used.
+        						 */
+        						templateElem.setGroupingKey(FuncCurrentGroupingKey.XSL_GROUPING_KEY_ABSENT);
+
+        						templateElem.setGroupNodesDtmHandles(groupNodesDtmHandles);
+        						xctxt.setSAXLocator(templateElem);
+        						transformer.setCurrentElement(templateElem);                   
+        						templateElem.execute(transformer);
+        					}
+        				}
+        				finally {
+        					xctxt.popCurrentNode();
         				}
         			}
         		}
@@ -951,13 +1050,6 @@ public class ElemForEachGroup extends ElemTemplateElement
         	xctxt.setLast(0);
         	sourceNodes.detach();
         }
-
-        /**
-         * When a particular xsl:for-each-group's evaluation has completed, set the XPath evaluation 
-         * context node to the node which was the context node before xsl:for-each-group evaluation 
-         * was started.
-         */         
-        xctxt.pushCurrentNode(currentNode);
   }
   
   /**
@@ -972,7 +1064,7 @@ public class ElemForEachGroup extends ElemTemplateElement
    * @throws TransformerException
    */
   private void constructGroupsForGroupBy(XPathContext xctxt, DTMCursorIterator sourceNodes,
-		  							     Map<Object, List<Integer>> xslForEachGroupByMap) throws TransformerException {
+		  							                                   Map<Object, List<Integer>> xslForEachGroupByMap) throws TransformerException {
 	  int nextNode;
 	  
 	  SourceLocator srcLocator = xctxt.getSAXLocator();
@@ -980,7 +1072,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 	  try {
 		  int pos = 0;
 		  
-		  while (DTM.NULL != (nextNode = sourceNodes.nextNode())) {
+		  while ((nextNode = sourceNodes.nextNode()) != DTM.NULL) {
 			  FuncPosition.m_forEachGroupGroupByPos = ++pos; 
 			  XObject xpathEvalResult = m_groupByExpression.execute(xctxt, nextNode, xctxt.getNamespaceContext());
 			  Object groupingKeyValue = getNormalizedGroupingKeyValue(xctxt, xpathEvalResult);
@@ -990,8 +1082,8 @@ public class ElemForEachGroup extends ElemTemplateElement
 			  }
 			  else {
 				  // Processing for xsl:for-each-group's composite grouping key
-				  if (groupingKeyValue instanceof ForEachGroupCompositeGroupingKey) {
-					  ForEachGroupCompositeGroupingKey groupingKeyObj = (ForEachGroupCompositeGroupingKey)groupingKeyValue;
+				  if (groupingKeyValue instanceof XslForEachGroupCompositeGroupingKey) {
+					  XslForEachGroupCompositeGroupingKey groupingKeyObj = (XslForEachGroupCompositeGroupingKey)groupingKeyValue;
 					  ResultSequence groupingKeySeq = groupingKeyObj.getValue();
 					  if (groupingKeySeq.size() >= 1) {
 						  addXdmNodeHandleToGroup(xslForEachGroupByMap, nextNode, groupingKeyValue);
@@ -1009,7 +1101,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 		  }
 	  }
 	  finally {	  
-	     FuncPosition.m_forEachGroupGroupByPos = 0;
+	      FuncPosition.m_forEachGroupGroupByPos = 0;
 	  }
 	  
   }
@@ -1051,42 +1143,78 @@ public class ElemForEachGroup extends ElemTemplateElement
    * @param isInpSeqAllAtomicValues             Boolean value indicating whether an XDM input
    *                                            sequence to be grouped has all items as atomic
    *                                            values.
+   * @param isReverse                           Boolean value indicating, whether nodeset has been
+		   *                                    constructed as a result of XPath function fn:reverse.                                            
    * @throws TransformerException
    */
   private void constructGroupsForGroupStartingWith(XPathContext xctxt, DTMCursorIterator sourceNodes,
-		                                           List<List<Integer>> xslForEachGroupStartingWith, 
-		                                           boolean isInpSeqAllAtomicValues) throws TransformerException {	  
+		                                                                             List<List<Integer>> xslForEachGroupStartingWith, 
+		                                                                             boolean isInpSeqAllAtomicValues, boolean isReverse) throws TransformerException {	  
 	  
 	  List<Integer> allNodeHandleList = new ArrayList<Integer>();	  
 	  
-	  List<Integer> grpStartNodeHandles = new ArrayList<Integer>();	  
-	  
-	  int nextNode;
-	  
+	  List<Integer> grpStartNodeHandles = new ArrayList<Integer>();	  	  
+	  	  
 	  if (!isInpSeqAllAtomicValues) {
 		  int idx = 0;
-		  while (DTM.NULL != (nextNode = sourceNodes.nextNode())) {
-			  allNodeHandleList.add(Integer.valueOf(nextNode));
-			  DTM dtm = xctxt.getDTM(nextNode);		  
+		  int nextNode1;
+		  while ((nextNode1 = sourceNodes.nextNode()) != DTM.NULL) {
+			  allNodeHandleList.add(Integer.valueOf(nextNode1));
+			  DTM dtm = xctxt.getDTM(nextNode1);		  
 			  if (idx == 0) {
-				  int parentNode = dtm.getParent(nextNode);
-				  XObject groupStartingWithEvalResult = null;			  
-				  groupStartingWithEvalResult = m_groupStartingWithExpression.execute(xctxt, parentNode, xctxt.getNamespaceContext());
+				  int parentNode = dtm.getParent(nextNode1);			  
+				  XObject groupStartingWithEvalResult = m_groupStartingWithExpression.execute(xctxt, parentNode, xctxt.getNamespaceContext());
 				  XMLNodeCursorImpl grpStartingWithNodeInit = (XMLNodeCursorImpl)groupStartingWithEvalResult;
 				  DTMCursorIterator dtmCursorIter = grpStartingWithNodeInit.getContainedIter();
-				  while (DTM.NULL != (nextNode = dtmCursorIter.nextNode())) {            	 
-					  grpStartNodeHandles.add(Integer.valueOf(nextNode)); 
+				  int nextNode2;
+				  while ((nextNode2 = dtmCursorIter.nextNode()) != DTM.NULL) {            	 
+					  grpStartNodeHandles.add(Integer.valueOf(nextNode2)); 
 				  }				  		  			  
 			  }
 			  
 			  idx++;
 		  }
+		  
+		  if (isReverse) {
+			  int size1 = grpStartNodeHandles.size();
+			  List<Integer> nodeHandleReversed = new ArrayList<Integer>();
+			  for (int idx1 = (size1 - 1); idx1 >= 0; idx1--) {
+				  nodeHandleReversed.add(grpStartNodeHandles.get(idx1)); 
+			  }
+			  
+			  grpStartNodeHandles = nodeHandleReversed; 
+		  }
+		  
+		  if (grpStartNodeHandles.size() > 0) {
+			  /**
+			   * Adding the first group which may be present, before the
+			   * first XML group-starting-with matching xdm node, to the
+			   * result.
+			   */
+			  int nodeId = grpStartNodeHandles.get(0);
+			  int size1 = allNodeHandleList.size();
+			  List<Integer> groupNodeHandles = new ArrayList<Integer>();
+			  for (int idx1 = 0; idx1 < size1; idx1++) {
+				  int nodeHandle = allNodeHandleList.get(idx1);
+				  if (nodeHandle != nodeId) {
+					  groupNodeHandles.add(nodeHandle);
+				  }
+				  else {
+					  if (groupNodeHandles.size() > 0) {
+						  xslForEachGroupStartingWith.add(groupNodeHandles);
+					  }
+
+					  break;
+				  }
+			  }
+		  }
 	  }
 	  else {
-		  while (DTM.NULL != (nextNode = sourceNodes.nextNode())) {
-			  allNodeHandleList.add(Integer.valueOf(nextNode));
-			  DTM dtm = xctxt.getDTM(nextNode);
-			  Node node = dtm.getNode(nextNode);
+		  int nextNode3;
+		  while ((nextNode3 = sourceNodes.nextNode()) != DTM.NULL) {
+			  allNodeHandleList.add(Integer.valueOf(nextNode3));
+			  DTM dtm = xctxt.getDTM(nextNode3);
+			  Node node = dtm.getNode(nextNode3);
 			  String nodeStrValue = node.getNodeValue();
 
 			  Double dblValue = null;
@@ -1095,7 +1223,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 				  dblValue = Double.valueOf(nodeStrValue);
 			  }
 			  catch (NumberFormatException ex) {
-				  // NO OP 
+				  // no op 
 			  }
 
 			  if (dblValue != null) {
@@ -1109,7 +1237,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 			  XObject xObjResult = m_groupStartingWithExpression.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());
 			  if ((xObjResult instanceof XBooleanStatic) || (xObjResult instanceof XBoolean) || (xObjResult instanceof XSBoolean)) {
 				  if (xObjResult.bool()) {
-					 grpStartNodeHandles.add(Integer.valueOf(nextNode)); 
+					 grpStartNodeHandles.add(Integer.valueOf(nextNode3)); 
 				  }
 			  }
 		  }
@@ -1166,41 +1294,55 @@ public class ElemForEachGroup extends ElemTemplateElement
    *                                  			have to be grouped. 
    * @param xslForEachGroupEndingWith           A list that needs to be populated with groups
    *                                            formed.
+   * @param isReverse                           Boolean value indicating, whether nodeset has been
+   *                                            constructed as a result of XPath function fn:reverse.
    * @throws TransformerException
    */
   private void constructGroupsForGroupEndingWith(XPathContext xctxt, DTMCursorIterator sourceNodes,
-		  									     List<List<Integer>> xslForEachGroupEndingWith, 
-		  									     boolean isInpSeqAllAtomicValues) throws TransformerException {
+		  									                                       List<List<Integer>> xslForEachGroupEndingWith, 
+		  									                                                     boolean isInpSeqAllAtomicValues, 
+		  									                                                     boolean isReverse) throws TransformerException {
 	  
 	  List<Integer> allNodeHandleList = new ArrayList<Integer>();
 	  
 	  List<Integer> grpEndNodeHandles = new ArrayList<Integer>();
-	  
-	  int nextNode;
-	  
+	  	  	  
 	  if (!isInpSeqAllAtomicValues) {
 		  int idx = 0;
-		  while (DTM.NULL != (nextNode = sourceNodes.nextNode())) {
-			  allNodeHandleList.add(Integer.valueOf(nextNode));		  
-			  DTM dtm = xctxt.getDTM(nextNode);
+		  int nextNode1;
+		  while ((nextNode1 = sourceNodes.nextNode()) != DTM.NULL) {
+			  allNodeHandleList.add(Integer.valueOf(nextNode1));		  
+			  DTM dtm = xctxt.getDTM(nextNode1);
 			  if (idx == 0) {
-				  int parentNode = dtm.getParent(nextNode);
+				  int parentNode = dtm.getParent(nextNode1);
 				  XObject groupStartingWithEvalResult = m_groupEndingWithExpression.execute(xctxt, parentNode, xctxt.getNamespaceContext());
 				  XMLNodeCursorImpl grpStartingWithNodeInit = (XMLNodeCursorImpl)groupStartingWithEvalResult;
 				  DTMCursorIterator dtmCursorIter = grpStartingWithNodeInit.getContainedIter();
-				  while (DTM.NULL != (nextNode = dtmCursorIter.nextNode())) {            	 
-					  grpEndNodeHandles.add(Integer.valueOf(nextNode)); 
+				  int nextNode2;
+				  while ((nextNode2 = dtmCursorIter.nextNode()) != DTM.NULL) {            	 
+					  grpEndNodeHandles.add(Integer.valueOf(nextNode2)); 
 				  }
 			  }
 
 			  idx++;
 		  }
+		  
+		  if (isReverse) {
+			  int size1 = grpEndNodeHandles.size();
+			  List<Integer> nodeHandleReversed = new ArrayList<Integer>();
+			  for (int idx1 = (size1 - 1); idx1 >= 0; idx1--) {
+				  nodeHandleReversed.add(grpEndNodeHandles.get(idx1)); 
+			  }
+			  
+			  grpEndNodeHandles = nodeHandleReversed; 
+		  }
 	  }
 	  else {
-		  while (DTM.NULL != (nextNode = sourceNodes.nextNode())) {
-			  allNodeHandleList.add(Integer.valueOf(nextNode));
-			  DTM dtm = xctxt.getDTM(nextNode);			  
-			  Node node = dtm.getNode(nextNode);
+		  int nextNode2;
+		  while ((nextNode2 = sourceNodes.nextNode()) != DTM.NULL) {
+			  allNodeHandleList.add(Integer.valueOf(nextNode2));
+			  DTM dtm = xctxt.getDTM(nextNode2);			  
+			  Node node = dtm.getNode(nextNode2);
 			  String nodeStrValue = node.getNodeValue();
 
 			  Double dblValue = null;
@@ -1209,7 +1351,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 				  dblValue = Double.valueOf(nodeStrValue);
 			  }
 			  catch (NumberFormatException ex) {
-				  // NO OP 
+				  // no op 
 			  }
 
 			  if (dblValue != null) {
@@ -1223,18 +1365,19 @@ public class ElemForEachGroup extends ElemTemplateElement
 			  XObject xObjResult = m_groupEndingWithExpression.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());
 			  if ((xObjResult instanceof XBooleanStatic) || (xObjResult instanceof XBoolean) || (xObjResult instanceof XSBoolean)) {
 				  if (xObjResult.bool()) {
-					  grpEndNodeHandles.add(Integer.valueOf(nextNode)); 
+					  grpEndNodeHandles.add(Integer.valueOf(nextNode2)); 
 				  }
 			  }
 		  }
 	  }
 	  
-
-	  for (int idx = 0; idx < grpEndNodeHandles.size(); idx++) {
+	  int allNodeHandleSize = allNodeHandleList.size();	  
+	  int grpEndNodeHandleSize = grpEndNodeHandles.size();
+	  for (int idx = 0; idx < grpEndNodeHandleSize; idx++) {
 		  int grpEndNodeHandle = grpEndNodeHandles.get(idx);
-		  List<Integer> groupNodeHandles = new ArrayList<Integer>();
+		  List<Integer> groupNodeHandles = new ArrayList<Integer>();		  
 		  if (idx == 0) {
-			  for (int idx2 = 0; idx2 < allNodeHandleList.size(); idx2++) {
+			  for (int idx2 = 0; idx2 < allNodeHandleSize; idx2++) {
 				  int nodeHandle = allNodeHandleList.get(idx2);
 				  if (nodeHandle <= grpEndNodeHandle) {
 					  groupNodeHandles.add(nodeHandle);
@@ -1244,7 +1387,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 		  else {
 			  List<Integer> latestGrpFormed = xslForEachGroupEndingWith.get(idx - 1);
 			  int temp = latestGrpFormed.get(latestGrpFormed.size() - 1);
-			  for (int idx2 = 0; idx2 < allNodeHandleList.size(); idx2++) {
+			  for (int idx2 = 0; idx2 < allNodeHandleSize; idx2++) {
 				  int nodeHandle = allNodeHandleList.get(idx2); 
 				  if ((nodeHandle > temp) && (nodeHandle <= grpEndNodeHandle)) {
 					  groupNodeHandles.add(nodeHandle); 
@@ -1260,11 +1403,10 @@ public class ElemForEachGroup extends ElemTemplateElement
 	  // Getting node handles of the last group, for xsl:for-each-group's 
 	  // group-ending-with attribute.
 	  
-	  int temp = grpEndNodeHandles.size();
-	  if (temp > 0) {
-		  int grpEndNodeHandle = grpEndNodeHandles.get(temp - 1);
+	  if (grpEndNodeHandleSize > 0) {
+		  int grpEndNodeHandle = grpEndNodeHandles.get(grpEndNodeHandleSize - 1);
 		  List<Integer> groupNodeHandles = new ArrayList<Integer>();
-		  for (int idx2 = 0; idx2 < allNodeHandleList.size(); idx2++) {            	   
+		  for (int idx2 = 0; idx2 < allNodeHandleSize; idx2++) {            	   
 			  if (allNodeHandleList.get(idx2) > grpEndNodeHandle) {
 				  groupNodeHandles.add(allNodeHandleList.get(idx2));  
 			  }
@@ -1285,10 +1427,12 @@ public class ElemForEachGroup extends ElemTemplateElement
    *                                  			have to be grouped. 
    * @param xslForEachGroupAdjacentList         A list that needs to be populated with groups
    *                                            formed.
+   * @param isInpSeqAllAtomicValues 
    * @throws TransformerException
    */
   private void constructGroupsForGroupAdjacent(XPathContext xctxt, DTMCursorIterator sourceNodes,
-		                                       List<GroupingKeyAndGroupPair> xslForEachGroupAdjacentList) throws TransformerException {
+		                                                                         List<GroupingKeyAndGroupPair> xslForEachGroupAdjacentList, 
+		                                                                         boolean isInpSeqAllAtomicValues) throws TransformerException {
 	 
 	 Object prevGroupingKeyValue = null;
 	 
@@ -1297,13 +1441,61 @@ public class ElemForEachGroup extends ElemTemplateElement
 	 int idx = 0;
 	 int nextNode;
 	 
-	 while (DTM.NULL != (nextNode = sourceNodes.nextNode())) {	     
-	     XObject xpathEvalResult = m_groupAdjacentExpression.execute(xctxt, nextNode, xctxt.getNamespaceContext());                 
+	 while ((nextNode = sourceNodes.nextNode()) != DTM.NULL) {
+		 DTM dtm = xctxt.getDTM(nextNode);
+		 XSString xsStr1 = null;
+		 XObject xpathEvalResult = null;
+		 if ((dtm.getNodeType(nextNode) == DTM.TEXT_NODE) && isInpSeqAllAtomicValues) {
+			xsStr1 = new XSString(dtm.getNodeValue(nextNode));
+			XObject prevCtxtItem = xctxt.getXPath3ContextItem();
+			xctxt.setXPath3ContextItem(xsStr1);
+			xpathEvalResult = m_groupAdjacentExpression.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());
+			if ((xpathEvalResult instanceof ResultSequence) && (((ResultSequence)xpathEvalResult).size() == 0)) {
+	        	throw new TransformerException("XTTE1100 : An XSL for-each-group instruction attribute "
+	        			                                                                               + "'group-adjacent''s value is an empty sequence.", srcLocator);
+	        }
+			xctxt.setXPath3ContextItem(prevCtxtItem);
+			if (xpathEvalResult instanceof ResultSequence) {
+				ResultSequence rSeq = (ResultSequence)xpathEvalResult;
+				int rSeqLength = rSeq.size();
+				ResultSequence rSeq2 = new ResultSequence(); 
+				for (int idx1 = 0; idx1 < rSeqLength; idx1++) {
+					XObject xObj = rSeq.item(idx1);
+					if (xObj instanceof XNumber) {
+						XNumber xNumber = (XNumber)xObj;
+						double dbl = xNumber.num();
+						if (!((Double.valueOf(dbl)).isNaN())) {
+							rSeq2.add(xObj);
+						}
+					}
+					else if (xObj instanceof XSDouble) {
+						XSDouble xsDouble = (XSDouble)xObj;
+						double dbl = xsDouble.doubleValue();
+						if (!((Double.valueOf(dbl)).isNaN())) {
+							rSeq2.add(xObj);
+						}
+					}
+					else {
+						rSeq2.add(xObj);
+					}
+				}
+				
+				xpathEvalResult = rSeq2; 
+			}						
+		 }
+		 else {
+	        xpathEvalResult = m_groupAdjacentExpression.execute(xctxt, nextNode, xctxt.getNamespaceContext());
+	        if ((xpathEvalResult instanceof ResultSequence) && (((ResultSequence)xpathEvalResult).size() == 0)) {
+	        	throw new TransformerException("XTTE1100 : An XSL for-each-group instruction attribute "
+	        			                                                                               + "'group-adjacent''s value is an empty sequence.", srcLocator);
+	        }
+		 }
+	     
 	     Object groupingKeyValue = getNormalizedGroupingKeyValue(xctxt, xpathEvalResult);
 	     
 	     if (m_composite) {
-	    	 if (groupingKeyValue instanceof ForEachGroupCompositeGroupingKey) {
-				  ForEachGroupCompositeGroupingKey groupingKeyObj = (ForEachGroupCompositeGroupingKey)groupingKeyValue;
+	    	 if (groupingKeyValue instanceof XslForEachGroupCompositeGroupingKey) {
+				  XslForEachGroupCompositeGroupingKey groupingKeyObj = (XslForEachGroupCompositeGroupingKey)groupingKeyValue;
 				  ResultSequence groupingKeySeq = groupingKeyObj.getValue();
 				  if (groupingKeySeq.size() == 0) {
 					  throw new TransformerException("XTSE1080 : An XSL for-each-group instruction with attribute "
@@ -1315,11 +1507,11 @@ public class ElemForEachGroup extends ElemTemplateElement
 	     
 	     Object currGroupingKeyValue = groupingKeyValue;
 	     
-	     List<Integer> group = null;
+	     //List<Integer> group = null;
 	     
 	     if (idx == 0) {
 	         // This is the first XDM node being iterated, within this loop
-	         group = new ArrayList<Integer>();
+	    	 List<Integer> group = new ArrayList<Integer>();
 	         group.add(nextNode);
 	         GroupingKeyAndGroupPair groupingKeyAndGroupPair = new GroupingKeyAndGroupPair(currGroupingKeyValue, group);
 	         xslForEachGroupAdjacentList.add(groupingKeyAndGroupPair);
@@ -1329,11 +1521,13 @@ public class ElemForEachGroup extends ElemTemplateElement
 	        if (currGroupingKeyValue.equals(prevGroupingKeyValue)) {
 	        	int currResultSize = xslForEachGroupAdjacentList.size();
 	        	GroupingKeyAndGroupPair groupingKeyAndGroupPair = xslForEachGroupAdjacentList.get(currResultSize - 1);
-	        	group = groupingKeyAndGroupPair.getGroupNodesDtmHandles(); 
+	        	List<Integer> group = groupingKeyAndGroupPair.getGroupNodeDtmHandles(); 
 	            group.add(nextNode);
+	            groupingKeyAndGroupPair.setGroupNodesDtmHandles(group);
+	            xslForEachGroupAdjacentList.set(currResultSize - 1, groupingKeyAndGroupPair);
 	        }
 	        else {
-	            group = new ArrayList<Integer>();
+	        	List<Integer> group = new ArrayList<Integer>();
 	            group.add(nextNode);
 	            GroupingKeyAndGroupPair groupingKeyAndGroupPair = new GroupingKeyAndGroupPair(currGroupingKeyValue, group);
 	            xslForEachGroupAdjacentList.add(groupingKeyAndGroupPair);
@@ -1448,7 +1642,7 @@ public class ElemForEachGroup extends ElemTemplateElement
 	  
 	  String collation = null;
 	  if (m_collationUri != null) {
-	     collation = m_collationUri.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
+	      collation = m_collationUri.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
 	  }
       
       if (groupingKeyValue instanceof XString) {
@@ -1525,7 +1719,7 @@ public class ElemForEachGroup extends ElemTemplateElement
     		  collation = XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI;   
     	  }
     	  
-    	  normalizedGroupingKeyValue = new ForEachGroupCompositeGroupingKey(xctxt, (ResultSequence)groupingKeyValue, 
+    	  normalizedGroupingKeyValue = new XslForEachGroupCompositeGroupingKey(xctxt, (ResultSequence)groupingKeyValue, 
     			                                                                                                 collation, m_xpathCollationSupport);
       }
       else {
@@ -1564,6 +1758,14 @@ public class ElemForEachGroup extends ElemTemplateElement
      }
      
      return sourceNodes; 
+  }
+
+  public List<GroupingKeyAndGroupPair> getSortedGroups() {
+	  return m_sortedGroups;
+  }
+
+  public void setSortedGroups(List<GroupingKeyAndGroupPair> sortedGroups) {
+	  this.m_sortedGroups = sortedGroups;
   }
 
 }

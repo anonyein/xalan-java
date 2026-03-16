@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.functions.string;
 
 import org.apache.xml.dtm.DTM;
@@ -46,7 +43,7 @@ public class FuncNormalizeSpace extends FunctionDef1Arg
     }    
 
   /**
-   * Implementation of the function. The function must return
+   * Evaluate the function. The function must return
    * a valid object.
    * 
    * @param xctxt The current execution context.
@@ -80,10 +77,10 @@ public class FuncNormalizeSpace extends FunctionDef1Arg
     throws javax.xml.transform.TransformerException,
            org.xml.sax.SAXException
   {
-    if(Arg0IsNodesetExpr())
+    if (Arg0IsNodesetExpr())
     {
       int node = getArg0AsNode(xctxt);
-      if(DTM.NULL != node)
+      if (DTM.NULL != node)
       {
         DTM dtm = xctxt.getDTM(node);
         dtm.dispatchCharactersEvents(node, handler, true);

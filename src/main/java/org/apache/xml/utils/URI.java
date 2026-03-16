@@ -110,34 +110,34 @@ public class URI implements Serializable
   private static final String USERINFO_CHARACTERS = ";:&=+$,";
 
   /** Stores the scheme (usually the protocol) for this URI.
-   *  @serial */
+   *   */
   private String m_scheme = null;
 
   /** If specified, stores the userinfo for this URI; otherwise null.
-   *  @serial */
+   *   */
   private String m_userinfo = null;
 
   /** If specified, stores the host for this URI; otherwise null.
-   *  @serial */
+   *   */
   private String m_host = null;
 
   /** If specified, stores the port for this URI; otherwise -1.
-   *  @serial */
+   *   */
   private int m_port = -1;
 
   /** If specified, stores the path for this URI; otherwise null.
-   *  @serial */
+   *   */
   private String m_path = null;
 
   /**
    * If specified, stores the query string for this URI; otherwise
    *   null. 
-   * @serial 
+   *  
    */
   private String m_queryString = null;
 
   /** If specified, stores the fragment for this URI; otherwise null.
-   *  @serial */
+   *   */
   private String m_fragment = null;
 
   /** Indicate whether in DEBUG mode          */
@@ -399,7 +399,7 @@ public class URI implements Serializable
       initializeScheme(uriSpec);
       uriSpec = uriSpec.substring(colonIndex+1);
       // This is a fix for XALANJ-2059.
-      if(m_scheme != null && p_base != null)
+      if (m_scheme != null && p_base != null)
       {	  	
         // a) If <uriSpec> starts with a slash (/), it means <uriSpec> is absolute 
         //    and p_base can be ignored.
@@ -415,7 +415,7 @@ public class URI implements Serializable
         // 
         // c) if <p_base> is not hierarchical, it can be ignored.
         //
-        if(uriSpec.startsWith("/") || !m_scheme.equals(p_base.m_scheme) || !p_base.getSchemeSpecificPart().startsWith("/"))
+        if (uriSpec.startsWith("/") || !m_scheme.equals(p_base.m_scheme) || !p_base.getSchemeSpecificPart().startsWith("/"))
         {
           p_base = null;
         }

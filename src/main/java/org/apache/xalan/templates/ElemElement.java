@@ -117,7 +117,7 @@ public class ElemElement extends ElemUse
   }
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
@@ -148,7 +148,7 @@ public class ElemElement extends ElemUse
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -193,9 +193,9 @@ public class ElemElement extends ElemUse
     
     StylesheetRoot.ComposeState cstate = sroot.getComposeState();
     java.util.Vector vnames = cstate.getVariableNames();
-    if(null != m_name_avt)
+    if (null != m_name_avt)
       m_name_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_namespace_avt)
+    if (null != m_namespace_avt)
       m_namespace_avt.fixupVariables(vnames, cstate.getGlobalsSize());
   }
 
@@ -204,7 +204,7 @@ public class ElemElement extends ElemUse
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -531,12 +531,12 @@ public class ElemElement extends ElemUse
    */
   protected void callChildVisitors(XSLTVisitor visitor, boolean callAttrs)
   {
-  	if(callAttrs)
+  	if (callAttrs)
   	{
-  	  if(null != m_name_avt)
+  	  if (null != m_name_avt)
   		m_name_avt.callVisitors(visitor);
   		
-  	  if(null != m_namespace_avt)
+  	  if (null != m_namespace_avt)
   		m_namespace_avt.callVisitors(visitor);
   	}
   		

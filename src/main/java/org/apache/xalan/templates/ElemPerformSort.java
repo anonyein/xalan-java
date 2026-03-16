@@ -26,6 +26,7 @@ import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xml.serializer.SerializationHandler;
@@ -33,9 +34,13 @@ import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XdmAttributeItem;
 import org.xml.sax.SAXException;
+
+import xml.xpath31.processor.types.XSString;
 
 /**
  * Implementation of the XSLT 3.0 xsl:perform-sort instruction.
@@ -54,19 +59,19 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 	private Expression m_selectExpression = null;
 	
 	/**
-	 * Class field to store, XPath expression for subsequent 
+	 * Class field to refer to, XPath expression for subsequent 
 	 * processing.
 	 */
 	private XPath m_xpath = null;
 
 	/**
-	 * This class field, represents the value of "xpath-default-namespace" 
+	 * Class field, that represents the value of "xpath-default-namespace" 
 	 * attribute.
 	 */
 	private String m_xpath_default_namespace = null;
 
 	/**
-	 * This class field, represents the value of "expand-text" 
+	 * Class field, that represents the value of "expand-text" 
 	 * attribute.
 	 */
 	private boolean m_expand_text;
@@ -148,6 +153,11 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 	private Vector m_vars;
 	  
 	private int m_globals_size;
+	
+	/**
+	 * An xdm sequence with items as, namespace node string values.
+	 */
+	public static ResultSequence m_namespace_result_seq = new ResultSequence();
 	
 	/**
 	 * This function is called after everything else has been
@@ -241,7 +251,7 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 	 * Get an int constant identifying the type of element.
 	 * @see org.apache.xalan.templates.Constants
 	 *
-	 * @return The token id for this element
+	 * @return           The token id for this element
 	 */
 	public int getXSLToken()
 	{
@@ -315,8 +325,9 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 
 			if (m_selectExpression != null) {			   			   
 				XObject xObj = m_selectExpression.execute(xctxt);
+				
 				if (xObj instanceof XMLNodeCursorImpl) {
-					XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xObj;
+					XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xObj;										
 					DTMCursorIterator dtmCursorIterator = xmlNodeCursorImpl.asIterator(xctxt, contextNode);
 
 					ElemForEach elemForEach = new ElemForEach();
@@ -324,8 +335,48 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 					final Vector sortKeys = (m_sortElems == null) ? null 
 							                                          : transformer.processSortKeys(this, contextNode);
 
-					dtmCursorIterator = elemForEach.sortNodes(xctxt, sortKeys, dtmCursorIterator);
-					ElemCopyOf.copyOfActionOnNodeSet((XMLNodeCursorImpl)dtmCursorIterator, transformer, handler, xctxt);
+					dtmCursorIterator = elemForEach.sortNodes(xctxt, sortKeys, dtmCursorIterator);										
+					
+					int nextNode = dtmCursorIterator.nextNode();
+					while (nextNode != DTM.NULL) {
+					   DTM dtm = xctxt.getDTM(nextNode);
+					   if (dtm.getNodeType(nextNode) == DTM.NAMESPACE_NODE) {
+						  String nodeValue = dtm.getNodeValue(nextNode);
+						  m_namespace_result_seq.add(new XSString(nodeValue));
+					   }
+					   else {
+						  XMLNodeCursorImpl node1 = new XMLNodeCursorImpl(nextNode, xctxt);
+						  ElemCopyOf.copyOfActionOnNodeSet(node1, transformer, handler, xctxt);
+					   }
+					   
+					   nextNode = dtmCursorIterator.nextNode(); 
+					}
+				}
+				else if (xObj instanceof ResultSequence) {
+					ElemForEach elemForEach = new ElemForEach();
+					
+					final Vector sortKeys = (m_sortElems == null) ? null 
+                                                                      : transformer.processSortKeys(this, contextNode);
+					ResultSequence rSeq = (ResultSequence)xObj;
+					rSeq = elemForEach.sortXdmSequence(xctxt, sortKeys, rSeq);
+					
+					ElemTemplateElement elemTemplateParent = getParentElem();
+					boolean isXslNamedTemplateChild = false;
+					if ((elemTemplateParent instanceof ElemTemplate) && !(elemTemplateParent instanceof ElemFunction)) {
+					   ElemTemplate elemTemplate = (ElemTemplate)elemTemplateParent;
+					   if ((elemTemplate.getMatch() == null) && (elemTemplate.getName() != null)) {
+						   isXslNamedTemplateChild = true;
+					   }
+					}
+					
+					if (((elemTemplateParent instanceof ElemVariable) || isXslNamedTemplateChild 
+							                                          || (elemTemplateParent instanceof ElemFunction)) 
+							                                                                                      && !(rSeq.item(0) instanceof XdmAttributeItem)) {												
+						XslTransformData.m_xsl_perform_sort_resultSeq = rSeq;
+					}
+					else {
+					    ElemCopyOf.copyOfActionOnResultSequence(rSeq, transformer, handler, xctxt, false, this);
+					}
 				}
 			}
 			else {
@@ -350,11 +401,15 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 						                                            : transformer.processSortKeys(this, contextNode);
 
 				dtmCursorIterator = elemForEach.sortNodes(xctxt, sortKeys, dtmCursorIterator);
+				
 				ElemCopyOf.copyOfActionOnNodeSet((XMLNodeCursorImpl)dtmCursorIterator, transformer, handler, xctxt);
 			}
 		}
 		catch (SAXException ex) {
-			// no op
+			throw new TransformerException(ex.getMessage(), srcLocator);
+		}
+		catch (TransformerException ex) {
+			throw new TransformerException(ex.getMessage(), srcLocator);
 		}
 		finally
 		{

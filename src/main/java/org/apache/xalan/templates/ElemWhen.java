@@ -41,7 +41,7 @@ public class ElemWhen extends ElemTemplateElement
   /**
    * Each xsl:when element has a single attribute, test,
    * which specifies an expression.
-   * @serial
+   * 
    */
   private XPath m_test;
 
@@ -101,7 +101,7 @@ public class ElemWhen extends ElemTemplateElement
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -183,7 +183,7 @@ public class ElemWhen extends ElemTemplateElement
    */
   protected void callChildVisitors(XSLTVisitor visitor, boolean callAttrs)
   {
-  	if(callAttrs)
+  	if (callAttrs)
   		m_test.getExpression().callVisitors(m_test, visitor);
     super.callChildVisitors(visitor, callAttrs);
   }

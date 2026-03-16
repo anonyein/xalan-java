@@ -40,30 +40,30 @@ public class ElemExtensionCall extends ElemLiteralResult
     static final long serialVersionUID = 3171339708500216920L;
 
   /** The Namespace URI for this extension call element.
-   *  @serial          */
+   *            */
   String m_extns;
 
   /** Language used by extension.
-   *  @serial          */
+   *            */
   String m_lang;
 
   /** URL pointing to extension.
-   *  @serial          */
+   *            */
   String m_srcURL;
 
   /** Source for script.
-   *  @serial          */
+   *            */
   String m_scriptSrc;
 
   /** Declaration for Extension element. 
-   *  @serial          */
+   *            */
   ElemExtensionDecl m_decl = null;
 
   /**
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   *@return The token ID for this element
+   *@return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -241,10 +241,10 @@ public class ElemExtensionCall extends ElemLiteralResult
 	  executeFallbacks(transformer);
 	else
 	{
-          if(e instanceof TransformerException)
+          if (e instanceof TransformerException)
           {
             TransformerException te = (TransformerException)e;
-            if(null == te.getLocator())
+            if (null == te.getLocator())
               te.setLocator(this);
             
             transformer.getErrorListener().fatalError(te);            

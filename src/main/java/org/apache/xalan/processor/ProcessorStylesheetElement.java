@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.processor;
 
 import javax.xml.transform.TransformerConfigurationException;
@@ -31,7 +28,7 @@ import org.xml.sax.Attributes;
 /**
  * TransformerFactory for xsl:stylesheet or xsl:transform markup.
  * @see <a href="http://www.w3.org/TR/xslt#dtd">XSLT DTD</a>
- * @see <a href="http://www.w3.org/TR/xslt#stylesheet-element">stylesheet-element in XSLT Specification</a>
+ * @see <a href="http://www.w3.org/TR/xslt#stylesheet-element">stylesheet-element within XSLT specification</a>
  * 
  * @xsl.usage internal
  */

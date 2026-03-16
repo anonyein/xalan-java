@@ -264,7 +264,7 @@ public abstract class LocPathIterator extends PredicatedNodeTest
     DTM dtm = clone.getDTM(node);
     clone.detach();
 	
-    if(node != DTM.NULL)
+    if (node != DTM.NULL)
     {
       dtm.dispatchCharactersEvents(node, handler, false);
     }
@@ -387,7 +387,7 @@ public abstract class LocPathIterator extends PredicatedNodeTest
     m_currentContextNode = context; // only if top level?
     
     // Yech, shouldn't have to do this.  -sb
-    if(null == m_prefixResolver)
+    if (null == m_prefixResolver)
     	m_prefixResolver = xctxt.getNamespaceContext();
         
     m_lastFetched = DTM.NULL;
@@ -696,7 +696,7 @@ public abstract class LocPathIterator extends PredicatedNodeTest
    */
   public void detach()
   {    
-    if(m_allowDetach)
+    if (m_allowDetach)
     {
       // sb: allow reusing of cached nodes when possible?
       // m_cachedNodes = null;
@@ -907,7 +907,7 @@ public abstract class LocPathIterator extends PredicatedNodeTest
    */
   public final PrefixResolver getPrefixResolver()
   {
-  	if(null == m_prefixResolver)
+  	if (null == m_prefixResolver)
   	{
     	m_prefixResolver = (PrefixResolver)getExpressionOwner();
   	}
@@ -940,7 +940,7 @@ public abstract class LocPathIterator extends PredicatedNodeTest
    */
   public void callVisitors(ExpressionOwner owner, XPathVisitor visitor)
   {
-  	 	if(visitor.visitLocationPath(owner, this))
+  	 	if (visitor.visitLocationPath(owner, this))
   	 	{
   	 		visitor.visitStep(owner, this);
   	 		callPredicateVisitors(visitor);
@@ -972,7 +972,7 @@ public abstract class LocPathIterator extends PredicatedNodeTest
    * Value determined at compile time, indicates that this is an
    * iterator at the top level of the expression, rather than inside
    * a predicate.
-   * @serial
+   * 
    */
   private boolean m_isTopLevel = false;
 
@@ -1003,7 +1003,7 @@ public abstract class LocPathIterator extends PredicatedNodeTest
   /**
    * Fast access to the current prefix resolver.  It isn't really
    * clear that this is needed.
-   * @serial
+   * 
    */
   private PrefixResolver m_prefixResolver;
 
@@ -1040,7 +1040,7 @@ public abstract class LocPathIterator extends PredicatedNodeTest
 //   * The analysis pattern built by the WalkerFactory.
 //   * TODO: Move to LocPathIterator.
 //   * @see org.apache.xpath.axes.WalkerFactory
-//   * @serial
+//   * 
 //   */
 //  protected int m_analysis = 0x00000000;
   /**

@@ -40,13 +40,13 @@ import org.apache.xpath.objects.XObject;
  */
 public class FuncKey extends Function2Args
 {
-    static final long serialVersionUID = 9089293100115347340L;
+  static final long serialVersionUID = 9089293100115347340L;
 
   /** Dummy value to be used in usedrefs hashtable           */
-  static private Boolean ISTRUE = new Boolean(true);
+  static private Boolean ISTRUE = Boolean.TRUE;
 
   /**
-   * Execute the function.  The function must return
+   * Evaluate the function. The function must return
    * a valid object.
    * @param xctxt The current execution context.
    * @return A valid XObject.
@@ -76,12 +76,12 @@ public class FuncKey extends Function2Args
     KeyManager kmgr = transformer.getKeyManager();
     
     // Don't bother with nodeset logic if the thing is only one node.
-    if(argIsNodeSetDTM)
+    if (argIsNodeSetDTM)
     {
     	XMLNodeCursorImpl ns = (XMLNodeCursorImpl)arg;
     	ns.setShouldCacheNodes(true);
     	int len = ns.getLength();
-    	if(len <= 1)
+    	if (len <= 1)
     		argIsNodeSetDTM = false;
     }
 

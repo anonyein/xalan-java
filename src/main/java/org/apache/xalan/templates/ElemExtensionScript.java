@@ -39,7 +39,7 @@ public class ElemExtensionScript extends ElemTemplateElement
   }
 
   /** Language used in extension.
-   *  @serial          */
+   *            */
   private String m_lang = null;
 
   /**
@@ -65,7 +65,7 @@ public class ElemExtensionScript extends ElemTemplateElement
   }
 
   /** Extension handler.
-   *  @serial          */
+   *            */
   private String m_src = null;
 
   /**
@@ -94,7 +94,7 @@ public class ElemExtensionScript extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element 
+   * @return           The token id for this element 
    */
   public int getXSLToken()
   {

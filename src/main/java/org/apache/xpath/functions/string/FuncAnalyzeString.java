@@ -29,7 +29,7 @@ import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.templates.Constants;
 import org.apache.xml.dtm.DTMManager;
 import org.apache.xpath.XPathContext;
-import org.apache.xpath.compiler.FunctionTable;
+import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.functions.FunctionMultiArgs;
 import org.apache.xpath.functions.RegexEvaluationSupport;
 import org.apache.xpath.functions.WrongNumberArgsException;
@@ -55,6 +55,8 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
 
 	private static final long serialVersionUID = -1559008263985308212L;
 	
+	private static final String FUNCTION_NAME = "analyze-string()";
+	
 	/**
 	 * Class constructor.
 	 */
@@ -69,7 +71,7 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
     private int fNumOfArgs = 0;
     
     /**
-     * Implementation of the function. The function must return a valid object.
+     * Evaluate the function. The function must return a valid object.
      * 
      * @param xctxt The current execution context.
      * @return A valid XObject.
@@ -126,14 +128,25 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
         
         Document document = createEmptyXmlDom(srcLocator);
         
-        Element analyzeStrResultElem = document.createElementNS(FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI, 
-        		                                                                                        "analyze-string-result");
+        Element analyzeStrResultElem = document.createElementNS(XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI, 
+        		                                                                                               "analyze-string-result");
         document.appendChild(analyzeStrResultElem);
         
         if (strToBeAnalyzed.length() > 0) {
-        	Matcher regexMatcher = RegexEvaluationSupport.compileAndExecute(
-        			                                    RegexEvaluationSupport.transformRegexStrForSubtractionOp(regexStr), 
-        			                                    flagsStr, strToBeAnalyzed);
+        	Matcher regexMatcher = null;
+        	
+        	try {
+        		regexMatcher = RegexEvaluationSupport.compileAndExecute(RegexEvaluationSupport.transformRegexStrForSubtractionOp(regexStr), 
+        				                                                                                                                flagsStr, strToBeAnalyzed);
+        	}
+        	catch (Exception ex) {        		        		
+                String errMesg = XSLMessages.createXPATHMessage(XPATHErrorResources.ER_INVALID_REGEX, new Object[]{ FUNCTION_NAME });        		
+        		
+        		String mesg1 = ex.getMessage();
+        		errMesg = (mesg1 != null) ? (errMesg + " " + mesg1) : errMesg;  
+        		
+        		throw new javax.xml.transform.TransformerException(errMesg, srcLocator);
+        	}
 
         	List<RegexMatchInfo> regexMatchInfoList = new ArrayList<RegexMatchInfo>();
 
@@ -250,7 +263,7 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
     	 * Class constructor.
     	 */
     	public RegexMatchInfo() {
-    	    // NO OP
+    	    // no op
     	}
 
 		public int getStartIdx() {
@@ -300,7 +313,7 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
 	 */
 	private void createNonMatchNodeToResult(Document document, Element analyzeStrResultElem, 
 			                                String nonMatchStr) {
-		Element nonMatchElem = document.createElementNS(FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI, "non-match");
+		Element nonMatchElem = document.createElementNS(XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI, "non-match");
 		Text txtNode2 = document.createTextNode(nonMatchStr);
 		nonMatchElem.appendChild(txtNode2);
 		analyzeStrResultElem.appendChild(nonMatchElem);
@@ -317,14 +330,14 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
 	 */
 	private void createMatchNodeToResult(Document document, Element analyzeStrResultElem, 
 			                             String subsequenceStr, String regexStr) {
-		Element matchElem = document.createElementNS(FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI, "match");		
+		Element matchElem = document.createElementNS(XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI, "match");		
 		Pattern regexSubsequencePattern = Pattern.compile(regexStr);
 		Matcher regexSubsequenceMatcher = regexSubsequencePattern.matcher(subsequenceStr);
 		int grpCount = regexSubsequenceMatcher.groupCount();
 		if (grpCount > 0) {
 		   if (regexSubsequenceMatcher.matches()) {
 			   for (int idx = 0; idx < grpCount; idx++) {			  
-				  Element grpElem = document.createElementNS(FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI, "group");
+				  Element grpElem = document.createElementNS(XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI, "group");
 				  grpElem.setAttribute("nr", String.valueOf(idx+1));
 				  String grpStrValue = regexSubsequenceMatcher.group(idx+1);
 				  Text grpTxtNode = document.createTextNode(grpStrValue);

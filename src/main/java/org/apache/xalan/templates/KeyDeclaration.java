@@ -50,7 +50,7 @@ public class KeyDeclaration extends ElemTemplateElement
 
   /**
    * The "name" property.
-   * @serial
+   * 
    */
   private QName m_name;
 
@@ -93,7 +93,7 @@ public class KeyDeclaration extends ElemTemplateElement
 
   /**
    * The "match" attribute.
-   * @serial
+   * 
    */
   private XPath m_matchPattern = null;
 
@@ -127,7 +127,7 @@ public class KeyDeclaration extends ElemTemplateElement
 
   /**
    * The "use" attribute.
-   * @serial
+   * 
    */
   private XPath m_use;
 
@@ -161,7 +161,7 @@ public class KeyDeclaration extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -179,9 +179,9 @@ public class KeyDeclaration extends ElemTemplateElement
   {
     super.compose(sroot);
     java.util.Vector vnames = sroot.getComposeState().getVariableNames();
-    if(null != m_matchPattern)
+    if (null != m_matchPattern)
       m_matchPattern.fixupVariables(vnames, sroot.getComposeState().getGlobalsSize());
-    if(null != m_use)
+    if (null != m_use)
       m_use.fixupVariables(vnames, sroot.getComposeState().getGlobalsSize());
   }
 

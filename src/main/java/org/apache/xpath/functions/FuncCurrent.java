@@ -47,7 +47,7 @@ public class FuncCurrent extends Function
     }
 
   /**
-   * Implementation of the function. The function must return
+   * Evaluate the function. The function must return
    * a valid object.
    * 
    * @param xctxt The current execution context.
@@ -94,7 +94,7 @@ public class FuncCurrent extends Function
 				  }
 			  }
 		  }
-		  else if(subContextList instanceof StepPattern) {        	         	 
+		  else if (subContextList instanceof StepPattern) {        	         	 
 			  throw new RuntimeException(XSLMessages.createMessage(XSLTErrorResources.ER_PROCESSOR_ERROR, null));
 
 		  }

@@ -64,22 +64,26 @@ import org.apache.xalan.templates.ElemCatch;
 import org.apache.xalan.templates.ElemCharacterMap;
 import org.apache.xalan.templates.ElemChoose;
 import org.apache.xalan.templates.ElemComment;
+import org.apache.xalan.templates.ElemContextItem;
 import org.apache.xalan.templates.ElemCopy;
 import org.apache.xalan.templates.ElemCopyOf;
 import org.apache.xalan.templates.ElemElement;
 import org.apache.xalan.templates.ElemForEach;
 import org.apache.xalan.templates.ElemForEachGroup;
 import org.apache.xalan.templates.ElemFunction;
+import org.apache.xalan.templates.ElemGlobalContextItem;
 import org.apache.xalan.templates.ElemIf;
 import org.apache.xalan.templates.ElemIterate;
 import org.apache.xalan.templates.ElemLiteralResult;
 import org.apache.xalan.templates.ElemMatchingSubstring;
 import org.apache.xalan.templates.ElemMessage;
+import org.apache.xalan.templates.ElemMode;
 import org.apache.xalan.templates.ElemNonMatchingSubstring;
 import org.apache.xalan.templates.ElemNumber;
 import org.apache.xalan.templates.ElemOtherwise;
 import org.apache.xalan.templates.ElemOutputCharacter;
 import org.apache.xalan.templates.ElemPI;
+import org.apache.xalan.templates.ElemParam;
 import org.apache.xalan.templates.ElemPerformSort;
 import org.apache.xalan.templates.ElemSequence;
 import org.apache.xalan.templates.ElemSort;
@@ -129,7 +133,7 @@ import org.apache.xpath.ExtensionsProvider;
 import org.apache.xpath.VariableStack;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
-import org.apache.xpath.compiler.FunctionTable;
+import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.compiler.SharedLexerState;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
 import org.apache.xpath.objects.ResultSequence;
@@ -159,14 +163,14 @@ import xml.xpath31.processor.types.XSString;
  * 
  * @xsl.usage advanced
  */
-public class TransformerImpl extends Transformer
-        implements Runnable, DTMWSFilter, ExtensionsProvider, org.apache.xml.serializer.SerializerTrace
+public class TransformerImpl extends Transformer implements Runnable, DTMWSFilter, ExtensionsProvider, 
+                                                                                                 org.apache.xml.serializer.SerializerTrace
 {
 
   // Synch object to gaurd against setting values from an 
   // XML TrAX interface or reentry while the transform is going on.
 
-  private Boolean m_reentryGuard = new Boolean(true);
+  private Boolean m_reentryGuard = Boolean.TRUE;
 
   /**
    * This is null unless we own the stream.
@@ -525,6 +529,8 @@ public class TransformerImpl extends Transformer
     if (stylesheet.isSecureProcessing())
       xPath.setSecureProcessing(true);
     
+    xPath.setBaseURLOfSource(m_urlOfSource);
+    
     setXPathContext(xPath);
     getXPathContext().setNamespaceContext(stylesheet);    
     m_stackGuard = new StackGuard(this);    
@@ -561,7 +567,7 @@ public class TransformerImpl extends Transformer
     {
       if (sroot.getExtensions() != null)
         //only load extensions if secureProcessing is disabled
-        if(!sroot.isSecureProcessing())
+        if (!sroot.isSecureProcessing())
             m_extensionsTable = new ExtensionsTable(sroot);
     }
     catch (javax.xml.transform.TransformerException te)
@@ -811,6 +817,8 @@ public class TransformerImpl extends Transformer
 	updateXPathDefaultNamespace(m_stylesheetRoot, m_stylesheetRoot.getXpathDefaultNamespace());
 	
 	updateExpandTextAttrValue(m_stylesheetRoot, m_stylesheetRoot.getExpandText());
+	
+	validateXslGlobalContextItemInstr();
 
     try
     {               
@@ -915,11 +923,10 @@ public class TransformerImpl extends Transformer
     		  
     		  this.transformNode(dtm.getDocument());
     	  }
-    	  else if (m_init_template_name != null) {
+    	  else if ((m_init_template_name != null) || (m_init_mode_name != null)) {
     		  /**
-    		   * An XSL stylesheet initial template name is available,
-    		   * but context item is not available. An XSL transformation
-    		   * will be attempted with an absent focus.
+    		   * An XSL stylesheet 'initial template' or 'mode' name is 
+    		   * available, but context node is not available.
     		   */
     		  this.transformNode(DTM.NULL);
     	  }
@@ -1079,6 +1086,33 @@ public class TransformerImpl extends Transformer
     }
   }
 
+  /**
+   * Method definition, to do few static validations for 
+   * xsl:global-context-item instruction.
+   * 
+   * @throws TransformerException
+   */
+  private void validateXslGlobalContextItemInstr() throws TransformerException {
+	
+	  ElemTemplateElement elemTemplateElement = m_stylesheetRoot.getFirstChildElem();
+
+	  while (elemTemplateElement != null) {
+		  if (elemTemplateElement instanceof ElemGlobalContextItem) {
+			  ElemGlobalContextItem elemGlobalContextItem = (ElemGlobalContextItem)elemTemplateElement;			  			  			  			  
+			  try {
+				  elemGlobalContextItem.execute(this);
+			  }
+			  catch (TransformerException ex) {
+				  throw new TransformerException(ex.getMessage(), elemGlobalContextItem);    
+			  }
+
+			  break;
+		  }
+
+		  elemTemplateElement = elemTemplateElement.getNextSiblingElem();
+	  }
+  }
+
   private void fatalError(Throwable throwable) throws TransformerException
   {
 	  if (throwable instanceof org.xml.sax.SAXParseException)
@@ -1099,15 +1133,13 @@ public class TransformerImpl extends Transformer
   }
 
   /**
-   * Get the base URL of the source.
+   * Set the base URL of the source.
    *
-   *
-   * NEEDSDOC @param base
-   * @return The base URL of the source tree, or null.
+   * @param baseUrl           Represents base URL of the source tree
    */
-  public void setBaseURLOfSource(String base)
+  public void setBaseURLOfSource(String baseUrl)
   {
-    m_urlOfSource = base;
+    m_urlOfSource = baseUrl;
   }
 
   /**
@@ -1261,22 +1293,19 @@ public class TransformerImpl extends Transformer
           throws IllegalArgumentException
   {
 
-    synchronized (m_reentryGuard)
-    {
+    synchronized (m_reentryGuard) {
+    	// Get the output format that was set by the user, otherwise get the 
+    	// output format from the stylesheet.
+    	if (m_outputFormat == null)
+    	{
+    		m_outputFormat = (OutputProperties) getStylesheet().getOutputComposed().clone();
+    	}
 
-      // Get the output format that was set by the user, otherwise get the 
-      // output format from the stylesheet.
-      if (null == m_outputFormat)
-      {
-        m_outputFormat =
-          (OutputProperties) getStylesheet().getOutputComposed().clone();
-      }
+    	if (!OutputProperties.isLegalPropertyKey(name))
+    		throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_OUTPUT_PROPERTY_NOT_RECOGNIZED, new Object[]{name})); //"output property not recognized: "
+    	//+ name);
 
-      if (!OutputProperties.isLegalPropertyKey(name))
-        throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_OUTPUT_PROPERTY_NOT_RECOGNIZED, new Object[]{name})); //"output property not recognized: "
-                                           //+ name);
-
-      m_outputFormat.setProperty(name, value);
+    	m_outputFormat.setProperty(name, value);
     }
   }
 
@@ -1298,34 +1327,31 @@ public class TransformerImpl extends Transformer
    * @throws IllegalArgumentException if any of the argument keys are not
    * recognized and are not namespace qualified.   
    */
-  public void setOutputProperties(Properties oformat)
-  		throws IllegalArgumentException
+  public void setOutputProperties(Properties oformat) throws IllegalArgumentException
   {
 
-    synchronized (m_reentryGuard)
-    {
-      if (null != oformat)
-      {
+    synchronized (m_reentryGuard) {    	
+    	if (oformat != null)
+    	{
+    		// See if an *explicit* method was set
+    		String method = (String) oformat.get(OutputKeys.METHOD);
 
-        // See if an *explicit* method was set.
-        String method = (String) oformat.get(OutputKeys.METHOD);
+    		if (null != method)
+    			m_outputFormat = new OutputProperties(method);
+    		else if (m_outputFormat==null)
+    			m_outputFormat = new OutputProperties();
 
-        if (null != method)
-          m_outputFormat = new OutputProperties(method);
-        else if(m_outputFormat==null)
-          m_outputFormat = new OutputProperties();
-
-        m_outputFormat.copyFrom(oformat);
-        // copyFrom does not set properties that have been already set, so 
-        // this must be called after, which is a bit in the reverse from 
-        // what one might think.
-        m_outputFormat.copyFrom(m_stylesheetRoot.getOutputProperties());
-      }
-      else {
-        // if oformat is null JAXP says that any props previously set are removed
-        // and we are to revert back to those in the templates object (i.e. Stylesheet).
-        m_outputFormat = null;
-      }
+    		m_outputFormat.copyFrom(oformat);
+    		// copyFrom does not set properties that have been already set, so 
+    		// this must be called after, which is a bit in the reverse from 
+    		// what one might think.
+    		m_outputFormat.copyFrom(m_stylesheetRoot.getOutputProperties());
+    	}
+    	else {
+    		// if oformat is null JAXP says that any props previously set are removed
+    		// and we are to revert back to those in the templates object (i.e. Stylesheet).
+    		m_outputFormat = null;
+    	}
     }
   }
 
@@ -1571,12 +1597,12 @@ public class TransformerImpl extends Transformer
 	  
     synchronized (m_reentryGuard)
     {
-      SerializationHandler xoh = createSerializationHandler(outputTarget);
-      this.setSerializationHandler(xoh);        
+    	SerializationHandler xoh = createSerializationHandler(outputTarget);
+    	this.setSerializationHandler(xoh);        
 
-      m_outputTarget = outputTarget;
+    	m_outputTarget = outputTarget;
 
-      transform(xmlSource, shouldRelease);
+    	transform(xmlSource, shouldRelease);
     }
   }
 
@@ -1680,10 +1706,10 @@ public class TransformerImpl extends Transformer
         // an endDocument.
         
         // SAXSourceLocator
-        while(se instanceof org.apache.xml.utils.WrappedRuntimeException)
+        while (se instanceof org.apache.xml.utils.WrappedRuntimeException)
         {
           Exception e = ((org.apache.xml.utils.WrappedRuntimeException)se).getException();
-          if(null != e)
+          if (null != e)
             se = e;
         }
         
@@ -1691,9 +1717,9 @@ public class TransformerImpl extends Transformer
         {
           try
           {
-            if(se instanceof org.xml.sax.SAXParseException)
+            if (se instanceof org.xml.sax.SAXParseException)
               m_serializationHandler.fatalError((org.xml.sax.SAXParseException)se);
-            else if(se instanceof TransformerException)
+            else if (se instanceof TransformerException)
             {
               TransformerException te = ((TransformerException)se);
               SAXSourceLocator sl = new SAXSourceLocator( te.getLocator() );
@@ -1707,11 +1733,11 @@ public class TransformerImpl extends Transformer
           catch (Exception e){}
         }        
         
-        if(se instanceof TransformerException)
+        if (se instanceof TransformerException)
         {
           m_errorHandler.fatalError((TransformerException)se);
         }
-        else if(se instanceof org.xml.sax.SAXParseException)
+        else if (se instanceof org.xml.sax.SAXParseException)
         {
           m_errorHandler.fatalError(new TransformerException(se.getMessage(), 
                       new SAXSourceLocator((org.xml.sax.SAXParseException)se), 
@@ -2061,11 +2087,11 @@ public class TransformerImpl extends Transformer
 
     synchronized (m_reentryGuard)
     {
-      VariableStack varstack = new VariableStack();
+    	VariableStack varstack = new VariableStack();
 
-      m_xcontext.setVarStack(varstack);
+    	m_xcontext.setVarStack(varstack);
 
-      m_userParams = null;
+    	m_userParams = null;
     }
   }
 
@@ -2108,7 +2134,7 @@ public class TransformerImpl extends Transformer
       XObject xobj = new XUnresolvedVariable(v, contextNode, this,
                                      vs.getStackFrame(), 0, true);
       
-      if(null == vs.elementAt(i))                               
+      if (null == vs.elementAt(i))                               
         vs.setGlobalVariable(i, xobj);
     }
 
@@ -2125,7 +2151,7 @@ public class TransformerImpl extends Transformer
 
     synchronized (m_reentryGuard)
     {
-      m_xcontext.getSourceTreeManager().setURIResolver(resolver);
+    	m_xcontext.getSourceTreeManager().setURIResolver(resolver);
     }
   }
 
@@ -2408,9 +2434,9 @@ public class TransformerImpl extends Transformer
           throws TransformerException
   {
     ElemTemplateElement firstChild = elem.getFirstChildElem();
-    if(null == firstChild)
+    if (null == firstChild)
       return "";
-    if(elem.hasTextLitOnly() && m_optimizer)
+    if (elem.hasTextLitOnly() && m_optimizer)
     {
       return ((ElemTextLiteral)firstChild).getNodeValue();
     }
@@ -2512,7 +2538,7 @@ public class TransformerImpl extends Transformer
                                 : xslInstruction.getXSLToken()
                                   == Constants.ELEMNAME_APPLY_IMPORTS);        
 
-    if (null == template || isApplyImports)
+    if ((template == null) || isApplyImports)
     {
       int maxImportLevel, endImportLevel=0;
 
@@ -2543,6 +2569,8 @@ public class TransformerImpl extends Transformer
         // Find the XSL template that is the best match for the 
         // element.        
         XPathContext xctxt = m_xcontext;
+        
+        final int sourceNode = xctxt.getCurrentNode();
 
         try
         {
@@ -2553,17 +2581,35 @@ public class TransformerImpl extends Transformer
         	 if ((Constants.XSL_INITIAL_TEMPLATE_DEFAULT_NAME).equals(initTemplateName)) {
         		 initTemplateQName = new QName(Constants.S_XSLNAMESPACEURL, "initial-template"); 
         	 }
-        	 else {
-        		 initTemplateQName = new QName(initTemplateName);  
+        	 else {        		         		 
+        		 int a = initTemplateName.indexOf('{');
+        		 int b = initTemplateName.indexOf('}');
+        		 if ((a != -1) && (b != -1) && (a < b)) {
+        			String nsUri = initTemplateName.substring(a + 1, b);
+        			String prefix = initTemplateName.substring(b + 1);
+        			initTemplateQName = new QName(nsUri, prefix);
+        		 }
+        		 else {
+        			initTemplateQName = new QName(initTemplateName); 
+        		 }
         	 }
         	 
              template = m_stylesheetRoot.getTemplateComposed(initTemplateQName);
              
-             if (template != null) {
+             if (template != null) {            	             	             	 
             	 m_xcontext.pushNamespaceContext(template);
             	 pushElemTemplateElement(template);
                  m_xcontext.pushCurrentNode(child);
                  pushPairCurrentMatched(template, child);
+                                                                  	                	
+                 if (((Stylesheet)m_stylesheetRoot).isXslPackage()) {
+                	 String xslTemplateVisibility = template.getVisibility();
+                	 if (!Constants.ATTRVAL_PUBLIC.equals(xslTemplateVisibility)) {
+                		 throw new TransformerException("XTDE0040 : An XSL stylesheet initial template attribute \"visibility\"'s "
+                		 		                                                                             + "value is not 'public'. This must be "
+                		 		                                                                             + "true for XSL template declarations within XSL 'package' element.", template); 
+                	 }
+                 }                                                  
                  
                  DTMCursorIterator cnl = new org.apache.xpath.NodeSetDTM(child, m_xcontext.getDTMManager());
                  m_xcontext.pushContextNodeList(cnl);
@@ -2571,21 +2617,49 @@ public class TransformerImpl extends Transformer
                  m_xcontext.setSAXLocator(template);
            	     m_xcontext.getVarStack().link(template.m_frameSize);
            	     
-           	     if (XslTransformData.m_xsl_message_rSeq == null) {
-           	         // An XSL stylesheet doesn't contain xsl:message
-           		     // instruction.
-           	    	 executeChildTemplates(template, true);
+           	     XPath useWhenExpr = template.getUseWhen();           	     
+           	     if (useWhenExpr != null) { 
+           	    	 boolean result1 = ((ElemTemplateElement)template).isXPathExpressionStatic(useWhenExpr.getExpression());
+           	    	 if (result1) {
+           	    		 XObject xObj = useWhenExpr.execute(xctxt, sourceNode, xctxt.getNamespaceContext());           	    	 
+           	    		 if (xObj.bool()) {
+           	    			 if (XslTransformData.m_xsl_message_rSeq == null) {
+           	    				 // An XSL stylesheet doesn't contain xsl:message
+           	    				 // instruction.
+           	    				 executeChildTemplates(template, true);
+           	    			 }
+           	    			 else { 
+           	    				 // An XSL stylesheet contains one or more xsl:message
+           	    				 // instructions.
+           	    				 int rootNodeHandleOfRtf = this.transformToRTF(template);
+           	    				 NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, xctxt, template)).convertToNodeset();    	  
+           	    				 m_xsl_transform_result_with_message = new XNodeSetForDOM(nodeList, xctxt);
+           	    			 } 
+           	    		 }
+           	    	 }
+           	    	 else {
+           	    		 throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+           	    				 																									+ "used within XPath static expression.", template);
+           	    	 }
            	     }
-           	     else { 
-           	         // An XSL stylesheet contains one or more xsl:message
-           		     // instructions.
-           	    	 int rootNodeHandleOfRtf = this.transformToRTF(template);
-           	    	 NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, xctxt, template)).convertToNodeset();    	  
-           	    	 m_xsl_transform_result_with_message = new XNodeSetForDOM(nodeList, xctxt);
+           	     else {
+           	    	 if (XslTransformData.m_xsl_message_rSeq == null) {
+           	    		 // An XSL stylesheet doesn't contain xsl:message
+           	    		 // instruction.
+           	    		 executeChildTemplates(template, true);
+           	    	 }
+           	    	 else { 
+           	    		 // An XSL stylesheet contains one or more xsl:message
+           	    		 // instructions.
+           	    		 int rootNodeHandleOfRtf = this.transformToRTF(template);
+           	    		 NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, xctxt, template)).convertToNodeset();    	  
+           	    		 m_xsl_transform_result_with_message = new XNodeSetForDOM(nodeList, xctxt);
+           	    	 }
            	     }
-
+           	     
            	     if (m_debug)
            		    getTraceManager().emitTraceEndEvent(template);
+           	     
            	     
            	     return true;
              }
@@ -2596,7 +2670,16 @@ public class TransformerImpl extends Transformer
           else {
         	  QName mode = null;        	  
         	  if (m_init_mode_name != null) {
-        		 mode = new QName(m_init_mode_name);        		         		 
+        		 mode = new QName(m_init_mode_name);
+        		 Stylesheet stylesheet = (Stylesheet)m_stylesheetRoot;
+        		 if (stylesheet.isXslPackage() && !Constants.ATTRVAL_UNNAMED_PREFIX.equals(m_init_mode_name)) {
+        		    ElemMode elemMode = stylesheet.getElemMode(mode);
+        		    String modeVisibility = elemMode.getVisibility();
+        		    if (!Constants.ATTRVAL_PUBLIC.equals(modeVisibility)) {
+        		       throw new TransformerException("XTDE0045 : An XSL stylesheet, initial mode must be 'public' "
+        		       		                                                                          + "within XSL stylesheet 'package' element.", elemMode);
+        		    }
+        		 }
         	  }
         	  else {
         	     mode = this.getMode();
@@ -2662,6 +2745,35 @@ public class TransformerImpl extends Transformer
       m_xcontext.pushCurrentNode(child);
       pushPairCurrentMatched(template, child);
       
+      String xslTemplateVisibility = template.getVisibility(); 
+      
+      if (xslTemplateVisibility != null) {
+    	  // Ref : XSLT 3.0 specification, section 6.1 Defining Templates
+    	  if (Constants.ATTRVAL_ABSTRACT.equals(xslTemplateVisibility)) {
+        	  if (template.getMatch() != null) {
+        		 throw new TransformerException("XTTE0505 : An XSL template with attribute \"visibility\"'s value as "
+        		 		                                                                             + "'abstract' cannot have an attribute 'match'.", template); 
+        	  }
+        	  
+        	  ElemTemplateElement elemTemplateElement = template.getFirstChildElem();
+        	  while (elemTemplateElement != null) {
+        		 if (!((elemTemplateElement instanceof ElemContextItem) || (elemTemplateElement instanceof ElemParam))) {
+        			 throw new TransformerException("XTTE0505 : An XSL template with attribute \"visibility\"'s value as "
+        			 		                                                                        + "'abstract' cannot have any XSL child elements other "
+        			 		                                                                        + "that 'context-item' and 'param'.", template); 
+        		 }
+        		 
+        		 elemTemplateElement = elemTemplateElement.getNextSiblingElem();
+        	  }
+          }
+    	  else if (!(Constants.ATTRVAL_PUBLIC.equals(xslTemplateVisibility) || Constants.ATTRVAL_PRIVATE.equals(xslTemplateVisibility) 
+											    		                    || Constants.ATTRVAL_FINAL.equals(xslTemplateVisibility))) {    	  
+    	      throw new TransformerException("XTSE0020 : An XSL stylesheet template attribute \"visibility\"'s value "
+																					    			  + "is not one of, 'public', "
+																					    			  + "'private', 'final', 'abstract'.", template);
+    	  }
+      }            
+      
       if (!isApplyImports) {
           DTMCursorIterator cnl = new org.apache.xpath.NodeSetDTM(child, m_xcontext.getDTMManager());
           m_xcontext.pushContextNodeList(cnl);
@@ -2699,17 +2811,46 @@ public class TransformerImpl extends Transformer
     	  m_xcontext.setSAXLocator(template);
     	  m_xcontext.getVarStack().link(template.m_frameSize);
     	  
-    	  if (XslTransformData.m_xsl_message_rSeq == null) {
-    		  // An XSL stylesheet doesn't contain xsl:message
-    		  // instruction.
-    		  executeChildTemplates(template, true);
+    	  final int sourceNode = m_xcontext.getCurrentNode();
+    	  
+    	  XPath useWhenExpr = template.getUseWhen();    	  
+    	  if (useWhenExpr != null) {
+    		  boolean result1 = ((ElemTemplateElement)template).isXPathExpressionStatic(useWhenExpr.getExpression());
+    		  if (result1) {
+    			  XObject xObj = useWhenExpr.execute(m_xcontext, sourceNode, m_xcontext.getNamespaceContext());    		  
+    			  if (xObj.bool()) {
+    				  if (XslTransformData.m_xsl_message_rSeq == null) {
+    					  // An XSL stylesheet doesn't contain xsl:message
+    					  // instruction.
+    					  executeChildTemplates(template, true);
+    				  }
+    				  else {
+    					  // An XSL stylesheet contains one or more xsl:message
+    					  // instructions.
+    					  int rootNodeHandleOfRtf = this.transformToRTF(template);
+    					  NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, m_xcontext, template)).convertToNodeset();    	  
+    					  m_xsl_transform_result_with_message = new XNodeSetForDOM(nodeList, m_xcontext);
+    				  } 
+    			  }
+    		  }
+    		  else {
+    			  throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                          																										+ "used within XPath static expression.", template);
+    		  }
     	  }
     	  else {
-    		  // An XSL stylesheet contains one or more xsl:message
-    		  // instructions.
-    		  int rootNodeHandleOfRtf = this.transformToRTF(template);
-    		  NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, m_xcontext, template)).convertToNodeset();    	  
-    		  m_xsl_transform_result_with_message = new XNodeSetForDOM(nodeList, m_xcontext);
+    		  if (XslTransformData.m_xsl_message_rSeq == null) {
+    			  // An XSL stylesheet doesn't contain xsl:message
+    			  // instruction.
+    			  executeChildTemplates(template, true);
+    		  }
+    		  else {
+    			  // An XSL stylesheet contains one or more xsl:message
+    			  // instructions.
+    			  int rootNodeHandleOfRtf = this.transformToRTF(template);
+    			  NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, m_xcontext, template)).convertToNodeset();    	  
+    			  m_xsl_transform_result_with_message = new XNodeSetForDOM(nodeList, m_xcontext);
+    		  }
     	  }
 
     	  if (m_debug)
@@ -2718,7 +2859,7 @@ public class TransformerImpl extends Transformer
     }
     catch (org.xml.sax.SAXException se)
     {
-      throw new TransformerException(se);
+    	throw new TransformerException(se);
     }
     finally
     {
@@ -2764,7 +2905,7 @@ public class TransformerImpl extends Transformer
 
     try
     {
-      if((null != mode) && (m_init_mode_name == null)) {
+      if ((null != mode) && (m_init_mode_name == null)) {
         pushMode(mode);
       }
       xctxt.pushCurrentNode(xctxt.getDTMHandleFromNode(context));
@@ -2776,7 +2917,7 @@ public class TransformerImpl extends Transformer
       
       // I'm not sure where or why this was here.  It is clearly in 
       // error though, without a corresponding pushMode().
-      if((null != mode) && (m_init_mode_name == null)) {
+      if ((null != mode) && (m_init_mode_name == null)) {
         popMode();
       }
     }
@@ -3001,18 +3142,18 @@ public class TransformerImpl extends Transformer
 
   /**
    * Get the keys for the xsl:sort elements.
-   * Note: Should this go into ElemForEach?
    *
-   * @param foreach Valid ElemForEach element, not null.
-   * @param sourceNodeContext The current node context in the source tree,
-   * needed to evaluate the Attribute Value Templates.
+   * @param foreachOrPerformSort                Valid non null ElemForEach, or ElemPerformSort object
+   * @param sourceNodeContext                   The current node context in the source tree,
+   *                                            needed to evaluate the Attribute Value Templates.
    *
-   * @return A Vector of NodeSortKeys, or null.
+   * @return A Vector of NodeSortKeys, or null
    *
    * @throws TransformerException
+   * 
    * @xsl.usage advanced
    */
-  public Vector processSortKeys(Object foreach, int sourceNodeContext)
+  public Vector processSortKeys(Object foreachOrPerformSort, int sourceNodeContext)
           throws TransformerException
   {
 
@@ -3020,51 +3161,51 @@ public class TransformerImpl extends Transformer
     XPathContext xctxt = m_xcontext;
     
     int nElems;
-    if (foreach instanceof ElemForEach) {
-       nElems = ((ElemForEach)foreach).getSortElemCount();
+    if (foreachOrPerformSort instanceof ElemForEach) {
+       nElems = ((ElemForEach)foreachOrPerformSort).getSortElemCount();
     }
     else {
-       nElems = ((ElemPerformSort)foreach).getSortElemCount();
+       nElems = ((ElemPerformSort)foreachOrPerformSort).getSortElemCount();
     }
 
     if (nElems > 0)
       keys = new Vector();
 
-    // March backwards, collecting the sort keys
-    for (int i = 0; i < nElems; i++)
+    // Traverse the list of xsl:sort elements
+    for (int idx = 0; idx < nElems; idx++)
     {
       ElemSort sort = null;
       
-      if (foreach instanceof ElemForEach) {
-    	  sort = ((ElemForEach)foreach).getSortElem(i);
+      if (foreachOrPerformSort instanceof ElemForEach) {
+    	  sort = ((ElemForEach)foreachOrPerformSort).getSortElem(idx);
       }
       else {
-    	  sort = ((ElemPerformSort)foreach).getSortElem(i);
+    	  sort = ((ElemPerformSort)foreachOrPerformSort).getSortElem(idx);
       }
       
       if (m_debug)
         getTraceManager().emitTraceEvent(sort);
      
       String langString = null;
-      if (foreach instanceof ElemForEach) {
+      if (foreachOrPerformSort instanceof ElemForEach) {
     	  langString =
     			  (null != sort.getLang())
-    			  ? sort.getLang().evaluate(xctxt, sourceNodeContext, (ElemForEach)foreach) : null;
+    			  ? sort.getLang().evaluate(xctxt, sourceNodeContext, (ElemForEach)foreachOrPerformSort) : null;
       }
       else {
     	  langString =
     			  (null != sort.getLang())
-    			  ? sort.getLang().evaluate(xctxt, sourceNodeContext, (ElemPerformSort)foreach) : null; 
+    			  ? sort.getLang().evaluate(xctxt, sourceNodeContext, (ElemPerformSort)foreachOrPerformSort) : null; 
       }
       
       String dataTypeString = null;
-      if (foreach instanceof ElemForEach) {
+      if (foreachOrPerformSort instanceof ElemForEach) {
     	  dataTypeString = sort.getDataType().evaluate(xctxt,
-    			  sourceNodeContext, (ElemForEach)foreach);
+    			  sourceNodeContext, (ElemForEach)foreachOrPerformSort);
       }
       else {
     	  dataTypeString = sort.getDataType().evaluate(xctxt,
-    			  sourceNodeContext, (ElemPerformSort)foreach);
+    			  sourceNodeContext, (ElemPerformSort)foreachOrPerformSort);
       }
 
       if (dataTypeString.indexOf(":") >= 0)
@@ -3073,13 +3214,13 @@ public class TransformerImpl extends Transformer
       else if (!(dataTypeString.equalsIgnoreCase(Constants.ATTRVAL_DATATYPE_TEXT))
                &&!(dataTypeString.equalsIgnoreCase(
                  Constants.ATTRVAL_DATATYPE_NUMBER))) {
-    	  if (foreach instanceof ElemForEach) {    	  
-    		  ((ElemForEach)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+    	  if (foreachOrPerformSort instanceof ElemForEach) {    	  
+    		  ((ElemForEach)foreachOrPerformSort).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
     				  new Object[]{ Constants.ATTRNAME_DATATYPE,
     						  dataTypeString });
     	  }
     	  else {
-    		  ((ElemPerformSort)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+    		  ((ElemPerformSort)foreachOrPerformSort).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
     				  new Object[]{ Constants.ATTRNAME_DATATYPE,
     						  dataTypeString });
     	  }
@@ -3090,25 +3231,25 @@ public class TransformerImpl extends Transformer
         Constants.ATTRVAL_DATATYPE_NUMBER)) ? true : false;
       
       String orderString = null;
-      if (foreach instanceof ElemForEach) { 
+      if (foreachOrPerformSort instanceof ElemForEach) { 
     	  orderString = sort.getOrder().evaluate(xctxt, sourceNodeContext,
-    			  (ElemForEach)foreach);
+    			  (ElemForEach)foreachOrPerformSort);
       }
       else {
     	  orderString = sort.getOrder().evaluate(xctxt, sourceNodeContext,
-    			  (ElemPerformSort)foreach);
+    			  (ElemPerformSort)foreachOrPerformSort);
       }
 
       if (!(orderString.equalsIgnoreCase(Constants.ATTRVAL_ORDER_ASCENDING))
               &&!(orderString.equalsIgnoreCase(
                 Constants.ATTRVAL_ORDER_DESCENDING))) {
-    	  if (foreach instanceof ElemForEach) {    	  
-    		  ((ElemForEach)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+    	  if (foreachOrPerformSort instanceof ElemForEach) {    	  
+    		  ((ElemForEach)foreachOrPerformSort).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
                       new Object[]{ Constants.ATTRNAME_ORDER,
                                     orderString });
     	  }
     	  else {
-    		  ((ElemPerformSort)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+    		  ((ElemPerformSort)foreachOrPerformSort).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
                       new Object[]{ Constants.ATTRNAME_ORDER,
                                     orderString });
     	  }
@@ -3123,25 +3264,25 @@ public class TransformerImpl extends Transformer
       if (null != caseOrder)
       {
     	  String caseOrderString = null;
-    	  if (foreach instanceof ElemForEach) {
+    	  if (foreachOrPerformSort instanceof ElemForEach) {
     		  caseOrderString = caseOrder.evaluate(xctxt, sourceNodeContext,
-    				  (ElemForEach)foreach);
+    				  (ElemForEach)foreachOrPerformSort);
     	  }
     	  else {
     		  caseOrderString = caseOrder.evaluate(xctxt, sourceNodeContext,
-    				  (ElemPerformSort)foreach);  
+    				  (ElemPerformSort)foreachOrPerformSort);  
     	  }
 
         if (!(caseOrderString.equalsIgnoreCase(Constants.ATTRVAL_CASEORDER_UPPER))
                 &&!(caseOrderString.equalsIgnoreCase(
                   Constants.ATTRVAL_CASEORDER_LOWER))) {
-        	if (foreach instanceof ElemForEach) {
-        		((ElemForEach)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+        	if (foreachOrPerformSort instanceof ElemForEach) {
+        		((ElemForEach)foreachOrPerformSort).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
                         new Object[]{ Constants.ATTRNAME_CASEORDER,
                                       caseOrderString });
         	}
         	else {
-        		((ElemPerformSort)foreach).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
+        		((ElemPerformSort)foreachOrPerformSort).error(XSLTErrorResources.ER_ILLEGAL_ATTRIBUTE_VALUE,
                         new Object[]{ Constants.ATTRNAME_CASEORDER,
                                       caseOrderString });
         	}
@@ -3163,15 +3304,15 @@ public class TransformerImpl extends Transformer
       }
       
       NodeSortKey nodeSortKey = null;
-      if (foreach instanceof ElemForEach) {
+      if (foreachOrPerformSort instanceof ElemForEach) {
     	  nodeSortKey = new NodeSortKey(this, xpathSelect, treatAsNumbers,
-    			  descending, langString, caseOrderUpper, 
-    			  (ElemForEach)foreach);
+    			                        descending, langString, caseOrderUpper, 
+    			                        (ElemForEach)foreachOrPerformSort);
       }
       else {
     	  nodeSortKey = new NodeSortKey(this, xpathSelect, treatAsNumbers,
-    			  descending, langString, caseOrderUpper, 
-    			  (ElemPerformSort)foreach);
+    			                        descending, langString, caseOrderUpper, 
+    			                        (ElemPerformSort)foreachOrPerformSort);
       }
       
       keys.addElement(nodeSortKey);    	  	  
@@ -3301,10 +3442,10 @@ public class TransformerImpl extends Transformer
   {
   	Vector elems = new Vector();
   	int nStackSize = m_currentTemplateElements.size();
-  	for(int i = 0; i < nStackSize; i++)
+  	for (int i = 0; i < nStackSize; i++)
   	{
   		ElemTemplateElement elem = (ElemTemplateElement) m_currentTemplateElements.elementAt(i);
-  		if(null != elem)
+  		if (null != elem)
   		{
   			elems.addElement(elem);
   		}
@@ -3401,10 +3542,10 @@ public class TransformerImpl extends Transformer
   {
   	Vector elems = new Vector();
   	int nStackSize = m_currentTemplateElements.size();
-  	for(int i = 0; i < nStackSize; i++)
+  	for (int i = 0; i < nStackSize; i++)
   	{
   		ElemTemplateElement elem = (ElemTemplateElement) m_currentTemplateElements.elementAt(i);
-  		if(null != elem && (elem.getXSLToken() != Constants.ELEMNAME_TEMPLATE))
+  		if (null != elem && (elem.getXSLToken() != Constants.ELEMNAME_TEMPLATE))
   		{
   			elems.addElement(elem);
   		}
@@ -3839,10 +3980,10 @@ public class TransformerImpl extends Transformer
 
     synchronized (m_reentryGuard)
     {
-      if (listener == null)
-        throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_NULL_ERROR_HANDLER, null)); //"Null error handler");
+    	if (listener == null)
+    		throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_NULL_ERROR_HANDLER, null)); //"Null error handler");
 
-      m_errorHandler = listener;
+    	m_errorHandler = listener;
     }
   }
 
@@ -4134,7 +4275,7 @@ public class TransformerImpl extends Transformer
   {
 
     // Commented out in response to problem reported by Nicola Brown <Nicola.Brown@jacobsrimell.com>
-    //    if(m_reportInPostExceptionFromThread)
+    //    if (m_reportInPostExceptionFromThread)
     //    {
     //      // Consider re-throwing the exception if this flag is set.
     //      e.printStackTrace();
@@ -4148,7 +4289,7 @@ public class TransformerImpl extends Transformer
     //    }
  //   ContentHandler ch = getContentHandler();
 
-    //    if(ch instanceof SourceTreeHandler)
+    //    if (ch instanceof SourceTreeHandler)
     //    {
     //      SourceTreeHandler sth = (SourceTreeHandler) ch;
     //      ((TransformerImpl)(sth.getTransformer())).postExceptionFromThread(e);
@@ -4194,7 +4335,7 @@ public class TransformerImpl extends Transformer
         m_isTransformDone = false;
         
         // Should no longer be needed...
-//          if(m_inputContentHandler instanceof TransformerHandlerImpl)
+//          if (m_inputContentHandler instanceof TransformerHandlerImpl)
 //          {
 //            TransformerHandlerImpl thi = (TransformerHandlerImpl)m_inputContentHandler;
 //            thi.waitForInitialEvents();
@@ -4615,11 +4756,11 @@ public class TransformerImpl extends Transformer
 			String localName = func1.getFunctionName();
 			String namespaceUri = func1.getNamespace();			
 			
-			if ((namespaceUri != null) && !((Constants.S_EXTENSIONS_JAVA_URL).equals(namespaceUri) || (FunctionTable.XPATH_BUILT_IN_FUNCS_NS_URI).equals(namespaceUri) ||
-				                                                                  (FunctionTable.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(namespaceUri) || 
-				                                                                  (FunctionTable.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(namespaceUri) ||
-				                                                                  (FunctionTable.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(namespaceUri) ||
-				                                                                  (XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespaceUri))) {
+			if ((namespaceUri != null) && !((Constants.S_EXTENSIONS_JAVA_URL).equals(namespaceUri) || (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(namespaceUri) ||
+				                                                                                      (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(namespaceUri) || 
+				                                                                                      (XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(namespaceUri) ||
+				                                                                                      (XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(namespaceUri) ||
+				                                                                                      (XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespaceUri))) {
 				int funcArity = (func1.getArgVector()).size();
 				QName qName = new QName(namespaceUri, localName);
 				ElemTemplate elemTemplate = templList.getXslFunction(qName, funcArity);

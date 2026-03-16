@@ -107,7 +107,7 @@ public class ElemPI extends ElemTemplateElement
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -185,6 +185,10 @@ public class ElemPI extends ElemTemplateElement
 	  m_pi_value = piValue; 
   }
   
+  /**
+   * Class field to refer to the fact that, whether to 
+   * serialize an XML pi node to XSL transform's output.
+   */
   private boolean m_is_serialize = true;
   
   public boolean getIsSerialize() {
@@ -223,7 +227,7 @@ public class ElemPI extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for the element
+   * @return The token id for the element
    */
   public int getXSLToken()
   {

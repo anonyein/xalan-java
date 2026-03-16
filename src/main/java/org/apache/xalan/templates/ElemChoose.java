@@ -75,7 +75,7 @@ public class ElemChoose extends ElemTemplateElement
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -107,12 +107,39 @@ public class ElemChoose extends ElemTemplateElement
   public boolean getExpandTextDeclared() {
 	  return m_expand_text_declared;
   }
+  
+  /**
+   * An XPath expression for 'use-when' attribute. 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
+  }
 
   /**
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -150,6 +177,26 @@ public class ElemChoose extends ElemTemplateElement
       transformer.getTraceManager().emitTraceEvent(this);
 
     boolean found = false;
+    
+    XPathContext xctxt = transformer.getXPathContext();
+    
+    SourceLocator srcLocator = xctxt.getSAXLocator();
+    
+    final int sourceNode = xctxt.getCurrentNode(); 
+    
+    if (m_useWhen != null) {
+    	boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+    	if (result1) {
+    		XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+    		if (!useWhenResult.bool()) {
+    			return;
+    		}
+    	}
+    	else {
+    		throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                     																									+ "used within XPath static expression.", srcLocator);
+    	}
+    }
 
     for (ElemTemplateElement childElem = getFirstChildElem();
             childElem != null; childElem = childElem.getNextSiblingElem())
@@ -163,14 +210,10 @@ public class ElemChoose extends ElemTemplateElement
         ElemWhen when = (ElemWhen) childElem;                
 
         // must be xsl:when
-        XPathContext xctxt = transformer.getXPathContext();
-        SourceLocator srcLocator = xctxt.getSAXLocator(); 
         XPath whenTest = when.getTest();
         if (when.getXpathDefaultNamespace() != null) {
            whenTest = new XPath(whenTest.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
         }
-        
-        int sourceNode = xctxt.getCurrentNode();
 
         if (transformer.getDebug())
         {

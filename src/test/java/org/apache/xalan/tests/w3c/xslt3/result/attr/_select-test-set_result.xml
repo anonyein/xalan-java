@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-12-10T16:52:21Z" fail="27" name="select" pass="104" skipped="26" statusUnknown="1" totalRun="132">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-02-20T15:33:05Z" fail="26" name="select" pass="105" run="132" skipped="26" statusUnknown="1">
    <testResult status="pass" testName="select-0101"/>
    <testResult status="pass" testName="select-0102"/>
    <testResult status="pass" testName="select-0201"/>
    <testResult status="pass" testName="select-0202"/>
    <testResult status="pass" testName="select-0301"/>
-   <testResult status="fail" testName="select-0302"/>
+   <testResult status="pass" testName="select-0302"/>
    <testResult status="pass" testName="select-0401"/>
    <testResult status="pass" testName="select-0501"/>
    <testResult status="pass" testName="select-0601"/>

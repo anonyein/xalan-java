@@ -326,11 +326,6 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 		}
 
 		return false;
-
-		/*  if (prefix.length() == 0)
-      prefix = Constants.ATTRVAL_DEFAULT_PREFIX;
-
-    return m_ExcludeResultPrefixs.contains(prefix); */
 	}
 
 	/**
@@ -359,7 +354,32 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 	}
 	
 	/**
-	 * This class field, represents the value of "xpath-default-namespace" 
+	 * The "name" property.
+	 */
+	private String m_name;
+
+	/**
+	 * Set the "name" property.
+	 *
+	 * @param v Value for the "name" property.
+	 */
+	public void setName(String name)
+	{
+		m_name = name;
+	}
+
+	/**
+	 * Get the "name" property.
+	 *
+	 * @return The value of the "name" property.
+	 */
+	public String getName()
+	{
+		return m_name;
+	}
+	
+	/**
+	 * Class field, that represents the value of "xpath-default-namespace" 
 	 * attribute.
 	 */
 	private String m_xpath_default_namespace = null;
@@ -384,7 +404,7 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 	}
 	
 	/**
-	 * This class field, represents the value of "expand-text" 
+	 * Class field, that represents the value of "expand-text" 
 	 * attribute.
 	 */
 	private boolean m_expand_text;
@@ -441,6 +461,11 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 	 * Whether or not the stylesheet is in "Forward Compatibility Mode".
 	 */
 	private boolean m_isCompatibleMode = false;
+	
+	/**
+	 * The "package-version" property.
+	 */
+	private String m_package_version;
 
 	/**
 	 * Set the "version" property.
@@ -451,6 +476,26 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 	{
 		m_Version = v;
 		m_isCompatibleMode = (Double.valueOf(v).doubleValue() > Constants.XSLTVERSUPPORTED);
+	}
+	
+	/**
+	 * Set the "package-version" property.
+	 *
+	 * @param v Value for the "package-version" property.
+	 */
+	public void setPackageVersion(String v)
+	{
+		m_package_version = v;		
+	}
+	
+	private boolean m_declared_modes = true;
+
+	public void setDeclaredModes(boolean declaredModes) {
+		m_declared_modes = declaredModes; 
+	}
+
+	public boolean getDeclaredModes() {
+		return m_declared_modes;
 	}
 
 	/**
@@ -471,6 +516,30 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 	public String getVersion()
 	{
 		return m_Version;
+	}
+	
+	/**
+	 * Get the "package-version" property.
+	 *
+	 * @return The value of the "package-version" property.
+	 */
+	public String getPackageVersion()
+	{
+		return m_package_version;
+	}
+	
+	/**
+	 * Class field, to denote whether this XSL stylesheet
+	 * object has been constructed from xsl:package instruction.
+	 */
+	private boolean m_is_xsl_package;
+	
+	public void setIsXslPackage(boolean isXslPackage) {
+	    m_is_xsl_package = isXslPackage; 
+	}
+	
+	public boolean isXslPackage() {
+		return m_is_xsl_package;
 	}
 
 	/**
@@ -900,6 +969,24 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 
 		m_topLevelVariables.addElement(v);
 	}
+	
+	/**
+	 * This class field, refers to XSL stylesheet's xsl:global-context-item 
+	 * instruction.
+	 */
+	private Vector m_globalContextItemList;
+	
+	public Vector getGlobalContextItemList() {		
+		return m_globalContextItemList; 
+	}
+	
+	public void setGlobalContextItem(ElemGlobalContextItem elemGlobalContexItem) {
+	   if (m_globalContextItemList == null) {
+		  m_globalContextItemList = new Vector(); 
+	   }
+	   
+	   m_globalContextItemList.add(elemGlobalContexItem);
+	}
 
 	/**
 	 * Get an "xsl:variable" or "xsl:param" property.
@@ -943,7 +1030,7 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 			for (int i = 0; i < n; i++)
 			{
 				ElemVariable var = getVariableOrParam(i);
-				if((var.getXSLToken() == Constants.ELEMNAME_VARIABLE) &&
+				if ((var.getXSLToken() == Constants.ELEMNAME_VARIABLE) &&
 						(var.getName().equals(qname)))
 					return var;
 			}
@@ -1005,7 +1092,7 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 			for (int i = 0; i < n; i++)
 			{
 				ElemVariable var = getVariableOrParam(i);
-				if((var.getXSLToken() == Constants.ELEMNAME_PARAMVARIABLE) &&
+				if ((var.getXSLToken() == Constants.ELEMNAME_PARAMVARIABLE) &&
 						(var.getName().equals(qname)))
 					return (ElemParam)var;
 			}
@@ -1018,6 +1105,16 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 	 * The "xsl:template" properties.
 	 */
 	private Vector m_templates;
+	
+	/**
+	 * The "xsl:use-package" properties.
+	 */
+	private Vector m_usePackages;
+	
+	/**
+	 * The "xsl:expose" properties.
+	 */
+	private Vector m_exposePackageVector;
 
 	/**
 	 * Set an "xsl:template" property.
@@ -1048,6 +1145,40 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 			throw new ArrayIndexOutOfBoundsException();
 
 		return (ElemTemplate) m_templates.elementAt(i);
+	}
+	
+	/**
+	 * Set an "xsl:use-package" property.
+	 *
+	 * @param v ElemUsePackage to add to list of use-package 
+	 *          reference objects.
+	 */
+	public void setUsePackage(ElemUsePackage v)
+	{		
+		if (m_usePackages == null)
+			m_usePackages = new Vector();
+
+		m_usePackages.addElement(v);
+		v.setStylesheet(this);
+	}
+	
+	public Vector getUsePackages() {
+		return m_usePackages;
+	}
+	
+	/**
+	 * Set an "xsl:expose" property.
+	 *
+	 * @param v ElemExpose to add to list of accept 
+	 *          object references.
+	 */
+	public void setExpose(ElemExpose v)
+	{
+		if (m_exposePackageVector == null)
+			m_exposePackageVector = new Vector();
+
+		m_exposePackageVector.addElement(v);
+		v.setStylesheet(this);
 	}
 
 	/**
@@ -1128,6 +1259,17 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 	public void setElemMode(ElemMode elemMode) throws TransformerException
 	{
 		QName modeName = elemMode.getName();
+		
+		String elemModeVisibility = elemMode.getVisibility();
+		if (elemModeVisibility != null) {
+			// Ref : XSLT 3.0 specification, section 6.6.1 Declaring Modes
+			if (!(Constants.ATTRVAL_PUBLIC.equals(elemModeVisibility) || Constants.ATTRVAL_PRIVATE.equals(elemModeVisibility) 
+					                                                  || Constants.ATTRVAL_FINAL.equals(elemModeVisibility))) {
+				throw new TransformerException("XTSE0020 : An XSL stylesheet 'mode' instruction \"visibility\" attribute's "
+						                                                                      + "value can be 'public', 'private', 'final'. "
+						                                                                      + "The supplied value '" + elemModeVisibility + "' is invalid.", elemMode);
+			}
+		}
 		
 		if (modeName != null) {
 			if (m_modeList == null) {
@@ -1429,7 +1571,7 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 				}
 				catch (TransformerException se)
 				{
-					// NO OP
+					// no op
 				}
 			}
 
@@ -1669,10 +1811,10 @@ public class Stylesheet extends ElemTemplateElement implements java.io.Serializa
 			visitor.visitTopLevelInstruction(getPreserveSpace(j));
 		}
 
-		if(m_nonXslTopLevel != null)
+		if (m_nonXslTopLevel != null)
 		{
 			java.util.Enumeration elements = m_nonXslTopLevel.elements();
-			while(elements.hasMoreElements())
+			while (elements.hasMoreElements())
 			{
 				ElemTemplateElement elem = (ElemTemplateElement)elements.nextElement();
 				if (visitor.visitTopLevelInstruction(elem))

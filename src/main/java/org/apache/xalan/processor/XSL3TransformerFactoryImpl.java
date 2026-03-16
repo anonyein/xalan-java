@@ -116,6 +116,10 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
   /** Static string to be used for 'assert' feature */
   public static final String FEATURE_ASSERT =
                              XalanProperties.ASSERT_ENABLED;
+  
+  /** Static string to be used for 'init context node' feature */
+  public static final String INIT_CONTEXT_NODE =
+                             XalanProperties.INIT_CONTEXT_NODE;
 
   public javax.xml.transform.Templates processFromNode(Node node)
           throws TransformerConfigurationException
@@ -334,7 +338,7 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
           reader = XMLReaderFactory.createXMLReader();
         }
 
-        if(m_isSecureProcessing)
+        if (m_isSecureProcessing)
         {
             reader.setFeature("http://xml.org/sax/features/external-general-entities",false);
         }
@@ -508,6 +512,8 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
    */
   private boolean m_assert;
   
+  private boolean m_initial_context_node_available;
+  
   /**
    * Flag set by FEATURE_INCREMENTAL.
    * This feature specifies whether to produce output incrementally, rather than
@@ -529,82 +535,87 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
   public void setAttribute(String name, Object value)
           throws IllegalArgumentException
   {
-    if (name.equals(FEATURE_INCREMENTAL))
-    {
-      if(value instanceof Boolean)
-      {
-        // Accept a Boolean object..
-        m_incremental = ((Boolean)value).booleanValue();
-      }
-      else if(value instanceof String)
-      {
-        // .. or a String object
-        m_incremental = (new Boolean((String)value)).booleanValue();
-      }
-      else
-      {
-        // Give a more meaningful error message
-        throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_BAD_VALUE, new Object[]{name, value})); //name + " bad value " + value);
-      }
-	}
-    else if (name.equals(FEATURE_OPTIMIZE))
-    {
-      if(value instanceof Boolean)
-      {
-        // Accept a Boolean object..
-        m_optimize = ((Boolean)value).booleanValue();
-      }
-      else if(value instanceof String)
-      {
-        // .. or a String object
-        m_optimize = (new Boolean((String)value)).booleanValue();
-      }
-      else
-      {
-        // Give a more meaningful error message
-        throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_BAD_VALUE, new Object[]{name, value})); //name + " bad value " + value);
-      }
-    }
-    
-    // Custom Xalan feature: annotate DTM with SAX source locator fields.
-    // This gets used during SAX2DTM instantiation. 
-    //
-    // %REVIEW% Should the name of this field really be in XalanProperties?
-    // %REVIEW% I hate that it's a global static, but didn't want to change APIs yet.
-    else if(name.equals(FEATURE_SOURCE_LOCATION))
-    {
-      if(value instanceof Boolean)
-      {
-        // Accept a Boolean object..
-        m_source_location = ((Boolean)value).booleanValue();
-      }
-      else if(value instanceof String)
-      {
-        // .. or a String object
-        m_source_location = (new Boolean((String)value)).booleanValue();
-      }
-      else
-      {
-        // Give a more meaningful error message
-        throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_BAD_VALUE, new Object[]{name, value})); //name + " bad value " + value);
-      }
-    }
-    else if(name.equals(FEATURE_INIT_TEMPLATE))
-    {
-    	m_init_template_name = (String)value; 
-    }
-    else if(name.equals(FEATURE_INIT_MODE))
-    {
-    	m_init_mode_name = (String)value; 
-    }
-    else if(name.equals(FEATURE_ASSERT))
-    {
-    	m_assert = (Boolean)value; 
-    }
-    else
-    {
-      throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_NOT_SUPPORTED, new Object[]{name})); //name + "not supported");
-    }
+	  
+	  if (name.equals(FEATURE_INCREMENTAL))
+	  {
+		  if (value instanceof Boolean)
+		  {
+			  // Accept a Boolean object..
+			  m_incremental = ((Boolean)value).booleanValue();
+		  }
+		  else if (value instanceof String)
+		  {
+			  // .. or a String object
+			  
+			  m_incremental = (Boolean.valueOf((String)value)).booleanValue();
+		  }
+		  else
+		  {
+			  // Give a more meaningful error message
+			  throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_BAD_VALUE, new Object[]{name, value}));
+		  }
+	  }
+	  else if (name.equals(FEATURE_OPTIMIZE))
+	  {
+		  if (value instanceof Boolean)
+		  {
+			  // Accept a Boolean object..
+			  m_optimize = ((Boolean)value).booleanValue();
+		  }
+		  else if (value instanceof String)
+		  {
+			  // .. or a String object
+			  m_optimize = (Boolean.valueOf((String)value)).booleanValue();
+		  }
+		  else
+		  {
+			  // Give a more meaningful error message
+			  throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_BAD_VALUE, new Object[]{name, value}));
+		  }
+	  }
+
+	  // Custom Xalan feature: annotate DTM with SAX source locator fields.
+	  // This gets used during SAX2DTM instantiation. 
+	  //
+	  // %REVIEW% Should the name of this field really be in XalanProperties?
+	  // %REVIEW% I hate that it's a global static, but didn't want to change APIs yet.
+	  else if (name.equals(FEATURE_SOURCE_LOCATION))
+	  {
+		  if (value instanceof Boolean)
+		  {
+			  // Accept a Boolean object..
+			  m_source_location = ((Boolean)value).booleanValue();
+		  }
+		  else if (value instanceof String)
+		  {
+			  // .. or a String object
+			  m_source_location = (Boolean.valueOf((String)value)).booleanValue();
+		  }
+		  else
+		  {
+			  // Give a more meaningful error message
+			  throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_BAD_VALUE, new Object[]{name, value}));
+		  }
+	  }
+	  else if (name.equals(FEATURE_INIT_TEMPLATE))
+	  {
+		  m_init_template_name = (String)value; 
+	  }
+	  else if (name.equals(FEATURE_INIT_MODE))
+	  {
+		  m_init_mode_name = (String)value; 
+	  }
+	  else if (name.equals(FEATURE_ASSERT))
+	  {
+		  m_assert = (Boolean)value; 
+	  }
+	  else if (name.equals("initial-context-node")) {
+		  m_initial_context_node_available = (Boolean)value; 
+	  }
+	  else
+	  {
+		  throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_NOT_SUPPORTED, new Object[]{name}));
+	  }
   }
 
   /**
@@ -619,32 +630,35 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
    */
   public Object getAttribute(String name) throws IllegalArgumentException
   {
-    if (name.equals(FEATURE_INCREMENTAL))
-    {
-      return m_incremental ? Boolean.TRUE : Boolean.FALSE;           
-    }
-    else if (name.equals(FEATURE_OPTIMIZE))
-    {
-      return m_optimize ? Boolean.TRUE : Boolean.FALSE;
-    }
-    else if (name.equals(FEATURE_SOURCE_LOCATION))
-    {
-      return m_source_location ? Boolean.TRUE : Boolean.FALSE;
-    }
-    else if (name.equals(FEATURE_INIT_TEMPLATE))
-    {
-      return m_init_template_name;
-    }
-    else if (name.equals(FEATURE_INIT_MODE))
-    {
-      return m_init_mode_name;
-    }
-    else if (name.equals(FEATURE_ASSERT))
-    {
-      return m_assert;
-    }
-    else
-      throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_ATTRIB_VALUE_NOT_RECOGNIZED, new Object[]{name})); //name + " attribute not recognized");
+	  if (name.equals(FEATURE_INCREMENTAL))
+	  {
+		  return m_incremental ? Boolean.TRUE : Boolean.FALSE;           
+	  }
+	  else if (name.equals(FEATURE_OPTIMIZE))
+	  {
+		  return m_optimize ? Boolean.TRUE : Boolean.FALSE;
+	  }
+	  else if (name.equals(FEATURE_SOURCE_LOCATION))
+	  {
+		  return m_source_location ? Boolean.TRUE : Boolean.FALSE;
+	  }
+	  else if (name.equals(FEATURE_INIT_TEMPLATE))
+	  {
+		  return m_init_template_name;
+	  }
+	  else if (name.equals(FEATURE_INIT_MODE))
+	  {
+		  return m_init_mode_name;
+	  }
+	  else if (name.equals(FEATURE_ASSERT))
+	  {
+		  return m_assert ? Boolean.TRUE : Boolean.FALSE;
+	  }
+	  else if (name.equals("initial-context-node")) {
+		  return m_initial_context_node_available ? Boolean.TRUE : Boolean.FALSE;
+	  }
+	  else
+		  throw new IllegalArgumentException(XSLMessages.createMessage(XSLTErrorResources.ER_ATTRIB_VALUE_NOT_RECOGNIZED, new Object[]{name}));
   }
 
   /**
@@ -662,7 +676,7 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
   {
 
     Templates templates = newTemplates(src);
-    if( templates==null ) return null;
+    if ( templates==null ) return null;
     
     return newXMLFilter(templates);
   }
@@ -686,7 +700,7 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
     } 
     catch( TransformerConfigurationException ex ) 
     {
-      if( m_errorListener != null) 
+      if ( m_errorListener != null) 
       {
         try 
         {
@@ -722,7 +736,7 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
   {
 
     Templates templates = newTemplates(src);
-    if( templates==null ) return null;
+    if ( templates==null ) return null;
     
     return newTransformerHandler(templates);
   }
@@ -750,7 +764,7 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
     } 
     catch( TransformerConfigurationException ex ) 
     {
-      if( m_errorListener != null ) 
+      if ( m_errorListener != null ) 
       {
         try 
         {
@@ -822,14 +836,14 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
          instead of throwing an exception" - the newTemplates() does
          that, and returns null.
       */
-      if( tmpl==null ) return null;
+      if ( tmpl==null ) return null;
       Transformer transformer = tmpl.newTransformer();
       transformer.setURIResolver(m_uriResolver);
       return transformer;
     } 
     catch( TransformerConfigurationException ex ) 
     {
-      if( m_errorListener != null ) 
+      if ( m_errorListener != null ) 
       {
         try 
         {

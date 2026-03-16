@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.xpath.types;
 
 import javax.xml.transform.TransformerException;
@@ -9,11 +26,15 @@ import org.apache.xpath.regex.Matcher;
 import org.apache.xpath.regex.Pattern;
 
 import xml.xpath31.processor.types.XSAnyAtomicType;
+import xml.xpath31.processor.types.XSDate;
+import xml.xpath31.processor.types.XSDateTime;
 
 /**
  * Implementation of XML Schema data type xs:gDay.
  * 
  * @author : Mukul Gandhi <mukulg@apache.org>
+ * 
+ * @xsl.usage general
  */
 public class XSGDay extends XSAnyAtomicType {
 
@@ -43,15 +64,72 @@ public class XSGDay extends XSAnyAtomicType {
 	 * Default constructor.
 	 */
 	public XSGDay() {
-		// NO OP
+		// no op
 	}
 	
 	/**
 	 * Class constructor.
 	 */
 	public XSGDay(String gDayStrValue) throws TransformerException {
-		parse(gDayStrValue);
-		m_gDayStrValue = gDayStrValue; 
+		
+		boolean isXsDate = true;
+		
+		try {
+			// Constructing xs:gDay value, from supplied xs:date lexical value
+			XSDate xsDate = XSDate.parseDate(gDayStrValue);
+			String timeZoneStr = DateTimeUtil.getTimeZoneStrFromXsDateValue(xsDate);
+			
+			int day = xsDate.day();
+			String str1 = String.valueOf(day);
+
+			if (day < 10) {
+				str1 = "0" + str1;  
+			}
+
+			if (timeZoneStr != null) {
+				str1 += timeZoneStr; 
+			}
+			
+			parse("---" + str1);
+
+			m_gDayStrValue = "---" + str1;
+		}
+		catch (TransformerException ex) {
+			isXsDate = false;
+		}
+		
+		if (!isXsDate) { 
+		   try {
+			   // Constructing xs:gDay value, from supplied xs:dateTime lexical value
+			   XSDateTime xsDateTime = XSDateTime.parseDateTime(gDayStrValue);
+			   String timeZoneStr = DateTimeUtil.getTimeZoneStrFromXsDateTimeValue(xsDateTime);
+
+			   int day = xsDateTime.day();
+			   String str1 = String.valueOf(day);
+
+			   if (day < 10) {
+				   str1 = "0" + str1;  
+			   }
+
+			   if (timeZoneStr != null) {
+				   str1 += timeZoneStr; 
+			   }
+
+			   parse("---" + str1);
+
+			   m_gDayStrValue = "---" + str1;				
+		   }
+		   catch (TransformerException ex) {
+			  // no op  
+		   }
+		}
+		
+		if (m_gDayStrValue == null) {
+			// Constructing xs:gDay value, from supplied xs:gDay lexical value
+			parse(gDayStrValue);
+
+			m_gDayStrValue = gDayStrValue;
+		}
 	}
 
 	@Override
@@ -68,7 +146,7 @@ public class XSGDay extends XSAnyAtomicType {
 			XSGDay xsGDay = new XSGDay(strVal);
 			result.add(xsGDay);
 		} catch (TransformerException ex) {
-			// NO OP
+			// no op
 		}
 		
 		return result;
@@ -76,7 +154,12 @@ public class XSGDay extends XSAnyAtomicType {
 
 	@Override
 	public String stringValue() {
-		return m_gDayStrValue;
+		String result = m_gDayStrValue; 
+		if (m_isTimeZoneUtc) {
+		   result = result.replace("+00:00", "Z");
+		}
+		
+		return result;
 	}
 	
 	public int getType() {

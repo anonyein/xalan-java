@@ -15,20 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.transformer;
 
 import java.text.CollationKey;
 import java.util.Vector;
 
+import javax.xml.XMLConstants;
+
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
+import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.compiler.Keywords;
+import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
+import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XObject;
+
+import xml.xpath31.processor.types.XSAnyAtomicType;
+import xml.xpath31.processor.types.XSTime;
 
 /**
  * This class can sort vectors of xdm nodes according 
@@ -37,54 +43,55 @@ import org.apache.xpath.objects.XObject;
  * @author Scott Boag <scott_boag@us.ibm.com>
  * @author Joseph Kesselman <keshlam@alum.mit.edu>
  * 
+ * @author Mukul Gandhi <mukulg@apache.org>
+ * 
  * @xsl.usage internal
  */
 public class NodeSorter
 {
 
   /** Current XPath context           */
-  XPathContext m_execContext;
+  XPathContext m_xctxt;
 
   /** Vector of NodeSortKeys          */
-  Vector m_keys;  // vector of NodeSortKeys
+  Vector m_keys;
 
   /**
    * Construct a NodeSorter, passing in the XSL TransformerFactory
    * so it can know how to get the node data according to
    * the proper whitespace rules.
    *
-   * @param p Xpath context to use
+   * @param xctxt               An XPath context object
    */
-  public NodeSorter(XPathContext p)
+  public NodeSorter(XPathContext xctxt)
   {
-    m_execContext = p;
+      m_xctxt = xctxt;
   }
 
   /**
    * Given a vector of nodes, sort each node according to
    * the criteria in the keys.
    * 
-   * @param v an vector of Nodes.
-   * @param keys a vector of NodeSortKeys.
-   * @param xctxt XPath context to use
+   * @param v                          An vector of Nodes
+   * @param keys                       A vector of NodeSortKeys
+   * @param xctxt                      XPath context to use
    *
    * @throws javax.xml.transform.TransformerException
    */
   public void sort(DTMCursorIterator v, Vector keys, XPathContext xctxt) 
-		                                                                throws javax.xml.transform.TransformerException
-  {
+		                                                                throws javax.xml.transform.TransformerException {
 
 	  m_keys = keys;
 
 	  int n = v.getLength();
 
-	  // Create a vector of node compare elements based 
-	  // on an input vector of nodes.
+	  // Create a vector of node compare elements, according 
+	  // to an input vector of nodes
 	  Vector nodes = new Vector();
 
-	  for (int i = 0; i < n; i++)
+	  for (int idx = 0; idx < n; idx++)
 	  {
-		  NodeCompareElem elem = new NodeCompareElem(v.item(i));
+		  NodeCompareElem elem = new NodeCompareElem(v.item(idx));
 
 		  nodes.addElement(elem);
 	  }
@@ -93,13 +100,56 @@ public class NodeSorter
 
 	  mergesort(nodes, scratchVector, 0, n - 1, xctxt);
 
-	  // return sorted vector of nodes
-	  for (int i = 0; i < n; i++)
+	  // Return sorted vector of nodes
+	  for (int idx = 0; idx < n; idx++)
 	  {
-		  v.setItem(((NodeCompareElem) nodes.elementAt(i)).m_node, i);
+		  v.setItem(((NodeCompareElem)(nodes.elementAt(idx))).m_node, idx);
 	  }
 
 	  v.setCurrentPos(0);
+  }
+  
+  /**
+   * Given an xdm sequence of items, sort each item according to
+   * the criteria in the keys.
+   * 
+   * @param rSeq                  An xdm sequence of items
+   * @param keys                  A vector of NodeSortKeys
+   * @param xctxt                 XPath context to use
+   *
+   * @throws javax.xml.transform.TransformerException
+   */
+  public ResultSequence sort(ResultSequence rSeq, Vector keys, XPathContext xctxt) 
+                                                                             throws javax.xml.transform.TransformerException {
+
+	  ResultSequence result = new ResultSequence();
+	  
+	  m_keys = keys;
+
+	  int n = rSeq.size();
+
+	  // Create a vector of xdm compare items, according 
+	  // to an input vector of xdm items.
+	  Vector xdmItemVector = new Vector();
+
+	  for (int idx = 0; idx < n; idx++)
+	  {
+		  NodeCompareElem elem = new NodeCompareElem(rSeq.item(idx));
+
+		  xdmItemVector.addElement(elem);
+	  }
+
+	  Vector scratchVector = new Vector();
+
+	  mergesort(xdmItemVector, scratchVector, 0, n - 1, xctxt);
+
+	  // Return sorted vector of xdm items
+	  for (int idx = 0; idx < n; idx++)
+	  {		  
+		  result.add(((NodeCompareElem)(xdmItemVector.elementAt(idx))).m_xobj);
+	  }
+	  
+	  return result;
   }
 
   /**
@@ -139,9 +189,9 @@ public class NodeSorter
 		  else
 		  {
 			  // Get values dynamically
-			  XObject r1 = k.m_selectPat.execute(m_execContext, n1.m_node,
+			  XObject r1 = k.m_selectPat.execute(m_xctxt, n1.m_node,
 					                             k.m_namespaceContext);
-			  XObject r2 = k.m_selectPat.execute(m_execContext, n2.m_node,
+			  XObject r2 = k.m_selectPat.execute(m_xctxt, n2.m_node,
 					                             k.m_namespaceContext);
 			  n1Num = r1.num();
 
@@ -177,33 +227,53 @@ public class NodeSorter
 	  }  // end treat as numbers 
 	  else
 	  {
-		  CollationKey n1String, n2String;
-
-		  if (kIndex == 0)
-		  {
-			  n1String = (CollationKey) n1.m_key1Value;
-			  n2String = (CollationKey) n2.m_key1Value;
-		  }
-		  else if (kIndex == 1)
-		  {
-			  n1String = (CollationKey) n1.m_key2Value;
-			  n2String = (CollationKey) n2.m_key2Value;
-		  }
-		  else
-		  {
-			  // Get values dynamically
-			  XObject r1 = k.m_selectPat.execute(m_execContext, n1.m_node,
-					                             k.m_namespaceContext);
-			  XObject r2 = k.m_selectPat.execute(m_execContext, n2.m_node,
-					                             k.m_namespaceContext);
-
-			  n1String = k.m_col.getCollationKey(r1.str());
-			  n2String = k.m_col.getCollationKey(r2.str());
-		  }
+		  CollationKey n1String = null;
+		  CollationKey n2String = null;
 
 		  // Use collation keys for faster compare, but note that whitespaces 
 		  // etc... are treated differently from if we were comparing Strings.
-		  result = n1String.compareTo(n2String);
+		  
+		  if ((n1.m_key1Value instanceof XSAnyAtomicType) && (n2.m_key1Value instanceof XSAnyAtomicType)) {
+			 XObject xObj1 = (XSAnyAtomicType)(n1.m_key1Value);
+			 XObject xObj2 = (XSAnyAtomicType)(n2.m_key1Value);
+			 if (xObj1.vcEquals(xObj2, null, null, true)) {
+				result = 0; 
+			 }
+			 else if (xObj1.vcLessThan(xObj2, null, null, true)) {
+				result = -1; 
+			 }
+			 else {
+				result = 1;	 
+			 }
+		  }
+		  else {
+			  if (kIndex == 0)
+			  {
+				  n1String = (CollationKey) n1.m_key1Value;
+				  n2String = (CollationKey) n2.m_key1Value;
+			  }
+			  else if (kIndex == 1)
+			  {
+				  n1String = (CollationKey) n1.m_key2Value;
+				  n2String = (CollationKey) n2.m_key2Value;
+			  }
+			  else
+			  {
+				  // Get values dynamically
+				  XObject r1 = k.m_selectPat.execute(m_xctxt, n1.m_node,
+						                             k.m_namespaceContext);
+				  XObject r2 = k.m_selectPat.execute(m_xctxt, n2.m_node,
+						                             k.m_namespaceContext);
+
+				  String str1 = XslTransformEvaluationHelper.getStrVal(r1);
+				  String str2 = XslTransformEvaluationHelper.getStrVal(r2);
+				  
+				  n1String = k.m_col.getCollationKey(str1);
+				  n2String = k.m_col.getCollationKey(str2);
+			  } 
+		     
+			  result = n1String.compareTo(n2String);
+		  }
 
 		  //Process caseOrder parameter
 		  if (k.m_caseOrderUpper)
@@ -235,8 +305,15 @@ public class NodeSorter
 
 	  if (result == 0)
 	  {      
-		  DTM dtm = xctxt.getDTM(n1.m_node); // %OPT%
-		  result = dtm.isNodeAfter(n1.m_node, n2.m_node) ? -1 : 1;
+		  if (n1.m_xobj == null) {
+		     DTM dtm = xctxt.getDTM(n1.m_node);		  
+		     result = dtm.isNodeAfter(n1.m_node, n2.m_node) ? -1 : 1;
+		  }
+		  else {
+			 boolean result2 = n1.m_xobj.vcGreaterThan(n2.m_xobj, null, null, true);
+			 
+			 result = (result2 ? 1 : -1); 
+		  }
 	  }
 
 	  return result;
@@ -298,8 +375,7 @@ public class NodeSorter
 			  if (i == j)
 				  compVal = -1;
 			  else
-				  compVal = compare((NodeCompareElem) b.elementAt(i),
-						  (NodeCompareElem) b.elementAt(j), 0, xctxt);
+				  compVal = compare((NodeCompareElem) b.elementAt(i), (NodeCompareElem) b.elementAt(j), 0, xctxt);
 
 			  if (compVal < 0)
 			  {
@@ -325,8 +401,20 @@ public class NodeSorter
   class NodeCompareElem
   {
 
-    /** Current node          */
+	/**
+	 * Only one of the class fields, m_node or m_xobj 
+	 * shall be available for use.
+	 * 
+	 * The field m_node is used, when there is an xdm nodeset 
+	 * to be sorted, and the field m_xobj is used when there 
+	 * is an xdm sequence of non-node items have to be sorted. 
+	 */
+	  
+    /** Current node              */
     int m_node;
+    
+    /** Current xdm item          */
+    XObject m_xobj;
 
     /** This maxkey value was chosen arbitrarily. We are assuming that the    
     // maxkey + 1 keys will only hit fairly rarely and therefore, we
@@ -345,7 +433,7 @@ public class NodeSorter
     Object m_key2Value;
 
     /**
-     * Constructor NodeCompareElem
+     * Constructor NodeCompareElem.
      *
      * @param node Current node
      *
@@ -353,57 +441,196 @@ public class NodeSorter
      */
     NodeCompareElem(int node) throws javax.xml.transform.TransformerException
     {
-      m_node = node;
+    	m_node = node;
 
-      if (!m_keys.isEmpty())
-      {
-        NodeSortKey k1 = (NodeSortKey) m_keys.elementAt(0);
-        XObject r = k1.m_selectPat.execute(m_execContext, node,
-                                           k1.m_namespaceContext);
+    	if (!m_keys.isEmpty())
+    	{
+    		NodeSortKey k1 = (NodeSortKey) m_keys.elementAt(0);
+    		XObject r = k1.m_selectPat.execute(m_xctxt, node, k1.m_namespaceContext);
 
-        double d;
+    		double d;
 
-        if (k1.m_treatAsNumbers)
-        {
-          d = r.num();
+    		if (k1.m_treatAsNumbers)
+    		{
+    			d = r.num();
 
-          // Can't use NaN for compare. They are never equal. Use zero instead.  
-          m_key1Value = new Double(d);
-        }
-        else
-        {
-          m_key1Value = k1.m_col.getCollationKey(XslTransformEvaluationHelper.getStrVal(r));
-        }
+    			// Can't use NaN for compare. They are never equal. Use zero instead.  
+    			m_key1Value = Double.valueOf(d);
+    		}
+    		else
+    		{
+    			m_key1Value = k1.m_col.getCollationKey(XslTransformEvaluationHelper.getStrVal(r));
+    		}
 
-        if (r.getType() == XObject.CLASS_NODESET)
-        {
-          // %REVIEW%
-          DTMCursorIterator ni = ((XMLNodeCursorImpl)r).iterRaw();
-          int current = ni.getCurrentNode();
-          if(DTM.NULL == current)
-            current = ni.nextNode();
+    		if (r.getType() == XObject.CLASS_NODESET)
+    		{
+    			// %REVIEW%
+    			DTMCursorIterator ni = ((XMLNodeCursorImpl)r).iterRaw();
+    			int current = ni.getCurrentNode();
+    			if (DTM.NULL == current)
+    				current = ni.nextNode();
 
-          // if (ni instanceof ContextNodeList) // %REVIEW%
-          // tryNextKey = (DTM.NULL != current);
+    			// if (ni instanceof ContextNodeList) // %REVIEW%
+    			// tryNextKey = (DTM.NULL != current);
 
-          // else abdicate... should never happen, but... -sb
-        }
+    			// else abdicate... should never happen, but... -sb
+    		}
 
-        if (m_keys.size() > 1)
-        {
-          NodeSortKey k2 = (NodeSortKey) m_keys.elementAt(1);
+    		if (m_keys.size() > 1)
+    		{
+    			NodeSortKey k2 = (NodeSortKey) m_keys.elementAt(1);
 
-          XObject r2 = k2.m_selectPat.execute(m_execContext, node,
-                                              k2.m_namespaceContext);
+    			XObject r2 = k2.m_selectPat.execute(m_xctxt, node,
+    					k2.m_namespaceContext);
 
-          if (k2.m_treatAsNumbers) {
-            d = r2.num();
-            m_key2Value = new Double(d);
-          } else {
-            m_key2Value = k2.m_col.getCollationKey(r2.str());
-          }
-        }        
-      }  // end if not empty    
+    			if (k2.m_treatAsNumbers) {
+    				d = r2.num();
+    				m_key2Value = Double.valueOf(d);
+    			} else {
+    				String str2 = XslTransformEvaluationHelper.getStrVal(r2);
+    				m_key2Value = k2.m_col.getCollationKey(str2);
+    			}
+    		}        
+    	}  // end if not empty    
     }
+    
+    /**
+     * Constructor NodeCompareElem.
+     * 
+     * @param xObj              Current xdm item
+     * 
+     * @throws javax.xml.transform.TransformerException
+     */
+    NodeCompareElem(XObject xObj) throws javax.xml.transform.TransformerException
+    {
+    	m_xobj = xObj;
+
+    	if (!m_keys.isEmpty())
+    	{
+    		NodeSortKey k1 = (NodeSortKey) m_keys.elementAt(0);
+    		
+    		XObject prevXctxtItem = m_xctxt.getXPath3ContextItem();    		
+    		XObject r = null;
+    		
+    		try {    			
+    			Expression expr1 = k1.m_selectPat.getExpression();
+    			if (expr1 instanceof XSL3ConstructorOrExtensionFunction) {
+    				XSL3ConstructorOrExtensionFunction obj1 = (XSL3ConstructorOrExtensionFunction)expr1;
+    				String funcName = obj1.getFunctionName();
+    				String namespace = obj1.getNamespace();
+    				if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace) && (Keywords.XS_TIME).equals(funcName)) {
+    					String str1 = XslTransformEvaluationHelper.getStrVal(m_xobj);
+    					if (!(str1.contains("+") || str1.contains("-") || str1.contains("Z"))) {
+    						str1 += "+14:00";
+    						m_xctxt.setXPath3ContextItem(XSTime.parseTime(str1));
+    					}
+    					else {
+    						m_xctxt.setXPath3ContextItem(m_xobj); 
+    					}
+    				}
+    				else {
+    					m_xctxt.setXPath3ContextItem(m_xobj);
+    				}
+    			}
+    			else {
+    				m_xctxt.setXPath3ContextItem(m_xobj);
+    			}
+
+    			r = k1.m_selectPat.execute(m_xctxt, DTM.NULL, k1.m_namespaceContext);
+    		}
+    		finally {    		
+    			m_xctxt.setXPath3ContextItem(prevXctxtItem);
+    		}
+
+    		double d = 0.0;
+
+    		if (k1.m_treatAsNumbers)
+    		{    			
+    			String str1 = XslTransformEvaluationHelper.getStrVal(r);
+    			try {
+    			   d = (Double.valueOf(str1)).doubleValue();
+    			}
+    			catch (NumberFormatException ex) {
+    			   throw new javax.xml.transform.TransformerException("XPTY0004 : The sort key value " + str1 + " is not numeric.");
+    			}
+
+    			// Can't use NaN for compare. They are never equal. Use zero instead.  
+    			m_key1Value = Double.valueOf(d);
+    		}
+    		else if (r instanceof XSAnyAtomicType) {
+    		    m_key1Value = r;
+    		}
+    		else
+    		{
+    			m_key1Value = k1.m_col.getCollationKey(XslTransformEvaluationHelper.getStrVal(r));
+    		}
+
+    		if (r.getType() == XObject.CLASS_NODESET)
+    		{
+    			DTMCursorIterator ni = ((XMLNodeCursorImpl)r).iterRaw();
+    			int current = ni.getCurrentNode();
+    			if (DTM.NULL == current)
+    				current = ni.nextNode();
+    		}
+
+    		if (m_keys.size() > 1)
+    		{
+    			NodeSortKey k2 = (NodeSortKey) m_keys.elementAt(1);
+
+    			XObject r2 = null;
+    			
+    			try {
+    				Expression expr1 = k2.m_selectPat.getExpression();
+    				if (expr1 instanceof XSL3ConstructorOrExtensionFunction) {
+    					XSL3ConstructorOrExtensionFunction obj1 = (XSL3ConstructorOrExtensionFunction)expr1;
+    					String funcName = obj1.getFunctionName();
+    					String namespace = obj1.getNamespace();
+    					if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace) && (Keywords.XS_TIME).equals(funcName)) {
+    						String str1 = XslTransformEvaluationHelper.getStrVal(m_xobj);
+    						if (!(str1.contains("+") || str1.contains("-") || str1.contains("Z"))) {
+    							str1 += "+14:00";
+    							m_xctxt.setXPath3ContextItem(XSTime.parseTime(str1));
+    						}
+    						else {
+    							m_xctxt.setXPath3ContextItem(m_xobj); 
+    						}
+    					}
+    					else {
+    						m_xctxt.setXPath3ContextItem(m_xobj);
+    					}
+    				}
+    				else {
+    					m_xctxt.setXPath3ContextItem(m_xobj);
+    				}
+
+    				r2 = k2.m_selectPat.execute(m_xctxt, DTM.NULL, k2.m_namespaceContext);
+    			}
+    			finally {
+    				m_xctxt.setXPath3ContextItem(prevXctxtItem);
+    			}
+
+    			if (k2.m_treatAsNumbers) {    				
+    				String str1 = XslTransformEvaluationHelper.getStrVal(r2);
+
+    				try {
+    					d = (Double.valueOf(str1)).doubleValue();
+    				}
+    				catch (NumberFormatException ex) {
+    					throw new javax.xml.transform.TransformerException("XPTY0004 : The sort key value " + str1 + " is not numeric.");
+    				}
+
+    				m_key2Value = Double.valueOf(d);
+    			}
+    			else if (r2 instanceof XSAnyAtomicType) {
+    				m_key2Value = r2;
+        		}
+    			else {
+    				String str2 = XslTransformEvaluationHelper.getStrVal(r2);
+    				m_key2Value = k2.m_col.getCollationKey(str2);
+    			}
+    		}        
+    	}  // end if not empty
+    }
+    
   }  // end NodeCompareElem class
 }

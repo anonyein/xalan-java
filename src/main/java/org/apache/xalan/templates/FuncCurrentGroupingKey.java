@@ -19,14 +19,17 @@ package org.apache.xalan.templates;
 
 import java.util.Vector;
 
+import javax.xml.transform.SourceLocator;
+
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.Function;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.types.StringWithCollation;
+import org.apache.xpath.types.XslForEachGroupCompositeGroupingKey;
 
 /**   
- * Implementation of an XSLT 3.0 function current-grouping-key().
+ * Implementation of an XSLT 3.0 function fn:current-grouping-key.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -40,16 +43,36 @@ public class FuncCurrentGroupingKey extends Function
     public static final String XSL_GROUPING_KEY_ABSENT = "XSL_GROUPING_KEY_ABSENT";
 
     /**
-      * Execute the function. The function must return a valid object.
+      * Evaluate the function. The function must return a valid object.
       * 
-      * @param xctxt The current execution context.
-      * @return a valid XObject.
+      * @param xctxt                          An XPath context object
+      * @return                               A valid XObject
       *
       * @throws javax.xml.transform.TransformerException
     */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
     {
     	XObject result = null;
+    	
+    	SourceLocator srcLocator = xctxt.getSAXLocator();
+    	
+    	ElemTemplateElement elemTemplateElement = (ElemTemplateElement)getExpressionOwner();
+  	  
+    	boolean isFnCurrentGroupingKeyRefValidContext = false; 
+    	while (elemTemplateElement != null) {
+    		if (elemTemplateElement instanceof ElemForEachGroup) {
+    			isFnCurrentGroupingKeyRefValidContext = true;
+
+    			break; 
+    		}
+
+    		elemTemplateElement = elemTemplateElement.getParentElem();
+    	}
+
+    	if (!isFnCurrentGroupingKeyRefValidContext) {
+    		elemTemplateElement = (ElemTemplateElement)getExpressionOwner();
+    		(elemTemplateElement.m_groupingKeyStack).clear();
+    	} 
     	
         TransformerImpl transformer = (TransformerImpl) xctxt.getOwnerObject();                            
         ElemTemplateElement currElemTemplateElement = transformer.getCurrentElement();
@@ -71,17 +94,22 @@ public class FuncCurrentGroupingKey extends Function
         	groupingKeyObj = ((StringWithCollation)groupingKeyObj).getStrValue();	
         }
         else if (XSL_GROUPING_KEY_ABSENT.equals(groupingKeyObj.toString())) {
-        	throw new javax.xml.transform.TransformerException("XTDE1071 : An XSL 'for-each-group' instruction's current-grouping-key() "
-        			                                                                      + "value is not available.", xctxt.getSAXLocator());
+        	throw new javax.xml.transform.TransformerException("XTDE1071 : An XSL 'for-each-group' instruction's current-grouping-key "
+        			                                                                                                            + "value is not available.", srcLocator);
         }
         
-        result = XObject.create(groupingKeyObj); 
+        if (groupingKeyObj instanceof XslForEachGroupCompositeGroupingKey) {
+           result = ((XslForEachGroupCompositeGroupingKey)groupingKeyObj).getValue(); 
+        }
+        else {
+           result = XObject.create(groupingKeyObj);
+        }
       
         return result;
     }
 
     @Override
     public void fixupVariables(Vector vars, int globalsSize) {
-       // NO OP    
+       // no op    
     }
 }

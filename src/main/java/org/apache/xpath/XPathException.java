@@ -38,7 +38,7 @@ public class XPathException extends TransformerException
     static final long serialVersionUID = 4263549717619045963L;
 
   /** The home of the expression that caused the error.
-   *  @serial  */
+   *    */
   Object m_styleNode = null;
 
   /**
@@ -61,7 +61,7 @@ public class XPathException extends TransformerException
 
 
   /** A nested exception.
-   *  @serial   */
+   *     */
   protected Exception m_exception;
 
   /**
@@ -112,7 +112,7 @@ public class XPathException extends TransformerException
   protected ExpressionNode getExpressionOwner(ExpressionNode ex)
   {
   	ExpressionNode parent = ex.exprGetParent();
-  	while((null != parent) && (parent instanceof Expression))
+  	while ((null != parent) && (parent instanceof Expression))
   		parent = parent.exprGetParent();
   	return parent;
   }
@@ -267,7 +267,7 @@ public class XPathException extends TransformerException
     
     boolean isJdk14OrHigher = false;
     try {
-        Throwable.class.getMethod("getCause",null);
+        Throwable.class.getMethod("getCause", (Class<?>[])null);
         isJdk14OrHigher = true;
     } catch (NoSuchMethodException nsme) {
         // do nothing

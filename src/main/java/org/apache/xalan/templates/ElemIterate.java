@@ -77,19 +77,19 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
      protected Expression m_selectExpression = null;
      
      /**
-      * Class field to store, XPath expression for subsequent 
+      * Class field to refer to, XPath expression for subsequent 
       * processing.
       */
      protected XPath m_xpath = null;
      
      /**
-      * This class field, represents the value of "xpath-default-namespace" 
+      * Class field, that represents the value of "xpath-default-namespace" 
       * attribute.
       */
      private String m_xpath_default_namespace = null;
      
      /**
-      * This class field, represents the value of "expand-text" 
+      * Class field, that represents the value of "expand-text" 
       * attribute.
       */
      private boolean m_expand_text;
@@ -181,6 +181,33 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
      }
      
      /**
+      * An XPath expression for 'use-when' attribute. 
+      */
+     private XPath m_useWhen = null;
+
+     /**
+      * Method definition, to set the value of XSL attribute 
+      * "use-when".
+      * 
+      * @param xpath            XPath expression for attribute "use-when"
+      */
+     public void setUseWhen(XPath xpath)
+     {
+    	 m_useWhen = xpath;  
+     }
+
+     /**
+      * Method definition, to get the value of XSL attribute 
+      * "use-when".
+      * 
+      * @return			XPath expression for attribute "use-when"
+      */
+     public XPath getUseWhen()
+     {
+    	 return m_useWhen;
+     }
+     
+     /**
      * This function is called after everything else has been recomposed, 
      * and allows the template to set remaining values that may be based 
      * on some other property that depends on recomposition.
@@ -214,7 +241,7 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
        * Get an int constant identifying the type of element.
        * @see org.apache.xalan.templates.Constants
        *
-       * @return The token id for this element
+       * @return           The token id for this element
        */
        public int getXSLToken()
        {
@@ -239,8 +266,29 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
         * @throws TransformerException
        */
        public void execute(TransformerImpl transformer) throws TransformerException
-       {
-           transformSelectedXdmItems(transformer);
+       {    	   
+    	   XPathContext xctxt = transformer.getXPathContext();
+    	   
+    	   SourceLocator srcLocator = xctxt.getSAXLocator(); 
+    	   
+ 		   final int sourceNode = xctxt.getCurrentNode();
+ 		  
+    	   if (m_useWhen != null) {    		  
+    		   boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+    	    	if (result1) {
+    	    		XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+    	    		if (useWhenResult.bool()) {
+    	    			transformSelectedXdmItems(transformer);
+    	    		}
+    	    	}
+    	    	else {
+    	    		throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                            																									+ "used within XPath static expression.", srcLocator);
+    	    	}
+    	   }
+    	   else {
+    	      transformSelectedXdmItems(transformer);
+    	   }
        }
        
        /**

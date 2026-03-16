@@ -70,7 +70,7 @@ public class ElemLiteralResult extends ElemUse
    * Tells if this element represents a root element
    * that is also the stylesheet element.
    * TODO: This should be a derived class.
-   * @serial
+   * 
    */
   private boolean isLiteralResultAsStylesheet = false;
 
@@ -127,12 +127,12 @@ public class ElemLiteralResult extends ElemUse
    * The created element node will have the attribute nodes
    * that were present on the element node in the stylesheet tree,
    * other than attributes with names in the XSLT namespace.
-   * @serial
+   * 
    */
   private List m_avts = null;
 
   /** List of attributes with the XSLT namespace.
-   *  @serial */
+   *   */
   private List m_xslAttr = null;
 
   /**
@@ -176,11 +176,11 @@ public class ElemLiteralResult extends ElemUse
   {
     addLiteralResultAttribute(avt);
     String val = avt.getSimpleString();
-    if(val.equals("default"))
+    if (val.equals("default"))
     {
       super.setXmlSpace(Constants.ATTRVAL_STRIP);
     }
-    else if(val.equals("preserve"))
+    else if (val.equals("preserve"))
     {
       super.setXmlSpace(Constants.ATTRVAL_PRESERVE);
     }
@@ -316,7 +316,7 @@ public class ElemLiteralResult extends ElemUse
 
     // This loop is ok here because this code only runs during
     // stylesheet compile time.    
-        if(m_excludeResultPrefixes!=null)
+        if (m_excludeResultPrefixes!=null)
             for (int i =0; i< m_excludeResultPrefixes.size(); i++)
             {
                 if (uri.equals(getNamespaceForPrefix(m_excludeResultPrefixes.elementAt(i))))
@@ -324,7 +324,7 @@ public class ElemLiteralResult extends ElemUse
             }    
         
         // JJK Bugzilla 1133: Also check locally-scoped extensions
-    if(m_ExtensionElementURIs!=null && m_ExtensionElementURIs.contains(uri))
+    if (m_ExtensionElementURIs!=null && m_ExtensionElementURIs.contains(uri))
        return true;
 
         return super.containsExcludeResultPrefix(prefix, uri);
@@ -423,7 +423,7 @@ public class ElemLiteralResult extends ElemUse
 
   /**
    * The namespace of the element to be created.
-   * @serial
+   * 
    */
   private String m_namespace;
 
@@ -438,7 +438,7 @@ public class ElemLiteralResult extends ElemUse
    */
   public void setNamespace(String ns)
   {
-    if(null == ns) // defensive, shouldn't have to do this.
+    if (null == ns) // defensive, shouldn't have to do this.
       ns = "";
     m_namespace = ns;
   }
@@ -459,7 +459,7 @@ public class ElemLiteralResult extends ElemUse
 
   /**
    * The local name of the element to be created.
-   * @serial
+   * 
    */
   private String m_localName;
 
@@ -490,7 +490,7 @@ public class ElemLiteralResult extends ElemUse
 
   /**
    * The raw name of the element to be created.
-   * @serial
+   * 
    */
   private String m_rawName;
 
@@ -561,7 +561,7 @@ public class ElemLiteralResult extends ElemUse
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -596,7 +596,7 @@ public class ElemLiteralResult extends ElemUse
 
   /**
    * The "extension-element-prefixes" property, actually contains URIs.
-   * @serial
+   * 
    */
   private StringVector m_ExtensionElementURIs;
 
@@ -1265,7 +1265,7 @@ public class ElemLiteralResult extends ElemUse
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -1286,7 +1286,7 @@ public class ElemLiteralResult extends ElemUse
 
   /**
    * The XSLT version as specified by this element.
-   * @serial
+   * 
    */
   private String m_version;
 
@@ -1314,7 +1314,7 @@ public class ElemLiteralResult extends ElemUse
 
   /**
    * The "exclude-result-prefixes" property.
-   * @serial
+   * 
    */
   private StringVector m_excludeResultPrefixes;
 

@@ -91,7 +91,6 @@ import org.apache.xalan.tests.xslt3.XslCopyTests;
 import org.apache.xalan.tests.xslt3.XslDisableOutputEscapingAttrTests;
 import org.apache.xalan.tests.xslt3.XslExpandTextTests;
 import org.apache.xalan.tests.xslt3.XslForEachGroupMiscTests;
-import org.apache.xalan.tests.xslt3.XslForEachGroupTests;
 import org.apache.xalan.tests.xslt3.XslForEachGroupWithSortTests;
 import org.apache.xalan.tests.xslt3.XslForkTests;
 import org.apache.xalan.tests.xslt3.XslFunctionMiscTests;
@@ -100,10 +99,12 @@ import org.apache.xalan.tests.xslt3.XslIncludeTests;
 import org.apache.xalan.tests.xslt3.XslInitialTemplateTests;
 import org.apache.xalan.tests.xslt3.XslIterateTests;
 import org.apache.xalan.tests.xslt3.XslJsonValidationTests;
+import org.apache.xalan.tests.xslt3.XslLinearRegressionTests;
 import org.apache.xalan.tests.xslt3.XslMergeTests;
 import org.apache.xalan.tests.xslt3.XslMessageTests;
 import org.apache.xalan.tests.xslt3.XslMethodOutputJsonTests;
 import org.apache.xalan.tests.xslt3.XslModeTests;
+import org.apache.xalan.tests.xslt3.XslPackageTests;
 import org.apache.xalan.tests.xslt3.XslPerformSortTests;
 import org.apache.xalan.tests.xslt3.XslResultDocumentTests;
 import org.apache.xalan.tests.xslt3.XslRtfMigrationTests;
@@ -114,6 +115,7 @@ import org.apache.xalan.tests.xslt3.XslTemplateAttributeAsTests;
 import org.apache.xalan.tests.xslt3.XslTemplatePriorityTests;
 import org.apache.xalan.tests.xslt3.XslTemplateTests;
 import org.apache.xalan.tests.xslt3.XslTryCatchTests;
+import org.apache.xalan.tests.xslt3.XslUseWhenTests;
 import org.apache.xalan.tests.xslt3.XslVariableAttributeAsTests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -128,7 +130,7 @@ import org.junit.runners.Suite.SuiteClasses;
  * @xsl.usage advanced
  */
 @RunWith(Suite.class)
-@SuiteClasses({ XslSortTests.class, XslAnalyzeStringTests.class, XslAttributeTests.class, XslForEachGroupTests.class,
+@SuiteClasses({ XslSortTests.class, XslAnalyzeStringTests.class, XslAttributeTests.class,
                 XslForEachGroupWithSortTests.class, XslRtfMigrationTests.class, XPathQuantifiedExprTests.class, 
                 FnUnparsedTextTests.class, FnTokenizeTests.class, FnStringJoinTests.class,                 
                 FnIndexOfTests.class, XPathSequenceTraversalTests.class, XPathRangeExprTests.class, XslIterateTests.class,                 
@@ -158,7 +160,8 @@ import org.junit.runners.Suite.SuiteClasses;
                 XPathPartialFuncApplnTests.class, XslCopyTests.class, XalanJavascriptExtensionTests.class, XalanJavaExtensionTests.class,
                 XPathTextAndNodePattern.class, XPathLiteralSequenceTests.class, XslModeTests.class, XslTemplatePriorityTests.class,
                 XslDisableOutputEscapingAttrTests.class, XslMessageTests.class, FnAdjustDatetimeToTimezoneTests.class,
-                FnAdjustDateToTimezoneTests.class, FnAdjustTimeToTimezoneTests.class, FnFormatIntegerTests.class, XslPerformSortTests.class  } )
+                FnAdjustDateToTimezoneTests.class, FnAdjustTimeToTimezoneTests.class, FnFormatIntegerTests.class, XslPerformSortTests.class,
+                XslPackageTests.class, XslUseWhenTests.class, XslLinearRegressionTests.class } )
 public class XalanXsl3TestSuite2 {
 
 }

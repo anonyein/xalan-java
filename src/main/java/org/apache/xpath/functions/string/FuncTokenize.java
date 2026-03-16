@@ -59,7 +59,7 @@ public class FuncTokenize extends Function3Args {
   }
 
   /**
-   * Execute the function. The function must return a valid object.
+   * Evaluate the function. The function must return a valid object.
    * 
    * @param xctxt The current execution context.
    * 
@@ -135,13 +135,14 @@ public class FuncTokenize extends Function3Args {
         	}
         	catch (PatternSyntaxException ex) {
         		throw new javax.xml.transform.TransformerException(XSLMessages.createXPATHMessage(XPATHErrorResources.
-        				ER_INVALID_REGEX, new Object[]{ FUNCTION_NAME }), srcLocator);  
+        				                                                                       ER_INVALID_REGEX, new Object[]{ FUNCTION_NAME }), srcLocator);  
         	}
         	catch (Exception ex) {
         		throw new javax.xml.transform.TransformerException(ex.getMessage(), srcLocator);   
         	}
 
-        	for (int idx = 0; idx < tokenList.size(); idx++) {
+        	int count1 = tokenList.size();
+        	for (int idx = 0; idx < count1; idx++) {
         		resultSeq.add(new XString(tokenList.get(idx)));    
         	}
         }
@@ -185,12 +186,20 @@ public class FuncTokenize extends Function3Args {
       Matcher regexMatcher = null;
 
       try {
-          regexMatcher = RegexEvaluationSupport.regex(RegexEvaluationSupport.transformRegexStrForSubtractionOp(
+          regexMatcher = RegexEvaluationSupport.getRegexMatcher(RegexEvaluationSupport.transformRegexStrForSubtractionOp(
                                                                                             pattern.toString()), flags != null ? 
                                                                                             flags.toString() : null, inputStr.toString());
       }
       catch (PatternSyntaxException ex) {
           throw ex;   
+      }
+      catch (Exception ex) {
+    	  String errMesg = XSLMessages.createXPATHMessage(XPATHErrorResources.ER_INVALID_REGEX, new Object[]{ FUNCTION_NAME });        		
+
+    	  String mesg1 = ex.getMessage();
+    	  errMesg = (mesg1 != null) ? (errMesg + " " + mesg1) : errMesg;  
+
+    	  throw new javax.xml.transform.TransformerException(errMesg);
       }
 
       int startpos = 0;

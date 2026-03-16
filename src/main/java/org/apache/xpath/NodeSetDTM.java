@@ -214,9 +214,9 @@ public class NodeSetDTM extends NodeVector
    */
   public int getRoot()
   {
-    if(DTM.NULL == m_root)
+    if (DTM.NULL == m_root)
     {
-      if(size() > 0)
+      if (size() > 0)
         return item(0);
       else
         return DTM.NULL;
@@ -1159,7 +1159,7 @@ public class NodeSetDTM extends NodeVector
   transient protected boolean m_mutable = true;
 
   /** True if this list is cached.
-   *  @serial  */
+   *    */
   transient protected boolean m_cacheNodes = true;
   
   /** The root of the iteration, if available. */

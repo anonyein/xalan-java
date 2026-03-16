@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-12-11T12:34:12Z" fail="82" name="match" pass="100" skipped="112" statusUnknown="0" totalRun="182">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-02-22T17:38:19Z" fail="81" name="match" pass="101" run="182" skipped="112" statusUnknown="0">
    <testResult status="pass" testName="match-001"/>
    <testResult status="pass" testName="match-002"/>
    <testResult status="pass" testName="match-003"/>
@@ -34,7 +34,7 @@
    <testResult status="pass" testName="match-033"/>
    <testResult status="pass" testName="match-034"/>
    <testResult status="pass" testName="match-035"/>
-   <testResult status="fail" testName="match-036"/>
+   <testResult status="pass" testName="match-036"/>
    <testResult status="pass" testName="match-037"/>
    <testResult status="pass" testName="match-038"/>
    <testResult status="skipped" testName="match-039" xsltVersion="XSLT 2.0/1.0 only test case"/>
@@ -528,7 +528,13 @@ org.apache.xpath.XPathProcessorException: CONTINUE_AFTER_FATAL_ERROR</errTrace>
          <errTrace>java.lang.NullPointerException</errTrace>
       </outResult>
    </testResult>
-   <testResult status="fail" testName="match-276"/>
+   <testResult status="fail" testName="match-276">
+      <outResult>
+         <errTrace>Extra illegal tokens: 'except', '@', 'q', 'except', '@', 'http://www.w3.org/XML/1998/namespace', ':', 'id'</errTrace>
+         <errTrace>Extra illegal tokens: 'except', '(', '@', 'xxx', '|', '@', 'yyy', ')'</errTrace>
+         <errTrace>java.lang.RuntimeException: This NodeSetDTM can not iterate to a previous node!</errTrace>
+      </outResult>
+   </testResult>
    <testResult status="fail" testName="match-277"/>
    <testResult status="pass" testName="match-278"/>
    <testResult status="pass" testName="match-279"/>

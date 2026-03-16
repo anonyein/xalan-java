@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.patterns;
 
 import org.apache.xml.dtm.DTM;
@@ -54,7 +51,7 @@ public class NodeTest extends Expression
 
   /**
    * This attribute determines which node types are accepted.
-   * @serial
+   * 
    */
   protected int m_whatToShow;
 
@@ -90,7 +87,7 @@ public class NodeTest extends Expression
 
   /**
    * The namespace to be tested for, which may be null.
-   *  @serial 
+   *   
    */
   String m_namespace;
 
@@ -115,8 +112,7 @@ public class NodeTest extends Expression
   }
 
   /**
-   * The local name to be tested for.
-   *  @serial 
+   * The local name to be tested for. 
    */
   protected String m_name;
 
@@ -147,7 +143,7 @@ public class NodeTest extends Expression
    *  {@link #SCORE_NSWILD},
    *  {@link #SCORE_QNAME}, or
    *  {@link #SCORE_OTHER}.
-   *  @serial
+   *  
    */
   XNumber m_score;
 
@@ -217,35 +213,35 @@ public class NodeTest extends Expression
    */
   public boolean deepEquals(Expression expr)
   {
-  	if(!isSameClass(expr))
+  	if (!isSameClass(expr))
   		return false;
   		
   	NodeTest nt = (NodeTest)expr;
 
-  	if(null != nt.m_name)
+  	if (null != nt.m_name)
   	{
-  		if(null == m_name)
+  		if (null == m_name)
   			return false;
-  		else if(!nt.m_name.equals(m_name))
+  		else if (!nt.m_name.equals(m_name))
   			return false;
   	}
-  	else if(null != m_name)
+  	else if (null != m_name)
   		return false;
 
-  	if(null != nt.m_namespace)
+  	if (null != nt.m_namespace)
   	{
-  		if(null == m_namespace)
+  		if (null == m_namespace)
   			return false;
-  		else if(!nt.m_namespace.equals(m_namespace))
+  		else if (!nt.m_namespace.equals(m_namespace))
   			return false;
   	}
-  	else if(null != m_namespace)
+  	else if (null != m_namespace)
   		return false;
   		  		
-  	if(m_whatToShow != nt.m_whatToShow)
+  	if (m_whatToShow != nt.m_whatToShow)
   		return false;
   		
-  	if(m_isTotallyWild != nt.m_isTotallyWild)
+  	if (m_isTotallyWild != nt.m_isTotallyWild)
   		return false;
 
 	return true;
@@ -276,7 +272,6 @@ public class NodeTest extends Expression
    * namespace and local name, and
    * calculating the score that this test will return if a test succeeds.
    *
-   *
    * @param whatToShow Bit set defined mainly by {@link org.w3c.dom.traversal.NodeFilter}.
    * @param namespace The namespace to be tested.
    * @param name The local name to be tested.
@@ -293,7 +288,7 @@ public class NodeTest extends Expression
 
   /**
    * True if this test has a null namespace and a local name of {@link #WILD}.
-   *  @serial 
+   *   
    */
   private boolean m_isTotallyWild;
   

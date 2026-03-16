@@ -42,8 +42,6 @@ import org.w3c.dom.NodeList;
 /**
  * Implementation of XSLT xsl:with-param element.
  * 
- * Ref : https://www.w3.org/TR/xslt-30/#element-with-param
- * 
  * @xsl.usage advanced
  */
 public class ElemWithParam extends ElemTemplateElement
@@ -60,7 +58,7 @@ public class ElemWithParam extends ElemTemplateElement
   /**
    * The "select" attribute, which specifies the value of the
    * argument, if element content is not specified.
-   * @serial
+   * 
    */
   private XPath m_selectPattern = null;
   
@@ -104,7 +102,7 @@ public class ElemWithParam extends ElemTemplateElement
    * parameter (the variable the value of whose binding is
    * to be replaced). The value of the name attribute is a QName,
    * which is expanded as described in [2.4 Qualified Names].
-   * @serial
+   * 
    */
   private QName m_qname = null;
   
@@ -135,7 +133,7 @@ public class ElemWithParam extends ElemTemplateElement
   /**
    * The value of the "as" attribute.
    */
-  private String m_asAttr;
+  private String m_asAttr = null;
   
   /**
    * Set the "as" attribute.
@@ -204,18 +202,18 @@ public class ElemWithParam extends ElemTemplateElement
   public void compose(StylesheetRoot sroot) throws TransformerException
   {
     // See if we can reduce an RTF to a select with a string expression.
-    if(null == m_selectPattern  
+    if (null == m_selectPattern  
        && sroot.getOptimizer())
     {
       XPath newSelect = ElemVariable.rewriteChildToExpression(this);
-      if(null != newSelect)
+      if (null != newSelect)
         m_selectPattern = newSelect;
     }
     m_qnameID = sroot.getComposeState().getQNameID(m_qname);
     super.compose(sroot);
     
     java.util.Vector vnames = sroot.getComposeState().getVariableNames();
-    if(null != m_selectPattern)
+    if (null != m_selectPattern)
       m_selectPattern.fixupVariables(vnames, sroot.getComposeState().getGlobalsSize());
       
     // m_index must be resolved by ElemApplyTemplates and ElemCallTemplate!
@@ -245,11 +243,11 @@ public class ElemWithParam extends ElemTemplateElement
   public XObject getValue(TransformerImpl transformer, int sourceNode) throws TransformerException
   {
 
-    XObject var;
+    XObject var = null;
     XPathContext xctxt = transformer.getXPathContext();
     
     SourceLocator srcLocator = xctxt.getSAXLocator();
-    
+
     if (m_tunnelAttr != null && !isValidTunnelParamValue(m_tunnelAttr)) {
        throw new TransformerException("XTTE0590 : Allowed values for XSL with-param's tunnel "
        		                                           + "attribute are : yes, true, 1, no, false, 0. The "
@@ -322,7 +320,7 @@ public class ElemWithParam extends ElemTemplateElement
    */
   protected void callChildVisitors(XSLTVisitor visitor, boolean callAttrs)
   {
-  	if(callAttrs && (null != m_selectPattern))
+  	if (callAttrs && (null != m_selectPattern))
   		m_selectPattern.getExpression().callVisitors(m_selectPattern, visitor);
     super.callChildVisitors(visitor, callAttrs);
   }

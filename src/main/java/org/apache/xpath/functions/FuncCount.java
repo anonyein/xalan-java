@@ -42,7 +42,7 @@ public class FuncCount extends FunctionOneArg
     }
 
   /**
-   * Execute the function. The function must return a valid object.
+   * Evaluate the function. The function must return a valid object.
    * 
    * @param xctxt The current execution context.
    * @return A valid XObject.
@@ -53,7 +53,7 @@ public class FuncCount extends FunctionOneArg
   {
       XObject result = null;
       
-	  XNumber xNumber = XslTransformEvaluationHelper.getCountOfSequenceItems(m_arg0, xctxt);
+	  XNumber xNumber = XslTransformEvaluationHelper.getSequenceItemCount(m_arg0, xctxt);
 	  
 	  result = xNumber;
       

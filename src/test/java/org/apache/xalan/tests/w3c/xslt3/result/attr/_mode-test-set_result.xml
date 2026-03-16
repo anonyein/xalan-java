@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-12-10T16:52:35Z" fail="59" name="mode" pass="64" skipped="46" statusUnknown="0" totalRun="123">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-02-23T16:14:48Z" fail="69" name="mode" pass="72" run="141" skipped="28" statusUnknown="0">
    <testResult status="pass" testName="mode-0001"/>
    <testResult feature="streaming" status="skipped" testName="mode-0002"/>
    <testResult status="pass" testName="mode-0003"/>
@@ -42,10 +42,7 @@
    <testResult status="pass" testName="mode-1101"/>
    <testResult status="fail" testName="mode-1102">
       <outResult>
-         <errTrace>Illegal value: b X  c  used for QNAME attribute: mode</errTrace>
-         <errTrace>Illegal value:  a used for QNAME attribute: mode</errTrace>
-         <errTrace>Illegal value: a  used for QNAME attribute: mode</errTrace>
-         <errTrace>Illegal value:  X  used for QNAME attribute: mode</errTrace>
+         <errTrace>Illegal value: b X  c used for QNAME attribute: mode</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="mode-1103"/>
@@ -123,11 +120,7 @@ Z&#13;#unnamed used for QNAME attribute: mode</errTrace>
          <errTrace>java.lang.NullPointerException</errTrace>
       </outResult>
    </testResult>
-   <testResult status="fail" testName="mode-1108">
-      <outResult>
-         <errTrace>XTSE0010 : xsl:apply-templates is not allowed in this position in the stylesheet</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="mode-1108"/>
    <testResult status="pass" testName="mode-1201"/>
    <testResult status="pass" testName="mode-1202"/>
    <testResult status="pass" testName="mode-1203"/>
@@ -171,12 +164,8 @@ Z&#13;#unnamed used for QNAME attribute: mode</errTrace>
    <testResult feature="streaming" status="skipped" testName="mode-1428"/>
    <testResult status="fail" testName="mode-1429">
       <outResult>
-         <errTrace>Illegal value:  Q{}s  used for QNAME attribute: name</errTrace>
-         <errTrace>Illegal value:  s  used for QNAME attribute: mode</errTrace>
-         <errTrace>XTSE0740 : An XSL template's name attribute doesn't have a URI reference</errTrace>
-         <errTrace>Illegal value:  #current  used for QNAME attribute: mode</errTrace>
-         <errTrace>Illegal value:  s  used for QNAME attribute: mode</errTrace>
-         <errTrace>Illegal value:  Q{}s  used for QNAME attribute: mode</errTrace>
+         <errTrace>XTSE0740 : An XSL mode's name attribute doesn't have a URI reference</errTrace>
+         <errTrace>XTSE0740 : An XSL apply-templates's name attribute doesn't have a URI reference</errTrace>
          <errTrace>XTTE0505 : An XSL mode instruction's attribute "on-no-match" has disallowed value ' text-only-copy '.</errTrace>
       </outResult>
    </testResult>
@@ -188,9 +177,7 @@ Z&#13;#unnamed used for QNAME attribute: mode</errTrace>
    </testResult>
    <testResult status="fail" testName="mode-1434"/>
    <testResult status="fail" testName="mode-1435">
-      <outResult>
-         <errTrace>Illegal value:  a:mode  used for QNAME attribute: default-mode</errTrace>
-      </outResult>
+      <outResult/>
    </testResult>
    <testResult feature="streaming" status="skipped" testName="mode-1436"/>
    <testResult feature="streaming" status="skipped" testName="mode-1437"/>
@@ -269,10 +256,6 @@ Z&#13;#unnamed used for QNAME attribute: mode</errTrace>
    </testResult>
    <testResult status="fail" testName="mode-1441">
       <outResult>
-         <errTrace>Illegal value:  s  used for QNAME attribute: name</errTrace>
-         <errTrace>Illegal value:  s  used for QNAME attribute: mode</errTrace>
-         <errTrace>Illegal value: s  used for QNAME attribute: mode</errTrace>
-         <errTrace>Illegal value:  #current  used for QNAME attribute: mode</errTrace>
          <errTrace>XTTE0505 : An XSL mode instruction's attribute "on-no-match" has disallowed value ' text-only-copy '.</errTrace>
       </outResult>
    </testResult>
@@ -281,10 +264,6 @@ Z&#13;#unnamed used for QNAME attribute: mode</errTrace>
    </testResult>
    <testResult status="fail" testName="mode-1443">
       <outResult>
-         <errTrace>Illegal value:  s  used for QNAME attribute: name</errTrace>
-         <errTrace>Illegal value:  s  used for QNAME attribute: mode</errTrace>
-         <errTrace>Illegal value: s  used for QNAME attribute: mode</errTrace>
-         <errTrace>Illegal value:  #current  used for QNAME attribute: mode</errTrace>
          <errTrace>XTTE0505 : An XSL mode instruction's attribute "on-no-match" has disallowed value ' text-only-copy '.</errTrace>
       </outResult>
    </testResult>
@@ -366,20 +345,12 @@ Z&#13;#unnamed used for QNAME attribute: mode</errTrace>
    <testResult status="pass" testName="mode-1505"/>
    <testResult feature="streaming" status="skipped" testName="mode-1506"/>
    <testResult status="fail" testName="mode-1507">
-      <outResult>
-         <errTrace>java.lang.IndexOutOfBoundsException: Index: 0, Size: 0</errTrace>
-      </outResult>
+      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;</outResult>
    </testResult>
    <testResult status="fail" testName="mode-1508">
-      <outResult>
-         <errTrace>java.lang.IndexOutOfBoundsException: Index: 0, Size: 0</errTrace>
-      </outResult>
+      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;</outResult>
    </testResult>
-   <testResult status="fail" testName="mode-1509">
-      <outResult>
-         <errTrace>XTDE0040 : An XSL template named 'main' doesn't exist.</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="mode-1509"/>
    <testResult status="fail" testName="mode-1510">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out/&gt;</outResult>
    </testResult>
@@ -424,24 +395,63 @@ Z&#13;#unnamed used for QNAME attribute: mode</errTrace>
    <testResult status="fail" testName="mode-1617"/>
    <testResult status="fail" testName="mode-1618"/>
    <testResult status="fail" testName="mode-1619"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1701"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1701a"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1702"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1702a"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1703"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1704"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1705"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1705a"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1705b"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1706"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1707"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1708"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1709"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1710"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1711"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1712"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1713"/>
-   <testResult feature="xsl:package test case" status="skipped" testName="mode-1714err"/>
+   <testResult status="pass" testName="mode-1701"/>
+   <testResult status="pass" testName="mode-1701a"/>
+   <testResult status="fail" testName="mode-1702">
+      <outResult>
+         <errTrace>Illegal value: #unnamed used for QNAME attribute: mode</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="fail" testName="mode-1702a">
+      <outResult>
+         <errTrace>java.lang.NullPointerException</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="fail" testName="mode-1703">
+      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;</outResult>
+   </testResult>
+   <testResult status="fail" testName="mode-1704">
+      <outResult>
+         <errTrace>Illegal value: #unnamed used for QNAME attribute: default-mode</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="fail" testName="mode-1705">
+      <outResult>
+         <errTrace>Illegal value: #unnamed used for QNAME attribute: mode</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="fail" testName="mode-1705a">
+      <outResult>
+         <errTrace>Illegal value: #unnamed used for QNAME attribute: mode</errTrace>
+         <errTrace>XTDE0045 : An XSL stylesheet, initial mode must be 'public' within XSL stylesheet 'package' element.</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="pass" testName="mode-1705b"/>
+   <testResult status="fail" testName="mode-1706">
+      <outResult>
+         <errTrace>Illegal value: #unnamed used for QNAME attribute: mode</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="fail" testName="mode-1707">
+      <outResult>
+         <errTrace>XTDE0045 : An XSL stylesheet, initial mode must be 'public' within XSL stylesheet 'package' element.</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="pass" testName="mode-1708"/>
+   <testResult status="fail" testName="mode-1709"/>
+   <testResult status="fail" testName="mode-1710">
+      <outResult>
+         <errTrace>Illegal value: #unnamed used for QNAME attribute: mode</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="fail" testName="mode-1711"/>
+   <testResult status="fail" testName="mode-1712">
+      <outResult>
+         <errTrace>Illegal value: #unnamed used for QNAME attribute: mode</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="pass" testName="mode-1713"/>
+   <testResult status="pass" testName="mode-1714err"/>
    <testResult status="fail" testName="mode-1801">
       <outResult/>
    </testResult>
@@ -450,8 +460,8 @@ Z&#13;#unnamed used for QNAME attribute: mode</errTrace>
    </testResult>
    <testResult status="fail" testName="mode-1803">
       <outResult>
-         <errTrace>XTSE0010 : xsl:package is not allowed in this position in the stylesheet</errTrace>
-         <errTrace>java.lang.NullPointerException</errTrace>
+         <errTrace>Illegal value: #unnamed used for QNAME attribute: mode</errTrace>
+         <errTrace>XTDE0045 : An XSL stylesheet, initial mode must be 'public' within XSL stylesheet 'package' element.</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="mode-1901"/>

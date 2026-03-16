@@ -30,6 +30,7 @@ import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.CountersTable;
 import org.apache.xalan.transformer.DecimalToRoman;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.utils.FastStringBuffer;
 import org.apache.xml.utils.NodeVector;
@@ -55,21 +56,19 @@ import xml.xpath31.processor.types.XSNumericType;
 /**
  * Implementation of XSLT 3.0 xsl:number instruction. 
  * 
- * <pre>
- * <!ELEMENT xsl:number EMPTY>
- * <!ATTLIST xsl:number
- *    level (single|multiple|any) "single"
- *    count %pattern; #IMPLIED
- *    from %pattern; #IMPLIED
- *    value %expr; #IMPLIED
- *    format %avt; '1'
- *    lang %avt; #IMPLIED
- *    letter-value %avt; #IMPLIED
- *    ordinal %avt; #IMPLIED
- *    grouping-separator %avt; #IMPLIED
- *    grouping-size %avt; #IMPLIED
- * >
- * </pre>
+ * <xsl:number
+ *    value? = expression
+ *    select? = expression
+ *    level? = "single" | "multiple" | "any"
+ *    count? = pattern
+ *    from? = pattern
+ *    format? = { string }
+ *    lang? = { language }
+ *    letter-value? = { "alphabetic" | "traditional" }
+ *    ordinal? = { string }
+ *    start-at? = { string }
+ *    grouping-separator? = { char }
+ *    grouping-size? = { integer } />
  * 
  * @xsl.usage advanced
  */
@@ -131,7 +130,7 @@ public class ElemNumber extends ElemTemplateElement
     
   /**
    * Only nodes are counted that match this pattern.
-   * @serial
+   * 
    */
   private XPath m_countMatchPattern = null;
 
@@ -176,7 +175,7 @@ public class ElemNumber extends ElemTemplateElement
    * For level="any:
    * Only nodes after the first node before the
    * current node that match the from pattern are considered.
-   * @serial
+   * 
    */
   private XPath m_fromMatchPattern = null;
 
@@ -238,7 +237,7 @@ public class ElemNumber extends ElemTemplateElement
    * the union of the members of the preceding and ancestor-or-self axes). If the
    * from attribute is specified, then only nodes after the first node before the
    * current node that match the from pattern are considered.
-   * @serial
+   * 
    */
   private int m_level = Constants.NUMBERLEVEL_SINGLE;
 
@@ -272,7 +271,7 @@ public class ElemNumber extends ElemTemplateElement
    * The value attribute contains an expression. The expression is evaluated
    * and the resulting object is converted to a number as if by a call to the
    * number function.
-   * @serial
+   * 
    */
   private XPath m_valueExpr = null;
 
@@ -306,7 +305,7 @@ public class ElemNumber extends ElemTemplateElement
    * The "format" attribute is used to control conversion of a list of
    * numbers into a string.
    * @see <a href="http://www.w3.org/TR/xslt#convert">convert in XSLT Specification</a>
-   * @serial
+   * 
    */
   private AVT m_format_avt = null;
 
@@ -365,7 +364,7 @@ public class ElemNumber extends ElemTemplateElement
   /**
    * When numbering with an alphabetic sequence, the lang attribute
    * specifies which language's alphabet is to be used.
-   * @serial
+   * 
    */
   private AVT m_lang_avt = null;
 
@@ -430,7 +429,7 @@ public class ElemNumber extends ElemTemplateElement
   /**
    * The letter-value attribute disambiguates between numbering
    * sequences that use letters.
-   * @serial
+   * 
    */
   private AVT m_lettervalue_avt = null;
 
@@ -464,7 +463,7 @@ public class ElemNumber extends ElemTemplateElement
    * The grouping-separator attribute gives the separator
    * used as a grouping (e.g. thousands) separator in decimal
    * numbering sequences.
-   * @serial
+   * 
    */
   private AVT m_groupingSeparator_avt = null;
 
@@ -498,7 +497,7 @@ public class ElemNumber extends ElemTemplateElement
 
   /**
    * The optional grouping-size specifies the size (normally 3) of the grouping.
-   * @serial
+   * 
    */
   private AVT m_groupingSize_avt = null;
 
@@ -527,7 +526,7 @@ public class ElemNumber extends ElemTemplateElement
   }
 
   /**
-   * This class field, represents the value of "ordinal" 
+   * Class field, that represents the value of "ordinal" 
    * attribute.
    */
   private AVT m_ordinal_avt;
@@ -552,7 +551,7 @@ public class ElemNumber extends ElemTemplateElement
   }
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
@@ -583,7 +582,7 @@ public class ElemNumber extends ElemTemplateElement
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -615,6 +614,32 @@ public class ElemNumber extends ElemTemplateElement
   public boolean getExpandTextDeclared() {
 	  return m_expand_text_declared;
   }
+  
+  /**
+   * Class field to refer to the fact that, whether to 
+   * serialize xsl:number instruction's result to XSL 
+   * transform's output.
+   */
+  private boolean m_is_serialize = true;
+  
+  public boolean getIsSerialize() {
+	  return m_is_serialize;
+  }
+  
+  public void setIsSerialize(boolean serialize) {
+	  m_is_serialize = serialize;  
+  }
+  
+  /**
+   * Class field to refer to, xsl:number instruction's
+   * formatted result string. This value, may be null 
+   * as well.
+   */
+  private String m_result_str;
+  
+  public String getFormattedResultStr() {
+	  return m_result_str; 
+  }
 
   /**
    * Table to help in converting decimals to roman numerals.
@@ -640,21 +665,21 @@ public class ElemNumber extends ElemTemplateElement
     super.compose(sroot);
     StylesheetRoot.ComposeState cstate = sroot.getComposeState();
     java.util.Vector vnames = cstate.getVariableNames();
-    if(null != m_countMatchPattern)
+    if (null != m_countMatchPattern)
       m_countMatchPattern.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_format_avt)
+    if (null != m_format_avt)
       m_format_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_fromMatchPattern)
+    if (null != m_fromMatchPattern)
       m_fromMatchPattern.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_groupingSeparator_avt)
+    if (null != m_groupingSeparator_avt)
       m_groupingSeparator_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_groupingSize_avt)
+    if (null != m_groupingSize_avt)
       m_groupingSize_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_lang_avt)
+    if (null != m_lang_avt)
       m_lang_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_lettervalue_avt)
+    if (null != m_lettervalue_avt)
       m_lettervalue_avt.fixupVariables(vnames, cstate.getGlobalsSize());
-    if(null != m_valueExpr)
+    if (null != m_valueExpr)
       m_valueExpr.fixupVariables(vnames, cstate.getGlobalsSize());
   }
 
@@ -663,7 +688,7 @@ public class ElemNumber extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -721,19 +746,24 @@ public class ElemNumber extends ElemTemplateElement
 	  
 	  String countString = getCountString(transformer, sourceNode, isOrdinal);
 
-	  try
-	  {
-		  transformer.getResultTreeHandler().characters(countString.toCharArray(), 
-				                                                             0, countString.length());
+	  if (m_is_serialize) {
+		  try
+		  {
+			  transformer.getResultTreeHandler().characters(countString.toCharArray(), 
+					                                                              0, countString.length());
+		  }
+		  catch(SAXException se)
+		  {
+			  throw new TransformerException(se);
+		  }
+		  finally
+		  {
+			  if (transformer.getDebug())
+				  transformer.getTraceManager().emitTraceEndEvent(this); 
+		  }
 	  }
-	  catch(SAXException se)
-	  {
-		  throw new TransformerException(se);
-	  }
-	  finally
-	  {
-		  if (transformer.getDebug())
-			  transformer.getTraceManager().emitTraceEndEvent(this); 
+	  else {
+		  m_result_str = countString; 
 	  }
   }
 
@@ -960,8 +990,7 @@ public class ElemNumber extends ElemTemplateElement
     XPathContext xctxt = transformer.getXPathContext();
     CountersTable ctable = transformer.getCountersTable();
 
-    if (null != m_valueExpr)
-    {
+    if (m_valueExpr != null) {
       XObject countObj = m_valueExpr.execute(xctxt, sourceNode, this);
       
       if (countObj instanceof ResultSequence) {
@@ -973,12 +1002,19 @@ public class ElemNumber extends ElemTemplateElement
     	  }
       }
       
-      //According to Errata E24
+      // According to XSL errata E24
       
       double num1 = 0.0;
       
       try {
-         num1 = countObj.num();
+    	 String str1 = XslTransformEvaluationHelper.getStrVal(countObj); 
+    	 try {
+            num1 = (Double.valueOf(str1)).doubleValue();
+    	 }
+    	 catch (NumberFormatException ex) {
+    		throw new TransformerException("NumberFormatException"); 
+    	 }
+         
          if (num1 == 0.0) {
         	 long count = (long)num1;
         	 list = new long[1];
@@ -1450,7 +1486,7 @@ public class ElemNumber extends ElemTemplateElement
               lastSepString += formatToken;
             }
           }  // else
-        }  // end if(formatTokenizer.hasMoreTokens())
+        }  // end if (formatTokenizer.hasMoreTokens())
 
         // if this is the first token and there was a prefix
         // append the prefix else, append the separator
@@ -1836,7 +1872,7 @@ public class ElemNumber extends ElemTemplateElement
       return getZeroString();
     }
     else
-      return (new Character(table.getChar((int)val - 1))).toString();  // index into table is off one, starts at 0
+      return (Character.valueOf(table.getChar((int)val - 1))).toString();  // index into table is off one, starts at 0
   }
 
   /**
@@ -2213,24 +2249,24 @@ public class ElemNumber extends ElemTemplateElement
    */
   public void callChildVisitors(XSLTVisitor visitor, boolean callAttrs)
   {
-  	if(callAttrs)
+  	if (callAttrs)
   	{
-	  	if(null != m_countMatchPattern)
+	  	if (null != m_countMatchPattern)
 	  		m_countMatchPattern.getExpression().callVisitors(m_countMatchPattern, visitor);
-	  	if(null != m_fromMatchPattern)
+	  	if (null != m_fromMatchPattern)
 	  		m_fromMatchPattern.getExpression().callVisitors(m_fromMatchPattern, visitor);
-	  	if(null != m_valueExpr)
+	  	if (null != m_valueExpr)
 	  		m_valueExpr.getExpression().callVisitors(m_valueExpr, visitor);
 	
-	  	if(null != m_format_avt)
+	  	if (null != m_format_avt)
 	  		m_format_avt.callVisitors(visitor);
-	  	if(null != m_groupingSeparator_avt)
+	  	if (null != m_groupingSeparator_avt)
 	  		m_groupingSeparator_avt.callVisitors(visitor);
-	  	if(null != m_groupingSize_avt)
+	  	if (null != m_groupingSize_avt)
 	  		m_groupingSize_avt.callVisitors(visitor);
-	  	if(null != m_lang_avt)
+	  	if (null != m_lang_avt)
 	  		m_lang_avt.callVisitors(visitor);
-	  	if(null != m_lettervalue_avt)
+	  	if (null != m_lettervalue_avt)
 	  		m_lettervalue_avt.callVisitors(visitor);
   	}
 

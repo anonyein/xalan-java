@@ -26,6 +26,7 @@ import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.compiler.Keywords;
+import org.apache.xpath.functions.context.FuncCurrentDateTime;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XBooleanStatic;
 import org.apache.xpath.objects.XNumber;
@@ -34,7 +35,7 @@ import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.Variable;
 
-import com.sun.org.apache.xml.internal.dtm.DTM;
+import org.apache.xml.dtm.DTM;
 
 import xml.xpath31.processor.types.XSAnyAtomicType;
 import xml.xpath31.processor.types.XSDateTime;
@@ -61,7 +62,7 @@ public class FuncRandomNumberGenerator extends FunctionMultiArgs {
 	}
 	
 	/**
-	 * Implementation of the function.
+	 * Evaluate the function.
 	 */
 	public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
 	{          

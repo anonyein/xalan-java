@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.xpath.types;
 
 import javax.xml.transform.TransformerException;
@@ -9,11 +26,15 @@ import org.apache.xpath.regex.Matcher;
 import org.apache.xpath.regex.Pattern;
 
 import xml.xpath31.processor.types.XSAnyAtomicType;
+import xml.xpath31.processor.types.XSDate;
+import xml.xpath31.processor.types.XSDateTime;
 
 /**
  * Implementation of XML Schema data type xs:gYear.
  * 
  * @author : Mukul Gandhi <mukulg@apache.org>
+ * 
+ * @xsl.usage general
  */
 public class XSGYear extends XSAnyAtomicType {
 	
@@ -45,15 +66,64 @@ public class XSGYear extends XSAnyAtomicType {
 	 * Default constructor.
 	 */
 	public XSGYear() {
-		// NO OP
+		// no op
 	}
 	
 	/**
 	 * Class constructor.
 	 */
 	public XSGYear(String gYearStrValue) throws TransformerException {
-		parse(gYearStrValue);
-		m_gYearStrValue = gYearStrValue; 
+		
+		boolean isXsDate = true;
+		
+		try {
+		   // Constructing xs:gYear value, from supplied xs:date lexical value
+		   XSDate xsDate = XSDate.parseDate(gYearStrValue);
+		   String timeZoneStr = DateTimeUtil.getTimeZoneStrFromXsDateValue(xsDate);
+		   
+		   int year = xsDate.year();
+		   String str1 = String.valueOf(year);
+		   
+		   if (timeZoneStr != null) {
+			  str1 += timeZoneStr; 
+		   }
+		   
+		   parse(str1);
+		   
+		   m_gYearStrValue = str1;
+		}
+		catch (TransformerException ex) {
+			isXsDate = false;
+		}
+		
+		if (!isXsDate) {
+		   try {
+			  // Constructing xs:gYear value, from supplied xs:dateTime lexical value 
+		      XSDateTime xsDateTime = XSDateTime.parseDateTime(gYearStrValue);		      
+		      String timeZoneStr = DateTimeUtil.getTimeZoneStrFromXsDateTimeValue(xsDateTime);
+		      
+		      int year = xsDateTime.year();
+		      String str1 = String.valueOf(year);
+		      
+		      if (timeZoneStr != null) {
+		    	 str1 += timeZoneStr;   
+		      }
+			   
+			  parse(str1);
+			   
+			  m_gYearStrValue = str1;
+		   }
+		   catch (TransformerException ex) {
+		      // no op	   
+		   }
+		}
+		
+		if (m_gYearStrValue == null) {
+		   // Constructing xs:gYear value, from supplied xs:gYear lexical value	
+		   parse(gYearStrValue);
+		   
+		   m_gYearStrValue = gYearStrValue;
+		}
 	}
 
 	@Override
@@ -70,7 +140,7 @@ public class XSGYear extends XSAnyAtomicType {
 			XSGYear xsGYear = new XSGYear(strVal);
 			result.add(xsGYear);
 		} catch (TransformerException ex) {
-			// NO OP
+			// no op
 		}
 		
 		return result;

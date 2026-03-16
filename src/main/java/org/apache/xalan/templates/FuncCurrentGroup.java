@@ -25,11 +25,12 @@ import javax.xml.transform.SourceLocator;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.Function;
+import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Implementation of an XSLT 3.0 function current-group().
+ * Implementation of an XSLT 3.0 function fn:current-group.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -41,44 +42,77 @@ public class FuncCurrentGroup extends Function
    private static final long serialVersionUID = -9147780878956514961L;
 
    /**
-     * Execute the function. The function must return a valid object.
+     * Evaluate the function. The function must return a valid object.
      * 
-     * @param xctxt The current execution context.
-     * @return a valid XObject.
+     * @param xctxt                          An XPath context object
+     * @return                               A valid XObject
      *
      * @throws javax.xml.transform.TransformerException
    */
    public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
    {
-       XMLNodeCursorImpl currentGroupNodes = null;
-       
-       SourceLocator srcLocator = xctxt.getSAXLocator();
-       
-       TransformerImpl transformer = (TransformerImpl) xctxt.getOwnerObject();                            
-       ElemTemplateElement currElemTemplateElement = transformer.getCurrentElement();       
-      
-       List<Integer> groupNodesDtmHandles = currElemTemplateElement.getGroupNodesDtmHandles();
-       while ((groupNodesDtmHandles == null) && (currElemTemplateElement != null)) {
-           currElemTemplateElement = currElemTemplateElement.getParentElem();
-           if (currElemTemplateElement != null) {
-             groupNodesDtmHandles = currElemTemplateElement.getGroupNodesDtmHandles();
-           }
-       }
-       
-       if (groupNodesDtmHandles != null) {
-          currentGroupNodes = new XMLNodeCursorImpl(groupNodesDtmHandles, xctxt);
-       }
-       else {
-    	  throw new javax.xml.transform.TransformerException("XTDE1061 : The fn:current-group function call couldn't "
-    	  		                                                                                     + "determine a group of XDM items.", srcLocator);  
-       }
-              
-       return currentGroupNodes;
+	   XObject result = null;
+
+	   SourceLocator srcLocator = xctxt.getSAXLocator();
+	   
+	   ElemTemplateElement elemTemplateElement = (ElemTemplateElement)getExpressionOwner();
+	  
+	   boolean isFnCurrentGroupRefValidContext = false; 
+	   while (elemTemplateElement != null) {
+		   if (elemTemplateElement instanceof ElemForEachGroup) {
+			   isFnCurrentGroupRefValidContext = true;
+
+			   break; 
+		   }
+
+		   elemTemplateElement = elemTemplateElement.getParentElem();
+	   }
+	  
+	   if (!isFnCurrentGroupRefValidContext) {
+		  elemTemplateElement = (ElemTemplateElement)getExpressionOwner();
+		  (elemTemplateElement.m_groupNodesDtmHandlesStack).clear();
+	   }   	   
+
+	   TransformerImpl transformer = (TransformerImpl) xctxt.getOwnerObject();                            
+	   ElemTemplateElement currElemTemplateElement = transformer.getCurrentElement();       
+
+	   List<Integer> groupNodesDtmHandles = currElemTemplateElement.getGroupNodesDtmHandles();
+	   while ((groupNodesDtmHandles == null) && (currElemTemplateElement != null)) {
+		   currElemTemplateElement = currElemTemplateElement.getParentElem();
+		   if (currElemTemplateElement != null) {
+			   groupNodesDtmHandles = currElemTemplateElement.getGroupNodesDtmHandles();
+		   }
+	   }
+
+	   if (groupNodesDtmHandles != null) {
+		   if (isFnCurrentGroupRefValidContext) {
+			   boolean isGroupingAtomicValues = elemTemplateElement.getIsGroupingXdmAtomicValues();
+			   if (isGroupingAtomicValues) {
+				   ResultSequence rSeq = new ResultSequence();
+				   int rSeqLength = groupNodesDtmHandles.size();
+				   for (int idx = 0; idx < rSeqLength; idx++) {
+					   int nodeHandle = groupNodesDtmHandles.get(idx);
+					   rSeq.add(new XMLNodeCursorImpl(nodeHandle, xctxt));
+				   }
+
+				   result = rSeq;
+			   }
+			   else {
+				   result = new XMLNodeCursorImpl(groupNodesDtmHandles, xctxt);
+			   }
+		   }
+	   }
+	   else {
+		   throw new javax.xml.transform.TransformerException("XTDE1061 : An XPath function call current-group, "
+		   		                                                                                             + "couldn't form group of xdm items.", srcLocator);  
+	   }
+
+	   return result;
    }
 
    @Override
    public void fixupVariables(Vector vars, int globalsSize) {
-       // NO OP    
+       // no op   
    }
   
 }

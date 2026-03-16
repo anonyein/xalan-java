@@ -39,7 +39,7 @@ public class ElemImportSchema extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -70,7 +70,7 @@ public class ElemImportSchema extends ElemTemplateElement
    */
   public void execute(TransformerImpl transformer) throws TransformerException
   {
-     // NO OP
+     // no op
   }
 
   /**
@@ -84,12 +84,12 @@ public class ElemImportSchema extends ElemTemplateElement
   
   public void compose(StylesheetRoot sroot) throws TransformerException
   {
-	 // NO OP  
+	 // no op  
   }
   
   public void endCompose(StylesheetRoot sroot) throws TransformerException
   {
-	 // NO OP  
+	 // no op  
   }
   
   public void setParentElem(ElemTemplateElement p)

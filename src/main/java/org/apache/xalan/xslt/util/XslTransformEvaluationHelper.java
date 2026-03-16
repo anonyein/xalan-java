@@ -114,14 +114,16 @@ public class XslTransformEvaluationHelper {
      */
     public static void expandResultSequence(ResultSequence seqToBeExpanded, 
                                                                   ResultSequence result) {               
-        for (int idx = 0; idx < seqToBeExpanded.size(); idx++) {
+    	int size1 = seqToBeExpanded.size();
+    	for (int idx = 0; idx < size1; idx++) {
           XObject seqItem = seqToBeExpanded.item(idx);
           if (seqItem instanceof ResultSequence) {
              expandResultSequence((ResultSequence)seqItem, result); 
           }
           if (seqItem instanceof XPathArray) {
              ResultSequence rSeq = ((XPathArray)seqItem).atomize();
-             for (int idx2 = 0; idx2 < rSeq.size(); idx2++) {
+             int size2 = rSeq.size();
+             for (int idx2 = 0; idx2 < size2; idx2++) {
             	XObject xObject2 = rSeq.item(idx2);            	
             	result.add(xObject2);
              }
@@ -141,7 +143,8 @@ public class XslTransformEvaluationHelper {
                                                                           List<XMLNSDecl> nsPrefixTable) {
        String replacedXPathExprStr = xpathExprStr;
        
-       for (int idx = 0; idx < nsPrefixTable.size(); idx++) {
+       int size1 = nsPrefixTable.size();
+       for (int idx = 0; idx < size1; idx++) {
           XMLNSDecl xmlNSDecl = nsPrefixTable.get(idx);
           String prefix = xmlNSDecl.getPrefix();
           String uri = xmlNSDecl.getURI();
@@ -159,7 +162,8 @@ public class XslTransformEvaluationHelper {
     	String xmlSchemaNsPrefix = null;
 
     	if (nsUri != null) {
-    		for (int idx = 0; idx < nsPrefixTable.size(); idx++) {
+    		int size1 = nsPrefixTable.size();
+    		for (int idx = 0; idx < size1; idx++) {
     			XMLNSDecl xmlNSDecl = nsPrefixTable.get(idx);
     			if (nsUri.equals(xmlNSDecl.getURI())) {
     				xmlSchemaNsPrefix = xmlNSDecl.getPrefix();
@@ -180,7 +184,8 @@ public class XslTransformEvaluationHelper {
     	String result = null;
 
     	if (prefix != null) {    		
-    		for (int idx = 0; idx < nsPrefixTable.size(); idx++) {
+    		int size1 = nsPrefixTable.size();
+    		for (int idx = 0; idx < size1; idx++) {
     			XMLNSDecl xmlNSDecl = nsPrefixTable.get(idx);
     			if (prefix.equals(xmlNSDecl.getPrefix())) {
     				result = xmlNSDecl.getURI();
@@ -293,7 +298,8 @@ public class XslTransformEvaluationHelper {
         else if (xObject instanceof ResultSequence) {
            ResultSequence rSeq = (ResultSequence)xObject;
            
-           for (int idx = 0; idx < rSeq.size(); idx++) {
+           int size1 = rSeq.size();
+           for (int idx = 0; idx < size1; idx++) {
               resultSeq.add(rSeq.item(idx)); 
            }
         }
@@ -344,7 +350,7 @@ public class XslTransformEvaluationHelper {
            }
         }
         
-        if (dtmNodeHandleList.size() == resultSeq.size()) {
+        if (dtmNodeHandleList.size() == rSeqLength) {
            result = new XMLNodeCursorImpl(dtmNodeHandleList, dtmMgr);
         }
         
@@ -362,11 +368,26 @@ public class XslTransformEvaluationHelper {
         
         if (expr instanceof Variable) {
            Variable xslVariable = (Variable)expr;
-           XObject resultObj = xslVariable.execute(xctxt);
-           if (resultObj instanceof ResultSequence) {
-              ResultSequence resultSeq = (ResultSequence)resultObj;
-              sum = sumResultSequence(resultSeq);          
-           }       
+           XObject resultObj = xslVariable.execute(xctxt);           
+           if (resultObj instanceof XMLNodeCursorImpl) {
+        	   XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)resultObj;
+        	   int pos;
+
+        	   DTMCursorIterator nodes = xmlNodeCursorImpl.iter();
+
+        	   while ((pos = nodes.nextNode()) != DTM.NULL) {
+        		   DTM dtm = nodes.getDTM(pos);
+        		   XMLString xmlStr = dtm.getStringValue(pos);
+
+        		   if (xmlStr != null) {
+        			   sum += xmlStr.toDouble();
+        		   }
+        	   }
+           }
+           else if (resultObj instanceof ResultSequence) {
+        	   ResultSequence resultSeq = (ResultSequence)resultObj;
+        	   sum = sumResultSequence(resultSeq);          
+           }
         }
         else if (expr instanceof Function) {
            XObject resultObj = ((Function)expr).execute(xctxt);
@@ -410,6 +431,7 @@ public class XslTransformEvaluationHelper {
                  sum += xmlStr.toDouble();
               }
            }
+           
            nodes.detach();
         }
 
@@ -421,7 +443,7 @@ public class XslTransformEvaluationHelper {
      * the count of xdm items represented by the provided compiled XPath expression 
      * object.  
      */
-    public static XNumber getCountOfSequenceItems(Expression expr, XPathContext xctxt) throws 
+    public static XNumber getSequenceItemCount(Expression expr, XPathContext xctxt) throws 
                                                                                   javax.xml.transform.TransformerException {
         int xdmSequenceSize = 0;
         
@@ -441,14 +463,14 @@ public class XslTransformEvaluationHelper {
         else if (expr instanceof Variable) {
            XObject evalResult = ((Variable)expr).execute(xctxt);
            if (evalResult instanceof XMLNodeCursorImpl) {
-               xdmSequenceSize = ((XMLNodeCursorImpl)evalResult).getLength();   
+        	   xdmSequenceSize = ((XMLNodeCursorImpl)evalResult).getLength();   
            }
            else if (evalResult instanceof ResultSequence) {
-              xdmSequenceSize = ((ResultSequence)evalResult).size();
+        	   xdmSequenceSize = ((ResultSequence)evalResult).size();
            }
            else {
-        	  // Here, evalResult is probably of types XSAnyAtomicType, XString, XNumber etc
-        	  xdmSequenceSize = 1; 
+        	   // Here, evalResult is probably of types XSAnyAtomicType, XString, XNumber etc
+        	   xdmSequenceSize = 1; 
            }
         }
         else if (expr instanceof XPathSequenceConstructor) {
@@ -542,7 +564,8 @@ public class XslTransformEvaluationHelper {
        
        boolean isSeqContains = false;
        
-       for (int idx = 0; idx < resultSeq.size(); idx++) {
+       int size1 = resultSeq.size();
+       for (int idx = 0; idx < size1; idx++) {
           XObject resultSeqItem = resultSeq.item(idx);
           if ((resultSeqItem instanceof XSUntyped) && (srch instanceof XSUntyped)) {
              if (((XSUntyped)resultSeqItem).equals((XSUntyped)srch, collationUri, xpathCollationSupport)) {
@@ -671,15 +694,40 @@ public class XslTransformEvaluationHelper {
      * @param resultSeq				The supplied XPath sequence object
      * @return						boolean value true or false
      */
-    public static boolean isSequenceContainsAllXDMAtomicValues(ResultSequence resultSeq) {
+    public static boolean isSequenceContainsAllXdmAtomicValues(ResultSequence resultSeq) {
     	
     	boolean result = true;
     	
-    	for (int idx = 0; idx < resultSeq.size(); idx++) {
+    	int size1 = resultSeq.size();
+    	for (int idx = 0; idx < size1; idx++) {
     		XObject seqItem = resultSeq.item(idx);
     		if (!((seqItem instanceof XNumber) || (seqItem instanceof XBooleanStatic) || (seqItem instanceof XBoolean) || 
 						        				  (seqItem instanceof XSBoolean) || (seqItem instanceof XString) || 
 						        				  (seqItem instanceof XSAnyAtomicType))) {
+    			result = false;
+
+    			break;
+    		}
+    	}
+    	
+    	return result;
+    }
+    
+    /**
+     * Method definition to check whether, all the values of the 
+     * supplied input sequence are XPath node references.
+     * 
+     * @param resultSeq				The supplied XPath sequence object
+     * @return						boolean value true or false
+     */
+    public static boolean isSequenceContainsAllXdmNodes(ResultSequence resultSeq) {
+    	
+    	boolean result = true;
+    	
+    	int size1 = resultSeq.size();
+    	for (int idx = 0; idx < size1; idx++) {
+    		XObject seqItem = resultSeq.item(idx);
+    		if (!(seqItem instanceof XMLNodeCursorImpl)) {
     			result = false;
 
     			break;
@@ -792,7 +840,7 @@ public class XslTransformEvaluationHelper {
      * @param nodeSet					The supplied XMLNodeCursorImpl node set object
      * @param xctxt					    An XPath context object
      */
-    public static XMLNodeCursorImpl stripNamespacesNodeSet(XMLNodeCursorImpl nodeSet, XPathContext xctxt) throws TransformerException {
+    public static XMLNodeCursorImpl stripNsNodesFromXdmElementNode(XMLNodeCursorImpl nodeSet, XPathContext xctxt) throws TransformerException {
  	   
  	   XMLNodeCursorImpl result = null;
  	   
@@ -815,13 +863,13 @@ public class XslTransformEvaluationHelper {
  		   StringReader strReader = new StringReader(xmlStr);
  		   InputSource inpSource = new InputSource(strReader);
  		   Document document = docBuilder.parse(inpSource);
- 		   nodeNamespacesStrip(document.getDocumentElement());
+ 		   stripNsNodesFromXmlDocument(document.getDocumentElement());
 
  		   DTMManager dtmManager = xctxt.getDTMManager();
  		   DTM resultDtm = dtmManager.getDTM(new DOMSource(document), true, null, false, false);
  		   int resultNodeHandle = resultDtm.getDocument();
 
- 		   result = new XMLNodeCursorImpl(resultNodeHandle, dtmManager);
+ 		   result = new XMLNodeCursorImpl(resultNodeHandle, xctxt);
  	   }
  	   catch (Exception ex) {
  		   throw new TransformerException(ex.getMessage(), srcLocator); 
@@ -916,7 +964,8 @@ public class XslTransformEvaluationHelper {
        
        double sum = 0.0;
        
-       for (int idx = 0; idx < resultSeq.size(); idx++) {
+       int size1 = resultSeq.size();
+       for (int idx = 0; idx < size1; idx++) {
           XObject xObj = resultSeq.item(idx);
           String str = null;
           if (xObj instanceof XSAnyType) {
@@ -940,7 +989,7 @@ public class XslTransformEvaluationHelper {
      * 
      * @param elemNode					The supplied XML dom element node
      */
-    private static void nodeNamespacesStrip(Element elemNode) {
+    private static void stripNsNodesFromXmlDocument(Element elemNode) {
 
  	   NamedNodeMap namedNodeMap = elemNode.getAttributes();
 
@@ -955,7 +1004,7 @@ public class XslTransformEvaluationHelper {
  			   for (int idx2 = 0; idx2 < nodeListLength; idx2++) {
  				   Node node2 = nodeList.item(idx2);
  				   if (node2.getNodeType() == Node.ELEMENT_NODE) {
- 					   nodeNamespacesStrip((Element)node2); 
+ 					   stripNsNodesFromXmlDocument((Element)node2); 
  				   }
  			   }
  		   }

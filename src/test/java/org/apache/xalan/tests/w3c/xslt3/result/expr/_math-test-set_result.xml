@@ -1,14 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2025-12-10T16:52:29Z" fail="25" name="math" pass="128" skipped="8" statusUnknown="0" totalRun="153">
-   <testResult status="pass" testName="math-0101"/>
-   <testResult status="pass" testName="math-3315"/>
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-03-12T11:39:26Z" fail="15" name="math" pass="136" run="151" skipped="8" statusUnknown="0">
    <testResult status="pass" testName="math-0101"/>
    <testResult status="pass" testName="math-0102"/>
-   <testResult status="fail" testName="math-0103"/>
-   <testResult status="fail" testName="math-0104"/>
-   <testResult status="fail" testName="math-0105"/>
-   <testResult status="fail" testName="math-0106">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;false</outResult>
-   </testResult>
+   <testResult status="pass" testName="math-0103"/>
+   <testResult status="pass" testName="math-0104"/>
+   <testResult status="pass" testName="math-0105"/>
+   <testResult status="pass" testName="math-0106"/>
    <testResult status="pass" testName="math-0107"/>
    <testResult status="pass" testName="math-0201"/>
    <testResult status="pass" testName="math-0202"/>
@@ -47,7 +43,7 @@
    <testResult status="pass" testName="math-1517"/>
    <testResult status="pass" testName="math-1518"/>
    <testResult status="pass" testName="math-1519"/>
-   <testResult status="fail" testName="math-1601"/>
+   <testResult status="pass" testName="math-1601"/>
    <testResult status="fail" testName="math-1701"/>
    <testResult status="fail" testName="math-1801"/>
    <testResult status="pass" testName="math-1901"/>
@@ -104,7 +100,7 @@
    <testResult status="pass" testName="math-2505"/>
    <testResult status="pass" testName="math-2506"/>
    <testResult status="pass" testName="math-2507"/>
-   <testResult status="fail" testName="math-2508"/>
+   <testResult status="pass" testName="math-2508"/>
    <testResult status="pass" testName="math-2509"/>
    <testResult status="pass" testName="math-2601"/>
    <testResult status="pass" testName="math-2602"/>
@@ -114,11 +110,11 @@
    <testResult status="pass" testName="math-2606"/>
    <testResult status="pass" testName="math-2607"/>
    <testResult status="pass" testName="math-2608"/>
-   <testResult status="fail" testName="math-2609"/>
+   <testResult status="pass" testName="math-2609"/>
    <testResult status="pass" testName="math-2610"/>
    <testResult status="fail" testName="math-2611"/>
    <testResult status="fail" testName="math-2612"/>
-   <testResult status="fail" testName="math-2701"/>
+   <testResult status="pass" testName="math-2701"/>
    <testResult status="pass" testName="math-2801"/>
    <testResult status="pass" testName="math-2901"/>
    <testResult status="pass" testName="math-3001"/>
@@ -142,8 +138,8 @@
    <testResult status="pass" testName="math-3308a"/>
    <testResult status="pass" testName="math-3309"/>
    <testResult status="pass" testName="math-3309a"/>
-   <testResult status="fail" testName="math-3310"/>
-   <testResult status="fail" testName="math-3310a"/>
+   <testResult status="pass" testName="math-3310"/>
+   <testResult status="pass" testName="math-3310a"/>
    <testResult status="pass" testName="math-3311"/>
    <testResult feature="schema_aware" status="skipped" testName="math-3312"/>
    <testResult status="fail" testName="math-3313"/>

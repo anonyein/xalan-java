@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
 
 import java.util.Arrays;
@@ -113,7 +110,7 @@ public class ElemParam extends ElemVariable
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID of the element
+   * @return The token id of the element
    */
   public int getXSLToken()
   {
@@ -176,6 +173,10 @@ public class ElemParam extends ElemVariable
     
     SourceLocator srcLocator = xctx.getSAXLocator();
     
+    if (getParentElem() instanceof ElemFunction) {
+       m_required = true;	
+    }
+
     if (m_tunnelAttr != null && !isValidTunnelParamValue(m_tunnelAttr)) {
        throw new TransformerException("XTTE0590 : The allowed values for XSL param's tunnel "
         		                                              + "attribute are : yes, true, 1, no, false, 0. The "

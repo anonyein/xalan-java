@@ -96,7 +96,7 @@ public class ElemCatch extends ElemTemplateElement implements ExpressionOwner {
 	}
 	
 	/**
-	 * This class field, represents the value of "xpath-default-namespace" 
+	 * Class field, that represents the value of "xpath-default-namespace" 
 	 * attribute.
 	 */
 	private String m_xpath_default_namespace = null;
@@ -127,7 +127,7 @@ public class ElemCatch extends ElemTemplateElement implements ExpressionOwner {
 	private boolean m_expand_text_declared;
 
 	/**
-	 * This class field, represents the value of "expand-text" 
+	 * Class field, that represents the value of "expand-text" 
 	 * attribute.
 	 */
 	private boolean m_expand_text;
@@ -158,6 +158,33 @@ public class ElemCatch extends ElemTemplateElement implements ExpressionOwner {
 	 */
 	public boolean getExpandTextDeclared() {
 		return m_expand_text_declared;
+	}
+	
+	/**
+	 * An XPath expression for 'use-when' attribute. 
+	 */
+	private XPath m_useWhen = null;
+
+	/**
+	 * Method definition, to set the value of XSL attribute 
+	 * "use-when".
+	 * 
+	 * @param xpath            XPath expression for attribute "use-when"
+	 */
+	public void setUseWhen(XPath xpath)
+	{
+		m_useWhen = xpath;  
+	}
+
+	/**
+	 * Method definition, to get the value of XSL attribute 
+	 * "use-when".
+	 * 
+	 * @return			XPath expression for attribute "use-when"
+	 */
+	public XPath getUseWhen()
+	{
+		return m_useWhen;
 	}
 	
 	/**
@@ -213,7 +240,7 @@ public class ElemCatch extends ElemTemplateElement implements ExpressionOwner {
 	 * Get an int constant identifying the type of element.
 	 * @see org.apache.xalan.templates.Constants
 	 *
-	 * @return The token ID for this element
+	 * @return           The token id for this element
 	 */
 	public int getXSLToken()
 	{
@@ -243,7 +270,21 @@ public class ElemCatch extends ElemTemplateElement implements ExpressionOwner {
 	    
 	    SourceLocator srcLocator = xctxt.getSAXLocator();
 	    
-	    int contextNode = xctxt.getContextNode();
+	    final int sourceNode = xctxt.getContextNode();
+	    
+	    if (m_useWhen != null) {
+	    	boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+	    	if (result1) {
+	    		XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+	    		if (!useWhenResult.bool()) {
+	    			return;
+	    		}
+	    	}
+	    	else {
+	    		throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                                                                                                                           + "used within XPath static expression.", srcLocator);
+	    	}
+	    }
 	    
 	    ElemTemplateElement parentElem = getParentElem();
 	    if (!(parentElem instanceof ElemTry)) {
@@ -268,7 +309,7 @@ public class ElemCatch extends ElemTemplateElement implements ExpressionOwner {
     		}
 
     		m_selectExpression.setIsConcreteExceptionProcessing(true);
-    		XObject xpathEvalResult = m_selectExpression.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+    		XObject xpathEvalResult = m_selectExpression.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
     		
     		ResultSequence rSeq = new ResultSequence();
 			rSeq.add(xpathEvalResult);
@@ -325,13 +366,13 @@ public class ElemCatch extends ElemTemplateElement implements ExpressionOwner {
 	
 	@Override
 	public Expression getExpression() {
-		// NO OP
+		// no op
 		return null;
 	}
 
 	@Override
 	public void setExpression(Expression exp) {
-		// NO OP
+		// no op
 	}
 
 }

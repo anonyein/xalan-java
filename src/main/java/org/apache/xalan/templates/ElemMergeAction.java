@@ -27,8 +27,6 @@ import org.apache.xpath.XPathContext;
 /**
  * Implementation of the XSLT 3.0 xsl:merge-action instruction.
  * 
- * Ref : https://www.w3.org/TR/xslt-30/#element-merge-action
- * 
  * @author Mukul Gandhi <mukulg@apache.org>
  *  
  * @xsl.usage advanced
@@ -70,7 +68,7 @@ public class ElemMergeAction extends ElemTemplateElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -149,7 +147,7 @@ public class ElemMergeAction extends ElemTemplateElement
    */
   public void setExpression(Expression exp)
   {
-      // NO OP
+      // no op
   }
   
   /**

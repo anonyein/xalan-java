@@ -20,6 +20,7 @@ package org.apache.xalan.processor;
 import java.util.HashMap;
 
 import org.apache.xalan.templates.Constants;
+import org.apache.xalan.templates.ElemAccept;
 import org.apache.xalan.templates.ElemAnalyzeString;
 import org.apache.xalan.templates.ElemApplyImport;
 import org.apache.xalan.templates.ElemApplyTemplates;
@@ -36,6 +37,7 @@ import org.apache.xalan.templates.ElemCopyOf;
 import org.apache.xalan.templates.ElemDocument;
 import org.apache.xalan.templates.ElemElement;
 import org.apache.xalan.templates.ElemEvaluate;
+import org.apache.xalan.templates.ElemExpose;
 import org.apache.xalan.templates.ElemExsltFuncResult;
 import org.apache.xalan.templates.ElemExsltFunction;
 import org.apache.xalan.templates.ElemExtensionDecl;
@@ -45,6 +47,7 @@ import org.apache.xalan.templates.ElemForEach;
 import org.apache.xalan.templates.ElemForEachGroup;
 import org.apache.xalan.templates.ElemFork;
 import org.apache.xalan.templates.ElemFunction;
+import org.apache.xalan.templates.ElemGlobalContextItem;
 import org.apache.xalan.templates.ElemIf;
 import org.apache.xalan.templates.ElemImportSchema;
 import org.apache.xalan.templates.ElemIterate;
@@ -76,6 +79,7 @@ import org.apache.xalan.templates.ElemText;
 import org.apache.xalan.templates.ElemTextLiteral;
 import org.apache.xalan.templates.ElemTry;
 import org.apache.xalan.templates.ElemUnknown;
+import org.apache.xalan.templates.ElemUsePackage;
 import org.apache.xalan.templates.ElemValueOf;
 import org.apache.xalan.templates.ElemVariable;
 import org.apache.xalan.templates.ElemWhen;
@@ -133,10 +137,10 @@ public class XSLTSchema extends XSLTElementDef
                                       true, false, XSLTAttributeDef.ERROR);
     
     XSLTAttributeDef xpathDefaultNamespaceAttrOpt = new XSLTAttributeDef(null, "xpath-default-namespace",
-                                           XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.WARNING);
+                                           XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.ERROR);
     
     XSLTAttributeDef xslXpathDefaultNamespaceAttrOpt = new XSLTAttributeDef(Constants.S_XSLNAMESPACEURL, "xpath-default-namespace",
-                                           XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.WARNING);
+                                           XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.ERROR);
     
     XSLTAttributeDef expandTextAttrOpt = new XSLTAttributeDef(null, "expand-text",
                                            XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);
@@ -145,6 +149,9 @@ public class XSLTSchema extends XSLTElementDef
                                            XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);
     
     XSLTAttributeDef xslCopyNamespacesOpt = new XSLTAttributeDef(null, "copy-namespaces",
+                                           XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);
+    
+    XSLTAttributeDef xslStaticOpt = new XSLTAttributeDef(null, "static",
                                            XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);
     
     // Optional
@@ -205,6 +212,11 @@ public class XSLTSchema extends XSLTElementDef
     XSLTAttributeDef nameAttrRequired = new XSLTAttributeDef(null, "name",
                                           XSLTAttributeDef.T_QNAME, true, false, XSLTAttributeDef.ERROR);
     
+    // Required
+    // xsl:use-package
+    XSLTAttributeDef nameAttrUsePackageRequired = new XSLTAttributeDef(null, "name",
+                                          XSLTAttributeDef.T_URL, true, true, XSLTAttributeDef.ERROR);
+    
 	// Required
     // Support AVT
     // xsl:element, xsl:attribute                                    
@@ -225,7 +237,21 @@ public class XSLTSchema extends XSLTElementDef
                                      XSLTAttributeDef.T_QNAME, false, false, XSLTAttributeDef.ERROR);
     
     // Optional
-    // xsl:merge-source
+    // Static error if invalid
+    // xsl:template, xsl:mode
+    XSLTAttributeDef visibilityAttrOpt = new XSLTAttributeDef(null, "visibility",
+                                     XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.ERROR);
+    
+    // xsl:accept
+    XSLTAttributeDef visibilityAttr = new XSLTAttributeDef(null, "visibility",
+                                     XSLTAttributeDef.T_STRING, true, false, XSLTAttributeDef.ERROR);
+    
+    // xsl:accept
+    XSLTAttributeDef componentAttr = new XSLTAttributeDef(null, "component",
+                                     XSLTAttributeDef.T_STRING, true, false, XSLTAttributeDef.ERROR);
+    
+    // Optional
+    // xsl:merge-source, xsl:package
     XSLTAttributeDef nameAttrOpt = new XSLTAttributeDef(null, "name",
                                      XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.WARNING);
     
@@ -262,10 +288,14 @@ public class XSLTSchema extends XSLTElementDef
     // xsl:key                                 
     XSLTAttributeDef useAttr = new XSLTAttributeDef(null, "use",
                                  XSLTAttributeDef.T_EXPR, true, false, XSLTAttributeDef.ERROR);
+    
+    // xsl:global-context-item
+    XSLTAttributeDef useAttrOpt = new XSLTAttributeDef(null, "use",
+                                 XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.ERROR);
            
     // xsl:element, xsl:attribute                              
     XSLTAttributeDef namespaceAVTOpt = new XSLTAttributeDef(null,
-                                         "namespace",XSLTAttributeDef.T_URL,
+                                         "namespace", XSLTAttributeDef.T_URL,
                                          false, true, XSLTAttributeDef.WARNING);
     // xsl:decimal-format                                     
     XSLTAttributeDef decimalSeparatorAttr = new XSLTAttributeDef(null,
@@ -327,9 +357,15 @@ public class XSLTSchema extends XSLTElementDef
                                             XSLTAttributeDef.T_EXPR, true, false, XSLTAttributeDef.ERROR);
     
     // Optional
+    // Any XSL stylesheet instruction
+    XSLTAttributeDef useWhenAttrOpt = new XSLTAttributeDef(null,
+                                            "use-when",
+                                           XSLTAttributeDef.T_EXPR, false, false, XSLTAttributeDef.ERROR);
+    
+    // Optional
     // xsl:for-each-group
     XSLTAttributeDef compositeAttrOpt = new XSLTAttributeDef(null, "composite",
-                                                      XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.WARNING);
+                                                      XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);
     // Optional
     // xsl:for-each-group, xsl:sort 
     XSLTAttributeDef collationAttrOpt = new XSLTAttributeDef(null, "collation", 
@@ -423,12 +459,7 @@ public class XSLTSchema extends XSLTElementDef
     // Default: "node()"
     // xsl:apply-templates                                           
     XSLTAttributeDef selectAttrDefNode = new XSLTAttributeDef(null, "select",
-                                           XSLTAttributeDef.T_EXPR, false, XSLTAttributeDef.ERROR, "node()");
-    // Optional
-    // Default: "."
-    // xsl:sort                                        
-    XSLTAttributeDef selectAttrDefDot = new XSLTAttributeDef(null, "select",
-                                          XSLTAttributeDef.T_EXPR, false, XSLTAttributeDef.ERROR, ".");    
+                                           XSLTAttributeDef.T_EXPR, false, XSLTAttributeDef.ERROR, "node()");   
     
     // xsl:key                                      
     XSLTAttributeDef matchAttrRequired = new XSLTAttributeDef(null, "match",
@@ -460,6 +491,12 @@ public class XSLTSchema extends XSLTElementDef
     // xsl:try
     XSLTAttributeDef rollbackOutputAttrOpt = new XSLTAttributeDef(null, "rollback-output",
                                           					XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);
+    
+    // Optional
+    // Default: "yes"
+    // xsl:package
+    XSLTAttributeDef declaredModesAttrOpt = new XSLTAttributeDef(null, "declared-modes",
+				                                            XSLTAttributeDef.T_YESNO, false, false, XSLTAttributeDef.ERROR);
                                                     
     XSLTAttributeDef spaceAttrLiteral =
       new XSLTAttributeDef(Constants.S_XMLNAMESPACEURI, "space", 
@@ -535,7 +572,7 @@ public class XSLTSchema extends XSLTElementDef
     terminateAttr.setDefault("no");
 
 	// top level attributes
-    XSLTAttributeDef xslExcludeResultPrefixesAttr =
+    XSLTAttributeDef xslExcludeResultPrefixesAttrOpt =
       new XSLTAttributeDef(Constants.S_XSLNAMESPACEURL,
                            "exclude-result-prefixes",
                            XSLTAttributeDef.T_PREFIXLIST, false, false, XSLTAttributeDef.ERROR);
@@ -543,10 +580,17 @@ public class XSLTSchema extends XSLTElementDef
       new XSLTAttributeDef(Constants.S_XSLNAMESPACEURL,
                            "extension-element-prefixes",
                            XSLTAttributeDef.T_PREFIX_URLLIST, false, false, XSLTAttributeDef.ERROR);
+    
     // result-element-atts                       
     XSLTAttributeDef xslUseAttributeSetsAttr =
       new XSLTAttributeDef(Constants.S_XSLNAMESPACEURL, "use-attribute-sets",
                            XSLTAttributeDef.T_QNAMES, false, false, XSLTAttributeDef.ERROR);
+    
+    // xsl:accept
+    XSLTAttributeDef xslNamesAttr =
+    	      new XSLTAttributeDef(null, "names",
+    	                           XSLTAttributeDef.T_QNAMES, true, false, XSLTAttributeDef.ERROR);
+    
     XSLTAttributeDef xslVersionAttr =
       new XSLTAttributeDef(Constants.S_XSLNAMESPACEURL, "version",
                            XSLTAttributeDef.T_NMTOKEN, false, false, XSLTAttributeDef.ERROR);    
@@ -556,10 +600,6 @@ public class XSLTSchema extends XSLTElementDef
     XSLTAttributeDef xslValidationAttrOpt =
     	      new XSLTAttributeDef(Constants.S_XSLNAMESPACEURL, "validation",
     	                           XSLTAttributeDef.T_QNAME, false, false, XSLTAttributeDef.ERROR);
-    // Optional
-    // xsl:context-item
-    XSLTAttributeDef useAttrOpt = new XSLTAttributeDef(null, "use",
-                                                      XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.ERROR);
     
     // Optional
     // xsl:function
@@ -606,9 +646,9 @@ public class XSLTSchema extends XSLTElementDef
     XSLTElementDef resultElement = new XSLTElementDef(this, null, "*",
                                      null /*alias */,
                                      templateElements /* elements */,
-                                     new XSLTAttributeDef[]{
+                                     new XSLTAttributeDef[] {
                                        spaceAttrLiteral, // special
-                                       xslExcludeResultPrefixesAttr,
+                                       xslExcludeResultPrefixesAttrOpt,
                                        xslExtensionElementPrefixesAttr,
                                        xslUseAttributeSetsAttr,
                                        xslVersionAttr,
@@ -623,7 +663,7 @@ public class XSLTSchema extends XSLTElementDef
     XSLTElementDef unknownElement =
       new XSLTElementDef(this, "*", "unknown", null /*alias */,
                          templateElementsAndParams /* elements */,
-                         new XSLTAttributeDef[]{ xslExcludeResultPrefixesAttr,
+                         new XSLTAttributeDef[]{ xslExcludeResultPrefixesAttrOpt,
                                                  xslExtensionElementPrefixesAttr,
                                                  xslUseAttributeSetsAttr,
                                                  xslVersionAttr,
@@ -638,7 +678,7 @@ public class XSLTSchema extends XSLTElementDef
                                 		                  separatorAVTOpt,
                                                           disableOutputEscapingAttr,
                                                           xpathDefaultNamespaceAttrOpt,
-                                                          expandTextAttrOpt }, 
+                                                          expandTextAttrOpt, useWhenAttrOpt }, 
                                                new ProcessorTemplateElem(),
                                   ElemValueOf.class /* class object */, 20, true);        
     
@@ -722,7 +762,7 @@ public class XSLTSchema extends XSLTElementDef
                                   null /*alias */, templateElementsAndSort,
                                   new XSLTAttributeDef[]{ selectAttrRequired,
                                 		                  xpathDefaultNamespaceAttrOpt, expandTextAttrOpt, 
-                                		                  spaceAttr }, 
+                                		                  useWhenAttrOpt, spaceAttr }, 
                                                new ProcessorTemplateElem(),
                                   ElemForEach.class /* class object */, true, false, true, 20, true);
     
@@ -748,7 +788,7 @@ public class XSLTSchema extends XSLTElementDef
                                              new XSLTAttributeDef[]{ selectAttrRequired, groupByAttrOpt, groupAdjacentAttrOpt, 
                                                                      groupStartingWithAttrOpt, groupEndingWithAttrOpt, 
                                                                      compositeAttrOpt, collationAttrOpt, xpathDefaultNamespaceAttrOpt, 
-                                                                     expandTextAttrOpt, spaceAttr }, 
+                                                                     expandTextAttrOpt, useWhenAttrOpt, spaceAttr }, 
                                              new ProcessorTemplateElem(),
                                              ElemForEachGroup.class /* class object */, true, false, true, 20, true);
     
@@ -808,7 +848,7 @@ public class XSLTSchema extends XSLTElementDef
 								             null /*alias */, templateElements,
 								             new XSLTAttributeDef[]{ selectAttrOpt, rollbackOutputAttrOpt, 
 								            		                 xpathDefaultNamespaceAttrOpt, 
-								            		                 expandTextAttrOpt, spaceAttr }, 
+								            		                 expandTextAttrOpt, useWhenAttrOpt, spaceAttr }, 
 								             new ProcessorTemplateElem(),
 								             ElemTry.class /* class object */, true, false, true, 20, true);
     
@@ -817,7 +857,7 @@ public class XSLTSchema extends XSLTElementDef
 								             null /*alias */, templateElements,
 								             new XSLTAttributeDef[]{ selectAttrOpt, errorsAttrOpt, 
 								            		                 xpathDefaultNamespaceAttrOpt, 
-								            		                 expandTextAttrOpt, spaceAttr }, 
+								            		                 expandTextAttrOpt, useWhenAttrOpt, spaceAttr }, 
 								             new ProcessorTemplateElem(),
 								             ElemCatch.class /* class object */, true, false, true, 20, true);
     
@@ -827,21 +867,23 @@ public class XSLTSchema extends XSLTElementDef
                                                 new XSLTAttributeDef[]{ regexAVTRequired, selectAttrRequired, 
                                                                         flagsAttrOpt, spaceAttr, 
                                                                         xpathDefaultNamespaceAttrOpt, 
-                                                                        expandTextAttrOpt }, 
+                                                                        expandTextAttrOpt, useWhenAttrOpt }, 
                                                 new ProcessorTemplateElem(),
                                                 ElemAnalyzeString.class /* class object */, true, false, true, 20, true);
     
     XSLTElementDef xslMatchingSubstring = new XSLTElementDef(this,
                                                 Constants.S_XSLNAMESPACEURL, "matching-substring",
                                                 null /*alias */, templateElements,
-                                                new XSLTAttributeDef[] { xpathDefaultNamespaceAttrOpt, expandTextAttrOpt }, 
+                                                new XSLTAttributeDef[] { xpathDefaultNamespaceAttrOpt, expandTextAttrOpt,
+                                                		                 useWhenAttrOpt }, 
                                                 new ProcessorTemplateElem(),
                                                 ElemMatchingSubstring.class /* class object */, true, false, true, 20, true);
     
     XSLTElementDef xslNonMatchingSubstring = new XSLTElementDef(this,
                                                 Constants.S_XSLNAMESPACEURL, "non-matching-substring",
                                                 null /*alias */, templateElements,
-                                                new XSLTAttributeDef[] { xpathDefaultNamespaceAttrOpt, expandTextAttrOpt }, 
+                                                new XSLTAttributeDef[] { xpathDefaultNamespaceAttrOpt, expandTextAttrOpt,
+                                                		                 useWhenAttrOpt }, 
                                                 new ProcessorTemplateElem(),
                                                 ElemNonMatchingSubstring.class /* class object */, true, false, true, 20, true);
     
@@ -849,7 +891,7 @@ public class XSLTSchema extends XSLTElementDef
                                                    null /*alias */, templateElementsAndParams,
                                                    new XSLTAttributeDef[]{ selectAttrRequired,
                                                 		                   xpathDefaultNamespaceAttrOpt, 
-                                                		                   expandTextAttrOpt }, new ProcessorTemplateElem(),
+                                                		                   expandTextAttrOpt, useWhenAttrOpt }, new ProcessorTemplateElem(),
                                                    ElemIterate.class /* class object */, true, false, true, 20, true);
     
     XSLTElementDef xslIterateOnCompletion = new XSLTElementDef(this, Constants.S_XSLNAMESPACEURL, "on-completion",
@@ -882,7 +924,7 @@ public class XSLTSchema extends XSLTElementDef
                                               templateElements /* elements */,  // %template;
                                               new XSLTAttributeDef[]{
                                                 testAttrRequired, xpathDefaultNamespaceAttrOpt,
-                                                expandTextAttrOpt, spaceAttr }, new ProcessorTemplateElem(),
+                                                expandTextAttrOpt, useWhenAttrOpt, spaceAttr }, new ProcessorTemplateElem(),
                                                              ElemIf.class /* class object */, 20, true);
     XSLTElementDef xslWhen =
       new XSLTElementDef(this, Constants.S_XSLNAMESPACEURL, "when",
@@ -905,7 +947,8 @@ public class XSLTSchema extends XSLTElementDef
                                  null /*alias */,
                                  new XSLTElementDef[]{ xslWhen,
                                                        xslOtherwise } /* elements */, 
-                                        new XSLTAttributeDef[]{ xpathDefaultNamespaceAttrOpt, expandTextAttrOpt, spaceAttr },
+                                        new XSLTAttributeDef[]{ xpathDefaultNamespaceAttrOpt, expandTextAttrOpt, 
+                                        		                useWhenAttrOpt, spaceAttr },
                                  new ProcessorTemplateElem(),
                                  ElemChoose.class /* class object */, true, false, true, 20, true);                                
     XSLTElementDef xslAttribute = new XSLTElementDef(this,
@@ -923,7 +966,7 @@ public class XSLTSchema extends XSLTElementDef
       new XSLTElementDef(this, Constants.S_XSLNAMESPACEURL, "call-template",
                          null /*alias */,
                          new XSLTElementDef[]{ xslWithParam } /* elements */,
-                         new XSLTAttributeDef[]{ nameAttrRequired },
+                         new XSLTAttributeDef[]{ nameAttrRequired, useWhenAttrOpt },
                          new ProcessorTemplateElem(),
                          ElemCallTemplate.class /* class object */, 20, true);
     XSLTElementDef xslVariable = new XSLTElementDef(this,
@@ -932,7 +975,7 @@ public class XSLTSchema extends XSLTElementDef
                                    templateElements /* elements */,  // %template;>
                                    new XSLTAttributeDef[]{ nameAttrRequired,
                                                            selectAttrOpt, asAttrOpt, xpathDefaultNamespaceAttrOpt, 
-                                                           expandTextAttrOpt }, 
+                                                           expandTextAttrOpt, useWhenAttrOpt, xslStaticOpt }, 
                                   new ProcessorTemplateElem(),
                                    ElemVariable.class /* class object */, 20, true);
     XSLTElementDef xslSequence = new XSLTElementDef(this,
@@ -940,7 +983,7 @@ public class XSLTSchema extends XSLTElementDef
                                                  null /*alias */,
                                                  templateElements /* elements */,  // %template;>
                                                  new XSLTAttributeDef[]{ selectAttrOpt, xpathDefaultNamespaceAttrOpt,
-                                                		                 expandTextAttrOpt }, 
+                                                		                 expandTextAttrOpt, useWhenAttrOpt }, 
                                                  new ProcessorTemplateElem(),
                                                  ElemSequence.class /* class object */, 20, true);
     XSLTElementDef xslParam = new XSLTElementDef(this,
@@ -948,7 +991,7 @@ public class XSLTSchema extends XSLTElementDef
                                 null /*alias */,
                                 templateElements /* elements */,  // %template;>
                                 new XSLTAttributeDef[]{ nameAttrRequired, selectAttrOpt, 
-                                		                asAttrOpt, tunnelAttrOpt, requiredAttrOpt }, 
+                                		                asAttrOpt, tunnelAttrOpt, requiredAttrOpt, xslStaticOpt }, 
                                                         new ProcessorTemplateElem(),
                                                         ElemParam.class /* class object */, 19, true);
     XSLTElementDef xslText =
@@ -1182,8 +1225,15 @@ public class XSLTSchema extends XSLTElementDef
                                   null /*alias */, null /* elements */,  // EMPTY
                                   new XSLTAttributeDef[]{ hrefAttr },
                                   new ProcessorInclude(),
-                                  null /* class object */,
-                                               20, true);        
+                                  null /* class object */, 20, true);
+    
+    XSLTElementDef acceptElemDef = new XSLTElementDef(this,
+										      		Constants.S_XSLNAMESPACEURL,
+										      		"accept", null,
+										      		new XSLTElementDef[] { },
+										      		new XSLTAttributeDef[] { componentAttr, xslNamesAttr, visibilityAttr }, 
+										      		new ProcessorAcceptElement(),  /* ContentHandler */
+										      		ElemAccept.class  /* class object */, 20, true);
     
     XSLTAttributeDef[] scriptAttrs = new XSLTAttributeDef[]{
     					    new XSLTAttributeDef(null, "lang", XSLTAttributeDef.T_NMTOKEN,
@@ -1199,7 +1249,12 @@ public class XSLTSchema extends XSLTElementDef
                                             new XSLTAttributeDef(null, "functions", XSLTAttributeDef.T_STRINGLIST, 
                                             			 false, false, XSLTAttributeDef.WARNING) };
 
-    XSLTElementDef[] topLevelElements = new XSLTElementDef[]
+    XSLTAttributeDef packageVersionAttrOpt = new XSLTAttributeDef(null,
+													            "package-version",
+													            XSLTAttributeDef.T_NMTOKEN,
+													            false, false, XSLTAttributeDef.ERROR);        
+    
+	XSLTElementDef[] topLevelElements = new XSLTElementDef[]
                                  {includeDef,                                  	
                                   importDef,
                                   importSchemaDef,
@@ -1304,9 +1359,19 @@ public class XSLTSchema extends XSLTElementDef
                                            templateElements /* elements */,
                                            new XSLTAttributeDef[]{
                                                    nameAttrRequired,
-                                                   selectAttrOpt, asAttrOpt }, 
+                                                   selectAttrOpt, asAttrOpt, xslStaticOpt }, 
                                            new ProcessorGlobalVariableDecl(),
                                            ElemVariable.class /* class object */, 20, true),
+                                  new XSLTElementDef(
+                                          this,
+                                          Constants.S_XSLNAMESPACEURL,
+                                          "global-context-item",
+                                          null /*alias */,
+                                          null,
+                                          new XSLTAttributeDef[] 
+                                        		  { asAttrOpt, useAttrOpt }, 
+                                          new ProcessorGlobalContextItemDecl(),
+                                          ElemGlobalContextItem.class /* class object */, 20, true),
                                   new XSLTElementDef(
                                            this,
                                            Constants.S_XSLNAMESPACEURL,
@@ -1315,7 +1380,8 @@ public class XSLTSchema extends XSLTElementDef
                                            templateElements /* elements */,
                                            new XSLTAttributeDef[]{
                                                    nameAttrRequired,
-                                                   selectAttrOpt, asAttrOpt, requiredAttrOpt }, 
+                                                   selectAttrOpt, asAttrOpt, requiredAttrOpt,
+                                                   xslStaticOpt }, 
                                            new ProcessorGlobalParamDecl(),
                                            ElemParam.class /* class object */, 20, true),                                  
                                   new XSLTElementDef(
@@ -1330,8 +1396,10 @@ public class XSLTSchema extends XSLTElementDef
                                                   onMultipleMatchOpt,
                                                   warningOnNoMatchOpt,
                                                   warningOnMultipleMatchOpt,
+                                                  visibilityAttrOpt,
                                                   spaceAttr }, 
                                           new ProcessorElemMode(), ElemMode.class /* class object */, true, 20, true),
+                                  
                                   new XSLTElementDef(
                                            this,
                                            Constants.S_XSLNAMESPACEURL,
@@ -1344,10 +1412,12 @@ public class XSLTSchema extends XSLTElementDef
                                                    priorityAttr,
                                                    modeAttr,
                                                    asAttrOpt,
+                                                   visibilityAttrOpt,
                                                    xpathDefaultNamespaceAttrOpt,
-                                                   expandTextAttrOpt,
+                                                   expandTextAttrOpt, useWhenAttrOpt,
                                                    spaceAttr }, 
                                            new ProcessorTemplate(), ElemTemplate.class /* class object */, true, 20, true),
+                                  
                                   new XSLTElementDef(
                                           this,
                                           Constants.S_XSLNAMESPACEURL,
@@ -1358,8 +1428,28 @@ public class XSLTSchema extends XSLTElementDef
                                                   nameAttrRequired,
                                                   asAttrOpt, xpathDefaultNamespaceAttrOpt, expandTextAttrOpt, 
                                                   overrideAttrOpt, overrideExtFunctionAttrOpt, newEachTimeAttrOpt, 
-                                                  cacheAttrOpt }, 
-                                          new ProcessorTemplate(), ElemFunction.class /* class object */, true, 20, true),
+                                                  visibilityAttrOpt, cacheAttrOpt, useWhenAttrOpt }, 
+                                          new ProcessorTemplate(), ElemFunction.class /* class object */, true, 20, true),                                                                    
+                                                                    
+                                  new XSLTElementDef(
+                                          this,
+                                          Constants.S_XSLNAMESPACEURL,
+                                          "use-package",
+                                          null /*alias */,
+                                          new XSLTElementDef[] { acceptElemDef }, /* elements */
+                                          new XSLTAttributeDef[] { nameAttrUsePackageRequired, packageVersionAttrOpt,
+                                        		                   useWhenAttrOpt }, 
+                                          new ProcessorUsePackage(), ElemUsePackage.class /* class object */, true, 20, true),
+                                  
+                                  new XSLTElementDef(
+                                          this,
+                                          Constants.S_XSLNAMESPACEURL,
+                                          "expose",
+                                          null /*alias */,
+                                          new XSLTElementDef[] {  }, /* elements */
+                                          new XSLTAttributeDef[] { componentAttr, xslNamesAttr, visibilityAttr }, 
+                                          new ProcessorExposeElement(), ElemExpose.class /* class object */, true, 20, true),
+                                  
                                   new XSLTElementDef(
                                            this,
                                            Constants.S_XSLNAMESPACEURL,
@@ -1370,6 +1460,7 @@ public class XSLTSchema extends XSLTElementDef
                                                    stylesheetPrefixAttr,
                                                    resultPrefixAttr }, 
                                            new ProcessorNamespaceAlias(), null /* class object */, 20, true),
+                                  
                                   new XSLTElementDef(
                                            this,
                                            Constants.S_BUILTIN_EXTENSIONS_URL,
@@ -1415,27 +1506,52 @@ public class XSLTSchema extends XSLTElementDef
       new XSLTAttributeDef(null, "extension-element-prefixes",
                            XSLTAttributeDef.T_PREFIX_URLLIST, false, false, XSLTAttributeDef.WARNING);
     XSLTAttributeDef idAttr = new XSLTAttributeDef(null, "id",
-                                XSLTAttributeDef.T_CDATA, false, false, XSLTAttributeDef.WARNING);    
+                                XSLTAttributeDef.T_CDATA, false, false, XSLTAttributeDef.WARNING);
+    
     XSLTAttributeDef versionAttrRequired = new XSLTAttributeDef(null,
                                              "version",
                                              XSLTAttributeDef.T_NMTOKEN,
-                                             true,false, XSLTAttributeDef.WARNING);
+                                             true, false, XSLTAttributeDef.WARNING);
+    
+    XSLTAttributeDef xslInputTypeAnnotationsAttrOpt = new XSLTAttributeDef(null, "input-type-annotations",
+                                XSLTAttributeDef.T_STRING, false, false, XSLTAttributeDef.WARNING);
     
     XSLTElementDef stylesheetElemDef = new XSLTElementDef(this,
-                                         Constants.S_XSLNAMESPACEURL,
-                                         "stylesheet", "transform",
-                                         topLevelElements,
-                                         new XSLTAttributeDef[]{
-                                           extensionElementPrefixesAttr,
-                                           excludeResultPrefixesAttr,
-                                           idAttr,
-                                           versionAttrRequired,
-                                           xpathDefaultNamespaceAttrOpt,
-                                           expandTextAttrOpt,
-                                           defaultModeAttr,
-                                           spaceAttr }, new ProcessorStylesheetElement(),  /* ContentHandler */
-                                         null  /* class object */,
-                                         true, -1, false);
+											    		Constants.S_XSLNAMESPACEURL,
+											    		"stylesheet", "transform",
+											    		topLevelElements,
+											    		new XSLTAttributeDef[]{
+											    				extensionElementPrefixesAttr,
+											    				excludeResultPrefixesAttr,
+											    				idAttr,
+											    				versionAttrRequired,
+											    				xpathDefaultNamespaceAttrOpt,
+											    				expandTextAttrOpt,
+											    				defaultModeAttr,
+											    				xslInputTypeAnnotationsAttrOpt,
+											    				spaceAttr }, new ProcessorStylesheetElement(),  /* ContentHandler */
+											    		null  /* class object */,
+											    		true, -1, false);
+    
+    XSLTElementDef packageElemDef = new XSLTElementDef(this,
+											    		Constants.S_XSLNAMESPACEURL,
+											    		"package", null,
+											    		topLevelElements,
+											    		new XSLTAttributeDef[]{
+											    				extensionElementPrefixesAttr,
+											    				excludeResultPrefixesAttr,
+											    				idAttr,
+											    				nameAttrOpt,
+											    				packageVersionAttrOpt,
+											    				versionAttrRequired,
+											    				xpathDefaultNamespaceAttrOpt,
+											    				expandTextAttrOpt,
+											    				defaultModeAttr,
+											    				xslInputTypeAnnotationsAttrOpt,
+											    				declaredModesAttrOpt,
+											    				spaceAttr }, new ProcessorPackageElement(),  /* ContentHandler */
+											    		null  /* class object */,
+											    		true, -1, false);        
 
     importDef.setElements(new XSLTElementDef[]{ stylesheetElemDef,
                                                 resultElement,
@@ -1443,7 +1559,9 @@ public class XSLTSchema extends XSLTElementDef
     includeDef.setElements(new XSLTElementDef[]{ stylesheetElemDef,
                                                  resultElement,
                                                  unknownElement });
+    
     build(null, null, null, new XSLTElementDef[]{ stylesheetElemDef,
+    		                                      packageElemDef,
                                                   whiteSpaceOnly,
                                                   resultElement,
                                                   unknownElement }, null,

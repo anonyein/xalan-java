@@ -69,7 +69,33 @@ import junit.framework.Assert;
  * 
  * @xsl.usage advanced
  */
-public class XslTransformTestsUtil extends FileComparisonUtil {
+public class XslTransformTestsUtil extends FileComparisonUtil {	    	
+            
+    /**
+     * Class field representing, whether an XSL xsl:evaluate instruction 
+     * processing is enabled for an XSL transformation instance invoked by 
+     * this test suite.
+     */
+    private boolean m_isXslEvaluateEnabled = false;
+    
+    /**
+     * Class field representing, whether XML Schema validation is enabled 
+     * for an XSL transformation instance invoked by this test suite.
+     */
+    private boolean m_isXmlValidationEnabled = false;
+    
+    private static final String OS_NAME = "os.name";
+    
+    private static final String WINDOWS = "Windows";
+        
+    private static final String BASE_DIR = "base-dir";
+    
+    /**
+     * Class field representing file path prefix, that is used for test cases
+     * related to XSL instructions like xsl:result-document that have 'href' 
+     * attribute.
+     */
+    protected static String m_xslTransformInpPath = null;
     
     /**
      * Class field representing an XSL TransformerFactory object instance 
@@ -83,25 +109,7 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
     
     protected static String m_initModeName = null;
     
-    /**
-     * Class field representing file path prefix, that is used for test cases
-     * related to XSL instructions like xsl:result-document that have 'href' 
-     * attribute.
-     */
-    protected static String m_xslTransformInpPath = null;
-    
-    /**
-     * Class field representing, whether XML Schema validation is enabled 
-     * for an XSL transformation instance invoked by this test suite.
-     */
-    private boolean m_isXmlValidationEnabled = false;
-    
-    /**
-     * Class field representing, whether an XSL xsl:evaluate instruction 
-     * processing is enabled for an XSL transformation instance invoked by 
-     * this test suite.
-     */
-    private boolean m_isXslEvaluateEnabled = false;
+    protected static String m_xsl_test_dir_base_uri = null;
     
     /**
      * Class constructor.
@@ -120,15 +128,13 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
      * compares the XSLT transformation's output with the corresponding expected output.
      */
     protected void runXslTransformAndAssertOutput(String xmlFilePath, String xslFilePath, 
-                                                               String xslGoldFilePath, 
-                                                               XslTestsErrorHandler xslTransformErrHandler) {
-        try {
-           
-           
+	                                                                  String xslGoldFilePath, 
+	                                                                  XslTestsErrorHandler xslTransformErrHandler) {
+        try {                      
            String xslDocumentUriStr = ((new File(xslFilePath)).toURI()).toString();
            
            if (m_initTemplateName != null) {
-        	  m_xslTransformerFactory.setAttribute(XalanProperties.INIT_TEMPLATE, m_initTemplateName); 
+        	   m_xslTransformerFactory.setAttribute(XalanProperties.INIT_TEMPLATE, m_initTemplateName); 
            }
            
            if (m_initModeName != null) {
@@ -174,8 +180,25 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
 
            Document doc = docBuilder.newDocument();
            org.w3c.dom.DocumentFragment outNode = doc.createDocumentFragment();
+           
+           if (m_xsl_test_dir_base_uri != null) {
+        	   transformer.setParameter(BASE_DIR, m_xsl_test_dir_base_uri); 
+           }
 
            transformer.transform(xmlInpSrc, new DOMResult(outNode));
+           
+           if (xslTransformErrHandler != null) {
+               List<String> trfErrorList = xslTransformErrHandler.getTrfErrorList();
+               List<String> trfFatalErrorList = xslTransformErrHandler.getTrfFatalErrorList();
+               if ((trfErrorList.size() > 0) || (trfFatalErrorList.size() > 0)) {
+                   // The test has passed
+                   return;
+               }
+               else {
+                   // The test has failed
+                   Assert.fail();  
+               }
+           }
            
            // Running the following another XSL transform, normalizes an XSL 
            // transform's result for comparison purposes.
@@ -190,44 +213,27 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
            StreamResult streamResult = new StreamResult(resultStrWriter);
            identityTransformer.transform(new DOMSource(outNode), streamResult);
            
-           if (xslTransformErrHandler != null) {
-               List<String> trfErrorList = xslTransformErrHandler.getTrfErrorList();
-               List<String> trfFatalErrorList = xslTransformErrHandler.getTrfFatalErrorList();
-               if (trfErrorList.size() > 0 || trfFatalErrorList.size() > 0) {
-                   // The test has passed
-                   return;
-               }
-               else {
-                   // The test has failed
-                   Assert.fail();  
-               }
+           String actualResultStr1 = (resultStrWriter.toString()).trim();
+           
+           byte[] goldFileBytes = Files.readAllBytes(Paths.get(xslGoldFilePath));
+           String expectedResultStr1 = (new String(goldFileBytes)).trim();
+
+           if ((XSLTestConstants.XML).equals(m_fileComparisonType)) {
+        	   if (!isXMLFileContentsEqual(expectedResultStr1, actualResultStr1)) {
+        		   Assert.fail(); 
+        	   }
            }
-           else {
-              byte[] goldFileBytes = Files.readAllBytes(Paths.get(xslGoldFilePath));
-              
-              if ((XSLTestConstants.XML).equals(m_fileComparisonType)) {
-            	  String expectedResultStr = (new String(goldFileBytes)).trim();
-            	  String actualResultStr = (resultStrWriter.toString()).trim();
-            	  if (!isXMLFileContentsEqual(expectedResultStr, actualResultStr)) {
-            		  Assert.fail(); 
-            	  }
-              }
-              else if ((XSLTestConstants.HTML).equals(m_fileComparisonType)) { 
-            	  String expectedResultStr = (new String(goldFileBytes)).trim();
-            	  String actualResultStr = (resultStrWriter.toString()).trim();
-            	  Assert.assertEquals(expectedResultStr, actualResultStr);
-              }
-              else if ((XSLTestConstants.JSON).equals(m_fileComparisonType)) {
-  				  if (!isJsonFileContentsEqual(new String(goldFileBytes), resultStrWriter.toString())) {
-  				     Assert.fail();
-  				  } 
-              }
-              else if ((XSLTestConstants.TEXT).equals(m_fileComparisonType)) {
-            	  String expectedResultStr = new String(goldFileBytes);
-            	  String actualResultStr = resultStrWriter.toString();
-            	  Assert.assertEquals(expectedResultStr, actualResultStr);
-              }              
+           else if ((XSLTestConstants.HTML).equals(m_fileComparisonType)) { 
+        	   Assert.assertEquals(expectedResultStr1, actualResultStr1);
            }
+           else if ((XSLTestConstants.JSON).equals(m_fileComparisonType)) {
+        	   if (!isJsonFileContentsEqual(expectedResultStr1, actualResultStr1)) {
+        		   Assert.fail();
+        	   } 
+           }
+           else if ((XSLTestConstants.TEXT).equals(m_fileComparisonType)) {
+        	   Assert.assertEquals(expectedResultStr1, actualResultStr1);
+           }              
         }
         catch (Exception ex) {
             Assert.fail();    
@@ -561,31 +567,42 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
      */
     protected boolean isXslt1And2OnlyTestCase(Node testCaseNode) {
     	
-        boolean result = false;
-        
-        NodeList nodeList = testCaseNode.getChildNodes();
-        int nodeListLength = nodeList.getLength();
-        for (int idx = 0; idx < nodeListLength; idx++) {
-     	  Node node = nodeList.item(idx);
-     	  if (node.getNodeType() == Node.ELEMENT_NODE) {
-     		 Element elemNode = (Element)node;
-     		 String elemName = elemNode.getLocalName();
-     		 if ("dependencies".equals(elemName)) {
-     			 NodeList nodeList1 = elemNode.getElementsByTagName("spec");
-     			 if (nodeList1.getLength() == 1) {
-     				 Element elem1 = (Element)(nodeList1.item(0));
-     				 String value = elem1.getAttribute("value");
-     				 if ("XSLT20".equals(value) || "XSLT10 XSLT20".equals(value)) {
-     					result = true;
-     					
-     					break; 
-     				 }
-     			 }
-     		 }
-     	  }
-        }
-        
-        return result;
+    	boolean result = false;
+
+    	NodeList nodeList = testCaseNode.getChildNodes();
+    	int nodeListLength = nodeList.getLength();
+    	for (int idx = 0; idx < nodeListLength; idx++) {
+    		Node node = nodeList.item(idx);
+    		if (node.getNodeType() == Node.ELEMENT_NODE) {
+    			Element elemNode = (Element)node;
+    			String elemName = elemNode.getLocalName();
+    			if ("dependencies".equals(elemName)) {        			        			
+    				Node node1 = elemNode.getFirstChild();
+    				while (node1 != null) {
+    					if (node1.getNodeType() == Node.ELEMENT_NODE) {
+    						Element elem1 = (Element)node1;
+    						if ("spec".equals(node1.getNodeName())) {
+    							String value = elem1.getAttribute("value");
+    							if (("XSLT20".equals(value) || "XSLT10".equals(value) 
+    									                                   || "XSLT10 XSLT20".equals(value))) {
+    								result = true;
+
+    								break; 
+    							}
+    						}
+    					}
+
+    					node1 = node1.getNextSibling();
+    				}
+    			}
+    		}
+
+    		if (result) {
+    			break; 
+    		}
+    	}
+
+    	return result;
     }
     
     /**
@@ -597,31 +614,41 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
      */
     protected boolean isBackwardCompatibilityTestCase(Node testCaseNode) {
     	
-        boolean result = false;
-        
-        NodeList nodeList = testCaseNode.getChildNodes();
-        int nodeListLength = nodeList.getLength();
-        for (int idx = 0; idx < nodeListLength; idx++) {
-     	  Node node = nodeList.item(idx);
-     	  if (node.getNodeType() == Node.ELEMENT_NODE) {
-     		 Element elemNode = (Element)node;
-     		 String elemName = elemNode.getLocalName();
-     		 if ("dependencies".equals(elemName)) {
-     			 NodeList nodeList1 = elemNode.getElementsByTagName("feature");
-     			 if (nodeList1.getLength() == 1) {
-     				 Element elem1 = (Element)(nodeList1.item(0));
-     				 String value = elem1.getAttribute("value");
-     				 if ("backwards_compatibility".equals(value)) {
-     					result = true;
-     					
-     					break; 
-     				 }
-     			 }
-     		 }
-     	  }
-        }
-        
-        return result;
+    	boolean result = false;
+
+    	NodeList nodeList = testCaseNode.getChildNodes();
+    	int nodeListLength = nodeList.getLength();
+    	for (int idx = 0; idx < nodeListLength; idx++) {
+    		Node node = nodeList.item(idx);
+    		if (node.getNodeType() == Node.ELEMENT_NODE) {
+    			Element elemNode = (Element)node;
+    			String elemName = elemNode.getLocalName();
+    			if ("dependencies".equals(elemName)) {     			      			 
+    				Node node1 = elemNode.getFirstChild();
+    				while (node1 != null) {
+    					if (node1.getNodeType() == Node.ELEMENT_NODE) {
+    						Element elem1 = (Element)node1;
+    						if ("feature".equals(node1.getNodeName())) {
+    							String value = elem1.getAttribute("value");
+    							if ("backwards_compatibility".equals(value)) {
+    								result = true;
+
+    								break; 
+    							}
+    						}
+    					}
+
+    					node1 = node1.getNextSibling();
+    				}
+    			}
+    		}
+
+    		if (result) {
+    			break; 
+    		}
+    	}
+
+    	return result;
     }
     
     /**
@@ -633,33 +660,41 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
      */
     protected boolean isXslSchemaAwareFeatureTestCase(Node testCaseNode) {
     	
-        boolean result = false;
-        
-        NodeList nodeList = testCaseNode.getChildNodes();
-        int nodeListLength = nodeList.getLength();
-        for (int idx = 0; idx < nodeListLength; idx++) {
-     	  Node node = nodeList.item(idx);
-     	  if (node.getNodeType() == Node.ELEMENT_NODE) {
-     		 Element elemNode = (Element)node;
-     		 String elemName = elemNode.getLocalName();
-     		 if ("dependencies".equals(elemName)) {
-     			 NodeList nodeList1 = elemNode.getElementsByTagName("feature");
-     			 if (nodeList1.getLength() == 1) {
-     				 Element elem1 = (Element)(nodeList1.item(0));
-     				 String value = elem1.getAttribute("value");
-     				 String satisfied = elem1.getAttribute("satisfied");
-     				 if ("schema_aware".equals(value) && ("".equals(satisfied) 
-     						                                                || "true".equals(satisfied))) {
-     					result = true;
-     					
-     					break; 
-     				 }
-     			 }
-     		 }
-     	  }
-        }
-        
-        return result;
+    	boolean result = false;
+
+    	NodeList nodeList = testCaseNode.getChildNodes();
+    	int nodeListLength = nodeList.getLength();
+    	for (int idx = 0; idx < nodeListLength; idx++) {
+    		Node node = nodeList.item(idx);
+    		if (node.getNodeType() == Node.ELEMENT_NODE) {
+    			Element elemNode = (Element)node;
+    			String elemName = elemNode.getLocalName();
+    			if ("dependencies".equals(elemName)) {     			      			 
+    				Node node1 = elemNode.getFirstChild();
+    				while (node1 != null) {
+    					if (node1.getNodeType() == Node.ELEMENT_NODE) {
+    						Element elem1 = (Element)node1;
+    						if ("feature".equals(node1.getNodeName())) {
+    							String value = elem1.getAttribute("value");
+    							if ("schema_aware".equals(value)) {
+    								result = true;
+
+    								break; 
+    							}
+    						}
+    					}
+
+    					node1 = node1.getNextSibling();
+    				}
+    			}
+    		}
+
+    		if (result) {
+    			break; 
+    		}
+    	}
+
+    	return result;
     }
     
     /**
@@ -680,59 +715,34 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
     		if (node.getNodeType() == Node.ELEMENT_NODE) {
     			Element elemNode = (Element)node;
     			String elemName = elemNode.getLocalName();
-    			if ("dependencies".equals(elemName)) {
-    				NodeList nodeList1 = elemNode.getElementsByTagName("feature");
-    				int nodeListLength2 = nodeList1.getLength();     			 
-    				for (int idx2 = 0; idx2 < nodeListLength2; idx2++) {
-    					Element elem1 = (Element)(nodeList1.item(idx2));
-    					String value = elem1.getAttribute("value");
-    					if ("streaming".equals(value)) {
-    						result = true;
+    			if ("dependencies".equals(elemName)) {    				    				
+    				Node node1 = elemNode.getFirstChild();
+    				while (node1 != null) {
+    					if (node1.getNodeType() == Node.ELEMENT_NODE) {
+    						Element elem1 = (Element)node1;
+    						if ("feature".equals(node1.getNodeName())) {
+    							String value = elem1.getAttribute("value");
+    							String satisfied = elem1.getAttribute("satisfied");
+    							if ("streaming".equals(value) && ("".equals(satisfied) 
+    									                                            || "true".equals(satisfied))) {
+    								result = true;
 
-    						break; 
+    								break; 
+    							}
+    						}
     					}
-    				}
 
-    				if (result) {
-    					break; 
+    					node1 = node1.getNextSibling();
     				}
     			}
+    		}
+    		
+    		if (result) {
+    			break; 
     		}
     	}
 
     	return result;
-    }
-    
-    /**
-     * When running W3C XSLT 3.0 test suite, check whether the test case 
-     * is written for xsl:package feature.
-     *  
-     * @param testCaseNode
-     * @return						Boolean value true or false						
-     */
-    protected boolean isXslt3PackageFeatureTestCase(Node testCaseNode) {
-    	
-        boolean result = false;
-        
-        NodeList nodeList = testCaseNode.getChildNodes();
-        int nodeListLength = nodeList.getLength();
-        for (int idx = 0; idx < nodeListLength; idx++) {
-     	  Node node = nodeList.item(idx);
-     	  if (node.getNodeType() == Node.ELEMENT_NODE) {
-     		 Element elemNode = (Element)node;
-     		 String elemName = elemNode.getLocalName();
-     		 if ("test".equals(elemName)) {
-     			 NodeList nodeList1 = elemNode.getElementsByTagName("package");
-     			 if (nodeList1.getLength() > 0) {
-     				 result = true;
-
-     				 break; 
-     			 }
-     		 }
-     	  }
-        }
-        
-        return result;
     }
     
     /**
@@ -759,7 +769,8 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
 											   String expErrCodeName) {		
 		
 		Element resultOutElem = testResultDoc.createElement("outResult");
-		for (int idx = 0; idx < trfErrorList.size(); idx++) {
+		int size1 = trfErrorList.size();
+		for (int idx = 0; idx < size1; idx++) {
 			String errTraceInfo = trfErrorList.get(idx);
 			if ((expErrCodeName != null) && errTraceInfo.contains(expErrCodeName)) {
 			   elemTestResult.setAttribute("status", "pass");
@@ -771,7 +782,8 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
 			resultOutElem.appendChild(errTraceElem);
 		}
 		
-		for (int idx = 0; idx < trfFatalErrorList.size(); idx++) {
+		int size2 = trfFatalErrorList.size();
+		for (int idx = 0; idx < size2; idx++) {
 			String errTraceInfo = trfFatalErrorList.get(idx);
 			if ((expErrCodeName != null) && errTraceInfo.contains(expErrCodeName)) {
 				elemTestResult.setAttribute("status", "pass");
@@ -819,6 +831,7 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
         			  String strTrim2 = (strArr2[idx2]).trim();
         			  if (!strTrim1.equals(strTrim2)) {
         				  result = false;
+        				  
         				  break;
         			  }
         		  }
@@ -831,6 +844,43 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
         }
         
         return result;
+    }
+    
+    /**
+     * Method definition, to get platform OS specific file path, using
+     * Windows OS's supplied file path string.
+     * 
+     * Few Xalan, XSL 3 test cases, have OS sensitive test file
+     * results due to file system's file different line-ending characters.
+     * 
+     * The, Linux style file system file contents, have been produced
+     * using Linux dos2unix utility (which is one of, various solutions 
+     * to this issue).
+     * 
+     * @param filePathStr1					   The supplied file path string
+     * @return                                 The new file path string
+     */
+    protected String getXslTransformGoldFilePath(String filePathStr1) {
+    	
+    	String result = null;
+
+    	int idx1 = filePathStr1.lastIndexOf('/');
+    	String prefixStr1 = filePathStr1.substring(0, idx1);
+    	String suffixStr1 = filePathStr1.substring(idx1 + 1);
+
+    	int idx2 = suffixStr1.indexOf('.');    	
+
+    	String fileNameNew = suffixStr1.substring(0, idx2) + "_linux." + suffixStr1.substring(idx2 + 1);
+
+    	String osName = System.getProperty(OS_NAME);
+    	if (osName.startsWith(WINDOWS)) {
+    		result = filePathStr1;
+    	}
+    	else {
+    		result = prefixStr1 + "/" + fileNameNew;  	
+    	}
+
+    	return result;
     }
     
     /**

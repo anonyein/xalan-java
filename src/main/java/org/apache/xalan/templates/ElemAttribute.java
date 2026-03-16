@@ -47,7 +47,7 @@ import org.apache.xpath.objects.XObject;
 import org.w3c.dom.DOMException;
 import org.xml.sax.SAXException;
 
-import com.sun.org.apache.xml.internal.dtm.DTM;
+import org.apache.xml.dtm.DTM;
 
 /**
  * Implementation of XSL stylesheet instruction xsl:attribute.
@@ -66,7 +66,7 @@ public class ElemAttribute extends ElemElement
     protected Expression m_selectExpression = null;
     
     /**
-     * Class field to store, XPath expression for subsequent 
+     * Class field to refer to, XPath expression for subsequent 
      * processing.
      */
     protected XPath m_xpath = null;
@@ -90,13 +90,13 @@ public class ElemAttribute extends ElemElement
     private String m_attrVal = null;
     
     /**
-     * Class field to store the fact that, whether to serialize an 
-     * attribute to XSL transform's output.
+     * Class field to refer to the fact that, whether to 
+     * serialize an XML attribute node to XSL transform's output.
      */
     private boolean m_is_serialize = true;
     
     /**
-     * This class field, represents the value of "xpath-default-namespace" 
+     * Class field, that represents the value of "xpath-default-namespace" 
      * attribute.
      */
     private String m_xpath_default_namespace = null;
@@ -127,7 +127,7 @@ public class ElemAttribute extends ElemElement
     private boolean m_expand_text_declared;
     
     /**
-     * This class field, represents the value of "expand-text" 
+     * Class field, that represents the value of "expand-text" 
      * attribute.
      */
     private boolean m_expand_text;
@@ -183,7 +183,7 @@ public class ElemAttribute extends ElemElement
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken()
   {
@@ -256,7 +256,7 @@ public class ElemAttribute extends ElemElement
           
       if (null == prefix || prefix.length() == 0 || prefix.equals("xmlns"))
       {
-        if(nodeNamespace.length() > 0)
+        if (nodeNamespace.length() > 0)
         {
             NamespaceMappings prefixMapping = rhandler.getNamespaceMappings();
             prefix = prefixMapping.generateNextPrefix();
@@ -277,9 +277,9 @@ public class ElemAttribute extends ElemElement
    */
    protected boolean validateNodeName(String nodeName)
    {
-      if(null == nodeName)
+      if (null == nodeName)
         return false;
-      if(nodeName.equals("xmlns"))
+      if (nodeName.equals("xmlns"))
         return false;
       return XML11Char.isXML11ValidQName(nodeName);
    }

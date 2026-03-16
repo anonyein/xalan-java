@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
 
 /**
@@ -100,9 +97,12 @@ public class Constants extends org.apache.xml.utils.Constants
   ELEMNAME_DOCUMENT = 114, ELEMNAME_MODE = 115,  
   ELEMNAME_NAMESPACE = 116,
   ELEMNAME_ASSERT = 117,
-  ELEMNAME_PERFORMSORT = 118;
+  ELEMNAME_PERFORMSORT = 118,
+  ELEMNAME_USE_PACKAGE = 119,
+  ELEMNAME_ACCEPT = 120,
+  ELEMNAME_GLOBAL_CONTEXT_ITEM = 121;
   
-  // next available number : 119
+  // next available number : 122
 
   /**
    * Literals for XSL element names. Note that there are more
@@ -186,6 +186,8 @@ public class Constants extends org.apache.xml.utils.Constants
       ELEMNAME_TARGETPI_STRING = "target-pi",
       ELEMNAME_TARGETTEXT_STRING = "target-text",
       ELEMNAME_TEMPLATE_STRING = "template",
+      ELEMNAME_USE_PACKEGE_STRING = "use-package",
+      ELEMNAME_ACCEPT_STRING = "accept",
       
       ELEMNAME_TEXT_STRING = "text",
       ELEMNAME_TRANSFORM_STRING = "transform",
@@ -205,15 +207,14 @@ public class Constants extends org.apache.xml.utils.Constants
       XS_VALIDATION_STRICT_STRING = "strict",
       XS_VALIDATION_LAX_STRING = "lax",
       XS_VALIDATION_PRESERVE_STRING = "preserve",
-      XS_VALIDATION_STRIP_STRING = "strip",
+      XS_VALIDATION_STRIP_STRING = "strip",      
+      XS_VALIDATION_UNSPECIFIED_STRING = "unspecified",
       
       ELEMNAME_CONTEXT_ITEM_STRING = "context-item",
-      ELEMNAME_CONTEXT_ITEM_REQUIRED_STRING = "required",
-      ELEMNAME_CONTEXT_ITEM_OPTIONAL_STRING = "optional",
-      ELEMNAME_CONTEXT_ITEM_ABSENT_STRING = "absent",
       ELEMNAME_DOCUMENT_STRING ="document",
       ELEMNAME_NAMESPACE_STRING = "namespace",
-      ELEMNAME_ASSERT_STRING = "assert";
+      ELEMNAME_ASSERT_STRING = "assert",
+      ELEMNAME_GLOBAL_CONTEXT_ITEM_STRING = "global-context-item";
   
   /**
    * Literals for EXSLT function elements.
@@ -315,7 +316,10 @@ public class Constants extends org.apache.xml.utils.Constants
       ATTRNAME_XMLNSDEF = "xmlns", // default namespace
       ATTRNAME_XMLSPACE = "xml:space", 
       ATTRNAME_ZERODIGIT = "zero-digit",      
-      ATTRNAME_USE_CHARACTER_MAPS = "use-character-maps";
+      ATTRNAME_USE_CHARACTER_MAPS = "use-character-maps",
+      ATTRNAME_XPATH_DEFAULT_NAMESPACE = "xpath-default-namespace",
+      ATTRNAME_EXPAND_TEXT = "expand-text",
+      ATTRNAME_INPUT_TYPE_ANNOTATIONS = "input-type-annotations";
 
   /** IDs for XSL attribute types. These are associated
    * with the string literals in the TransformerImpl class.
@@ -459,7 +463,7 @@ public class Constants extends org.apache.xml.utils.Constants
   
   public static final String XSL_INITIAL_TEMPLATE_DEFAULT_NAME = "xsl:initial-template";
   
-  /** XSLT 3.0 xsl:try and xsl:catch processing constants */
+  /** XSLT 3.0 xsl:try and xsl:catch instruction's processing constants */
   
   public static final String XSL_ERROR_NAMESACE = "http://www.w3.org/2005/xqt-errors";
   public static final String XSL_ERROR_CODE = "code";
@@ -479,12 +483,31 @@ public class Constants extends org.apache.xml.utils.Constants
   public static final String ATTRVAL_FAIL = "fail".intern();
   public static final String ATTRVAL_USE_LAST = "use-last".intern();
   
-  // This is an XSLT 3.0 Xalan-J's internal string constant value, for an 
+  // This is Xalan-J XSLT 3.0 string constant internal value, for an 
   // implementation of XPath 3.1 function fn:random-number-generator.
   public static final String FN_XALAN_RNG_PERMUTE = "'FnXalanPermute'";
   
   public static final String FN_XALAN_RNG_NEXT = "next";
   
   public static final String FN_XALAN_RNG_PERMUTE_STR = "permute";
+  
+  // This is used for Xalan-J XSLT 3.0 instruction xsl:document's implementation
+  public static final String XSL_DOCUMENT_INSTRUCTION_MARKER = "###xslDocument###";
+  
+  public static final String UNARY_LOOKUP_MAP_ARRAY = "unary_lookup_map_array";
+  
+  public static final String ATTRVAL_PUBLIC = "public";
+  
+  public static final String ATTRVAL_PRIVATE = "private";
+  
+  public static final String ATTRVAL_FINAL = "final";
+  
+  public static final String ATTRVAL_ABSTRACT = "abstract";
+  
+  public static final String ATTRVAL_REQUIRED = "required";
+  
+  public static final String ATTRVAL_OPTIONAL = "optional";
+  
+  public static final String ATTRVAL_ABSENT = "absent";
   
 }

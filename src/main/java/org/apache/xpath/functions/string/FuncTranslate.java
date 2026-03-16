@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.functions.string;
 
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
@@ -28,7 +25,7 @@ import org.apache.xpath.objects.XObject;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * Implementation of XPath 3.1 fn:translate() function.
+ * Implementation of XPath 3.1 function fn:translate.
  * 
  * @xsl.usage advanced
  */
@@ -45,7 +42,7 @@ public class FuncTranslate extends Function3Args
     }
 
   /**
-   * Execute the function. The function must return a valid object.
+   * Evaluate the function. The function must return a valid object.
    * 
    * @param xctxt The current execution context.
    * @return A valid XObject.

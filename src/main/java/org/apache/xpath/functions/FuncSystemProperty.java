@@ -53,7 +53,7 @@ public class FuncSystemProperty extends FunctionOneArg
             "org/apache/xalan/res/XSLTInfo.properties";
 
   /**
-   * Execute the function.  The function must return
+   * Evaluate the function. The function must return
    * a valid object.
    * @param xctxt The current execution context.
    * @return A valid XObject.
@@ -106,7 +106,7 @@ public class FuncSystemProperty extends FunctionOneArg
         try
         {
             //if secure procession is enabled only handle required properties do not not map any valid system property
-            if(!xctxt.isSecureProcessing())
+            if (!xctxt.isSecureProcessing())
             {
                 result = System.getProperty(propName);
             }
@@ -134,7 +134,7 @@ public class FuncSystemProperty extends FunctionOneArg
       try
       {
           //if secure procession is enabled only handle required properties do not not map any valid system property
-          if(!xctxt.isSecureProcessing())
+          if (!xctxt.isSecureProcessing())
           {
               result = System.getProperty(fullName);
           }

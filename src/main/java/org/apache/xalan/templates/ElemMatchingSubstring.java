@@ -15,14 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.transformer.TransformerImpl;
@@ -30,10 +28,12 @@ import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMManager;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
+import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.objects.XObject;
 
 /**
-  * Implementation of the XSLT 3.0 xsl:matching-substring instruction.
+  * Implementation of XSLT 3.0 instruction xsl:matching-substring.
   *    
   * @author Mukul Gandhi <mukulg@apache.org>
   *   
@@ -61,7 +61,7 @@ public class ElemMatchingSubstring extends ElemTemplateElement implements Expres
   public ElemMatchingSubstring(){}
   
   /**
-   * This class field, represents the value of "xpath-default-namespace" 
+   * Class field, that represents the value of "xpath-default-namespace" 
    * attribute.
    */
   private String m_xpath_default_namespace = null;
@@ -92,7 +92,7 @@ public class ElemMatchingSubstring extends ElemTemplateElement implements Expres
   private boolean m_expand_text_declared;
   
   /**
-   * This class field, represents the value of "expand-text" 
+   * Class field, that represents the value of "expand-text" 
    * attribute.
    */
   private boolean m_expand_text;
@@ -124,6 +124,33 @@ public class ElemMatchingSubstring extends ElemTemplateElement implements Expres
   public boolean getExpandTextDeclared() {
 	  return m_expand_text_declared;
   }
+  
+  /**
+   * An XPath expression for 'use-when' attribute. 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
+  }
 
   /**
    * This function is called after everything else has been
@@ -148,7 +175,7 @@ public class ElemMatchingSubstring extends ElemTemplateElement implements Expres
    * Get an int constant identifying the type of element.
    * @see org.apache.xalan.templates.Constants
    *
-   * @return The token ID for this element
+   * @return           The token id for this element
    */
   public int getXSLToken() {
      return Constants.ELEMNAME_MATCHING_SUBSTRING;
@@ -171,7 +198,29 @@ public class ElemMatchingSubstring extends ElemTemplateElement implements Expres
    * @throws TransformerException
    */
   public void execute(TransformerImpl transformer) throws TransformerException {
-      transformSelectedNodes(transformer);
+      
+	  XPathContext xctxt = transformer.getXPathContext();
+	  
+	  SourceLocator srcLocator = xctxt.getSAXLocator(); 
+
+	  final int sourceNode = xctxt.getCurrentNode();
+	    
+	  if (m_useWhen != null) {
+		  boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+		  if (result1) {
+			  XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+			  if (useWhenResult.bool()) {
+				  transformSelectedNodes(transformer);
+			  }
+		  }
+		  else {
+			  throw new TransformerException("XPST0008 : XSL variables other than XSLT static variables/parameters, cannot be "
+                      																										+ "used within XPath static expression.", srcLocator);
+		  }
+	  }
+	  else {
+         transformSelectedNodes(transformer);
+	  }
   }
 
   /**
@@ -252,7 +301,7 @@ public class ElemMatchingSubstring extends ElemTemplateElement implements Expres
 
   @Override
   public void setExpression(Expression exp) {
-      // NO OP 
+      // no op 
   }
 
   public String getStrValue() {
