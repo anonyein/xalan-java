@@ -21,7 +21,6 @@ import org.apache.xalan.tests.xpath3.FnAbsTests;
 import org.apache.xalan.tests.xpath3.FnAnalyzeStringTests;
 import org.apache.xalan.tests.xpath3.FnApplyTests;
 import org.apache.xalan.tests.xpath3.FnBaseUriTests;
-import org.apache.xalan.tests.xpath3.FnCollectionTests;
 import org.apache.xalan.tests.xpath3.FnDataTests;
 import org.apache.xalan.tests.xpath3.FnDateTimeTests;
 import org.apache.xalan.tests.xpath3.FnDeepEqualTests;
@@ -84,7 +83,7 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 /**
- * A JUnit 4 test suite for Xalan-J's, XSL 3 specification 
+ * A JUnit 4 test suite (part 1) for Xalan-J's, XSL 3 specification 
  * implementation.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
@@ -113,7 +112,7 @@ import org.junit.runners.Suite.SuiteClasses;
                 XslCopyofValidationTests.class, XslCopyValidationTests.class, FnPositionTests.class,
                 XslForEachGroupWithCollationTests.class, XslMiscTests.class, FnSortMiscTests.class,
                 XslTemplateMiscTests.class, XPathGeneralComparisonOpMiscTests.class, XslSortSeqConstructorTests.class,
-                XslApplyTemplatesTests.class, FnCollectionTests.class })
+                XslApplyTemplatesTests.class })
 public class XalanXsl3TestSuite1 {
 
 }

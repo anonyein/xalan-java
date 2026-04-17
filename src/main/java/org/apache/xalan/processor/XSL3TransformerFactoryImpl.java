@@ -49,6 +49,7 @@ import org.apache.xalan.transformer.TrAXFilter;
 import org.apache.xalan.transformer.TransformerIdentityImpl;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xalan.transformer.XalanProperties;
+import org.apache.xml.utils.QName;
 import org.apache.xml.utils.StopParseException;
 import org.apache.xml.utils.StylesheetPIHandler;
 import org.apache.xml.utils.SystemIDResolver;
@@ -116,6 +117,9 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
   /** Static string to be used for 'assert' feature */
   public static final String FEATURE_ASSERT =
                              XalanProperties.ASSERT_ENABLED;
+  
+  public static final String FEATURE_INIT_FUNCTION =
+                             XalanProperties.INIT_FUNCTION;
   
   /** Static string to be used for 'init context node' feature */
   public static final String INIT_CONTEXT_NODE =
@@ -507,10 +511,11 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
   private String m_init_mode_name = null;
   
   /**
-   * An XSL transformation's 'assert' enable, 
-   * status value.
+   * An XSL transformation's 'assert' enable, status value.
    */
   private boolean m_assert;
+  
+  private QName m_init_function_name;
   
   private boolean m_initial_context_node_available;
   
@@ -609,6 +614,20 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
 	  {
 		  m_assert = (Boolean)value; 
 	  }
+	  else if (name.equals(FEATURE_INIT_FUNCTION))
+	  {
+		  if (value != null) {
+			  String init_func_name = (String)value;
+			  int i1 = init_func_name.indexOf('{');
+			  int i2 = init_func_name.indexOf('}');
+			  int length1 = init_func_name.length(); 
+			  if ((i1 == 0) && (i2 > i1) && (length1 > (i2 + 1))) {
+				  String namespace = init_func_name.substring(i1 + 1, i2);
+				  String localName = init_func_name.substring(i2 + 1);			 
+				  m_init_function_name = new QName(namespace, localName);
+			  }
+		  }
+	  }
 	  else if (name.equals("initial-context-node")) {
 		  m_initial_context_node_available = (Boolean)value; 
 	  }
@@ -653,6 +672,10 @@ public class XSL3TransformerFactoryImpl extends SAXTransformerFactory
 	  else if (name.equals(FEATURE_ASSERT))
 	  {
 		  return m_assert ? Boolean.TRUE : Boolean.FALSE;
+	  }
+	  else if (name.equals(FEATURE_INIT_FUNCTION))
+	  {
+		  return m_init_function_name;
 	  }
 	  else if (name.equals("initial-context-node")) {
 		  return m_initial_context_node_available ? Boolean.TRUE : Boolean.FALSE;

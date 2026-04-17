@@ -781,6 +781,15 @@ public class Keywords
   /** format-integer function string. */
   public static final String FUNC_FORMAT_INTEGER = "format-integer";
   
+  /** environment-variable function string. */
+  public static final String FUNC_ENVIRONMENT_VARIABLE = "environment-variable";
+  
+  /** available-environment-variables function string. */
+  public static final String FUNC_AVAILABLE_ENVIRONMENT_VARIABLES = "available-environment-variables";
+  
+  /** unparsed-text-available function string. */
+  public static final String FUNC_UNPARSED_TEXT_AVAILABLE = "unparsed-text-available";
+  
   // Proprietary, built in functions
 
   /** current function string (Proprietary). */

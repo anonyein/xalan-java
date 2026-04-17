@@ -95,6 +95,7 @@ import org.apache.xalan.templates.ElemTry;
 import org.apache.xalan.templates.ElemValueOf;
 import org.apache.xalan.templates.ElemVariable;
 import org.apache.xalan.templates.ElemWhen;
+import org.apache.xalan.templates.ElemWithParam;
 import org.apache.xalan.templates.OutputProperties;
 import org.apache.xalan.templates.Stylesheet;
 import org.apache.xalan.templates.StylesheetComposed;
@@ -135,6 +136,8 @@ import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.compiler.SharedLexerState;
+import org.apache.xpath.composite.SequenceTypeData;
+import org.apache.xpath.composite.SequenceTypeSupport;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
@@ -381,6 +384,8 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
    * An XSL transformation's initial mode name.
    */
   private String m_init_mode_name = null;
+  
+  private QName m_init_function_name = null;
     
   /**
    * This is a compile-time flag to turn off calling
@@ -467,6 +472,14 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
    * with Xalan-J.
    */
   private List<String> m_enabledPropertyList = new ArrayList<String>(); 
+  
+  private List<ElemWithParam> m_xslWithParamList = new ArrayList<ElemWithParam>();
+  
+  /**
+   * Initial context node handle for XSL transformation, when
+   * XSL transformation is initiated via an XSL stylesheet function.
+   */
+  private int m_docNode = DTM.NULL;
 
   /**
    * NEEDSDOC Method setShouldReset 
@@ -518,6 +531,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
     m_incremental = stylesheet.getIncremental();
     m_source_location = stylesheet.getSource_location();
     m_init_template_name = stylesheet.getInitTemplateName();
+    m_init_function_name = stylesheet.getInitFunctionName();
     m_init_mode_name = stylesheet.getInitModeName();
     setStylesheet(stylesheet);
     XPathContext xPath = new XPathContext(this);
@@ -891,11 +905,13 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
         }           
       }
       
-      DTM dtm = null;
+      DTM dtm = null;            
       
       if (source != null) {
         dtm = mgr.getDTM(source, false, this, true, true);
         dtm.setDocumentBaseURI(base);
+        
+        m_docNode = dtm.getDocument();
       }
       
       boolean hardDelete = true;  // %REVIEW% I have to think about this. -sb
@@ -923,10 +939,10 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
     		  
     		  this.transformNode(dtm.getDocument());
     	  }
-    	  else if ((m_init_template_name != null) || (m_init_mode_name != null)) {
+    	  else if ((m_init_template_name != null) || (m_init_mode_name != null) || (m_init_function_name != null)) {
     		  /**
-    		   * An XSL stylesheet 'initial template' or 'mode' name is 
-    		   * available, but context node is not available.
+    		   * An XSL stylesheet 'initial template', 'mode' name or 'initial function' is 
+    		   * available, but XSL transformation initial context node is not available.
     		   */
     		  this.transformNode(DTM.NULL);
     	  }
@@ -2519,7 +2535,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
   public boolean applyTemplateToNode(ElemTemplateElement xslInstruction,  // xsl:apply-templates or xsl:for-each
                                      ElemTemplate template, int child)
                                              throws TransformerException
-  {
+  {	  	  
 
     DTM dtm = m_xcontext.getDTM(child);
     short nodeType = DTM.ROOT_NODE;
@@ -2532,6 +2548,8 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
     boolean isApplyImports = false;
     
     String initTemplateName = m_stylesheetRoot.getInitTemplateName();
+    
+    QName initFunctionName = m_stylesheetRoot.getInitFunctionName();
     
     isApplyImports = ((xslInstruction == null)
                                 ? false
@@ -2666,7 +2684,32 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
              else {
             	 throw new TransformerException("XTDE0040 : An XSL template named '" + initTemplateName + "' doesn't exist."); 
              }                          
-          }          
+          }
+          else if (initFunctionName != null) {
+        	 try {
+        		 xctxt.pushCurrentNode(m_docNode);
+        		 
+        		 ElemFunction elemFunction = m_stylesheetRoot.getXslFunction(initFunctionName, 0);   // assuming function arity is 0 for now
+        		 ResultSequence argSequence = new ResultSequence();
+        		 XObject funcResult = elemFunction.evaluateXslFunction(this, argSequence);
+        		 ResultSequence seqForResult = new ResultSequence();
+        		 seqForResult.add(funcResult);
+        		 ElemCopyOf.copyOfActionOnResultSequence(seqForResult, this, m_serializationHandler, xctxt, false, template);
+        	 }
+        	 catch (TransformerException ex) {
+                throw ex;
+			 } 
+        	 catch (SAXException ex) {
+                String errMesg = ex.getMessage();
+                SourceLocator srcLocator = xctxt.getSAXLocator();
+                throw new TransformerException(errMesg, srcLocator); 
+			 }
+        	 finally {
+        		xctxt.popCurrentNode(); 
+        	 }
+        	 
+        	 return true;
+          }
           else {
         	  QName mode = null;        	  
         	  if (m_init_mode_name != null) {
@@ -2953,42 +2996,37 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
       String strValue = String.valueOf(chars);      
       boolean isExpandText = elemTextLiteral.getExpandTextValue(elemTextLiteral.getParentElem());
       if (isExpandText) {
-    	 Vector xslVars = elemTextLiteral.getXslVars();
-    	 int xslVarsGlobalSize = elemTextLiteral.getXslVarsGlobalSize();
-         strValue = t.getStrValueAfterExpandTextProcessing(strValue, this, xslVars, xslVarsGlobalSize);
+    	  Vector xslVars = elemTextLiteral.getXslVars();
+    	  int xslVarsGlobalSize = elemTextLiteral.getXslVarsGlobalSize();
+    	  strValue = t.getStrValueAfterExpandTextProcessing(strValue, this, xslVars, xslVarsGlobalSize);
       }
       
       try
       {
-        this.pushElemTemplateElement(t);
-        
-        if (m_serializationHandler instanceof SerializerBase) {
-        	CharacterMapConfig charMapConfig = ((SerializerBase)m_serializationHandler).getCharMapConfig();
-        	if (charMapConfig != null) {
-        		// xsl:character-map transformation        	        	
-        		strValue = XslTransformEvaluationHelper.characterMapTransformation(strValue, charMapConfig);
-        		chars = strValue.toCharArray();
-        	}
-        }
-        
-        m_serializationHandler.characters(chars, 0, chars.length);
+    	  this.pushElemTemplateElement(t);
+
+    	  if (m_serializationHandler instanceof SerializerBase) {
+    		  CharacterMapConfig charMapConfig = ((SerializerBase)m_serializationHandler).getCharMapConfig();
+    		  if (charMapConfig != null) {
+    			  // xsl:character-map transformation        	        	
+    			  strValue = XslTransformEvaluationHelper.characterMapTransformation(strValue, charMapConfig);
+    			  chars = strValue.toCharArray();
+    		  }
+    	  }
+
+    	  m_serializationHandler.characters(chars, 0, chars.length);
       }
       catch(SAXException se)
       {
-        throw new TransformerException(se);
+    	  throw new TransformerException(se);
       }
       finally
       {
-        this.popElemTemplateElement();
+    	  this.popElemTemplateElement();
       }
+      
       return;
     }
-
-//    // Check for infinite loops if we have to.
-//    boolean check = (m_stackGuard.m_recursionLimit > -1);
-//
-//    if (check)
-//      getStackGuard().push(elem, xctxt.getCurrentNode());
 
     XPathContext xctxt = m_xcontext;
     xctxt.pushSAXLocatorNull();
@@ -2997,18 +3035,53 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 
     try
     {
-      // Loop through the children of the template, calling execute on 
-      // each of them.
-      for (; t != null; t = t.getNextSiblingElem())
-      {
-        if (!shouldAddAttrs
-                && t.getXSLToken() == Constants.ELEMNAME_ATTRIBUTE)
-          continue;
+    	// Loop through the children of the template, calling execute on 
+    	// each of them.
 
-        xctxt.setSAXLocator(t);
-        m_currentTemplateElements.setElementAt(t,currentTemplateElementsTop);
-        t.execute(this);        
-      }
+    	boolean xslWithParamCount = false;
+    	if (m_xslWithParamList.size() > 0) {
+    		xslWithParamCount = true; 
+    	}
+
+    	int xslParamOffset = -1;
+    	VariableStack varStack = xctxt.getVarStack();
+    	int currStackFrame = varStack.getStackFrame();
+    	int currentNode = xctxt.getCurrentNode();
+    	SourceLocator srcLocator = xctxt.getSAXLocator();
+    	for (; t != null; t = t.getNextSiblingElem())
+    	{
+    		xslParamOffset++;
+    		if (!shouldAddAttrs
+    				&& t.getXSLToken() == Constants.ELEMNAME_ATTRIBUTE)
+    			continue;
+
+    		xctxt.setSAXLocator(t);
+    		m_currentTemplateElements.setElementAt(t,currentTemplateElementsTop);
+
+    		if ((t instanceof ElemParam) && xslWithParamCount) {
+    			ElemWithParam elemWithParam = m_xslWithParamList.get(xslParamOffset);        	        	        	
+    			XPath xpath = elemWithParam.getSelect();        	
+    			XObject withParamValue = xpath.execute(xctxt, currentNode, xctxt.getNamespaceContext());
+    			String sequenceTypeXPathExprStr = elemWithParam.getAs();    			 
+    			XPath seqTypeXPath = new XPath(sequenceTypeXPathExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);
+  			    XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
+  			    SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeExpressionEvalResult;
+    			XObject convertedObjValue = SequenceTypeSupport.castXdmValueToAnotherType(withParamValue, sequenceTypeXPathExprStr, seqExpectedTypeData, xctxt);
+    			if (convertedObjValue == null) {
+    			   throw new TransformerException("An XSL template parameter argument " + (elemWithParam.getName()).toString() + " "
+    			   		                                                                + "is not valid with the specified sequence type " 
+    					                                                                + sequenceTypeXPathExprStr + ".", elemWithParam);
+    			}
+    			
+    			varStack.setLocalVariable(xslParamOffset, withParamValue, currStackFrame);
+    		}
+    		else {           
+    			t.execute(this);
+    		}
+    	}
+    }
+    catch (TransformerException ex) {
+    	throw ex;
     }
     catch(RuntimeException re)
     {
@@ -5428,6 +5501,10 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 
 	  public void setUriStrOfXslStylesheet(String uriStrOfXslStylesheet) {
 		  this.m_uriStrOfXslStylesheet = uriStrOfXslStylesheet;
+	  }
+
+	  public void setXslNextMatchWithParamList(List<ElemWithParam> xslWithParamList) {		
+		  m_xslWithParamList = xslWithParamList; 		
 	  }
 
 }  // end TransformerImpl class
