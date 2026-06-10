@@ -66,6 +66,7 @@ jobs:
         # 调用函数安装所有依赖项
         install_jar "libs/org/apache/xsl/xpath31_types/1.0/xpath31_types-1.0.jar" "org.apache.xsl" "xpath31_types" "1.0"
         install_jar "libs/org/apache/xerces/xml-apis/1.4.02/xml-apis-1.4.02.jar" "org.apache.xerces" "xml-apis" "1.4.02"
+        install_jar "libs/JLex/JLex/1.0/jlex-1.0.jar" "Jlex" "Jlex" "1.0"
         
     - name: 'Build project'
       run: |
