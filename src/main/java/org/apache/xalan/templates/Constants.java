@@ -101,9 +101,11 @@ public class Constants extends org.apache.xml.utils.Constants
   ELEMNAME_USE_PACKAGE = 119,
   ELEMNAME_ACCEPT = 120,
   ELEMNAME_GLOBAL_CONTEXT_ITEM = 121,
-  ELEMNAME_NEXT_MATCH = 122;
+  ELEMNAME_NEXT_MATCH = 122,
+  ELEMNAME_MAP = 123,
+  ELEMNAME_MAP_ENTRY = 124;
   
-  // next available number : 123
+  // next available number : 125
 
   /**
    * Literals for XSL element names. Note that there are more
@@ -216,7 +218,9 @@ public class Constants extends org.apache.xml.utils.Constants
       ELEMNAME_DOCUMENT_STRING ="document",
       ELEMNAME_NAMESPACE_STRING = "namespace",
       ELEMNAME_ASSERT_STRING = "assert",
-      ELEMNAME_GLOBAL_CONTEXT_ITEM_STRING = "global-context-item";
+      ELEMNAME_GLOBAL_CONTEXT_ITEM_STRING = "global-context-item",
+      ELEMNAME_MAP_STRING ="map",
+      ELEMNAME_MAP_ENTRY_STRING ="map-entry";
   
   /**
    * Literals for EXSLT function elements.
@@ -321,7 +325,10 @@ public class Constants extends org.apache.xml.utils.Constants
       ATTRNAME_USE_CHARACTER_MAPS = "use-character-maps",
       ATTRNAME_XPATH_DEFAULT_NAMESPACE = "xpath-default-namespace",
       ATTRNAME_EXPAND_TEXT = "expand-text",
-      ATTRNAME_INPUT_TYPE_ANNOTATIONS = "input-type-annotations";
+      ATTRNAME_INPUT_TYPE_ANNOTATIONS = "input-type-annotations",
+      ATTRNAME_ERRORS = "errors",
+      ATTRNAME_ITEM_SEPARATOR = "item-separator",
+      ATTRNAME_USE_WHEN = "use-when";
 
   /** IDs for XSL attribute types. These are associated
    * with the string literals in the TransformerImpl class.
@@ -404,6 +411,8 @@ public class Constants extends org.apache.xml.utils.Constants
   
   /** For indent-result          */
   public static final boolean ATTRVAL_YES = true, ATTRVAL_NO = false;
+  
+  public static final String ATTRVAL_LITERAL_YES = "yes", ATTRVAL_LITERAL_NO = "no";
 
   
   /** For letter-value attribute (part of conversion attributes).          */
@@ -485,6 +494,14 @@ public class Constants extends org.apache.xml.utils.Constants
   public static final String ATTRVAL_FAIL = "fail".intern();
   public static final String ATTRVAL_USE_LAST = "use-last".intern();
   
+  public static final String ATTRVAL_DEFAULT = "default";
+  
+  public static final String ATTRVAL_UNNAMED = "unnamed";
+  
+  public static final String ATTRVAL_CURRENT = "current";
+  
+  public static final String ATTRVAL_ALL = "all";
+  
   // This is Xalan-J XSLT 3.0 string constant internal value, for an 
   // implementation of XPath 3.1 function fn:random-number-generator.
   public static final String FN_XALAN_RNG_PERMUTE = "'FnXalanPermute'";
@@ -511,5 +528,9 @@ public class Constants extends org.apache.xml.utils.Constants
   public static final String ATTRVAL_OPTIONAL = "optional";
   
   public static final String ATTRVAL_ABSENT = "absent";
+  
+  public static final String XSL_SER_NAMESACE = "http://www.w3.org/2010/xslt-xquery-serialization";
+  
+  public static final String XSL_SER_PARAMS = "serialization-parameters";
   
 }

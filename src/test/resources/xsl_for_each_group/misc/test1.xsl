@@ -11,7 +11,7 @@
 
     <xsl:template match="/">
        <result>	     
-	      <xsl:for-each-group select="(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)" group-by=". lt 5">
+	      <xsl:for-each-group select="(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)" group-by="number(.) lt 5">
 		     <group key="{if (current-grouping-key() eq true()) then 'less_than_five' else 'greater_equal_to_five'}">			   
 			   <xsl:for-each select="current-group()">
 			     <item>

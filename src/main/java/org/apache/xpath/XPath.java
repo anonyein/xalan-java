@@ -34,7 +34,6 @@ import org.apache.xalan.processor.StylesheetHandler;
 import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.ElemCopyOf;
-import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.templates.XMLNSDecl;
 import org.apache.xalan.xslt.util.XslTransformData;
@@ -57,8 +56,12 @@ import org.apache.xpath.functions.Function;
 import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.functions.XSL3FunctionService;
 import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XBoolean;
+import org.apache.xpath.objects.XBooleanStatic;
+import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.ArrowOp;
 import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.res.XPATHErrorResources;
@@ -72,8 +75,11 @@ import org.w3c.dom.bootstrap.DOMImplementationRegistry;
 import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSSerializer;
 
+import xml.xpath31.processor.types.XSAnyURI;
+import xml.xpath31.processor.types.XSBoolean;
 import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSString;
+import xml.xpath31.processor.types.XSUntypedAtomic;
 
 /**
  * This class wraps an XPath expression object and provides 
@@ -603,7 +609,29 @@ public class XPath implements Serializable, ExpressionOwner
 
     try
     {
-      return m_mainExp.bool(xctxt);
+    	XObject xObj = m_mainExp.execute(xctxt);
+    	
+    	if (xObj instanceof ResultSequence) {
+    	   ResultSequence rSeq = (ResultSequence)xObj;
+    	   int size1 = rSeq.size();
+    	   for (int idx = 0; idx < size1; idx++) {
+    		  XObject xObj2 = rSeq.item(idx);
+    		  if (!(xObj2 instanceof XSBoolean || xObj2 instanceof XBoolean || xObj2 instanceof XBooleanStatic ||
+    				  xObj2 instanceof XSString || xObj2 instanceof XString || xObj2 instanceof XSNumericType || xObj2 instanceof XNumber ||
+    				  xObj2 instanceof XSAnyURI || xObj2 instanceof XMLNodeCursorImpl || xObj2 instanceof XSUntypedAtomic)) {
+    			  throw new javax.xml.transform.TransformerException("FORG0006 : An XSL effective boolean value is defined only for sequences containing booleans,"
+    			  		                                                                                           + " strings, numbers, URIs, or nodes.");
+    		  }
+    	   }
+    	}
+    	else if (!(xObj instanceof XSBoolean || xObj instanceof XBoolean || xObj instanceof XBooleanStatic ||
+    			   xObj instanceof XSString || xObj instanceof XString || xObj instanceof XSNumericType || xObj instanceof XNumber ||
+    			   xObj instanceof XSAnyURI || xObj instanceof XMLNodeCursorImpl || xObj instanceof XSUntypedAtomic)) {
+    	   throw new javax.xml.transform.TransformerException("FORG0006 : An XSL effective boolean value is defined only for sequences containing booleans,"
+			  		                                                                                               + " strings, numbers, URIs, or nodes.");
+    	}
+    	
+        return m_mainExp.bool(xctxt);
     }
     catch (TransformerException te)
     {
@@ -1113,11 +1141,8 @@ public class XPath implements Serializable, ExpressionOwner
     	 */
     	String varRefXPathExprStr = "$" + xpathPatternStr.substring(1, xpathPatternStr.indexOf('['));
     	String xpathIndexExprStr = xpathPatternStr.substring(xpathPatternStr.indexOf('[') + 1, xpathPatternStr.indexOf(']'));
-    	ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-    	List<XMLNSDecl> prefixTable = null;
-    	if (elemTemplateElement != null) {
-    		prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-    	}
+    	    	
+    	List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
 
     	// Evaluate the, variable reference XPath expression
     	if (prefixTable != null) {

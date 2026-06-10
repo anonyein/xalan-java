@@ -87,7 +87,7 @@ public class Keywords
   static final String FROM_NAMESPACE_STRING = "namespace";
 
   /** self axes abreviated string. */
-  private static final String FROM_SELF_ABBREVIATED_STRING = ".";
+  static final String FROM_SELF_ABBREVIATED_STRING = ".";
 
   /** comment node test string. */
   private static final String NODETYPE_COMMENT_STRING = "comment";
@@ -792,6 +792,30 @@ public class Keywords
   
   /** copy-of function string (XSLT). */
   public static final String FUNC_COPY_OF = "copy-of";
+  
+  /** serialize function string. */
+  public static final String FUNC_SERIALIZE = "serialize";
+  
+  /** format-dateTime function string. */
+  public static final String FUNC_FORMAT_DATETIME = "format-dateTime";
+  
+  /** format-date function string. */
+  public static final String FUNC_FORMAT_DATE = "format-date";
+  
+  /** format-time function string. */
+  public static final String FUNC_FORMAT_TIME = "format-time";
+  
+  /** parse-ietf-date function string. */
+  public static final String FUNC_PARSE_IETF_DATE = "parse-ietf-date";
+  
+  /** zero-or-one function string. */
+  public static final String FUNC_ZERO_OR_ONE = "zero-or-one";
+  
+  /** one-or-more function string. */
+  public static final String FUNC_ONE_OR_MORE = "one-or-more";
+  
+  /** exactly-one function string. */
+  public static final String FUNC_EXACTLY_ONE = "exactly-one";
   
   // Proprietary, built in functions
 

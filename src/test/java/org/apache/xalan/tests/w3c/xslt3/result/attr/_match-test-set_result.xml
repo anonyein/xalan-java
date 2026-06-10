@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-02-22T17:38:19Z" fail="81" name="match" pass="101" run="182" skipped="112" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-05-27T16:34:11Z" fail="72" name="match" pass="110" run="182" skipped="112" statusUnknown="0">
    <testResult status="pass" testName="match-001"/>
    <testResult status="pass" testName="match-002"/>
    <testResult status="pass" testName="match-003"/>
@@ -43,7 +43,7 @@
          <errTrace>XPST0017 : An XSL stylesheet function call {http://f.com/}special referred within an XPath expression, doesn't have a corresponding XSL function definition within the stylesheet.</errTrace>
       </outResult>
    </testResult>
-   <testResult status="fail" testName="match-041"/>
+   <testResult status="pass" testName="match-041"/>
    <testResult status="pass" testName="match-042"/>
    <testResult status="pass" testName="match-043"/>
    <testResult status="pass" testName="match-044"/>
@@ -52,15 +52,15 @@
    <testResult status="pass" testName="match-047"/>
    <testResult status="pass" testName="match-048"/>
    <testResult status="pass" testName="match-049"/>
-   <testResult status="fail" testName="match-050"/>
+   <testResult status="fail" testName="match-050">
+      <outResult>
+         <errTrace>java.lang.NullPointerException</errTrace>
+      </outResult>
+   </testResult>
    <testResult status="fail" testName="match-051">
       <outResult>
-         <errTrace>XTSE0340 : A node test that matches either NCName:* or QName was expected.</errTrace>
-         <errTrace>Extra illegal tokens: 'x'</errTrace>
-         <errTrace>XTSE0340 : A node test that matches either NCName:* or QName was expected.</errTrace>
-         <errTrace>Extra illegal tokens: 'y', '/', '/', 'YYY'</errTrace>
-         <errTrace>XTSE0340 : A node test that matches either NCName:* or QName was expected.</errTrace>
-         <errTrace>Extra illegal tokens: 'y'</errTrace>
+         <errTrace>unknown match operation!</errTrace>
+         <errTrace>java.lang.NullPointerException</errTrace>
       </outResult>
    </testResult>
    <testResult status="fail" testName="match-052"/>
@@ -102,8 +102,8 @@
    <testResult status="fail" testName="match-070"/>
    <testResult status="fail" testName="match-071"/>
    <testResult status="fail" testName="match-072"/>
-   <testResult status="fail" testName="match-073"/>
-   <testResult status="fail" testName="match-074"/>
+   <testResult status="pass" testName="match-073"/>
+   <testResult status="pass" testName="match-074"/>
    <testResult status="fail" testName="match-075"/>
    <testResult status="pass" testName="match-076"/>
    <testResult status="fail" testName="match-077">
@@ -177,9 +177,8 @@
          <errTrace>Unknown nodetype: element</errTrace>
          <errTrace>Extra illegal tokens: 'element', '(', ')'</errTrace>
          <errTrace>Pattern literal (anotherpi) needs to be quoted!</errTrace>
-         <errTrace>Expected ), but found: anotherpi</errTrace>
-         <errTrace>org.xml.sax.SAXException: CONTINUE_AFTER_FATAL_ERROR
-org.apache.xpath.XPathProcessorException: CONTINUE_AFTER_FATAL_ERROR</errTrace>
+         <errTrace>org.xml.sax.SAXException: Line# : 50, Column# : 70 XPST0003: Expected ), but found: anotherpi
+java.lang.Exception: Line# : 50, Column# : 70 XPST0003: Expected ), but found: anotherpi</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="match-102"/>
@@ -200,9 +199,8 @@ org.apache.xpath.XPathProcessorException: CONTINUE_AFTER_FATAL_ERROR</errTrace>
          <errTrace>Unknown nodetype: element</errTrace>
          <errTrace>Extra illegal tokens: 'element', '(', ')'</errTrace>
          <errTrace>Pattern literal (anotherpi) needs to be quoted!</errTrace>
-         <errTrace>Expected ), but found: anotherpi</errTrace>
-         <errTrace>org.xml.sax.SAXException: CONTINUE_AFTER_FATAL_ERROR
-org.apache.xpath.XPathProcessorException: CONTINUE_AFTER_FATAL_ERROR</errTrace>
+         <errTrace>org.xml.sax.SAXException: Line# : 47, Column# : 77 XPST0003: Expected ), but found: anotherpi
+java.lang.Exception: Line# : 47, Column# : 77 XPST0003: Expected ), but found: anotherpi</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="match-108"/>
@@ -329,17 +327,12 @@ org.apache.xpath.XPathProcessorException: CONTINUE_AFTER_FATAL_ERROR</errTrace>
          <errTrace>XPST0051 : A sequence type occurence indicator ']', is not recognized.</errTrace>
       </outResult>
    </testResult>
-   <testResult status="fail" testName="match-130">
-      <outResult>
-         <errTrace>A location path was expected, but the following token was encountered:  +</errTrace>
-         <errTrace>java.lang.RuntimeException: Programmer's assertion in getNextStepPos: unknown stepType: -1</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="match-130"/>
    <testResult status="fail" testName="match-131"/>
    <testResult status="fail" testName="match-132"/>
    <testResult reason="Xalan configured" status="skipped" testName="match-133"/>
-   <testResult status="fail" testName="match-134"/>
-   <testResult status="fail" testName="match-135"/>
+   <testResult status="pass" testName="match-134"/>
+   <testResult status="pass" testName="match-135"/>
    <testResult feature="schema_aware" status="skipped" testName="match-136"/>
    <testResult feature="schema_aware" status="skipped" testName="match-137"/>
    <testResult feature="schema_aware" status="skipped" testName="match-138"/>
@@ -418,13 +411,7 @@ org.apache.xpath.XPathProcessorException: CONTINUE_AFTER_FATAL_ERROR</errTrace>
    <testResult feature="schema_aware" status="skipped" testName="match-211"/>
    <testResult feature="schema_aware" status="skipped" testName="match-212"/>
    <testResult feature="schema_aware" status="skipped" testName="match-213"/>
-   <testResult status="fail" testName="match-214">
-      <outResult>
-         <errTrace>Only child:: and attribute:: axes are allowed in match patterns!  Offending axes = self</errTrace>
-         <errTrace>unknown match operation!</errTrace>
-         <errTrace>java.lang.NullPointerException</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="match-214"/>
    <testResult status="fail" testName="match-215"/>
    <testResult status="pass" testName="match-216"/>
    <testResult status="fail" testName="match-217"/>
@@ -444,7 +431,7 @@ org.apache.xpath.XPathProcessorException: CONTINUE_AFTER_FATAL_ERROR</errTrace>
    <testResult feature="schema_aware" status="skipped" testName="match-231"/>
    <testResult feature="schema_aware" status="skipped" testName="match-232"/>
    <testResult status="pass" testName="match-233"/>
-   <testResult status="fail" testName="match-234"/>
+   <testResult status="pass" testName="match-234"/>
    <testResult status="fail" testName="match-235"/>
    <testResult status="fail" testName="match-236">
       <outResult>
@@ -481,35 +468,24 @@ org.apache.xpath.XPathProcessorException: CONTINUE_AFTER_FATAL_ERROR</errTrace>
    <testResult status="pass" testName="match-254"/>
    <testResult status="pass" testName="match-255"/>
    <testResult status="pass" testName="match-256"/>
-   <testResult status="fail" testName="match-257">
-      <outResult>
-         <errTrace>Only child:: and attribute:: axes are allowed in match patterns!  Offending axes = self</errTrace>
-         <errTrace>unknown match operation!</errTrace>
-         <errTrace>java.lang.NullPointerException</errTrace>
-      </outResult>
-   </testResult>
-   <testResult status="fail" testName="match-258">
-      <outResult>
-         <errTrace>Only child:: and attribute:: axes are allowed in match patterns!  Offending axes = self</errTrace>
-         <errTrace>Only child:: and attribute:: axes are allowed in match patterns!  Offending axes = self</errTrace>
-         <errTrace>unknown match operation!</errTrace>
-         <errTrace>java.lang.NullPointerException</errTrace>
-      </outResult>
-   </testResult>
-   <testResult status="fail" testName="match-259"/>
+   <testResult status="pass" testName="match-257"/>
+   <testResult status="fail" testName="match-258"/>
+   <testResult status="pass" testName="match-259"/>
    <testResult status="fail" testName="match-260">
       <outResult>
          <errTrace>XTTE0505 : An XSL apply-templates 'select' expression evaluation resulted in a value that is not supported to be processed.</errTrace>
       </outResult>
    </testResult>
    <testResult status="fail" testName="match-261">
-      <outResult>
-         <errTrace>XTSE0010 : an instruction xsl:next-match is not known to the XSLT processor.</errTrace>
-      </outResult>
+      <outResult/>
    </testResult>
    <testResult feature="schema_aware" status="skipped" testName="match-262"/>
    <testResult feature="schema_aware" status="skipped" testName="match-263"/>
-   <testResult status="pass" testName="match-264"/>
+   <testResult status="fail" testName="match-264">
+      <outResult>
+         <errTrace>java.lang.NullPointerException</errTrace>
+      </outResult>
+   </testResult>
    <testResult status="fail" testName="match-265"/>
    <testResult status="fail" testName="match-266"/>
    <testResult status="fail" testName="match-267"/>
@@ -532,14 +508,22 @@ org.apache.xpath.XPathProcessorException: CONTINUE_AFTER_FATAL_ERROR</errTrace>
       <outResult>
          <errTrace>Extra illegal tokens: 'except', '@', 'q', 'except', '@', 'http://www.w3.org/XML/1998/namespace', ':', 'id'</errTrace>
          <errTrace>Extra illegal tokens: 'except', '(', '@', 'xxx', '|', '@', 'yyy', ')'</errTrace>
-         <errTrace>java.lang.RuntimeException: This NodeSetDTM can not iterate to a previous node!</errTrace>
+         <errTrace>XPTY0004 : One or both of the operands of operator + are not numeric.</errTrace>
       </outResult>
    </testResult>
    <testResult status="fail" testName="match-277"/>
    <testResult status="pass" testName="match-278"/>
    <testResult status="pass" testName="match-279"/>
-   <testResult status="fail" testName="match-280"/>
-   <testResult status="fail" testName="match-281"/>
+   <testResult status="fail" testName="match-280">
+      <outResult>
+         <errTrace>java.lang.NullPointerException</errTrace>
+      </outResult>
+   </testResult>
+   <testResult status="fail" testName="match-281">
+      <outResult>
+         <errTrace>java.lang.NullPointerException</errTrace>
+      </outResult>
+   </testResult>
    <testResult status="fail" testName="match-282"/>
    <testResult status="pass" testName="match-283"/>
    <testResult status="fail" testName="match-284"/>

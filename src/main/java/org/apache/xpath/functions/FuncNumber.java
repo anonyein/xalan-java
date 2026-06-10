@@ -15,17 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.functions;
 
+import javax.xml.transform.SourceLocator;
+
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathInlineFunction;
+import org.apache.xpath.patterns.NodeTest;
+
+import xml.xpath31.processor.types.XSNumericType;
 
 /**
- * Execute the Number() function.
+ * Implementation of an XPath 3.1 function fn:number.
+ * 
  * @xsl.usage advanced
  */
 public class FuncNumber extends FunctionDef1Arg
@@ -40,15 +45,43 @@ public class FuncNumber extends FunctionDef1Arg
     }
 
   /**
-   * Evaluate the function. The function must return
-   * a valid object.
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
+   * Evaluate the function. The function must return a valid object.
+   * 
+   * @param xctxt The current execution context
+   * @return A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
   public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
   {
-    return new XNumber(getArg0AsNumber(xctxt));
+      XObject result = null;
+      
+      SourceLocator srcLocator = xctxt.getSAXLocator();
+      
+      if (m_arg0 instanceof NodeTest) {
+    	  if (XslTransformEvaluationHelper.isNodeTestExpressionFuntionType((NodeTest)m_arg0)) {
+    		 throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function number(), but the "
+    		 		                                                                 + "supplied type is a function type, which cannot be atomized.", srcLocator); 
+    	  }
+      }
+      else if (m_arg0 instanceof XPathInlineFunction) {
+    	  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function number(), but the "
+                   																     + "supplied type is a function type, which cannot be atomized.", srcLocator); 
+      }
+      
+      if (m_arg0 != null) {
+    	 XObject xObj1 = m_arg0.execute(xctxt);
+    	 if (xObj1 instanceof XSNumericType) {
+    		String str1 = ((XSNumericType)xObj1).stringValue();
+    		result = new XNumber(Double.valueOf(str1));
+    	 }
+      }
+           
+      if (result == null) {
+	     result = new XNumber(getArg0AsNumber(xctxt));
+      }
+	  
+	  return result;
   }
+  
 }

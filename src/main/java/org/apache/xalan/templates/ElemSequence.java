@@ -37,7 +37,7 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.XPathParser;
-import org.apache.xpath.composite.SequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceTypeData;
 import org.apache.xpath.composite.XPathArrayConstructor;
 import org.apache.xpath.composite.XPathNamedFunctionReference;
 import org.apache.xpath.composite.XPathSequenceConstructor;
@@ -234,7 +234,7 @@ public class ElemSequence extends ElemTemplateElement
   }
   
   /**
-   * An XPath expression for 'use-when' attribute. 
+   * An XPath expression for XSL attribute "use-when". 
    */
   private XPath m_useWhen = null;
 
@@ -253,7 +253,7 @@ public class ElemSequence extends ElemTemplateElement
    * Method definition, to get the value of XSL attribute 
    * "use-when".
    * 
-   * @return			XPath expression for attribute "use-when"
+   * @return			     XPath expression for attribute "use-when"
    */
   public XPath getUseWhen()
   {
@@ -547,7 +547,7 @@ public class ElemSequence extends ElemTemplateElement
         		                                                             XPath.SELECT, null, true);
          XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), 
                                                                              xctxt.getNamespaceContext());
-         SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeExpressionEvalResult;
+         XPathSequenceTypeData seqExpectedTypeData = (XPathSequenceTypeData)seqTypeExpressionEvalResult;
          if (seqExpectedTypeData.getSequenceTypeKindTest() != null) {
             result = false; 
          }
@@ -765,16 +765,11 @@ public class ElemSequence extends ElemTemplateElement
 
 					  String xpathExprStr = m_selectPattern.getPatternString();
 
-					  if (xpathExprStr.startsWith("$") && xpathExprStr.contains("[") && xpathExprStr.endsWith("]")) {
-						  ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-						  List<XMLNSDecl> prefixTable = null;
-						  if (elemTemplateElement != null) {
-							  prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-						  }                                      
+					  if (xpathExprStr.startsWith("$") && xpathExprStr.contains("[") && xpathExprStr.endsWith("]")) {						   
+						  List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);                                      
 
 						  String varRefXPathExprStr = "$" + xpathExprStr.substring(1, xpathExprStr.indexOf('['));
-						  String xpathIndexExprStr = xpathExprStr.substring(xpathExprStr.indexOf('[') + 1, 
-								  xpathExprStr.indexOf(']'));
+						  String xpathIndexExprStr = xpathExprStr.substring(xpathExprStr.indexOf('[') + 1, xpathExprStr.indexOf(']'));
 
 						  // Evaluate the, variable reference XPath expression
 						  if (prefixTable != null) {

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-02-20T15:34:38Z" fail="7" name="expand-text" pass="52" run="59" skipped="3" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-04-23T11:04:41Z" fail="2" name="expand-text" pass="57" run="59" skipped="3" statusUnknown="0">
    <testResult status="pass" testName="cvt-001"/>
    <testResult status="pass" testName="cvt-002"/>
    <testResult status="pass" testName="cvt-003"/>
@@ -11,22 +11,14 @@
    <testResult status="pass" testName="cvt-010"/>
    <testResult status="pass" testName="cvt-011"/>
    <testResult status="pass" testName="cvt-012"/>
-   <testResult status="fail" testName="cvt-013">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;&#13;
-            The year was {&lt;bold&gt;$year&lt;/bold&gt;}&#13;
-        &lt;/out&gt;</outResult>
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;&#13;
-            The year was {&lt;bold&gt;$year&lt;/bold&gt;}&#13;
-        &lt;/out&gt;</outResult>
+   <testResult status="pass" testName="cvt-013">
+      <outResult>
+         <errTrace>XPST0003 : No XML elements are allowed within a pair of open and closing curly braces while processing string value using XSL 'expand-text' attribute set to true/yes.</errTrace>
+      </outResult>
    </testResult>
    <testResult status="pass" testName="cvt-014"/>
-   <testResult status="fail" testName="cvt-015">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;4 &#13;
-        }&lt;/out&gt;</outResult>
-   </testResult>
-   <testResult status="fail" testName="cvt-016">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;4}&lt;/out&gt;</outResult>
-   </testResult>
+   <testResult status="pass" testName="cvt-015"/>
+   <testResult status="pass" testName="cvt-016"/>
    <testResult status="pass" testName="cvt-017"/>
    <testResult status="pass" testName="cvt-018"/>
    <testResult status="pass" testName="cvt-019"/>
@@ -40,20 +32,14 @@
    <testResult feature="schema_aware" status="skipped" testName="cvt-027"/>
    <testResult status="fail" testName="cvt-028">
       <outResult>
-         <errTrace>java.lang.NullPointerException</errTrace>
+         <errTrace>java.lang.NumberFormatException: empty String</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="cvt-029"/>
    <testResult status="pass" testName="cvt-030"/>
    <testResult status="pass" testName="cvt-031"/>
-   <testResult status="fail" testName="cvt-032">
-      <outResult/>
-   </testResult>
-   <testResult status="fail" testName="cvt-033">
-      <outResult>
-         <errTrace>Empty expression!</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="cvt-032"/>
+   <testResult status="pass" testName="cvt-033"/>
    <testResult status="pass" testName="cvt-034"/>
    <testResult status="pass" testName="cvt-035a"/>
    <testResult status="pass" testName="cvt-035b"/>

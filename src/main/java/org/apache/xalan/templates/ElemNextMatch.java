@@ -21,6 +21,7 @@ import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xpath.XPath;
 
 /**
  * Implementation of XSLT 3.0 xsl:next-match instruction.
@@ -35,6 +36,98 @@ public class ElemNextMatch extends ElemTemplateElement
 {
 
   private static final long serialVersionUID = -8730317226202081634L;
+  
+  /**
+   * Class field, that represents the value of "xpath-default-namespace" 
+   * attribute.
+   */
+  private String m_xpath_default_namespace = null;
+
+  /**
+   * Class field, that represents the value of "expand-text" 
+   * attribute.
+   */
+  private boolean m_expand_text;
+  
+  /**
+   * Set the value of "xpath-default-namespace" attribute.
+   *
+   * @param v   Value of the "xpath-default-namespace" attribute
+   */
+  public void setXpathDefaultNamespace(String v)
+  {
+	  m_xpath_default_namespace = v; 
+  }
+
+  /**
+   * Get the value of "xpath-default-namespace" attribute.
+   *  
+   * @return		  The value of "xpath-default-namespace" attribute 
+   */
+  public String getXpathDefaultNamespace() {
+	  return m_xpath_default_namespace;
+  }
+
+  /**
+   * Variable to indicate whether, an attribute 'expand-text'
+   * is declared on xsl:next-match instruction.
+   */
+  private boolean m_expand_text_declared;
+
+  /**
+   * Set the value of "expand-text" attribute.
+   *
+   * @param v   Value of the "expand-text" attribute
+   */
+  public void setExpandText(boolean v)
+  {
+	  m_expand_text = v;
+	  m_expand_text_declared = true;
+  }
+
+  /**
+   * Get the value of "expand-text" attribute.
+   *  
+   * @return		  The value of "expand-text" attribute 
+   */
+  public boolean getExpandText() {
+	  return m_expand_text;
+  }
+
+  /**
+   * Get a boolean value indicating whether, an "expand-text" 
+   * attribute has been declared. 
+   */
+  public boolean getExpandTextDeclared() {
+	  return m_expand_text_declared;
+  }
+  
+  /**
+   * An XPath expression for XSL attribute "use-when". 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			     XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
+  }
 
   /**
    * Get an int constant identifying the type of element.

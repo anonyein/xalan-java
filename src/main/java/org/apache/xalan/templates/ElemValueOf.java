@@ -285,7 +285,7 @@ public class ElemValueOf extends ElemTemplateElement {
   }
   
   /**
-   * An XPath expression for 'use-when' attribute. 
+   * An XPath expression for XSL attribute "use-when". 
    */
   private XPath m_useWhen = null;
 
@@ -304,7 +304,7 @@ public class ElemValueOf extends ElemTemplateElement {
    * Method definition, to get the value of XSL attribute 
    * "use-when".
    * 
-   * @return			XPath expression for attribute "use-when"
+   * @return			    XPath expression for attribute "use-when"
    */
   public XPath getUseWhen()
   {
@@ -491,6 +491,10 @@ public class ElemValueOf extends ElemTemplateElement {
                 	  XSL3FunctionService xslFunctionService = xctxt.getXSLFunctionService();
                       
                 	  XObject evalResult = xslFunctionService.callFunction(xpathFunc, transformer, xctxt);
+                	  
+                	  if (evalResult instanceof XPathMap) {
+                		 throw new TransformerException("FOTY0013 : An XSL value-of instruction evaluation cannot atomize an xdm map.", this);
+                	  }
                       
                       if (evalResult != null) {
                     	  if (evalResult instanceof XSDayTimeDuration) {
@@ -851,11 +855,7 @@ public class ElemValueOf extends ElemTemplateElement {
                            String xpathIndexExprStr = xpathPatternStr.substring(xpathPatternStr.indexOf('[') + 1, 
                                                                                                    xpathPatternStr.indexOf(']'));
                            
-                           ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-                           List<XMLNSDecl> prefixTable = null;
-                           if (elemTemplateElement != null) {
-                              prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-                           }
+                           List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
                            
                            // Evaluate the, variable reference XPath expression
                            if (prefixTable != null) {

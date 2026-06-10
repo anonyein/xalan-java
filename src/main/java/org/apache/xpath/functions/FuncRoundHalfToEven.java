@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.functions;
 
 import java.math.BigDecimal;
@@ -33,7 +30,9 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.objects.XString;
+import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.res.XPATHErrorResources;
 
 import xml.xpath31.processor.types.XSDecimal;
@@ -64,8 +63,8 @@ public class FuncRoundHalfToEven extends Function2Args
       /**
        * Evaluate the function. The function must return a valid object.
        * 
-       * @param xctxt The current execution context.
-       * @return A valid XObject.
+       * @param xctxt The current execution context
+       * @return A valid XObject
        *
        * @throws javax.xml.transform.TransformerException
        */
@@ -75,11 +74,22 @@ public class FuncRoundHalfToEven extends Function2Args
           
           SourceLocator srcLocator = xctxt.getSAXLocator();
           
+          if (m_arg0 instanceof NodeTest) {
+    		  if (XslTransformEvaluationHelper.isNodeTestExpressionFuntionType((NodeTest)m_arg0)) {
+    			  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function round-half-to-even(), "
+    			  		                                                                  + "but the supplied type is a function type, which cannot be atomized.", srcLocator); 
+    		  }
+    	  }
+          else if (m_arg0 instanceof XPathInlineFunction) {
+    		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function round-half-to-even(), but the "
+                                                                                          + "supplied type is a function type, which cannot be atomized.", srcLocator);
+    	  }
+          
           String strValueOfArg0 = (getArgAsString(m_arg0, xctxt)).toString();
           
           if ((strValueOfArg0 == null) || "".equals(strValueOfArg0.trim())) {
-              throw new javax.xml.transform.TransformerException("FORG0006 : The first argument to function "
-                                                                                                          + "fn:round-half-to-even is empty.", srcLocator);
+              throw new javax.xml.transform.TransformerException("FORG0006 : The first argument to XPath function call "
+                                                                                                          + "round-half-to-even is empty.", srcLocator);
           }
           
           int precision = 0;
@@ -90,9 +100,9 @@ public class FuncRoundHalfToEven extends Function2Args
         	     precision = (Integer.valueOf(strValueOfArg1)).intValue();
         	  }
         	  catch (Exception ex) {
-        		  throw new javax.xml.transform.TransformerException("FORG0006 : The second argument to function fn:round-half-to-even, "
-        		  		                                                            + "is not a valid value for precision which must be "
-        		  		                                                            + "an xs:integer value.", srcLocator); 
+        		  throw new javax.xml.transform.TransformerException("FORG0006 : The second argument to XPath function call round-half-to-even, "
+	        		  		                                                            + "is not a valid value for precision which must be "
+	        		  		                                                            + "an XML Schema integer value.", srcLocator); 
         	  }
           }
           
@@ -169,7 +179,7 @@ public class FuncRoundHalfToEven extends Function2Args
     		  result = new XSDecimal(roundValue);    		  
           }
           else {
-        	  throw new javax.xml.transform.TransformerException("FORG0006 : The first argument to function fn:round-half-to-even "
+        	  throw new javax.xml.transform.TransformerException("FORG0006 : The first argument to XPath function call round-half-to-even "
         	  		                                                                                                       + "is not numeric.", srcLocator);
           }
           

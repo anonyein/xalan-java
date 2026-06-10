@@ -20,6 +20,8 @@ package org.apache.xpath.compiler;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import javax.xml.transform.TransformerException;
 
@@ -586,6 +588,33 @@ public class FunctionTable
   
   /** The 'copy-of()' id (XSLT). */
   public static final int FUNC_COPY_OF = 188;
+  
+  /** The 'serialize()' id. */
+  public static final int FUNC_SERIALIZE = 189;
+  
+  /** The 'format-dateTime()' id. */
+  public static final int FUNC_FORMAT_DATETIME = 190;
+  
+  /** The 'format-date()' id. */
+  public static final int FUNC_FORMAT_DATE = 191;
+  
+  /** The 'format-time()' id. */
+  public static final int FUNC_FORMAT_TIME = 192;
+  
+  /** The 'parse-ietf-date()' id. */
+  public static final int FUNC_PARSE_IETF_DATE = 193;
+  
+  /** The '.()' id. */
+  public static final int FUNC_PERIOD = 194;
+  
+  /** The 'zero-or-one()' id. */
+  public static final int FUNC_ZERO_OR_ONE = 195;
+  
+  /** The 'one-or-more()' id. */
+  public static final int FUNC_ONE_OR_MORE = 196;
+  
+  /** The 'exactly-one()' id. */
+  public static final int FUNC_EXACTLY_ONE = 197;
 
   // Proprietary
 
@@ -630,7 +659,7 @@ public class FunctionTable
   private static Class m_functions[];
 
   /** Table of function name to function ID associations. */
-  private static HashMap m_functionId = new HashMap();
+  private static Map<String, Integer> m_functionId = new HashMap<String, Integer>();
     
   /**
    * The function table contains customized functions
@@ -640,13 +669,13 @@ public class FunctionTable
   /**
    * Table of function name to function ID associations for customized functions
    */
-  private HashMap m_functionId_customer = new HashMap();
+  private Map<String, Integer> m_functionId_customer = new HashMap<String, Integer>();
   
   /**
    * Number of built in functions. Please update this, as
    * built-in functions are added.
    */
-  private static final int NUM_BUILT_IN_FUNCS = 189;
+  private static final int NUM_BUILT_IN_FUNCS = 198;
 
   /**
    * Number of built-in functions that may be added.
@@ -793,6 +822,7 @@ public class FunctionTable
 
 	   m_functions[FUNC_PARSE_XML] = org.apache.xpath.functions.FuncParseXml.class;
 	   m_functions[FUNC_PARSE_XML_FRAGMENT] = org.apache.xpath.functions.FuncParseXmlFragment.class;
+	   m_functions[FUNC_SERIALIZE] = org.apache.xpath.functions.FuncSerialize.class;
 
 	   m_functions[FUNC_AVG] = org.apache.xpath.functions.FuncAvg.class;
 	   m_functions[FUNC_MAX] = org.apache.xpath.functions.FuncMax.class;
@@ -824,6 +854,12 @@ public class FunctionTable
 	   m_functions[FUNC_ADJUST_DATETIME_TO_TIMEZONE] = org.apache.xpath.functions.datetime.FuncAdjustDateTimeToTimezone.class;
 	   m_functions[FUNC_ADJUST_DATE_TO_TIMEZONE] = org.apache.xpath.functions.datetime.FuncAdjustDateToTimezone.class;
 	   m_functions[FUNC_ADJUST_TIME_TO_TIMEZONE] = org.apache.xpath.functions.datetime.FuncAdjustTimeToTimezone.class;
+	   
+	   m_functions[FUNC_FORMAT_DATETIME] = org.apache.xpath.functions.datetime.FuncFormatDateTime.class;
+	   m_functions[FUNC_FORMAT_DATE] = org.apache.xpath.functions.datetime.FuncFormatDate.class;
+	   m_functions[FUNC_FORMAT_TIME] = org.apache.xpath.functions.datetime.FuncFormatTime.class;
+	   
+	   m_functions[FUNC_PARSE_IETF_DATE] = org.apache.xpath.functions.datetime.FuncParseIetfDate.class;
 	   
 	   m_functions[FUNC_FORMAT_INTEGER] = org.apache.xpath.functions.FuncFormatInteger.class;
 
@@ -889,6 +925,12 @@ public class FunctionTable
 	   m_functions[FUNC_UNPARSED_TEXT_AVAILABLE] = org.apache.xpath.functions.FuncUnparsedTextAvailable.class;
 	   
 	   m_functions[FUNC_COPY_OF] = org.apache.xalan.templates.FuncCopyOf.class;
+	   
+	   m_functions[FUNC_PERIOD] = org.apache.xpath.functions.FuncPeriod.class;
+	   
+	   m_functions[FUNC_ZERO_OR_ONE] = org.apache.xpath.functions.FuncZeroOrOne.class;
+	   m_functions[FUNC_ONE_OR_MORE] = org.apache.xpath.functions.FuncOneOrMore.class;
+	   m_functions[FUNC_EXACTLY_ONE] = org.apache.xpath.functions.FuncExactlyOne.class;
   }
 
   static {
@@ -1011,6 +1053,7 @@ public class FunctionTable
 
 	  m_functionId.put(Keywords.FUNC_PARSE_XML, Integer.valueOf(FunctionTable.FUNC_PARSE_XML));
 	  m_functionId.put(Keywords.FUNC_PARSE_XML_FRAGMENT, Integer.valueOf(FunctionTable.FUNC_PARSE_XML_FRAGMENT));
+	  m_functionId.put(Keywords.FUNC_SERIALIZE, Integer.valueOf(FunctionTable.FUNC_SERIALIZE));
 
 	  m_functionId.put(Keywords.FUNC_AVG, Integer.valueOf(FunctionTable.FUNC_AVG));
 	  m_functionId.put(Keywords.FUNC_MAX, Integer.valueOf(FunctionTable.FUNC_MAX));
@@ -1042,6 +1085,12 @@ public class FunctionTable
 	  m_functionId.put(Keywords.FUNC_ADJUST_DATETIME_TO_TIMEZONE, Integer.valueOf(FunctionTable.FUNC_ADJUST_DATETIME_TO_TIMEZONE));
 	  m_functionId.put(Keywords.FUNC_ADJUST_DATE_TO_TIMEZONE, Integer.valueOf(FunctionTable.FUNC_ADJUST_DATE_TO_TIMEZONE));
 	  m_functionId.put(Keywords.FUNC_ADJUST_TIME_TO_TIMEZONE, Integer.valueOf(FunctionTable.FUNC_ADJUST_TIME_TO_TIMEZONE));
+	  
+	  m_functionId.put(Keywords.FUNC_FORMAT_DATETIME, Integer.valueOf(FunctionTable.FUNC_FORMAT_DATETIME));
+	  m_functionId.put(Keywords.FUNC_FORMAT_DATE, Integer.valueOf(FunctionTable.FUNC_FORMAT_DATE));
+	  m_functionId.put(Keywords.FUNC_FORMAT_TIME, Integer.valueOf(FunctionTable.FUNC_FORMAT_TIME));
+	  
+	  m_functionId.put(Keywords.FUNC_PARSE_IETF_DATE, Integer.valueOf(FunctionTable.FUNC_PARSE_IETF_DATE));
 	  
 	  m_functionId.put(Keywords.FUNC_FORMAT_INTEGER, Integer.valueOf(FunctionTable.FUNC_FORMAT_INTEGER));
 
@@ -1116,6 +1165,12 @@ public class FunctionTable
 	  m_functionId.put(Keywords.FUNC_UNPARSED_TEXT_AVAILABLE, Integer.valueOf(FunctionTable.FUNC_UNPARSED_TEXT_AVAILABLE));
 	  
 	  m_functionId.put(Keywords.FUNC_COPY_OF, Integer.valueOf(FunctionTable.FUNC_COPY_OF));
+	  
+	  m_functionId.put(Keywords.FROM_SELF_ABBREVIATED_STRING, Integer.valueOf(FunctionTable.FUNC_PERIOD));
+	  
+	  m_functionId.put(Keywords.FUNC_ZERO_OR_ONE, Integer.valueOf(FunctionTable.FUNC_ZERO_OR_ONE));
+	  m_functionId.put(Keywords.FUNC_ONE_OR_MORE, Integer.valueOf(FunctionTable.FUNC_ONE_OR_MORE));
+	  m_functionId.put(Keywords.FUNC_EXACTLY_ONE, Integer.valueOf(FunctionTable.FUNC_EXACTLY_ONE));
   }
   
   /**
@@ -1126,12 +1181,28 @@ public class FunctionTable
   }
   
   /**
-   * Return the name of the a function in the static table. Needed to avoid
+   * Return an XPath function's name in the static table. Needed to avoid
    * making the table publicly available.
    */
   String getFunctionName(int funcID) {
-      if (funcID < NUM_BUILT_IN_FUNCS) return m_functions[funcID].getName();
-      else return m_functions_customer[funcID - NUM_BUILT_IN_FUNCS].getName();
+	  
+	  String result = null;
+
+	  if (funcID < NUM_BUILT_IN_FUNCS) {
+		  for (Map.Entry<String, Integer> entry : m_functionId.entrySet()) {
+			  if (Objects.equals(entry.getValue(), Integer.valueOf(funcID))) {
+				  result = entry.getKey();
+
+				  break;
+			  }
+		  }
+	  }
+
+	  if (result == null) {
+		  result = (m_functions_customer[funcID - NUM_BUILT_IN_FUNCS]).getName();  
+	  }
+
+	  return result;
   }
 
   /**
@@ -1149,23 +1220,24 @@ public class FunctionTable
   public Function getFunction(int which)
           throws javax.xml.transform.TransformerException
   {
-          try{
-              if (which < NUM_BUILT_IN_FUNCS) {
-            	  if (which == FunctionTable.FUNC_DOC) {
-            		 return new FuncDoc(); 
-            	  }
-            	  else {
-                     return (Function) m_functions[which].newInstance();
-            	  }
-              }
-              else 
-                  return (Function) m_functions_customer[
-                      which-NUM_BUILT_IN_FUNCS].newInstance();                  
-          }catch (IllegalAccessException ex){
-                  throw new TransformerException(ex.getMessage());
-          }catch (InstantiationException ex){
-                  throw new TransformerException(ex.getMessage());
-          }
+	  try {
+		  if (which < NUM_BUILT_IN_FUNCS) {
+			  if (which == FunctionTable.FUNC_DOC) {
+				  return new FuncDoc(); 
+			  }
+			  else {
+				  return (Function) m_functions[which].newInstance();
+			  }
+		  }
+		  else 
+			  return (Function) m_functions_customer[which-NUM_BUILT_IN_FUNCS].newInstance();                  
+	  } 
+	  catch (IllegalAccessException ex){
+		  throw new TransformerException(ex.getMessage());
+	  } 
+	  catch (InstantiationException ex){
+		  throw new TransformerException(ex.getMessage());
+	  }
   }
   
   /**
@@ -1417,29 +1489,29 @@ public class FunctionTable
   public int installFunction(String name, Class func)
   {
 
-    int funcIndex;
-    Object funcIndexObj = getFunctionId(name);
+	  int funcIndex;
+	  Object funcIndexObj = getFunctionId(name);
 
-    if (null != funcIndexObj)
-    {
-      funcIndex = ((Integer) funcIndexObj).intValue();
-      
-      if (funcIndex < NUM_BUILT_IN_FUNCS){
-              funcIndex = m_funcNextFreeIndex++;
-              m_functionId_customer.put(name, Integer.valueOf(funcIndex)); 
-      }
-      m_functions_customer[funcIndex - NUM_BUILT_IN_FUNCS] = func;          
-    }
-    else
-    {
-            funcIndex = m_funcNextFreeIndex++;
-                          
-            m_functions_customer[funcIndex-NUM_BUILT_IN_FUNCS] = func;
-                    
-            m_functionId_customer.put(name, Integer.valueOf(funcIndex));   
-    }
-    
-    return funcIndex;
+	  if (null != funcIndexObj)
+	  {
+		  funcIndex = ((Integer) funcIndexObj).intValue();
+
+		  if (funcIndex < NUM_BUILT_IN_FUNCS){
+			  funcIndex = m_funcNextFreeIndex++;
+			  m_functionId_customer.put(name, Integer.valueOf(funcIndex)); 
+		  }
+		  m_functions_customer[funcIndex - NUM_BUILT_IN_FUNCS] = func;          
+	  }
+	  else
+	  {
+		  funcIndex = m_funcNextFreeIndex++;
+
+		  m_functions_customer[funcIndex-NUM_BUILT_IN_FUNCS] = func;
+
+		  m_functionId_customer.put(name, Integer.valueOf(funcIndex));   
+	  }
+
+	  return funcIndex;
   }
 
   /**
@@ -1451,12 +1523,12 @@ public class FunctionTable
    */
   public boolean functionAvailable(String methName)
   {
-      Object tblEntry = m_functionId.get(methName);
-      if (null != tblEntry) return true;
-      else{
-              tblEntry = m_functionId_customer.get(methName);
-              return (null != tblEntry)? true : false;
-      }
+	  Object tblEntry = m_functionId.get(methName);
+	  if (null != tblEntry) return true;
+	  else{
+		  tblEntry = m_functionId_customer.get(methName);
+		  return (null != tblEntry)? true : false;
+	  }
   }
   
 }

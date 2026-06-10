@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-03-12T11:38:35Z" fail="35" name="higher-order-functions" pass="34" run="69" skipped="7" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-05-24T10:40:20Z" fail="27" name="higher-order-functions" pass="42" run="69" skipped="7" statusUnknown="0">
    <testResult status="pass" testName="higher-order-functions-001"/>
    <testResult status="pass" testName="higher-order-functions-002"/>
    <testResult status="pass" testName="higher-order-functions-003"/>
@@ -37,27 +37,15 @@
    <testResult status="fail" testName="higher-order-functions-036"/>
    <testResult status="fail" testName="higher-order-functions-037">
       <outResult>
-         <errTrace>Expected ,, but found: ''</errTrace>
-         <errTrace>java.lang.ClassCastException</errTrace>
+         <errTrace>org.xml.sax.SAXException: Line# : 12, Column# : 68 XPST0003: Expected ,, but found: ''
+java.lang.Exception: Line# : 12, Column# : 68 XPST0003: Expected ,, but found: ''</errTrace>
       </outResult>
    </testResult>
    <testResult status="fail" testName="higher-order-functions-038"/>
    <testResult status="fail" testName="higher-order-functions-039"/>
    <testResult status="fail" testName="higher-order-functions-040"/>
-   <testResult status="fail" testName="higher-order-functions-041">
-      <outResult>
-         <errTrace>Could not find function: {http://www.w3.org/2005/xpath-functions}.()</errTrace>
-         <errTrace>function token not found.</errTrace>
-         <errTrace>java.lang.NullPointerException</errTrace>
-      </outResult>
-   </testResult>
-   <testResult status="fail" testName="higher-order-functions-042">
-      <outResult>
-         <errTrace>Could not find function: {http://www.w3.org/2005/xpath-functions}.()</errTrace>
-         <errTrace>function token not found.</errTrace>
-         <errTrace>java.lang.NullPointerException</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="fail" testName="higher-order-functions-041"/>
+   <testResult status="fail" testName="higher-order-functions-042"/>
    <testResult status="fail" testName="higher-order-functions-043"/>
    <testResult status="fail" testName="higher-order-functions-044"/>
    <testResult status="fail" testName="higher-order-functions-045"/>
@@ -77,23 +65,15 @@
          <errTrace>java.lang.NullPointerException</errTrace>
       </outResult>
    </testResult>
-   <testResult status="fail" testName="higher-order-functions-052">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"/&gt;</outResult>
-   </testResult>
-   <testResult status="fail" testName="higher-order-functions-053">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"&gt;false&lt;/out&gt;</outResult>
-   </testResult>
-   <testResult status="fail" testName="higher-order-functions-054">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"&gt;true&lt;/out&gt;</outResult>
-   </testResult>
-   <testResult status="fail" testName="higher-order-functions-055">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"&gt;false&lt;/out&gt;</outResult>
-   </testResult>
-   <testResult status="fail" testName="higher-order-functions-056">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"&gt;NaN&lt;/out&gt;</outResult>
-   </testResult>
+   <testResult status="pass" testName="higher-order-functions-052"/>
+   <testResult status="pass" testName="higher-order-functions-053"/>
+   <testResult status="pass" testName="higher-order-functions-054"/>
+   <testResult status="pass" testName="higher-order-functions-055"/>
+   <testResult status="pass" testName="higher-order-functions-056"/>
    <testResult status="fail" testName="higher-order-functions-057">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"&gt;4&lt;/out&gt;</outResult>
+      <outResult>
+         <errTrace>javax.xml.transform.TransformerException: XPST0008 : Variable 'f' has not been declared, or its declaration is not in scope.</errTrace>
+      </outResult>
    </testResult>
    <testResult status="fail" testName="higher-order-functions-058">
       <outResult>
@@ -109,12 +89,7 @@
          <errTrace>javax.xml.transform.TransformerException: javax.xml.transform.TransformerException: XTTE0505 : An item type of argument at position 1 of XPath dynamic function call $f, doesn't match an expected type.</errTrace>
       </outResult>
    </testResult>
-   <testResult status="fail" testName="higher-order-functions-062">
-      <outResult>
-         <errTrace>org.apache.xpath.functions.string.FuncSubstringBefore only allows 2 or 3 arguments</errTrace>
-         <errTrace>javax.xml.transform.TransformerException: XPST0008 : Variable 'ops' has not been declared, or its declaration is not in scope.</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="higher-order-functions-062"/>
    <testResult status="pass" testName="higher-order-functions-063"/>
    <testResult status="fail" testName="higher-order-functions-064">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"/&gt;</outResult>
@@ -126,7 +101,7 @@
    </testResult>
    <testResult status="fail" testName="higher-order-functions-066">
       <outResult>
-         <errTrace>javax.xml.transform.TransformerException: Expected ), but found: </errTrace>
+         <errTrace>javax.xml.transform.TransformerException: XPST0003: Expected ), but found: null</errTrace>
       </outResult>
    </testResult>
    <testResult status="fail" testName="higher-order-functions-067"/>
@@ -135,20 +110,8 @@
    <testResult status="pass" testName="higher-order-functions-070"/>
    <testResult reason="Xalan configured" status="skipped" testName="higher-order-functions-071"/>
    <testResult reason="Xalan configured" status="skipped" testName="higher-order-functions-072"/>
-   <testResult status="fail" testName="higher-order-functions-073">
-      <outResult>
-         <errTrace>Could not find function: {http://www.w3.org/2005/xpath-functions}format-date()</errTrace>
-         <errTrace>function token not found.</errTrace>
-         <errTrace>java.lang.NullPointerException</errTrace>
-      </outResult>
-   </testResult>
-   <testResult status="fail" testName="higher-order-functions-074">
-      <outResult>
-         <errTrace>Could not find function: {http://www.w3.org/2005/xpath-functions}format-date()</errTrace>
-         <errTrace>function token not found.</errTrace>
-         <errTrace>java.lang.NullPointerException</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="higher-order-functions-073"/>
+   <testResult status="pass" testName="higher-order-functions-074"/>
    <testResult reason="Xalan configured" status="skipped" testName="higher-order-functions-075"/>
    <testResult status="fail" testName="higher-order-functions-076">
       <outResult>

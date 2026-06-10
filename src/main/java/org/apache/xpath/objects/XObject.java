@@ -41,7 +41,7 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathException;
 import org.apache.xpath.XPathVisitor;
 import org.apache.xpath.compiler.Keywords;
-import org.apache.xpath.functions.XSL3FunctionService;
+import org.apache.xpath.composite.XPathSequenceTypeData;
 import org.apache.xpath.res.XPATHErrorResources;
 import org.apache.xpath.types.DateTimeUtil;
 import org.apache.xpath.types.XSGDay;
@@ -68,6 +68,7 @@ import xml.xpath31.processor.types.XSInt;
 import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSLong;
 import xml.xpath31.processor.types.XSNumericType;
+import xml.xpath31.processor.types.XSQName;
 import xml.xpath31.processor.types.XSString;
 import xml.xpath31.processor.types.XSTime;
 import xml.xpath31.processor.types.XSYearMonthDuration;
@@ -120,6 +121,25 @@ public class XObject extends Expression implements Serializable, Cloneable
    * Currently used for, xsl:message instruction processing.
    */
   private boolean m_useStrict_value;
+  
+  /**
+   * This class field, stores the fact that whether source of data
+   * within this object instance is a sequence and gets its data
+   * via a literal sequence constructor, comprising of node constructors
+   * and for clauses.
+   */
+  private boolean m_homogeneous_source = false;
+  
+  /**
+   * An XPath 3.1 sequence type information, telling the
+   * type of this XPath object (when not equals to null), if 
+   * this object instance is a result of XPath 3.1 "cast as" 
+   * expression.
+   * 
+   * This helps to, correctly infer the type of this XPath object
+   * within XPath 3.1 expressions like "instance of".
+   */
+  private XPathSequenceTypeData m_cast_as_type = null;
 
   /**
    * Create an XObject.
@@ -805,12 +825,12 @@ public class XObject extends Expression implements Serializable, Cloneable
  	  
  	  if ((xsObj1Type != null) || (xsObj2Type != null)) { 		   		  
  		  String strVal1 = XslTransformEvaluationHelper.getStrVal(this);
- 		  if ((XSL3FunctionService.XS_VALID_TRUE).equals(strVal1)) {
+ 		  if ((org.apache.xml.utils.Constants.XS_VALID_TRUE).equals(strVal1)) {
  			  strVal1 = str(); 
  		  }
  		  
  		  String strVal2 = XslTransformEvaluationHelper.getStrVal(obj2);
- 		  if ((XSL3FunctionService.XS_VALID_TRUE).equals(strVal2)) {
+ 		  if ((org.apache.xml.utils.Constants.XS_VALID_TRUE).equals(strVal2)) {
  			  strVal2 = obj2.str(); 
  		  }
  		  
@@ -921,14 +941,26 @@ public class XObject extends Expression implements Serializable, Cloneable
      	  
      	  return lDouble.lt(rDouble);
        }
-       else if ((this instanceof XSNumericType) && (obj2 instanceof XSNumericType)) {     	  
-    	  String lStr = ((XSNumericType)this).stringValue();
-      	  XSDouble lDouble = new XSDouble(lStr);
-      	  
-      	  String rStr = ((XSNumericType)obj2).stringValue();
-     	  XSDouble rDouble = new XSDouble(rStr);
-      	  
-      	  return lDouble.lt(rDouble);
+       else if ((this instanceof XSNumericType) && (obj2 instanceof XSNumericType)) {     	      	      	  
+    	  double lDbl = 0;
+    	  if (this instanceof XSDouble) {
+    		 lDbl = ((XSDouble)this).doubleValue();  
+    	  }
+    	  else {
+    		 String lStr = ((XSNumericType)this).stringValue();
+    		 lDbl = (new XSDouble(lStr)).doubleValue();
+    	  }
+    	  
+    	  double rDbl = 0;
+    	  if (obj2 instanceof XSDouble) {
+    		 rDbl = ((XSDouble)obj2).doubleValue();  
+    	  }
+    	  else {
+    		 String rStr = ((XSNumericType)obj2).stringValue();
+    		 rDbl = (new XSDouble(rStr)).doubleValue();
+    	  }
+    	  
+    	  return (lDbl < rDbl);      	  
        }
        else if ((this instanceof XString) && (obj2 instanceof XString)) {
           String lStr = (((XString)this)).str();
@@ -1165,12 +1197,12 @@ public class XObject extends Expression implements Serializable, Cloneable
   	  
   	  if ((xsObj1Type != null) || (xsObj2Type != null)) {  		  
   		  String strVal1 = XslTransformEvaluationHelper.getStrVal(this);
-  		  if ((XSL3FunctionService.XS_VALID_TRUE).equals(strVal1)) {
+  		  if ((org.apache.xml.utils.Constants.XS_VALID_TRUE).equals(strVal1)) {
   			  strVal1 = str(); 
   		  }
   		  
   		  String strVal2 = XslTransformEvaluationHelper.getStrVal(obj2);
-  		  if ((XSL3FunctionService.XS_VALID_TRUE).equals(strVal2)) {
+  		  if ((org.apache.xml.utils.Constants.XS_VALID_TRUE).equals(strVal2)) {
   			  strVal2 = obj2.str(); 
   		  }
   		  
@@ -1293,13 +1325,25 @@ public class XObject extends Expression implements Serializable, Cloneable
       	  return lDouble.gt(rDouble);
        }
        else if ((this instanceof XSNumericType) && (obj2 instanceof XSNumericType)) {     	  
-     	  String lStr = ((XSNumericType)this).stringValue();
-       	  XSDouble lDouble = new XSDouble(lStr);
-       	  
-       	  String rStr = ((XSNumericType)obj2).stringValue();
-      	  XSDouble rDouble = new XSDouble(rStr);
-       	  
-       	  return lDouble.gt(rDouble);
+    	  double lDbl = 0;
+     	  if (this instanceof XSDouble) {
+     		 lDbl = ((XSDouble)this).doubleValue();  
+     	  }
+     	  else {
+     		 String lStr = ((XSNumericType)this).stringValue();
+     		 lDbl = (new XSDouble(lStr)).doubleValue();
+     	  }
+     	  
+     	  double rDbl = 0;
+     	  if (obj2 instanceof XSDouble) {
+     		 rDbl = ((XSDouble)obj2).doubleValue();  
+     	  }
+     	  else {
+     		 String rStr = ((XSNumericType)obj2).stringValue();
+     		 rDbl = (new XSDouble(rStr)).doubleValue();
+     	  }
+     	  
+     	  return (lDbl > rDbl);
        }
        else if ((this instanceof XString) && (obj2 instanceof XString)) {          
           String lStr = (((XString)this)).str();
@@ -1732,7 +1776,13 @@ public class XObject extends Expression implements Serializable, Cloneable
 		  catch (TransformerException ex) {
 			  return false;
 		  }    
-	  }	  
+	  }
+	  else if ((this instanceof XSQName) && (obj2 instanceof XSQName)) {
+		  result = ((XSQName)this).equals((XSQName)obj2);		      
+	  }
+	  else if ((this instanceof XSQName) && (obj2 instanceof ResultSequence)) {
+		  result = ((XSQName)this).equals((ResultSequence)obj2);		      
+	  }
 	  else if (obj2.getType() == XObject.CLASS_NODESET) {
 		  result = obj2.equals(this);
 	  }	
@@ -1854,12 +1904,12 @@ public class XObject extends Expression implements Serializable, Cloneable
 	  
 	  if ((xsObj1Type != null) || (xsObj2Type != null)) {
 		  String strVal1 = XslTransformEvaluationHelper.getStrVal(this);
-		  if ((XSL3FunctionService.XS_VALID_TRUE).equals(strVal1)) {
+		  if ((org.apache.xml.utils.Constants.XS_VALID_TRUE).equals(strVal1)) {
 			  strVal1 = str(); 
 		  }
 		  
 		  String strVal2 = XslTransformEvaluationHelper.getStrVal(obj2);
-		  if ((XSL3FunctionService.XS_VALID_TRUE).equals(strVal2)) {
+		  if ((org.apache.xml.utils.Constants.XS_VALID_TRUE).equals(strVal2)) {
 			  strVal2 = obj2.str(); 
 		  }
 		  
@@ -1921,13 +1971,25 @@ public class XObject extends Expression implements Serializable, Cloneable
 		  return result;
 	  }
 	  else if ((this instanceof XSNumericType) && (obj2 instanceof XSNumericType)) {
-		  String lStr = ((XSNumericType)this).stringValue();
-		  BigDecimal lBigDecimal = new BigDecimal(lStr);		  
-		  String rStr = ((XSNumericType)obj2).stringValue();
-		  BigDecimal rBigDecimal = new BigDecimal(rStr);
-
-		  result = (lBigDecimal.compareTo(rBigDecimal) == 0);
-		  result = (isEqTest) ? result : !result;
+		  double lDbl = 0;
+     	  if (this instanceof XSDouble) {
+     		 lDbl = ((XSDouble)this).doubleValue();  
+     	  }
+     	  else {
+     		 String lStr = ((XSNumericType)this).stringValue();
+     		 lDbl = (new XSDouble(lStr)).doubleValue();
+     	  }
+     	  
+     	  double rDbl = 0;
+     	  if (obj2 instanceof XSDouble) {
+     		 rDbl = ((XSDouble)obj2).doubleValue();  
+     	  }
+     	  else {
+     		 String rStr = ((XSNumericType)obj2).stringValue();
+     		 rDbl = (new XSDouble(rStr)).doubleValue();
+     	  }
+     	  
+     	  return (isEqTest) ? (lDbl == rDbl) : (lDbl != rDbl);
 	  }
 	  else if ((this instanceof XSNumericType) && (obj2 instanceof XNumber)) {
 		  String lStr = ((XSNumericType)this).stringValue();
@@ -2177,6 +2239,30 @@ public class XObject extends Expression implements Serializable, Cloneable
 	  else if ((this instanceof XSAnyAtomicType) && (obj2 instanceof XSAnyAtomicType)) {
    	      emitXsAnyAtomicTypeError(obj2, expressionOwner);   
       }
+	  else if (this instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)this;
+		  XObject lXObj = null;		  
+		  if (rSeq.size() == 1) {
+			 lXObj = rSeq.item(0);
+			 result = lXObj.vcEquals(obj2, expressionOwner, collationUri, isEqTest); 
+		  }
+		  else {
+			 // Revisit
+			 result = false; 
+		  }
+	  }
+	  else if (obj2 instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)obj2;
+		  XObject rXObj = null;		  
+		  if (rSeq.size() == 1) {
+			 rXObj = rSeq.item(0);
+			 result = this.vcEquals(rXObj, expressionOwner, collationUri, isEqTest); 
+		  }
+		  else {
+			 // Revisit
+			 result = false; 
+		  }
+	  }
 	  else if (this.getType() == XObject.CLASS_NODESET) {
 		  if ((((XMLNodeCursorImpl)this).getLength() > 1)) {
 			  error(isEqTest ? XPATHErrorResources.ER_EQ_OPERAND_CARDINALITY_ERROR : 
@@ -2427,6 +2513,22 @@ public class XObject extends Expression implements Serializable, Cloneable
 
   public void setUseStrictValue(boolean useStrictValue) {
 	  this.m_useStrict_value = useStrictValue;
+  }
+
+  public boolean isHomogeneousSource() {
+	  return m_homogeneous_source;
+  }
+
+  public void setHomogeneousSource(boolean homogeneousSource) {
+	  this.m_homogeneous_source = homogeneousSource;
+  }
+  
+  public XPathSequenceTypeData getCastAsType() {
+	  return m_cast_as_type;
+  }
+
+  public void setCastAsType(XPathSequenceTypeData seqTypedData) {
+	  this.m_cast_as_type = seqTypedData;	
   }
 
 }

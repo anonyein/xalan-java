@@ -32,6 +32,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.xalan.tests.w3c.xpath3.W3CXPath3TestsUtil;
 import org.apache.xml.utils.Constants;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -40,7 +41,7 @@ import org.w3c.dom.Element;
  * Class implementation to produce W3C XSLT 3.0 test suite's summarized 
  * XML result document for Xalan-J XSLT 3.0 development implementation.
  * 
- * Steps to use this class in the sequence mentioned:
+ * Following are sequence of steps to use this class:
  * 
  * 1) Run W3C XSLT 3.0 test suite for Xalan-J implementation using class 
  *    org.apache.xalan.tests.w3c.xslt3.W3CXSLT3Tests.
@@ -57,13 +58,15 @@ public class W3CXSLT3TestSuiteXalanResultSummarize {
 	 * The value of this class field, need to conform to the local host 
 	 * where this class shall run.
 	 */
-	private static final String W3C_XSLT3_XALAN_TESTSUITE_RESULT_FOLDER_ROOT = "d:\\eclipseWorkspaces\\xalanj\\xalan-j_xslt3.0_mvn\\src\\test\\java\\org\\apache\\xalan\\tests\\w3c\\xslt3\\result";
+	private static final String XALAN_W3C_XSLT3_TESTSUITE_RESULT_FOLDER_ROOT = "d:\\eclipseWorkspaces\\xalanj\\xalan-j_xslt3.0_mvn\\src\\test\\java\\org\\apache\\xalan\\tests\\w3c\\xslt3\\result";
 	
 	private static final String RESULT_FILE_NAME = "w3c_xslt3_testsuite_xalan-j_result.xml";
 	
 	private static final String XSL_SERIALIZATION_INDENT_YES = "yes";
 	
 	private static final String XSL_SERIALIZATION_INDENT_KEY = "{http://xml.apache.org/xslt}indent-amount";
+	
+	private static final String W3C_XSLT3_TEST_SUITE_RESULTS = "W3C XSLT 3.0 test suite results";
 	
 	private static final int XSL_SERIALIZATION_INDENT_VALUE = 2;
 
@@ -76,12 +79,12 @@ public class W3CXSLT3TestSuiteXalanResultSummarize {
 		
 		W3CXSLT3TestSuiteXalanResultSummarize applnObj = new W3CXSLT3TestSuiteXalanResultSummarize();
 		
-		File folderRoot = new File(W3C_XSLT3_XALAN_TESTSUITE_RESULT_FOLDER_ROOT);		
+		File folderRoot = new File(XALAN_W3C_XSLT3_TESTSUITE_RESULT_FOLDER_ROOT);		
 		applnObj.summarizeTestSuiteResult(folderRoot);
 	}
 	
 	/**
-	 * Method definition implementing W3C XSLT 3.0 test suite's result 
+	 * Method definition, to implement W3C XSLT 3.0 test suite result 
 	 * aggregation for Xalan-J implementation's conformance.
 	 */
 	private void summarizeTestSuiteResult(File folderRoot) {
@@ -97,11 +100,11 @@ public class W3CXSLT3TestSuiteXalanResultSummarize {
 		try {
 			DocumentBuilder docBuilder = dbf.newDocumentBuilder();
 			Document document = docBuilder.newDocument();
-			Element testResultElem = document.createElement("testResult");
-			testResultElem.setAttribute("desc", "W3C XSLT 3.0 test suite results");
-			testResultElem.setAttribute("xslt_processor", "Apache Xalan XSLT 3.0 development code");
+			Element testResultElem = document.createElement(W3CXPath3TestsUtil.TESTRESULT);
+			testResultElem.setAttribute(W3CXPath3TestsUtil.DESC, W3C_XSLT3_TEST_SUITE_RESULTS);
+			testResultElem.setAttribute(W3CXPath3TestsUtil.XSLT_PROCESSOR, W3CXPath3TestsUtil.XSLT_PROC_NAME);
 			String testRunDateStrValue = getDateISOString(new Date());
-			testResultElem.setAttribute("dateTime", testRunDateStrValue);
+			testResultElem.setAttribute(W3CXPath3TestsUtil.DATETIME, testRunDateStrValue);
 
 			String[] strArray = folderRoot.list();
 			int totalCount = 0;
@@ -127,23 +130,23 @@ public class W3CXSLT3TestSuiteXalanResultSummarize {
 						uri1 = file1.toURI();						
 						Document testSetResultDoc = docBuilder.parse(uri1.toString());
 						Element docElem = testSetResultDoc.getDocumentElement();
-						String testSetName = docElem.getAttribute("name");
-						int run = Integer.valueOf(docElem.getAttribute("run"));
+						String testSetName = docElem.getAttribute(W3CXPath3TestsUtil.NAME);
+						int run = Integer.valueOf(docElem.getAttribute(W3CXPath3TestsUtil.RUN));
 						totalCount += run; 
-						int pass = Integer.valueOf(docElem.getAttribute("pass"));
+						int pass = Integer.valueOf(docElem.getAttribute(W3CXPath3TestsUtil.PASS));
 						totalPass += pass;
-						int fail = Integer.valueOf(docElem.getAttribute("fail"));
+						int fail = Integer.valueOf(docElem.getAttribute(W3CXPath3TestsUtil.FAIL));
 						totalFail += fail;
-						int skipped = Integer.valueOf(docElem.getAttribute("skipped"));
+						int skipped = Integer.valueOf(docElem.getAttribute(W3CXPath3TestsUtil.SKIPPED));
 						totalSkipped += skipped;
 						double successPer = ((pass / (double)run)) * 100;
 						double successPerDbl = (Double.valueOf(decimalFormat.format(Double.valueOf(String.valueOf(successPer))))).doubleValue();
 						Element testSetElem = document.createElement(testSetName);
-						testSetElem.setAttribute("run", String.valueOf(run));
-						testSetElem.setAttribute("pass", String.valueOf(pass));
-						testSetElem.setAttribute("fail", String.valueOf(fail));
-						testSetElem.setAttribute("skipped", String.valueOf(skipped));
-						testSetElem.setAttribute("success", String.valueOf(successPerDbl) + "%");
+						testSetElem.setAttribute(W3CXPath3TestsUtil.RUN, String.valueOf(run));
+						testSetElem.setAttribute(W3CXPath3TestsUtil.PASS, String.valueOf(pass));
+						testSetElem.setAttribute(W3CXPath3TestsUtil.FAIL, String.valueOf(fail));
+						testSetElem.setAttribute(W3CXPath3TestsUtil.SKIPPED, String.valueOf(skipped));
+						testSetElem.setAttribute(W3CXPath3TestsUtil.SUCCESS, String.valueOf(successPerDbl) + "%");
 						testSetKindElem.appendChild(testSetElem);
 					}
 					
@@ -153,11 +156,11 @@ public class W3CXSLT3TestSuiteXalanResultSummarize {
 			
 			double totalSuccessPer = ((totalPass / (double)totalCount)) * 100;
 			double totalSuccessPerDbl = (Double.valueOf(decimalFormat.format(Double.valueOf(String.valueOf(totalSuccessPer))))).doubleValue();
-			testResultElem.setAttribute("run", String.valueOf(totalCount));
-			testResultElem.setAttribute("pass", String.valueOf(totalPass));
-			testResultElem.setAttribute("fail", String.valueOf(totalFail));
-			testResultElem.setAttribute("skipped", String.valueOf(totalSkipped));
-			testResultElem.setAttribute("success", String.valueOf(totalSuccessPerDbl) + "%");
+			testResultElem.setAttribute(W3CXPath3TestsUtil.RUN, String.valueOf(totalCount));
+			testResultElem.setAttribute(W3CXPath3TestsUtil.PASS, String.valueOf(totalPass));
+			testResultElem.setAttribute(W3CXPath3TestsUtil.FAIL, String.valueOf(totalFail));
+			testResultElem.setAttribute(W3CXPath3TestsUtil.SKIPPED, String.valueOf(totalSkipped));
+			testResultElem.setAttribute(W3CXPath3TestsUtil.SUCCESS, String.valueOf(totalSuccessPerDbl) + "%");
 			
 			document.appendChild(testResultElem);
 			
@@ -170,7 +173,7 @@ public class W3CXSLT3TestSuiteXalanResultSummarize {
 			transformer.setOutputProperty(XSL_SERIALIZATION_INDENT_KEY, String.valueOf(XSL_SERIALIZATION_INDENT_VALUE));
 			
 			DOMSource domSource = new DOMSource(document);
-			FileWriter fileWriter = new FileWriter(new File(W3C_XSLT3_XALAN_TESTSUITE_RESULT_FOLDER_ROOT + File.separator + RESULT_FILE_NAME));
+			FileWriter fileWriter = new FileWriter(new File(XALAN_W3C_XSLT3_TESTSUITE_RESULT_FOLDER_ROOT + File.separator + RESULT_FILE_NAME));
 			StreamResult streamResult = new StreamResult(fileWriter);
 			
 			transformer.transform(domSource, streamResult);
@@ -180,29 +183,35 @@ public class W3CXSLT3TestSuiteXalanResultSummarize {
 		}
 	}
 	
-	/*
-     * Given a non-negative integer value, return a string comprising those many 
-     * characters '0'. We use the string value returned by this method, to construct 
-     * a java.text.DecimalFormat object instance.
-     */
+	/**
+	 * Method definition, to get string value comprising as many 
+	 * characters '0' as the supplied non-negative integer value.
+	 * We use the string value returned by this method, to construct 
+     * a java.text.DecimalFormat object instance.    
+	 * 
+	 * @param strSize               Non-negative integer value
+	 * @return                      The computed string value
+	 */
     private String getStrForZeros(int strSize) {
-       String strVal = "";
+       
+       String result = "";
        
        for (int idx = 0; idx < strSize; idx++) {
-          strVal = strVal + "0";  
+          result = result + "0";  
        }
        
-       return strVal;
+       return result;
     }
     
     /**
-     * Method definition to get an ISO formatted date string for the supplied 
-     * java.util.Date value.
+     * Method definition, to get an ISO formatted date string for
+     * the supplied java.util.Date value.
      *  
      * @param date				The supplied date object value
      * @return					The formatted date string
      */
     private String getDateISOString(Date dateValue) {
+    	
     	String result = null;
     	
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");

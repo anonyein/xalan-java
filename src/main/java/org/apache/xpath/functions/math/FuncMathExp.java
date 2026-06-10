@@ -27,6 +27,8 @@ import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathInlineFunction;
+import org.apache.xpath.patterns.NodeTest;
 
 import xml.xpath31.processor.types.XSDouble;
 import xml.xpath31.processor.types.XSNumericType;
@@ -53,8 +55,8 @@ public class FuncMathExp extends FunctionOneArg
     /**
      * Evaluate the function. The function must return a valid object.
      * 
-     * @param xctxt The current execution context.
-     * @return A valid XObject.
+     * @param xctxt The current execution context
+     * @return A valid XObject
      *
      * @throws javax.xml.transform.TransformerException
      */
@@ -65,6 +67,17 @@ public class FuncMathExp extends FunctionOneArg
        SourceLocator srcLocator = xctxt.getSAXLocator();
        
        Expression arg0 = getArg0();
+       
+       if (arg0 instanceof NodeTest) {
+    	   if (XslTransformEvaluationHelper.isNodeTestExpressionFuntionType((NodeTest)arg0)) {
+    		   throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function exp(), "
+    				                                                                   + "but the supplied type is a function type, which cannot be atomized.", srcLocator); 
+    	   }
+       }
+       else if (arg0 instanceof XPathInlineFunction) {
+     	   throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function exp(), but the "
+                    																   + "supplied type is a function type, which cannot be atomized.", srcLocator); 
+       }
        
        if (arg0 == null || isArgCountErr()) {
           ResultSequence resultSeq = new ResultSequence();
@@ -85,8 +98,7 @@ public class FuncMathExp extends FunctionOneArg
        else if (arg0Result instanceof XMLNodeCursorImpl) {
           XMLNodeCursorImpl xNodeSet = (XMLNodeCursorImpl)arg0Result;
           if (xNodeSet.getLength() != 1) {
-             throw new javax.xml.transform.TransformerException("XPTY0004 : The argument to math:exp "
-                                                                     + "function must be a sequence of length one.", srcLocator);    
+        	 throw new javax.xml.transform.TransformerException("XPTY0004 : The argument to XPath function call exp() must be a sequence of length one.", srcLocator);     
           }
           else {
              String strVal = xNodeSet.str();
@@ -96,8 +108,9 @@ public class FuncMathExp extends FunctionOneArg
                 arg = (new XSDouble(strVal)).doubleValue();
              }
              catch (Exception ex) {
-                throw new javax.xml.transform.TransformerException("FORG0001 : Cannot convert the string \"" + strVal + "\" to "
-                                                                                                       + "a double value.", srcLocator);
+            	throw new javax.xml.transform.TransformerException("FORG0001 : Error occured during XPath function call exp(). Cannot convert "
+																									                         + "string valued argument \"" + strVal + "\" to "
+																									                         + "a double value.", srcLocator);
              }
              
              result = new XSDouble(Math.exp(arg));
@@ -106,8 +119,7 @@ public class FuncMathExp extends FunctionOneArg
        else if (arg0Result instanceof ResultSequence) {
            ResultSequence resultSeq = (ResultSequence)arg0Result;
            if (resultSeq.size() != 1) {
-              throw new javax.xml.transform.TransformerException("XPTY0004 : The argument to math:exp "
-                                                                      + "function must be a sequence of length one.", srcLocator);    
+        	  throw new javax.xml.transform.TransformerException("XPTY0004 : The argument to XPath function call exp() must be a sequence of length one.", srcLocator);     
            }
            else {
               XObject val = resultSeq.item(0);
@@ -118,16 +130,17 @@ public class FuncMathExp extends FunctionOneArg
                  arg = (new XSDouble(strVal)).doubleValue();
               }
               catch (Exception ex) {
-                 throw new javax.xml.transform.TransformerException("FORG0001 : Cannot convert the string \"" + strVal + "\" to "
-                                                                                                        + "a double value.", srcLocator);
+            	 throw new javax.xml.transform.TransformerException("FORG0001 : Error occured during XPath function call exp(). Cannot convert "
+																								                          + "string valued argument \"" + strVal + "\" to "
+																								                          + "a double value.", srcLocator);
               }
               
               result = new XSDouble(Math.exp(arg));
            }
        }
        else {
-           throw new javax.xml.transform.TransformerException("XPTY0004 : The item type of first argument to function math:exp is not "
-                                                                                                      + "xs:double.", srcLocator); 
+    	   throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm item type of first argument to XPath function call exp() is not "
+					  																									 + "an XML Schema type double.", srcLocator); 
        }
        
        return result;

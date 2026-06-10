@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.operations;
 
 import org.apache.xpath.XPathContext;
@@ -27,11 +24,12 @@ import org.apache.xpath.objects.XObject;
 import xml.xpath31.processor.types.XSNumericType;
 
 /**
- * An XPath unary '-' operation expression executer.
+ * An XPath 3.1 unary minus operator expression evaluator.
  */
-public class Neg extends UnaryOperation
+public class Neg extends XPath3UnaryOperation
 {
-    static final long serialVersionUID = -6280607702375702291L;
+  
+  private static final long serialVersionUID = -6280607702375702291L;
 
   /**
    * Apply XPath unary operator to an operand, and return the result.

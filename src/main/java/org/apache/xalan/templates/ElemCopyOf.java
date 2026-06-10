@@ -45,7 +45,7 @@ import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
-import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
@@ -67,6 +67,7 @@ import xml.xpath31.processor.types.XSDouble;
 import xml.xpath31.processor.types.XSFloat;
 import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSQName;
+import xml.xpath31.processor.types.XSString;
 import xml.xpath31.processor.types.XSUntyped;
 import xml.xpath31.processor.types.XSUntypedAtomic;
 
@@ -226,6 +227,33 @@ public class ElemCopyOf extends ElemTemplateElement
    */
   public boolean getCopyNamespaces() {
 	  return m_copy_namespaces;
+  }
+  
+  /**
+   * An XPath expression for XSL attribute "use-when". 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			    XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
   }
   
   /**
@@ -410,6 +438,36 @@ public class ElemCopyOf extends ElemTemplateElement
       if (transformer.getDebug()) {
          transformer.getTraceManager().emitSelectedEvent(sourceNode, this,
                                                                         "select", m_selectExpression, value);
+      }
+      
+      if ((value != null) && (value.getType() == XObject.CLASS_NODESET)) {
+    	  Expression xslCopyOfSelectExpr = m_selectExpression.getExpression();
+    	  
+    	  if (xslCopyOfSelectExpr instanceof FuncCurrentGroup) {
+    		  ElemTemplateElement elemTemplateElement = getParentElem();
+    		  while (elemTemplateElement != null) {
+    			  if (elemTemplateElement instanceof ElemForEachGroup) {
+    				  boolean isInpSeqAllAtomicValues = ((ElemForEachGroup)elemTemplateElement).getInpSeqIsAllAtomicValues();
+    				  if (isInpSeqAllAtomicValues) {
+    					  ResultSequence rSeq = new ResultSequence();
+    					  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)value;
+    					  DTMCursorIterator dtmCursorIterator = xmlNodeCursorImpl.iter();
+    					  int nextNode = DTM.NULL;
+    					  while ((nextNode = dtmCursorIterator.nextNode()) != DTM.NULL) {
+    						  XMLNodeCursorImpl node1 = new XMLNodeCursorImpl(nextNode, xctxt);
+    						  XSString xsString = new XSString(node1.str());
+    						  rSeq.add(xsString);
+    					  }
+
+    					  value = rSeq;
+    				  }
+
+    				  break;
+    			  }
+
+    			  elemTemplateElement = elemTemplateElement.getParentElem();
+    		  }
+    	  }
       }
 
       SerializationHandler rhandler = transformer.getSerializationHandler();
@@ -850,7 +908,7 @@ public class ElemCopyOf extends ElemTemplateElement
 			  if (xsModel != null) {
 				  String xmlStr = XslTransformEvaluationHelper.serializeXmlDomElementNode(node);        				  
 				  XSTypeDefinition xsTypeDefn = xsModel.getTypeDefinition(type.getLocalName(), type.getNamespace());
-				  if (SequenceTypeSupport.isXmlStrValid(xmlStr, null, xsTypeDefn)) {
+				  if (XPathSequenceTypeSupport.isXmlStrValid(xmlStr, null, xsTypeDefn)) {
 					  tw.traverse(nodeHandle); 
 				  }
 			  }
@@ -871,7 +929,7 @@ public class ElemCopyOf extends ElemTemplateElement
 					  String nodeNamespace = node.getNamespaceURI();
 					  XSElementDecl schemaElemDecl = (XSElementDecl)(xsModel.getElementDeclaration(nodeLocalName, nodeNamespace));
 					  if (schemaElemDecl != null) {
-						  if (SequenceTypeSupport.isXmlStrValid(xmlStr, schemaElemDecl, null)) {
+						  if (XPathSequenceTypeSupport.isXmlStrValid(xmlStr, schemaElemDecl, null)) {
 							  tw.traverse(nodeHandle); 
 						  }
 					  }
@@ -899,7 +957,7 @@ public class ElemCopyOf extends ElemTemplateElement
 					  String nodeNamespace = node.getNamespaceURI();
 					  XSElementDecl schemaElemDecl = (XSElementDecl)(xsModel.getElementDeclaration(nodeLocalName, nodeNamespace));
 					  if (schemaElemDecl != null) {
-						  if (SequenceTypeSupport.isXmlStrValid(xmlStr, schemaElemDecl, null)) {
+						  if (XPathSequenceTypeSupport.isXmlStrValid(xmlStr, schemaElemDecl, null)) {
 							  tw.traverse(nodeHandle); 
 						  }
 					  }            				  

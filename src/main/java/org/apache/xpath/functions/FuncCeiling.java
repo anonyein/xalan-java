@@ -15,17 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.functions;
 
+import javax.xml.transform.SourceLocator;
+
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathInlineFunction;
+import org.apache.xpath.objects.XString;
+import org.apache.xpath.patterns.NodeTest;
+
+import xml.xpath31.processor.types.XSString;
 
 /**
- * Implementation of the ceiling() function.
+ * An XPath 3.1 function fn:ceiling's implementation.
  * 
  * @xsl.usage advanced
  */
@@ -41,17 +46,48 @@ public class FuncCeiling extends FunctionDef1Arg
 	}
 
     /**
-     * Evaluate the function. The function must return
-     * a valid object.
-     * @param xctxt The current execution context.
-     * @return A valid XObject.
+     * Evaluate the function. The function must return a valid object.
+     * 
+     * @param xctxt The current execution context
+     * @return A valid XObject
      *
      * @throws javax.xml.transform.TransformerException
     */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
     {
-        String strValueOfArg = (getArg0AsString(xctxt)).toString();
-      
-        return new XNumber(Math.ceil(Double.valueOf(strValueOfArg)));
+    	
+    	XObject result = null;
+
+		SourceLocator srcLocator = xctxt.getSAXLocator();
+
+		if (m_arg0 instanceof NodeTest) {
+			if (XslTransformEvaluationHelper.isNodeTestExpressionFuntionType((NodeTest)m_arg0)) {
+				throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 function 'ceiling' argument should be "
+																					                        + "numeric but the supplied type is a function type.", 
+																					                        srcLocator);
+			}
+		}
+		else if (m_arg0 instanceof XPathInlineFunction) {
+			throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 function 'ceiling' argument should be "
+																						                    + "numeric but the supplied type is a function type.", 
+																						                    srcLocator);
+		}
+		
+		if ((m_arg0 instanceof XSString) || (m_arg0 instanceof XString)) {
+			throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 function 'ceiling' argument should be "
+					                                                                                              + "numeric but the supplied type is a string.", 
+					                                                                                              srcLocator);
+		}
+		
+		String argStr1 = (getArg0AsString(xctxt)).toString();
+		
+		try {
+		   result = new XNumber(Math.ceil(Double.valueOf(argStr1)));
+		}
+		catch (NumberFormatException ex) {
+		   throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 function 'ceiling' argument should be numeric.", srcLocator);
+		}
+
+		return result;
     }
 }

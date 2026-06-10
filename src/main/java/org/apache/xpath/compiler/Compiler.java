@@ -72,11 +72,11 @@ import org.apache.xpath.operations.NotEquals;
 import org.apache.xpath.operations.Operation;
 import org.apache.xpath.operations.Or;
 import org.apache.xpath.operations.Plus;
+import org.apache.xpath.operations.Pos;
 import org.apache.xpath.operations.Range;
 import org.apache.xpath.operations.SimpleMapOperator;
 import org.apache.xpath.operations.StrConcat;
 import org.apache.xpath.operations.TreatAs;
-import org.apache.xpath.operations.UnaryOperation;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.operations.VcEquals;
 import org.apache.xpath.operations.VcGe;
@@ -84,6 +84,7 @@ import org.apache.xpath.operations.VcGt;
 import org.apache.xpath.operations.VcLe;
 import org.apache.xpath.operations.VcLt;
 import org.apache.xpath.operations.VcNotEquals;
+import org.apache.xpath.operations.XPath3UnaryOperation;
 import org.apache.xpath.patterns.FunctionPattern;
 import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.patterns.StepPattern;
@@ -239,8 +240,10 @@ public class Compiler extends OpMap
       expr = idiv(opPos); break;      
     case OpCodes.OP_MOD :
       expr = mod(opPos); break;
+    case OpCodes.XPath3OpCodes.OP_POS :
+        expr = pos(opPos); break;
     case OpCodes.OP_NEG :
-      expr = neg(opPos); break;
+      expr = neg(opPos); break;          
     case OpCodes.OP_STRING :
       expr = string(opPos); break;
     case OpCodes.OP_BOOL :
@@ -296,7 +299,11 @@ public class Compiler extends OpMap
     case OpCodes.XPath3OpCodes.OP_FUNC_ARG_PLACEHOLDER :
       expr = funcArgumentPlaceholder(opPos); break;
     case OpCodes.XPath3OpCodes.OP_TEXT_AND_NODE_EXPR:
-      expr = xpathTextAndNodeExpr(opPos); break;	
+      expr = xpathTextAndNodeExpr(opPos); break;
+    case OpCodes.XPath3OpCodes.OP_SEQ_BINARY_EXPR:
+      expr = seqBinaryExpr(opPos); break;
+    case OpCodes.XPath3OpCodes.OP_SEQ_INDEX_BINARY_EXPR:
+      expr = seqIndexBinaryExpr(opPos); break;
     case OpCodes.OP_QUO:
       error(XPATHErrorResources.ER_UNKNOWN_OPCODE, new Object[]{ m_currentPattern, "quo" });
       break;        	
@@ -307,6 +314,8 @@ public class Compiler extends OpMap
     
     return expr;
   }
+  
+  public static boolean m_verify_func_arg_count = true;
 
   /**
    * Bottle-neck compilation of an operation with left and right operands.
@@ -340,7 +349,7 @@ public class Compiler extends OpMap
    *
    * @throws TransformerException if syntax or other error occurs.
    */
-  private Expression compileUnary(UnaryOperation unary, int opPos)
+  private Expression compileUnary(XPath3UnaryOperation unary, int opPos)
           throws TransformerException
   {
 
@@ -818,6 +827,20 @@ public class Compiler extends OpMap
   protected Expression neg(int opPos) throws TransformerException
   {
     return compileUnary(new Neg(), opPos);
+  }
+  
+  /**
+   * Compile a unary '+' operation.
+   * 
+   * @param opPos The current position in the m_opMap array
+   *
+   * @return reference to {@link org.apache.xpath.operations.Neg} instance.
+   *
+   * @throws TransformerException if a error occurs creating the Expression.
+   */
+  protected Expression pos(int opPos) throws TransformerException
+  {
+    return compileUnary(new Pos(), opPos);
   }
 
   /**
@@ -1310,6 +1333,14 @@ private static final boolean DEBUG = false;
                                 getStepLocalName(startOpPos),
                                 Axis.PARENT, Axis.CHILD);
       break;
+    case OpCodes.FROM_SELF :
+      argLen = getArgLengthOfStep(opPos);
+      opPos = getFirstChildPosOfStep(opPos);
+      pattern = new StepPattern(getWhatToShow(startOpPos),
+					            getStepNS(startOpPos),
+					            getStepLocalName(startOpPos),
+					            Axis.SELF, Axis.CHILD);
+      break;
     default :
       error(XPATHErrorResources.ER_UNKNOWN_MATCH_OPERATION, null);  //"unknown match operation!");
 
@@ -1477,11 +1508,13 @@ private static final boolean DEBUG = false;
       }
       catch (WrongNumberArgsException wnae)
       {
-        java.lang.String name = m_functionTable.getFunctionName(funcID);
+    	if (org.apache.xpath.compiler.Compiler.m_verify_func_arg_count) {
+    		java.lang.String name = m_functionTable.getFunctionName(funcID);
 
-        m_errorHandler.fatalError( new TransformerException(
-                                             XSLMessages.createXPATHMessage(XPATHErrorResources.ER_ONLY_ALLOWS, 
-                                             new Object[]{name, wnae.getMessage()}), m_locator));
+    		m_errorHandler.fatalError( new TransformerException(
+    				XSLMessages.createXPATHMessage(XPATHErrorResources.ER_ONLY_ALLOWS, 
+    						new Object[]{name, wnae.getMessage()}), m_locator));
+    	}
       }
 
       return func;
@@ -1611,10 +1644,14 @@ private static final boolean DEBUG = false;
   Expression sequenceConstructorExpr(int opPos) throws TransformerException
   {	  
       Expression xpathSequenceCons = null;
-	  
+	              
       if (XPathParser.m_xpathSequenceConstructor != null) {
     	  xpathSequenceCons = XPathParser.m_xpathSequenceConstructor;
     	  XPathParser.m_xpathSequenceConstructor = null;
+      }
+      else if (XPathParser.m_xpathSequenceConstructor2 != null) {
+    	  xpathSequenceCons = XPathParser.m_xpathSequenceConstructor2;
+    	  XPathParser.m_xpathSequenceConstructor2 = null;
       }
 	  else {
 		 // We use an implementation here, when XPath built-in function call 
@@ -1755,6 +1792,24 @@ private static final boolean DEBUG = false;
    */
   Expression xpathTextAndNodeExpr(int opPos) throws TransformerException {
 	  return XPathParser.m_xpathTextAndNodeExpr;
+  }
+  
+  /**
+   * Compile XPath binary operator expressions like:
+   *   (if ...) + (if ...) , 
+   *   2 + (if ...)
+   */
+  Expression seqBinaryExpr(int opPos) throws TransformerException {
+	  return XPathParser.m_sequenceBinaryOp;
+  }
+  
+  /**
+   * Compile XPath binary operator expressions like:
+   *   (1,2,3)[1] ,
+   *   (1, 2, 3)[1] treat as xs:integer
+   */
+  Expression seqIndexBinaryExpr(int opPos) throws TransformerException {
+	  return XPathParser.m_sequenceIndexBinaryOp;
   }
 
   // The current id for extension functions.

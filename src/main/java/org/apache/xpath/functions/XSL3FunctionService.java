@@ -58,6 +58,7 @@ import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.templates.TemplateList;
 import org.apache.xalan.templates.XMLNSDecl;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xerces.dom.DOMInputImpl;
 import org.apache.xerces.impl.dv.InvalidDatatypeValueException;
@@ -75,8 +76,8 @@ import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.compiler.Keywords;
-import org.apache.xpath.composite.SequenceTypeData;
-import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.composite.XPathExprFuncCallExtendedArg;
 import org.apache.xpath.composite.XPathNamedFunctionReference;
 import org.apache.xpath.functions.string.FuncConcat;
@@ -159,8 +160,6 @@ public class XSL3FunctionService {
 	public static final String UTF_16 = "UTF-16";
 	
 	public static final String XML_DOM_FORMAT_PRETTY_PRINT = "format-pretty-print";
-	
-	public static final String XS_VALID_TRUE = "XS_VALID_TRUE";
     
 	/**
 	 * Method definition, to evaluate a function call referred within an 
@@ -197,10 +196,13 @@ public class XSL3FunctionService {
     			 * extension function calls (prefix:functionName). The implementation
     			 * here need not run when an XSL stylesheet specifies Xalan-J XPath
     			 * extension function call.
-    			 */    			
+    			 */
     			
-    			StylesheetRoot stylesheetRoot = XslTransformEvaluationHelper.getXslStylesheetRootFromXslElementRef(
-    					                                                                                   (ElemTemplateElement)xpathExpr.getExpressionOwner());
+    			StylesheetRoot stylesheetRoot = XslTransformData.m_stylesheetRoot;    			
+    			if (stylesheetRoot == null) {
+    			   stylesheetRoot = XslTransformEvaluationHelper.getXslStylesheetRootFromXslElementRef(
+    					                                                                        (ElemTemplateElement)xpathExpr.getExpressionOwner());
+    			}
 
     			if (stylesheetRoot != null) {
     				if (transformerImpl == null) {
@@ -236,13 +238,16 @@ public class XSL3FunctionService {
     						xslFuncArgCount++;
     					}
     				}
-
-    				ElemTemplate elemTemplate = templateList.getXslFunction(new QName(funcNamespace, funcName), xslFuncArgCount);
     				
-    				if (elemTemplate == null) { 
-    					elemTemplate = getXslFunctionDeclUsingXslPackage(transformerImpl, funcNamespace, 
-    							                                                                      funcName, xslFuncArgCount);
-    			    }
+    				ElemTemplate elemTemplate = null;
+
+    				if (!XMLConstants.W3C_XML_SCHEMA_NS_URI.equals(funcNamespace)) { 
+    					elemTemplate = templateList.getXslFunction(new QName(funcNamespace, funcName), xslFuncArgCount);
+
+    					if (elemTemplate == null) { 
+    						elemTemplate = getXslFunctionDeclUsingXslPackage(transformerImpl, funcNamespace, funcName, xslFuncArgCount);
+    					}
+    				}
 
     				if ((elemTemplate != null) && (elemTemplate instanceof ElemFunction)) {
     					// Evaluate an XSL stylesheet function call
@@ -342,14 +347,9 @@ public class XSL3FunctionService {
     							xpathInlineFuncArgList.add(xpathExprStr);    							
     						}
 
-    						List<XMLNSDecl> prefixTable = null;
-    						ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
+    						List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
 
-    						if (elemTemplateElement != null) {
-    							prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-    						}
-
-    						evalResult = evaluateXPathInlineFunction(xpathInlineFunction, xpathInlineFuncArgList, 
+    						evalResult = evaluateXPathInlineFunction(xpathInlineFunction, xpathInlineFuncArgList, null, 
     								                                                      xctxt, prefixTable, null, 0, 
     								                                                      ((Expression)xpathExpr).getXPathVarList(), null);    						
     					}
@@ -588,12 +588,7 @@ public class XSL3FunctionService {
     							}
 
     							if (prefix != null) {
-    								List<XMLNSDecl> prefixTable = null;
-    								ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-
-    								if (elemTemplateElement != null) {
-    									prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-    								}
+    								List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
 
     								if (prefixTable != null) {
     									int prefixTableSize = prefixTable.size();
@@ -615,12 +610,7 @@ public class XSL3FunctionService {
     							String prefix = getXPathBuiltInConstructorFunctionArgStr(funcObj.getArg(0), xctxt);
     							String localName = getXPathBuiltInConstructorFunctionArgStr(funcObj.getArg(1), xctxt);
 
-    							List<XMLNSDecl> prefixTable = null;
-    							ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-
-    							if (elemTemplateElement != null) {
-    								prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-    							}
+    							List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
 
     							String namespaceUri = null;
     							if (prefixTable != null) {
@@ -721,7 +711,7 @@ public class XSL3FunctionService {
     									XObject xsSimpleTypeInpObj = (funcObj.getArg(0)).execute(xctxt);
     									String argStrVal = XslTransformEvaluationHelper.getStrVal(xsSimpleTypeInpObj);
     									xsSimpleTypeDecl.validate(argStrVal, null, null);
-    									evalResult = new XSString(XS_VALID_TRUE);
+    									evalResult = new XSString(Constants.XS_VALID_TRUE);
     									evalResult.setObject(argStrVal);
     									evalResult.setXsTypeDefinition(xsTypeDefinition);    								}
     								else {
@@ -790,7 +780,7 @@ public class XSL3FunctionService {
     										XObject xsSimpleTypeInpObj = (funcObj.getArg(0)).execute(xctxt);
     										String argStrVal = XslTransformEvaluationHelper.getStrVal(xsSimpleTypeInpObj);
     										xsSimpleTypeDecl.validate(argStrVal, null, null);
-    										evalResult = new XSString(XS_VALID_TRUE);
+    										evalResult = new XSString(Constants.XS_VALID_TRUE);
     										evalResult.setObject(argStrVal);
     										evalResult.setXsTypeDefinition(xsTypeDefinition);
     									}
@@ -918,8 +908,7 @@ public class XSL3FunctionService {
     	}
 
     	if (funcIdObj != null) {
-    		// Evaluate an XPath built-in function reference
-    		
+    		// Evaluate an XPath built-in function reference    		
     		String funcIdStr = funcIdObj.toString();
     		Function function = funcTable.getFunction(Integer.valueOf(funcIdStr));
     		function.setLocalName(funcLocalName);
@@ -968,8 +957,7 @@ public class XSL3FunctionService {
     		evalResult = function.execute(xctxt);
     	}
     	else if (xpathNamedFuncRef.getXslStylesheetFunction() != null) {
-    		// Evaluate an XSL stylesheet function reference
-    		
+    		// Evaluate an XSL stylesheet function reference    		
     		ElemFunction elemFunction = xpathNamedFuncRef.getXslStylesheetFunction();
 
     		ResultSequence argSequence = new ResultSequence();
@@ -1012,8 +1000,7 @@ public class XSL3FunctionService {
     		}
     	}
     	else if (XMLConstants.W3C_XML_SCHEMA_NS_URI.equals(funcNamespace)) {
-    		// Evaluate an XPath schema type constructor function call reference
-    		
+    		// Evaluate an XPath schema type constructor function call reference    		
     		XSL3ConstructorOrExtensionFunction funcObj = new XSL3ConstructorOrExtensionFunction(funcNamespace, funcLocalName, null);
     		funcObj.setDefinedArity(new Short[] { (short)funcArity });
 
@@ -1232,6 +1219,7 @@ public class XSL3FunctionService {
      * @param xpathInlineFunction			        An XPath compiled inline function reference object		
      * @param argList                               A list of XPath string values for argument information of 
      *                                              inline function reference.
+     * @param m_lArgObj 
      * @param xctxt									An XPath context object                                              
      * @param prefixTable                           An XML prefix table list object reference containing
      *                                              an XSL context namespace binding information.
@@ -1249,7 +1237,7 @@ public class XSL3FunctionService {
      * @throws TransformerException
      */
     public XObject evaluateXPathInlineFunction(XPathInlineFunction xpathInlineFunction, List<String> argList, 
-    		                                   XPathContext xctxt, List<XMLNSDecl> prefixTable, Vector varVector, 
+    		                                   XObject m_lArgObj, XPathContext xctxt, List<XMLNSDecl> prefixTable, Vector varVector, 
     		                                   int varGlobalSize, List<QName> xpathVarList, String xslDynFuncCallVarName) throws TransformerException {
     	
     	XObject evalResult = null;
@@ -1286,7 +1274,7 @@ public class XSL3FunctionService {
 
     	int argCount1 = argList.size();
 
-    	if (!(Keywords.FUNC_RANDOM_NUMBER_GENERATOR + "()").equals(xpathFuncBodyStr) && (argCount1 != funcParamList.size())) {
+    	if ((m_lArgObj == null) && (!(Keywords.FUNC_RANDOM_NUMBER_GENERATOR + "()").equals(xpathFuncBodyStr) && (argCount1 != funcParamList.size()))) {
     	   throw new javax.xml.transform.TransformerException("XPTY0004 : Number of arguments required for "
 																		    				 + "XPath dynamic function call is " + funcParamList.size() + ". "
 																		    				 + "Arguments provided : " + argCount1 + ".", srcLocator);    
@@ -1295,41 +1283,51 @@ public class XSL3FunctionService {
 
     	Map<QName, XObject> functionParamAndArgMap = new HashMap<QName, XObject>();
 
-    	int argCount = funcParamList.size();
-    	
+    	int argCount = funcParamList.size();    	    	    	
     	for (int idx = 0; idx < argCount; idx++) {
     		InlineFunctionParameter funcParam = funcParamList.get(idx);                                                         
 
-    		String argXPathStr = argList.get(idx);
-
-    		if (prefixTable != null) {
-    			argXPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(argXPathStr, prefixTable);
-    		}
-
-    		XPath argXPath = new XPath(argXPathStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
-    		
-    		Expression argExpr = argXPath.getExpression();
-    		XObject argValue = null;    		
-    		if ((argExpr instanceof SelfIteratorNoPredicate) && (xctxt.getXPath3ContextItem() != null)) {
-    			argValue = xctxt.getXPath3ContextItem(); 	
-    		}
-            else if (argExpr instanceof FuncArgPlaceholder) {
-    			argValue = XObject.create((FuncArgPlaceholder)argExpr); 
+    		XObject argValue = null;     		
+    		if ((idx == 0) && (m_lArgObj != null)) {    			    			    			    			
+    			argValue = m_lArgObj;
     		}
     		else {
-    			if (varVector != null) {
-    				argXPath.fixupVariables(varVector, varGlobalSize);
+    			String argXPathStr = null;
+    			if (m_lArgObj != null) {
+    			   argXPathStr = argList.get(idx - 1);
+    			}
+    			else {
+    			   argXPathStr = argList.get(idx);
     			}
 
-    			argValue = argXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+    			if (prefixTable != null) {
+    				argXPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(argXPathStr, prefixTable);
+    			}
+
+    			XPath argXPath = new XPath(argXPathStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+
+    			Expression argExpr = argXPath.getExpression();    			   		
+    			if ((argExpr instanceof SelfIteratorNoPredicate) && (xctxt.getXPath3ContextItem() != null)) {
+    				argValue = xctxt.getXPath3ContextItem(); 	
+    			}
+    			else if (argExpr instanceof FuncArgPlaceholder) {
+    				argValue = XObject.create((FuncArgPlaceholder)argExpr); 
+    			}
+    			else {
+    				if (varVector != null) {
+    					argXPath.fixupVariables(varVector, varGlobalSize);
+    				}
+
+    				argValue = argXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+    			} 
     		}
 
     		String funcParamName = funcParam.getParamName();
-    		SequenceTypeData paramType = funcParam.getParamType();
+    		XPathSequenceTypeData paramType = funcParam.getParamType();
 
     		if (paramType != null) {
     			try {
-    				argValue = SequenceTypeSupport.castXdmValueToAnotherType(argValue, null, paramType, null);                     
+    				argValue = XPathSequenceTypeSupport.castXdmValueToAnotherType(argValue, null, paramType, null);                     
     				if (argValue == null) {
     					if (xslDynFuncCallVarName != null) {
     					    throw new TransformerException("XTTE0505 : An item type of argument at position " + (idx + 1) + " of XPath dynamic "
@@ -1373,10 +1371,10 @@ public class XSL3FunctionService {
 
     	evalResult = inlineFnXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
 
-    	SequenceTypeData funcReturnType = xpathInlineFunction.getReturnType();
+    	XPathSequenceTypeData funcReturnType = xpathInlineFunction.getReturnType();
     	if (funcReturnType != null) {
     		try {
-    			evalResult = SequenceTypeSupport.castXdmValueToAnotherType(evalResult, null, funcReturnType, null);
+    			evalResult = XPathSequenceTypeSupport.castXdmValueToAnotherType(evalResult, null, funcReturnType, null);
     			if (evalResult == null) {
     				if (xslDynFuncCallVarName != null) {
     				    throw new TransformerException("XTTE0505 : An item type of result of dynamic function call $"+ xslDynFuncCallVarName + ", "

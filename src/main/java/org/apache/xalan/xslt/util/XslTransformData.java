@@ -70,9 +70,9 @@ public class XslTransformData {
     
     /**
      * This class field represents, a string buffer value which is
-     * RHS of an XPath expression like '* except (a,b)' i.e (a,b) and when used 
-     * with a node combining operator like union (and equivalently '|'), 
-     * intersect or except.
+     * rhs of an XPath expression like '* except (a,b)' i.e (a,b) and when used 
+     * with a node combining operator like 'union' (and equivalently '|'), 
+     * 'intersect', 'except'.
      */
     public static StringBuffer m_xpathNodeCombiningExprRhsStrBuff;
     
@@ -126,6 +126,12 @@ public class XslTransformData {
      * occurrence error check, within an XPath expression.
      */
     public static List<QName> m_xsl_variable_qname_list = new ArrayList<QName>();
+    
+    /**
+     * Class field, to support XSL transformation of stylesheet 
+     * attribute "use-when".
+     */
+    public static boolean m_use_when = false;
     
     /**
 	 * Method definition, to reset the class field values specified 

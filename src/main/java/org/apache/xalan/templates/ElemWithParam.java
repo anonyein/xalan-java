@@ -31,7 +31,7 @@ import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
-import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XNodeSetForDOM;
 import org.apache.xpath.objects.XObject;
@@ -169,6 +169,33 @@ public class ElemWithParam extends ElemTemplateElement
   {
      return m_tunnelAttr;
   }
+  
+  /**
+   * An XPath expression for XSL attribute "use-when". 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			     XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
+  }
 
   /**
    * Get an integer representation of the element type.
@@ -297,7 +324,7 @@ public class ElemWithParam extends ElemTemplateElement
     }
     
     if (m_asAttr != null) {
-       var = SequenceTypeSupport.castXdmValueToAnotherType(var, m_asAttr, null, 
+       var = XPathSequenceTypeSupport.castXdmValueToAnotherType(var, m_asAttr, null, 
                                                                           transformer.getXPathContext());
        if (var == null) {
           throw new TransformerException("XTTE0590 : The required item type of the value of argument used for XSL with-param " + 

@@ -138,7 +138,10 @@ public class XPATHErrorResources extends ListResourceBundle
   public static final String ER_UNCLOSED_XPATH_COMMENT ="ER_UNCLOSED_XPATH_COMMENT";
   public static final String ER_NS_BINDING = "ER_NS_BINDING";
   public static final String ER_EXPECTED_CLOSING_SQUARE_BRACKET = "ER_EXPECTED_CLOSING_SQUARE_BRACKET";
-  public static final String ER_IF_EXPR ="ER_IF_EXPR";
+  public static final String ER_CANNOT_APPLY_FUNC = "ER_CANNOT_APPLY_FUNC";
+  public static final String ER_MAP_DUPLICATE_KEY = "ER_MAP_DUPLICATE_KEY";
+  public static final String ER_IF_EXPR = "ER_IF_EXPR";
+  public static final String ER_IF_EXPR_WELL_FORMED = "ER_IF_EXPR_WELL_FORMED";
   public static final String ER_EXPECTED_DOUBLE_QUOTE = 
 	 "ER_EXPECTED_DOUBLE_QUOTE";
   public static final String ER_EXPECTED_SINGLE_QUOTE = 
@@ -489,8 +492,17 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   { ER_EXPECTED_CLOSING_SQUARE_BRACKET,
      "Could not find token ]"},
   
+  { ER_CANNOT_APPLY_FUNC,
+     "FOTY0013 : An XPath operator ''{0}'' cannot have function type as its {1} operand."},
+  
+  { ER_MAP_DUPLICATE_KEY,
+     "XQDY0137 : An xdm map cannot have a duplicate key. More than one map entry with key {0} is attempted to be added to an xdm map."},
+  
   { ER_IF_EXPR,
-     "\"if\" keyword expected followed by \"(\" expr \")\"." },
+     "XPST0003 : An XPath 3.1 ''if'' keyword is not followed by ''(''...'')''." },
+  
+  { ER_IF_EXPR_WELL_FORMED,
+     "XPST0003 : An XPath 3.1 ''if'' keyword is not followed by a sequence of ''then'' and ''else'' keywords." },
 
   { ER_EXPECTED_DOUBLE_QUOTE,
       "misquoted literal... expected double quote!"},
@@ -690,7 +702,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
        "3 or 4"},
 
   { ER_VARIABLE_ACCESSED_BEFORE_BIND,
-       "Variable accessed before it is bound!"},
+       "XPST0008 : Variable accessed before it is bound."},
 
   { ER_FSB_CANNOT_TAKE_STRING,
        "XStringForFSB can not take a string for an argument!"},
@@ -714,7 +726,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
        "Can not call setShouldCacheNodes after nextNode has been called!"},
 
   { ER_ONLY_ALLOWS,
-       "{0} only allows {1} arguments"},
+       "XPST0017 : An XPath function ''{0}'' only allows {1} arguments."},
 
   { ER_UNKNOWN_STEP,
        "Programmer''s assertion in getNextStepPos: unknown stepType: {0}"},

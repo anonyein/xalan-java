@@ -19,12 +19,15 @@ package org.apache.xpath.functions.math;
 import javax.xml.transform.SourceLocator;
 
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.Function2Args;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathInlineFunction;
+import org.apache.xpath.patterns.NodeTest;
 
 import xml.xpath31.processor.types.XSDouble;
 import xml.xpath31.processor.types.XSNumericType;
@@ -47,14 +50,48 @@ public class FuncMathAtan2 extends Function2Args {
 		m_defined_arity = new Short[] { 2 };
 	}
     
+	/**
+     * Evaluate the function. The function must return a valid object.
+     * 
+     * @param xctxt The current execution context
+     * @return A valid XObject
+     *
+     * @throws javax.xml.transform.TransformerException
+     */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
     {
         XObject result = null;
         
         SourceLocator srcLocator = xctxt.getSAXLocator();
         
-        XObject arg0Result = getEffectiveFuncArgValue(getArg0(), xctxt);        
-        XObject arg1Result = getEffectiveFuncArgValue(getArg1(), xctxt);
+        Expression arg0 = getArg0();
+        
+        Expression arg1 = getArg1();
+        
+        if (arg0 instanceof NodeTest) {
+        	if (XslTransformEvaluationHelper.isNodeTestExpressionFuntionType((NodeTest)arg0)) {
+        		throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function atan2(), "
+        				                                                                + "but the supplied type is a function type, which cannot be atomized.", srcLocator); 
+        	}
+        }
+        else if (arg0 instanceof XPathInlineFunction) {
+        	  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function atan2(), but the "
+                       																   + "supplied type is a function type, which cannot be atomized.", srcLocator); 
+        }
+
+        if (arg1 instanceof NodeTest) {
+        	if (XslTransformEvaluationHelper.isNodeTestExpressionFuntionType((NodeTest)arg1)) {
+        		throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the second argument of XPath function atan2(), "
+        				                                                                + "but the supplied type is a function type, which cannot be atomized.", srcLocator); 
+        	}
+        }
+        else if (arg1 instanceof XPathInlineFunction) {
+        	throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the second argument of XPath function atan2(), but the "
+                       																   + "supplied type is a function type, which cannot be atomized.", srcLocator); 
+        }
+        
+        XObject arg0Result = getEffectiveFuncArgValue(arg0, xctxt);        
+        XObject arg1Result = getEffectiveFuncArgValue(arg1, xctxt);
         
         double lDouble = getDoubleValue(arg0Result, srcLocator, "first");
         double rDouble = getDoubleValue(arg1Result, srcLocator, "second");
@@ -81,9 +118,8 @@ public class FuncMathAtan2 extends Function2Args {
         }
         else if (xObject instanceof XMLNodeCursorImpl) {
            XMLNodeCursorImpl xNodeSet = (XMLNodeCursorImpl)xObject;
-           if (xNodeSet.getLength() != 1) {
-              throw new javax.xml.transform.TransformerException("XPTY0004 : The " + argNumStr + " argument to math:atan2 "
-                                                                       + "function must be a sequence of length one.", srcLocator);    
+           if (xNodeSet.getLength() != 1) {                            
+              throw new javax.xml.transform.TransformerException("XPTY0004 : The argument to XPath function call atan2() must be a sequence of length one.", srcLocator);
            }
            else {
               String strVal = xNodeSet.str();
@@ -93,9 +129,9 @@ public class FuncMathAtan2 extends Function2Args {
                  arg = (new XSDouble(strVal)).doubleValue();
               }
               catch (Exception ex) {
-                 throw new javax.xml.transform.TransformerException("FORG0001 : Error with the " + argNumStr + " argument of "
-                                                                          + "math:atan2. Cannot convert the string \"" + strVal + "\" "
-                                                                                                 + "to a double value.", srcLocator);
+            	 throw new javax.xml.transform.TransformerException("FORG0001 : Error occured during XPath function call atan2(). Cannot convert "
+																									                         + "string valued argument \"" + strVal + "\" to "
+																									                         + "a double value.", srcLocator);
               }
                
               resultVal = arg;
@@ -104,8 +140,7 @@ public class FuncMathAtan2 extends Function2Args {
         else if (xObject instanceof ResultSequence) {
             ResultSequence resultSeq = (ResultSequence)xObject;
             if (resultSeq.size() != 1) {
-               throw new javax.xml.transform.TransformerException("XPTY0004 : The " + argNumStr + " argument to math:atan2 "
-                                                                        + "function must be a sequence of length one.", srcLocator);    
+            	throw new javax.xml.transform.TransformerException("XPTY0004 : The argument to XPath function call atan2() must be a sequence of length one.", srcLocator);   
             }
             else {
                XObject val = resultSeq.item(0);
@@ -116,17 +151,17 @@ public class FuncMathAtan2 extends Function2Args {
                   arg = (new XSDouble(strVal)).doubleValue();
                }
                catch (Exception ex) {
-                  throw new javax.xml.transform.TransformerException("FORG0001 : Error with the " + argNumStr + " argument of "
-                                                                           + "math:atan2. Cannot convert the string \"" + strVal + "\" "
-                                                                                                  + "to a double value.", srcLocator);
+            	  throw new javax.xml.transform.TransformerException("FORG0001 : Error occured during XPath function call atan2(). Cannot convert "
+																								                         + "string valued argument \"" + strVal + "\" to "
+																								                         + "a double value.", srcLocator);
                }
                 
                resultVal = arg;
             }
         }
         else {
-           throw new javax.xml.transform.TransformerException("XPTY0004 : The item type of " + argNumStr + " argument to function "
-                                                                                                     + "math:atan2 is not xs:double.", srcLocator); 
+        	throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm item type of first argument to XPath function call atan2() is not "
+						                                                                                                + "an XML Schema type double.", srcLocator);
         }
         
         return resultVal; 

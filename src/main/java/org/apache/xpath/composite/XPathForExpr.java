@@ -25,7 +25,6 @@ import java.util.Vector;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.XMLNSDecl;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
@@ -56,8 +55,8 @@ public class XPathForExpr extends Expression {
     
     private static final long serialVersionUID = -7289739978026057248L;
 
-    private List<ForQuantifiedExprVarBinding> m_forExprVarBindingList = new 
-                                                    ArrayList<ForQuantifiedExprVarBinding>();
+    private List<XPathForAndQuantifiedExprVarBinding> m_forExprVarBindingList = new 
+                                                    ArrayList<XPathForAndQuantifiedExprVarBinding>();
     
     private String m_returnExprXPathStr = null;
     
@@ -78,11 +77,7 @@ public class XPathForExpr extends Expression {
 
     	SourceLocator srcLocator = xctxt.getSAXLocator();
 
-    	ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-    	List<XMLNSDecl> prefixTable = null;
-    	if (elemTemplateElement != null) {
-    		prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-    	}
+    	List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
 
     	if (prefixTable != null) {
     		m_returnExprXPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(m_returnExprXPathStr, 
@@ -92,7 +87,7 @@ public class XPathForExpr extends Expression {
     	XPath returnExprXPath = new XPath(m_returnExprXPathStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
 
     	ResultSequence resultSeq = getForExpressionEvalResult(m_forExprVarBindingList.listIterator(), 
-    			                                                                                  returnExprXPath, xctxt);       
+    			                                                                                  returnExprXPath, xctxt, prefixTable);       
     	
     	/**
     	 * An xdm sequence object 'resultSeq', may have items that are themselves sequence
@@ -114,13 +109,14 @@ public class XPathForExpr extends Expression {
      * @param returnExprXPath                            An XPath object, for XPath 'for' expression's
      *                                                   return expression.
      * @param xctxt                                      An XPathContext object
+     * @param prefixTable                                XML namespace prefix table object instance
      * @return                                           ResultSequence object, representing XPath 'for' 
      *                                                   expression's result.
      * @throws TransformerException
      */
     private ResultSequence getForExpressionEvalResult(ListIterator listIter, 
                                                                      XPath returnExprXPath, 
-                                                                     XPathContext xctxt) throws TransformerException {
+                                                                     XPathContext xctxt, List<XMLNSDecl> prefixTable) throws TransformerException {
         ResultSequence result = new ResultSequence();
         
         SourceLocator srcLocator = xctxt.getSAXLocator();
@@ -128,19 +124,13 @@ public class XPathForExpr extends Expression {
         final int contextNode = xctxt.getContextNode();
         
         if (listIter.hasNext()) {           
-           ForQuantifiedExprVarBinding forExprVarBinding = (ForQuantifiedExprVarBinding)listIter.next();            
+           XPathForAndQuantifiedExprVarBinding forExprVarBinding = (XPathForAndQuantifiedExprVarBinding)listIter.next();            
             
            // Evaluate the XPath 'for' expression's, variable binding 
            // XPath expression.
            
            String varName = forExprVarBinding.getVarName();
            String varBindingXPathStr = forExprVarBinding.getXPathExprStr();
-           
-           ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-           List<XMLNSDecl> prefixTable = null;
-           if (elemTemplateElement != null) {
-              prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-           }
            
            if (prefixTable != null) {
               varBindingXPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(
@@ -290,7 +280,7 @@ public class XPathForExpr extends Expression {
                              
                forExprVarBindingMap.put(new QName(varName), xdmItem);
                
-               ResultSequence rSeq = getForExpressionEvalResult(listIter, returnExprXPath, xctxt);
+               ResultSequence rSeq = getForExpressionEvalResult(listIter, returnExprXPath, xctxt, prefixTable);
                
                // Append xdm items of sequence 'rSeq', to the final 
                // sequence object 'resultSeq'.
@@ -371,11 +361,11 @@ public class XPathForExpr extends Expression {
     	return false;
     }
 
-    public List<ForQuantifiedExprVarBinding> getForExprVarBindingList() {
+    public List<XPathForAndQuantifiedExprVarBinding> getForExprVarBindingList() {
     	return m_forExprVarBindingList;
     }
 
-    public void setForExprVarBindingList(List<ForQuantifiedExprVarBinding> forExprVarBindingList) {
+    public void setForExprVarBindingList(List<XPathForAndQuantifiedExprVarBinding> forExprVarBindingList) {
     	this.m_forExprVarBindingList = forExprVarBindingList;
     }
 

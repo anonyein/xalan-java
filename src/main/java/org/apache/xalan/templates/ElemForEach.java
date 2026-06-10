@@ -45,9 +45,10 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.Keywords;
-import org.apache.xpath.composite.SequenceTypeData;
-import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.composite.XPathForExpr;
+import org.apache.xpath.composite.XPathNamedFunctionReference;
 import org.apache.xpath.composite.XPathSequenceConstructor;
 import org.apache.xpath.functions.Function;
 import org.apache.xpath.functions.XPathDynamicFunctionCall;
@@ -205,7 +206,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
   }
   
   /**
-   * An XPath expression for 'use-when' attribute. 
+   * An XPath expression for XSL attribute "use-when". 
    */
   private XPath m_useWhen = null;
 
@@ -224,7 +225,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
    * Method definition, to get the value of XSL attribute 
    * "use-when".
    * 
-   * @return			XPath expression for attribute "use-when"
+   * @return			    XPath expression for attribute "use-when"
    */
   public XPath getUseWhen()
   {
@@ -544,7 +545,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     else if (m_selectExpression instanceof Variable) {
         XObject evalResult = ((Variable)m_selectExpression).execute(xctxt);                
         
-        if (evalResult instanceof XSAnyAtomicType) {
+        if ((evalResult instanceof XSAnyAtomicType) || (evalResult instanceof XPathNamedFunctionReference)) {
         	ResultSequence resultSequence = new ResultSequence();
         	resultSequence.add(evalResult);
         	
@@ -570,7 +571,15 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
         	
         	return;
         }
-    }    
+    }
+    else if (m_selectExpression instanceof XPathNamedFunctionReference) {
+    	ResultSequence resultSequence = new ResultSequence();
+    	resultSequence.add((XPathNamedFunctionReference)m_selectExpression);
+    	
+    	processSequenceOrArray(transformer, xctxt, resultSequence);
+    	
+        return;
+    }
     else if (m_selectExpression instanceof Operation) {
         XObject  evalResult = m_selectExpression.execute(xctxt);
         
@@ -660,13 +669,9 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
                      
                String varRefXPathExprStr = "$" + xpathPatternStr.substring(1, xpathPatternStr.indexOf('['));
                String xpathIndexExprStr = xpathPatternStr.substring(xpathPatternStr.indexOf('[') + 1, 
-                                                                                            xpathPatternStr.indexOf(']'));
-               
-               ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-               List<XMLNSDecl> prefixTable = null;
-               if (elemTemplateElement != null) {
-                  prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-               }
+                                                                                            xpathPatternStr.indexOf(']'));               
+
+               List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
                     
                // Evaluate the, variable reference XPath expression
                if (prefixTable != null) {
@@ -1060,6 +1065,8 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 	   
 	   final int sourceNode = xctxt.getCurrentNode();
 	   
+	   boolean isHomogeneousSource = evalResult.isHomogeneousSource();
+	   
 	   if (evalResult instanceof ResultSequence) {
 		   ResultSequence resultSeq = (ResultSequence)evalResult;
 		   xdmItemList = resultSeq.getResultSequenceItems();   
@@ -1161,7 +1168,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   if ((dataTypeStr != null) && !("text".equals(dataTypeStr) || "number".equals(dataTypeStr))) {							  
 						   XPath seqTypeXPath = new XPath(dataTypeStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);            
 						   XObject seqTypeObj = seqTypeXPath.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());            
-						   SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeObj;
+						   XPathSequenceTypeData seqExpectedTypeData = (XPathSequenceTypeData)seqTypeObj;
 						   InstanceOf instanceOf = new InstanceOf();
 						   XObject xObj = instanceOf.operate(resultSeqItem, seqExpectedTypeData);
 						   if (!xObj.bool()) {
@@ -1171,7 +1178,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 																													   + "data-type attribute.", srcLocator);  
 						   }
 
-						   if (seqExpectedTypeData.getBuiltInSequenceType() == SequenceTypeSupport.STRING) {
+						   if (seqExpectedTypeData.getBuiltInSequenceType() == XPathSequenceTypeSupport.STRING) {
 							   dataTypeStr = "text"; 
 						   }
 					   }						  
@@ -1327,7 +1334,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   resultSeqItem = ((XMLNodeCursorImpl)resultSeqItem).getFresh(); 
 				   }
 
-				   setXPathContextForXslSequenceProcessing(sortableItemList.size(), idx, resultSeqItem, xctxt);
+				   setXPathContextForXslSequenceProcessing(sortableItemCount, idx, resultSeqItem, xctxt);
 
 				   for (ElemTemplateElement elemTemplateElem = this.m_firstChild; elemTemplateElem != null; 
 						   elemTemplateElem = elemTemplateElem.m_nextSibling) {
@@ -1347,7 +1354,14 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					  resultSeqItem = resultSeqItem.getFresh();
 				   }
 				   
-				   setXPathContextForXslSequenceProcessing(xdmItemList.size(), idx, resultSeqItem, xctxt);
+				   if (isHomogeneousSource) {
+					  xctxt.setXPath3ContextSize(xdmItemList.size());
+				      xctxt.setXPath3ContextItem(resultSeqItem);
+				      xctxt.setXPath3ContextPosition(idx + 1); 
+				   }
+				   else {
+				      setXPathContextForXslSequenceProcessing(inpSeqSize, idx, resultSeqItem, xctxt);
+				   }
 
 				   int count = 0;
 				   for (ElemTemplateElement elemTemplateElem = this.m_firstChild; elemTemplateElem != null; 
@@ -1380,7 +1394,14 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					  }
 				   }
 
-				   resetXPathContextForXslSequenceProcessing(resultSeqItem, xctxt);
+				   if (isHomogeneousSource) {
+					  xctxt.setXPath3ContextSize(-1);
+				      xctxt.setXPath3ContextItem(null);
+				      xctxt.setXPath3ContextPosition(-1); 
+				   }
+				   else {
+				      resetXPathContextForXslSequenceProcessing(resultSeqItem, xctxt);
+				   }
 			   }
 		   }
         }		   

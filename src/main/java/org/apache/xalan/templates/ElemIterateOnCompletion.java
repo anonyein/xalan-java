@@ -31,7 +31,7 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.operations.Operation;
-import org.apache.xpath.operations.UnaryOperation;
+import org.apache.xpath.operations.XPath3UnaryOperation;
 import org.xml.sax.SAXException;
 
 /**
@@ -89,6 +89,33 @@ public class ElemIterateOnCompletion extends ElemTemplateElement implements Expr
      public Expression getExpression()
      {
          return m_selectExpression;
+     }
+     
+     /**
+      * An XPath expression for XSL attribute "use-when". 
+      */
+     private XPath m_useWhen = null;
+
+     /**
+      * Method definition, to set the value of XSL attribute 
+      * "use-when".
+      * 
+      * @param xpath            XPath expression for attribute "use-when"
+      */
+     public void setUseWhen(XPath xpath)
+     {
+    	 m_useWhen = xpath;  
+     }
+
+     /**
+      * Method definition, to get the value of XSL attribute 
+      * "use-when".
+      * 
+      * @return			        XPath expression for attribute "use-when"
+      */
+     public XPath getUseWhen()
+     {
+    	 return m_useWhen;
      }
      
      /**
@@ -245,8 +272,8 @@ public class ElemIterateOnCompletion extends ElemTemplateElement implements Expr
     				  result = isXslIterOnCompletionExprAccXPathCtxt(rOp); 
     			   }
     		   }
-    		   else if (expr instanceof UnaryOperation) {
-    			   UnaryOperation opn1 = (UnaryOperation)expr;
+    		   else if (expr instanceof XPath3UnaryOperation) {
+    			   XPath3UnaryOperation opn1 = (XPath3UnaryOperation)expr;
     			   Expression rOp = opn1.getExpression();
     			   result = isXslIterOnCompletionExprAccXPathCtxt(rOp);
     		   }

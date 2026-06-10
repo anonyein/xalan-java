@@ -33,7 +33,7 @@ import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
-import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.objects.XNodeSetForDOM;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XRTreeFrag;
@@ -94,6 +94,33 @@ public class ElemIterateNextIteration extends ElemTemplateElement implements Exp
 	public Expression getExpression()
 	{
 		return m_selectExpression;
+	}
+	
+	/**
+	 * An XPath expression for XSL attribute "use-when". 
+	 */
+	private XPath m_useWhen = null;
+
+	/**
+	 * Method definition, to set the value of XSL attribute 
+	 * "use-when".
+	 * 
+	 * @param xpath            XPath expression for attribute "use-when"
+	 */
+	public void setUseWhen(XPath xpath)
+	{
+		m_useWhen = xpath;  
+	}
+
+	/**
+	 * Method definition, to get the value of XSL attribute 
+	 * "use-when".
+	 * 
+	 * @return			        XPath expression for attribute "use-when"
+	 */
+	public XPath getUseWhen()
+	{
+		return m_useWhen;
 	}
 
 	/**
@@ -270,7 +297,7 @@ public class ElemIterateNextIteration extends ElemTemplateElement implements Exp
 					String withParamAsAttr = elemWithParam.getAs();
 					if (withParamAsAttr != null) {
 						try {
-							withParamVal = SequenceTypeSupport.castXdmValueToAnotherType(withParamVal, withParamAsAttr, null, xctxt);
+							withParamVal = XPathSequenceTypeSupport.castXdmValueToAnotherType(withParamVal, withParamAsAttr, null, xctxt);
 						}
 						catch (TransformerException ex) {
 							if (withParamSelectVal != null) {
@@ -320,7 +347,7 @@ public class ElemIterateNextIteration extends ElemTemplateElement implements Exp
 						String withParamAsAttr = elemWithParam.getAs();
 						if (withParamAsAttr != null) {
 							try {
-								withParamVal = SequenceTypeSupport.castXdmValueToAnotherType(withParamVal, withParamAsAttr, null, xctxt);
+								withParamVal = XPathSequenceTypeSupport.castXdmValueToAnotherType(withParamVal, withParamAsAttr, null, xctxt);
 							}
 							catch (TransformerException ex) {
 								if (withParamSelectVal != null) {
@@ -335,7 +362,7 @@ public class ElemIterateNextIteration extends ElemTemplateElement implements Exp
 						
 						String paramAsAttr = paramData.getAsAttrValue();
 						if (paramAsAttr != null) {
-							withParamVal = SequenceTypeSupport.castXdmValueToAnotherType(withParamVal, paramAsAttr, null, xctxt);
+							withParamVal = XPathSequenceTypeSupport.castXdmValueToAnotherType(withParamVal, paramAsAttr, null, xctxt);
 						}
 
 						paramNewValueMap.put(xslWithParamQName, withParamVal);

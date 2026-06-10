@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.operations;
 
 import java.util.ArrayList;
@@ -42,7 +39,7 @@ import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * The '!=' operation expression executer.
+ * An XPath 3.1 operator '!=' evaluator.
  */
 public class NotEquals extends Operation
 {
@@ -51,11 +48,10 @@ public class NotEquals extends Operation
   /**
    * Apply the operation to two operands, and return the result.
    *
+   * @param left non-null reference to the evaluated left operand
+   * @param right non-null reference to the evaluated right operand
    *
-   * @param left non-null reference to the evaluated left operand.
-   * @param right non-null reference to the evaluated right operand.
-   *
-   * @return non-null reference to the XObject that represents the result of the operation.
+   * @return non-null reference to the XObject that represents the result of the operation
    *
    * @throws javax.xml.transform.TransformerException
    */
@@ -71,6 +67,34 @@ public class NotEquals extends Operation
 	  
 	  if (right instanceof XPathArray) {
 		 right = ((XPathArray)right).atomize(); 
+	  }
+	  
+	  if ((left instanceof XSString || left instanceof XString) && 
+			  												(right instanceof XSNumericType || right instanceof XNumber)) {
+		  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(left);
+		  if (str1.startsWith("0")) { 
+			  throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm string value '" + str1 + "' cannot be compared to an integer.");
+		  }
+	  }
+
+	  if ((right instanceof XSString || right instanceof XString) && 
+			  												(left instanceof XSNumericType || left instanceof XNumber)) {
+		  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(right);
+		  if (str1.startsWith("0")) { 
+			  throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm string value '" + str1 + "' cannot be compared to an integer.");
+		  }
+	  }
+	  
+	  if ((left instanceof ResultSequence) && (((ResultSequence)left).size() == 0)) {
+		  result = XBoolean.S_FALSE;
+
+		  return result;
+	  }
+	  
+	  if ((right instanceof ResultSequence) && (((ResultSequence)right).size() == 0)) {
+		  result = XBoolean.S_FALSE;
+
+		  return result;
 	  }
 	  
 	  XObject lObj = null;
@@ -283,47 +307,35 @@ public class NotEquals extends Operation
 	  }
 	  else if ((left instanceof XString) && ((right instanceof XSNumericType) || (right instanceof XNumber))) {
 		  XString lStr = (XString)left;
-		  if (lStr.isXrTreeFragSelectWrapperResult()) {
-			  java.lang.String strVal1 = lStr.str();
-			  double dbl1 = 0;
-			  try {
-				  dbl1 = (Double.valueOf(strVal1)).doubleValue();
-			  }
-			  catch (NumberFormatException ex) {
-				  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath numeric comparison with = operator, has LHS operand value as non-numeric.");
-			  }
-			  
-			  java.lang.String strVal2 = XslTransformEvaluationHelper.getStrVal(right);
-			  double dbl2 = (Double.valueOf(strVal2)).doubleValue();
-			  
-			  result = ((dbl1 != dbl2) ? XBoolean.S_TRUE : XBoolean.S_FALSE);  
+		  java.lang.String strVal1 = lStr.str();
+		  double dbl1 = 0;
+		  try {
+			  dbl1 = (Double.valueOf(strVal1)).doubleValue();
 		  }
-		  else {
-			  throw new javax.xml.transform.TransformerException("XPTY0004 : Within an XPath expression, number cannot be "
-					  																							+ "compared to a string value.");  
+		  catch (NumberFormatException ex) {
+			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath numeric comparison with = operator, has LHS operand value as non-numeric.");
 		  }
+
+		  java.lang.String strVal2 = XslTransformEvaluationHelper.getStrVal(right);
+		  double dbl2 = (Double.valueOf(strVal2)).doubleValue();
+
+		  result = ((dbl1 != dbl2) ? XBoolean.S_TRUE : XBoolean.S_FALSE);  
 	  }
 	  else if (((left instanceof XSNumericType) || (left instanceof XNumber)) && (right instanceof XString)) {
-		  XString rStr = (XString)right;
-		  if (rStr.isXrTreeFragSelectWrapperResult()) {			  			  			  
-			  java.lang.String strVal1 = rStr.str();
-			  double dbl1 = 0;
-			  try {
-				  dbl1 = (Double.valueOf(strVal1)).doubleValue();
-			  }
-			  catch (NumberFormatException ex) {
-				  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath numeric comparison with = operator, has RHS operand value as non-numeric.");
-			  }
-			  
-			  java.lang.String strVal2 = XslTransformEvaluationHelper.getStrVal(left);
-			  double dbl2 = (Double.valueOf(strVal2)).doubleValue();
-			  
-			  result = ((dbl1 != dbl2) ? XBoolean.S_TRUE : XBoolean.S_FALSE);
+		  XString rStr = (XString)right;		  			  			  
+		  java.lang.String strVal1 = rStr.str();
+		  double dbl1 = 0;
+		  try {
+			  dbl1 = (Double.valueOf(strVal1)).doubleValue();
 		  }
-		  else {
-			  throw new javax.xml.transform.TransformerException("XPTY0004 : Within an XPath expression, number cannot be "
-					  																							+ "compared to a string value.");  
+		  catch (NumberFormatException ex) {
+			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath numeric comparison with = operator, has RHS operand value as non-numeric.");
 		  }
+
+		  java.lang.String strVal2 = XslTransformEvaluationHelper.getStrVal(left);
+		  double dbl2 = (Double.valueOf(strVal2)).doubleValue();
+
+		  result = ((dbl1 != dbl2) ? XBoolean.S_TRUE : XBoolean.S_FALSE);
 	  }
       else if ((left instanceof XSString) && ((right instanceof XSNumericType) || (right instanceof XNumber))) {
 		 throw new javax.xml.transform.TransformerException("XPTY0004 : Within an XPath expression, number cannot be "

@@ -24,13 +24,14 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.stream.IntStream;
 
+import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.templates.AVT;
 import org.apache.xalan.templates.Constants;
-import org.apache.xalan.templates.ElemApplyTemplates;
+import org.apache.xalan.templates.ElemCatch;
 import org.apache.xalan.templates.ElemForEachGroup;
 import org.apache.xalan.templates.ElemFunction;
 import org.apache.xalan.templates.ElemTemplate;
@@ -821,33 +822,35 @@ public class XSLTAttributeDef
             throws org.xml.sax.SAXException
   {
 
-    try
-    {
-      XPath expr = null;
-      
-      String normalizedStrValue = null;
-      if ((owner instanceof ElemForEachGroup) && ((Constants.ATTRNAME_GROUPBY).equals(name) || 
-    		                                      (Constants.ATTRNAME_GROUP_ADJACENT).equals(name))) {
-    	 if (value != null) {
-    		normalizedStrValue = getForEachGroupAttrNormalizedStrValue(value);    		
-    		if (normalizedStrValue != null) {
-    		   expr = handler.createXPath(normalizedStrValue, owner);
-    		   
-    		   return expr;
-    		}
-    	 }
-      }
-                  
-      value = processUriQualifiedName(handler, value);
-      
-      expr = handler.createXPath(value, owner);  
+	  try
+	  {
+		  XPath expr = null;
 
-      return expr;
-    }
-    catch (TransformerException te)
-    {
-       throw new org.xml.sax.SAXException(te);
-    }
+		  String normalizedStrValue = null;
+		  if ((owner instanceof ElemForEachGroup) && ((Constants.ATTRNAME_GROUPBY).equals(name) || 
+				  																			(Constants.ATTRNAME_GROUP_ADJACENT).equals(name))) {
+			  if (value != null) {
+				  normalizedStrValue = getForEachGroupAttrNormalizedStrValue(value);    		
+				  if (normalizedStrValue != null) {
+					  expr = handler.createXPath(normalizedStrValue, owner);
+
+					  return expr;
+				  }
+			  }
+		  }
+
+		  value = processUriQualifiedName(handler, value);
+
+		  expr = handler.createXPath(value, owner);  
+
+		  return expr;
+	  }
+	  catch (TransformerException te)
+	  {
+		  String errMessage = getErrorMessageStrUsingLocator(te);
+
+		  throw new org.xml.sax.SAXException(new Exception(errMessage));
+	  }
   }
 
   /**
@@ -916,28 +919,30 @@ public class XSLTAttributeDef
             throws org.xml.sax.SAXException
   {
 
-    try
-    {
-      if (value.contains("current-group()")) {
-    	 throw new TransformerException("XTSE1060 : A current-group() function cannot be used within a pattern. "
-    	 		                                                             + "An erroneous pattern string used within the stylesheet is " + value + ".");   
-      }
-      
-      if (value.contains("current-grouping-key()")) {
-     	 throw new TransformerException("XTSE1070 : A current-grouping-key() function cannot be used within a pattern. "
-     	 		                                                             + "An erroneous pattern string used within the stylesheet is " + value + ".");   
-      }
-      
-      value = processUriQualifiedName(handler, value);
-      
-      XPath pattern = handler.createMatchPatternXPath(value, owner);
+	  try
+	  {
+		  if (value.contains("current-group()")) {
+			  throw new TransformerException("XTSE1060 : A current-group() function cannot be used within a pattern. "
+					  																					+ "An erroneous pattern string used within the stylesheet is " + value + ".");   
+		  }
 
-      return pattern;
-    }
-    catch (TransformerException te)
-    {
-      throw new org.xml.sax.SAXException(te);
-    }
+		  if (value.contains("current-grouping-key()")) {
+			  throw new TransformerException("XTSE1070 : A current-grouping-key() function cannot be used within a pattern. "
+					  																				    + "An erroneous pattern string used within the stylesheet is " + value + ".");   
+		  }
+
+		  value = processUriQualifiedName(handler, value);
+
+		  XPath pattern = handler.createMatchPatternXPath(value, owner);
+
+		  return pattern;
+	  }
+	  catch (TransformerException te)
+	  {
+		  String errMessage = getErrorMessageStrUsingLocator(te);
+
+		  throw new org.xml.sax.SAXException(new Exception(errMessage));
+	  }
   }
 
   /**
@@ -1051,30 +1056,31 @@ public class XSLTAttributeDef
     			return null; 
         	 }
     	  }
-    	  else if ((owner instanceof ElemApplyTemplates) && (Constants.ATTRNAME_MODE).equals(name) && 
-    			                                                                                 (Constants.ATTRVAL_DEFAULT_PREFIX).equals(value)) {
-    		  // We use, an XML non-standard namespace for this QName object 
-    		  // instance, because string #default is not a valid QName string.
-    		  qname = new QName("http://xml.apache.org/xalan/java", "default", true); 
-    	  }
-    	  else if ((owner instanceof ElemApplyTemplates) && (Constants.ATTRNAME_MODE).equals(name) && 
-    			                                                                                 (Constants.ATTRVAL_UNNAMED_PREFIX).equals(value)) {
-    		  // We use, an XML non-standard namespace for this QName object 
-    		  // instance, because string #unnamed is not a valid QName string.
-    		  qname = new QName("http://xml.apache.org/xalan/java", "unnamed", true); 
-    	  }
-    	  else if ((owner instanceof ElemApplyTemplates) && (Constants.ATTRNAME_MODE).equals(name) && 
-    			                                                                                 (Constants.ATTRVAL_CURRENT_PREFIX).equals(value)) {
-    		  // We use, an XML non-standard namespace for this QName object 
-    		  // instance, because string #current is not a valid QName string.
-    		  qname = new QName("http://xml.apache.org/xalan/java", "current", true); 
-    	  }
-    	  else if ((owner instanceof ElemTemplate) && (Constants.ATTRNAME_MODE).equals(name) && 
-    			                                                                                 (Constants.ATTRVAL_ALL_PREFIX).equals(value)) {
-    		  // We use, an XML non-standard namespace for this QName object 
-    		  // instance, because string #all is not a valid QName string.
-    		  qname = new QName("http://xml.apache.org/xalan/java", "all", true); 
-    	  }
+    	  else if ((Constants.ATTRNAME_MODE).equals(name)) {
+    		  if ((Constants.ATTRVAL_DEFAULT_PREFIX).equals(value)) {
+    			  // We use, an XML non-standard namespace for this QName object 
+    			  // instance, because string #default is not a valid QName string.
+    			  qname = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_DEFAULT, true);
+    		  }
+    		  else if ((Constants.ATTRVAL_UNNAMED_PREFIX).equals(value)) {
+    			  // We use, an XML non-standard namespace for this QName object 
+    			  // instance, because string #unnamed is not a valid QName string.
+    			  qname = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_UNNAMED, true);   
+    		  }
+    		  else if ((Constants.ATTRVAL_CURRENT_PREFIX).equals(value)) {
+    			  // We use, an XML non-standard namespace for this QName object 
+    			  // instance, because string #current is not a valid QName string.
+    			  qname = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_CURRENT, true);    
+    		  }
+    		  else if ((Constants.ATTRVAL_ALL_PREFIX).equals(value)) {
+    			  // We use, an XML non-standard namespace for this QName object 
+    			  // instance, because string #all is not a valid QName string.
+    			  qname = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_ALL, true);   
+    		  }
+    		  else {
+    			  qname = new QName(value, handler, true);
+    		  }
+    	  }    	  
     	  else {
     		  qname = new QName(value, handler, true);
     	  }   	      	  
@@ -1211,35 +1217,72 @@ public class XSLTAttributeDef
    * namespace.  (See section 2.4 of XSLT 1.0.)
    *
    * @param handler non-null reference to current StylesheetHandler that is constructing the Templates.
-   * @param uri The Namespace URI, or an empty string.
-   * @param name The local name (without prefix), or empty string if not namespace processing.
-   * @param rawName The qualified name (with prefix).
-   * @param value A whitespace delimited list of qualified names.
+   * @param uri The Namespace URI, or an empty string
+   * @param name The local name (without prefix), or empty string if not namespace processing
+   * @param rawName The qualified name (with prefix)
+   * @param value A whitespace delimited list of qualified names
+   * @param owner The context XSL stylesheet element reference
    *
-   * @return a Vector of QName objects.
+   * @return a Vector of QName objects
    *
    * @throws org.xml.sax.SAXException if the one of the qualified name strings
    * contains a prefix that can not be
    * resolved, or a qualified name contains syntax that is invalid for a qualified name.
    */
   Vector processQNAMES(
-          StylesheetHandler handler, String uri, String name, String rawName, String value)
+          StylesheetHandler handler, String uri, String name, String rawName, String value, ElemTemplateElement owner)
             throws org.xml.sax.SAXException
   {
 
-    StringTokenizer tokenizer = new StringTokenizer(value, " \t\n\r\f");
-    int nQNames = tokenizer.countTokens();
-    Vector qnames = new Vector(nQNames);
-    
-    Node node = handler.getOriginatingNode();
+	  StringTokenizer tokenizer = new StringTokenizer(value, " \t\n\r\f");
+	  int nQNames = tokenizer.countTokens();
+	  
+	  Vector qnames = new Vector(nQNames);
 
-    for (int i = 0; i < nQNames; i++)
-    {
-      // Fix from Alexander Rudnev
-      qnames.addElement(new QName(tokenizer.nextToken(), handler));
-    }
+	  Node node = handler.getOriginatingNode();
 
-    return qnames;
+	  for (int i = 0; i < nQNames; i++)
+	  {
+		  // Fix from Alexander Rudnev
+		  String str1 = tokenizer.nextToken();
+
+		  if ((Constants.ATTRNAME_MODE).equals(name)) {
+			  QName qname = null;    	  
+			  if ((Constants.ATTRVAL_DEFAULT_PREFIX).equals(value)) {
+				  // We use, an XML non-standard namespace for this QName object 
+				  // instance, because string #default is not a valid QName string.
+				  qname = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_DEFAULT, true);
+			  }
+			  else if ((Constants.ATTRVAL_UNNAMED_PREFIX).equals(value)) {
+				  // We use, an XML non-standard namespace for this QName object 
+				  // instance, because string #unnamed is not a valid QName string.
+				  qname = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_UNNAMED, true);   
+			  }
+			  else if ((Constants.ATTRVAL_CURRENT_PREFIX).equals(value)) {
+				  // We use, an XML non-standard namespace for this QName object 
+				  // instance, because string #current is not a valid QName string.
+				  qname = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_CURRENT, true);    
+			  }
+			  else if ((Constants.ATTRVAL_ALL_PREFIX).equals(value)) {
+				  // We use, an XML non-standard namespace for this QName object 
+				  // instance, because string #all is not a valid QName string.
+				  qname = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_ALL, true);   
+			  }
+			  else {
+				  qname = new QName(str1, handler, true);
+			  }
+
+			  qnames.addElement(qname);
+		  }      
+		  else if (!((Constants.ATTRNAME_ERRORS).equals(name) && (owner instanceof ElemCatch))) {
+			  qnames.addElement(new QName(str1, handler));
+		  }
+		  else {
+			  qnames.addElement(new QName(str1, handler, owner)); 
+		  }		  
+	  }
+
+	  return qnames;
   }
 
  /**
@@ -1600,7 +1643,7 @@ public class XSLTAttributeDef
       processedValue = processQNAME(handler, uri, name, rawName, value, owner);
       break;
     case T_QNAMES :
-      processedValue = processQNAMES(handler, uri, name, rawName, value);
+      processedValue = processQNAMES(handler, uri, name, rawName, value, owner);
       break;
 	case T_QNAMES_RESOLVE_NULL:
       processedValue = processQNAMESRNU(handler, uri, name, rawName, value);
@@ -1941,6 +1984,30 @@ public class XSLTAttributeDef
 	  }
 	  
 	  return result;
+  }
+  
+  /**
+   * Method definition, to get an error message string that has error
+   * location information if available within the supplied TransformerException
+   * object. 
+   * 
+   * @param te								XSL transformation TransformerException 
+   *                                        object instance.
+   * @return                                Error message string
+   */
+  private String getErrorMessageStrUsingLocator(TransformerException te) {
+	  
+	  String errMessage = te.getMessage();
+	  SourceLocator srcLocator = te.getLocator();
+	  int lineNo;
+	  int colNo;
+	  if (srcLocator != null) {
+		  lineNo = srcLocator.getLineNumber();
+		  colNo = srcLocator.getColumnNumber();
+		  errMessage = "Line# : "+lineNo + ", Column# : " + colNo + " " + errMessage;  
+	  }
+	  
+	  return errMessage;
   }
   
 }

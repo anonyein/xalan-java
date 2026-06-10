@@ -75,9 +75,12 @@ import org.apache.xalan.templates.ElemGlobalContextItem;
 import org.apache.xalan.templates.ElemIf;
 import org.apache.xalan.templates.ElemIterate;
 import org.apache.xalan.templates.ElemLiteralResult;
+import org.apache.xalan.templates.ElemMap;
+import org.apache.xalan.templates.ElemMapEntry;
 import org.apache.xalan.templates.ElemMatchingSubstring;
 import org.apache.xalan.templates.ElemMessage;
 import org.apache.xalan.templates.ElemMode;
+import org.apache.xalan.templates.ElemNextMatch;
 import org.apache.xalan.templates.ElemNonMatchingSubstring;
 import org.apache.xalan.templates.ElemNumber;
 import org.apache.xalan.templates.ElemOtherwise;
@@ -136,8 +139,8 @@ import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.compiler.SharedLexerState;
-import org.apache.xpath.composite.SequenceTypeData;
-import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
@@ -2753,7 +2756,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
       }
 
       // If that didn't locate a node, fall back to a default template rule.
-      // See http://www.w3.org/TR/xslt#built-in-rule.
+      // See https://www.w3.org/TR/xslt-30/#built-in-rule.
       if (null == template)
       {
         switch (nodeType)
@@ -3049,7 +3052,11 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
     	int currentNode = xctxt.getCurrentNode();
     	SourceLocator srcLocator = xctxt.getSAXLocator();
     	for (; t != null; t = t.getNextSiblingElem())
-    	{
+    	{    		
+    		if (t.getParentElem() != null) {
+    		   expandTextErrorHandling(t);
+    	    }
+    		
     		xslParamOffset++;
     		if (!shouldAddAttrs
     				&& t.getXSLToken() == Constants.ELEMNAME_ATTRIBUTE)
@@ -3065,8 +3072,8 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
     			String sequenceTypeXPathExprStr = elemWithParam.getAs();    			 
     			XPath seqTypeXPath = new XPath(sequenceTypeXPathExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);
   			    XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
-  			    SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeExpressionEvalResult;
-    			XObject convertedObjValue = SequenceTypeSupport.castXdmValueToAnotherType(withParamValue, sequenceTypeXPathExprStr, seqExpectedTypeData, xctxt);
+  			    XPathSequenceTypeData seqExpectedTypeData = (XPathSequenceTypeData)seqTypeExpressionEvalResult;
+    			XObject convertedObjValue = XPathSequenceTypeSupport.castXdmValueToAnotherType(withParamValue, sequenceTypeXPathExprStr, seqExpectedTypeData, xctxt);
     			if (convertedObjValue == null) {
     			   throw new TransformerException("An XSL template parameter argument " + (elemWithParam.getName()).toString() + " "
     			   		                                                                + "is not valid with the specified sequence type " 
@@ -4675,8 +4682,20 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 		this.m_source = source;
 	}
 	
+	public String getUriStrOfXslStylesheet() {
+		return m_uriStrOfXslStylesheet;
+	}
+
+	public void setUriStrOfXslStylesheet(String uriStrOfXslStylesheet) {
+		this.m_uriStrOfXslStylesheet = uriStrOfXslStylesheet;
+	}
+
+	public void setXslNextMatchWithParamList(List<ElemWithParam> xslWithParamList) {		
+		m_xslWithParamList = xslWithParamList; 		
+	}
+	
 	/**
-	 * Method definition to populate CharacterMapConfig run-time 
+	 * Method definition, to populate CharacterMapConfig run-time 
 	 * object from all eligible XSL xsl:output-character elements,
 	 * and set this information within an XSL run-time SerializationHandler 
 	 * object instance. 
@@ -4811,7 +4830,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 	}
 	
 	/**
-	 * Method definition to check, whether within an XPath expression, any XSL 
+	 * Method definition, to check whether within an XPath expression, any XSL 
 	 * stylesheet function call reference has a corresponding xsl:function 
 	 * definition present within the stylesheet. 
 	 * 
@@ -5215,6 +5234,30 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 						  xpathDefaultNamespace = ((ElemAssert)xslElem).getXpathDefaultNamespace();  
 					  }
 				  }
+				  else if (xslElem instanceof ElemNextMatch) {
+					  if (((ElemNextMatch)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemNextMatch)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemNextMatch)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemMap) {
+					  if (((ElemMap)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemMap)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemMap)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemMapEntry) {
+					  if (((ElemMapEntry)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemMapEntry)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemMapEntry)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
 				  
 				  ElemTemplateElement elemTemplateChild = xslElem.getFirstChildElem();
 				  updateXPathDefaultNamespace(elemTemplateChild, xpathDefaultNamespace);
@@ -5485,7 +5528,31 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 					  else {
 						  expandText = ((ElemAssert)xslElem).getExpandText();  
 					  }
-				  }				  
+				  }
+				  else if (xslElem instanceof ElemNextMatch) {
+					  if (!(((ElemNextMatch)xslElem).getExpandTextDeclared())) {
+						  ((ElemNextMatch)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemNextMatch)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemMap) {
+					  if (!(((ElemMap)xslElem).getExpandTextDeclared())) {
+						  ((ElemMap)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemMap)xslElem).getExpandText();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemMapEntry) {
+					  if (!(((ElemMapEntry)xslElem).getExpandTextDeclared())) {
+						  ((ElemMapEntry)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemMapEntry)xslElem).getExpandText();  
+					  }
+				  }
 
 				  ElemTemplateElement elemTemplateChild = xslElem.getFirstChildElem();
 				  updateExpandTextAttrValue(elemTemplateChild, expandText);
@@ -5494,17 +5561,57 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 			  }		 
 		 }
    }
+	  
+   /**
+    * Method definition, to do XSL "expand-text" processing error handling.
+    * 
+    * An XSL "expand-text" before processing, cannot produce an XML element between 
+    * open and closing "expand-text" curly braces.
+    * 	  
+    * @param t									 The context ElemTemplateElement object instance
+    * @throws TransformerException
+    */
+   private void expandTextErrorHandling(ElemTemplateElement t) throws TransformerException {
+	   List<Object> list1 = new ArrayList<Object>();    			
+	   boolean isExpandText = t.getExpandTextValue(t.getParentElem());
+	   if ((t instanceof ElemLiteralResult) && isExpandText) {
+		   // Checking whether, during XSL expand-text processing, open and closing 
+		   // curly braces contain XML elements which is an XSL stylesheet error.
+		   ElemLiteralResult lre = (ElemLiteralResult)t;
+		   ElemTemplateElement elem1 = lre.getFirstChildElem();
+		   while (elem1 != null) {
+			   if (elem1 instanceof ElemTextLiteral) {
+				   char[] chars = ((ElemTextLiteral)elem1).getChars();    				      
+				   String strValue = String.valueOf(chars);
+				   list1.add(strValue);
+			   }
+			   else {
+				   list1.add(elem1);
+			   }
 
-	  public String getUriStrOfXslStylesheet() {
-		  return m_uriStrOfXslStylesheet;
-	  }
+			   elem1 = elem1.getNextSiblingElem();
+		   }
 
-	  public void setUriStrOfXslStylesheet(String uriStrOfXslStylesheet) {
-		  this.m_uriStrOfXslStylesheet = uriStrOfXslStylesheet;
-	  }
-
-	  public void setXslNextMatchWithParamList(List<ElemWithParam> xslWithParamList) {		
-		  m_xslWithParamList = xslWithParamList; 		
+		   int size1 = list1.size();
+		   if (size1 >= 3) {
+			   for (int i = 0; i < size1; i++) {
+				   Object obj1 = list1.get(i);
+				   if ((obj1 instanceof String) && ((String)obj1).endsWith("{")) {
+					   if (((i + 1) < size1) && ((i + 2) < size1)) {
+						   Object obj2 = list1.get(i + 2);
+						   if (((obj2 instanceof String) && ((String)obj2).startsWith("}")) && 
+																							   ((list1.get(i + 1) instanceof ElemLiteralResult) || 
+																									   (list1.get(i + 1) instanceof ElemElement))) {
+							   ElemTemplateElement elemTemplateElement = (ElemTemplateElement)(list1.get(i + 1));
+							   throw new TransformerException("XPST0003 : No XML elements are allowed within a pair of open and closing "
+																												   + "curly braces while processing string value "
+																												   + "using XSL 'expand-text' attribute set to true/yes.", elemTemplateElement);
+						   }
+					   }
+				   }
+			   }
+		   }
+	     }
 	  }
 
 }  // end TransformerImpl class

@@ -17,14 +17,16 @@
  */
 package org.apache.xpath.functions.context;
 
+import org.apache.xalan.templates.ElemForEachGroup;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.SubContextList;
 import org.apache.xpath.compiler.Compiler;
 import org.apache.xpath.functions.Function;
-import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+
+import xml.xpath31.processor.types.XSInteger;
 
 /**
  * Implementation of the XPath 3.1 function fn:last.
@@ -97,22 +99,30 @@ public class FuncLast extends Function
   }
 
   /**
-   * Evaluate the function. The function must return a valid 
-   * object.
+   * Evaluate the function. The function must return a valid object.
    * 
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
+   * @param xctxt The current execution context
+   * @return A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
   public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
   {
-    XNumber xnum = null;
-    
-    double pos = (xctxt.getLast() > 0) ? xctxt.getLast() : ((double) getCountOfContextNodeList(xctxt));
-    xnum = new XNumber(pos);
-    
-    return xnum;
+	  
+	  XObject result = null;
+	  
+	  if (ElemForEachGroup.m_group_adjacent_size != -1) {
+		  result = new XSInteger(ElemForEachGroup.m_group_adjacent_size + "");    
+	  }
+	  else {
+		  int pos = (xctxt.getLast() > 0) ? xctxt.getLast() : getCountOfContextNodeList(xctxt);
+
+		  String str1 = String.valueOf(pos);
+
+		  result = new XSInteger(str1);
+	  }
+
+	  return result;
   }
   
   /**

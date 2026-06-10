@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-02-20T15:33:31Z" fail="26" name="function" pass="61" run="87" skipped="23" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-06-05T16:33:34Z" fail="25" name="function" pass="62" run="87" skipped="23" statusUnknown="0">
    <testResult status="pass" testName="function-0001"/>
    <testResult status="pass" testName="function-0002"/>
    <testResult status="pass" testName="function-0003"/>
@@ -50,7 +50,7 @@
    <testResult status="pass" testName="function-1003"/>
    <testResult status="pass" testName="function-1004"/>
    <testResult status="fail" testName="function-1005"/>
-   <testResult status="pass" testName="function-1007"/>
+   <testResult status="fail" testName="function-1007"/>
    <testResult status="fail" testName="function-1009"/>
    <testResult status="fail" testName="function-1011">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out result=""/&gt;</outResult>
@@ -72,36 +72,36 @@
    <testResult status="fail" testName="function-1018">
       <outResult/>
    </testResult>
-   <testResult status="fail" testName="function-1019">
-      <outResult>
-         <errTrace>XPTY0004 : An XSL function call argument at position 1 for function {http://xxx.com/}test, doesn't match the declared parameter type xs:integer.</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="function-1019"/>
    <testResult status="pass" testName="function-1020"/>
    <testResult status="fail" testName="function-1021">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:x="http://xxx.com/"/&gt;</outResult>
    </testResult>
-   <testResult status="pass" testName="function-1022"/>
+   <testResult status="fail" testName="function-1022">
+      <outResult>
+         <errTrace>java.lang.NullPointerException</errTrace>
+      </outResult>
+   </testResult>
    <testResult status="skipped" testName="function-1023" xsltVersion="XSLT 2.0/1.0 only test case"/>
    <testResult status="pass" testName="function-1024"/>
    <testResult status="fail" testName="function-1025">
       <outResult>
-         <errTrace>A location path was expected, but the following token was encountered:  )</errTrace>
-         <errTrace>java.lang.RuntimeException: Programmer's assertion in getNextStepPos: unknown stepType: -1</errTrace>
+         <errTrace>org.xml.sax.SAXException: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).
+java.lang.Exception: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="function-1026"/>
    <testResult status="fail" testName="function-1027">
       <outResult>
-         <errTrace>A location path was expected, but the following token was encountered:  )</errTrace>
-         <errTrace>java.lang.RuntimeException: Programmer's assertion in getNextStepPos: unknown stepType: -1</errTrace>
+         <errTrace>org.xml.sax.SAXException: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).
+java.lang.Exception: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="function-1028"/>
    <testResult status="fail" testName="function-1029">
       <outResult>
-         <errTrace>A location path was expected, but the following token was encountered:  )</errTrace>
-         <errTrace>java.lang.RuntimeException: Programmer's assertion in getNextStepPos: unknown stepType: -1</errTrace>
+         <errTrace>org.xml.sax.SAXException: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).
+java.lang.Exception: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="function-1030"/>
@@ -125,13 +125,7 @@
    <testResult status="fail" testName="function-1301"/>
    <testResult status="pass" testName="function-1401"/>
    <testResult status="pass" testName="function-1501"/>
-   <testResult status="fail" testName="function-1601">
-      <outResult>
-         <errTrace>Could not find function: {http://www.w3.org/2005/xpath-functions}environment-variable()</errTrace>
-         <errTrace>function token not found.</errTrace>
-         <errTrace>java.lang.NullPointerException</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="function-1601"/>
    <testResult status="pass" testName="function-1701"/>
    <testResult status="pass" testName="function-1901"/>
    <testResult status="skipped" testName="function-1902" xsltVersion="XSLT 2.0/1.0 only test case"/>
@@ -159,16 +153,14 @@
          <errTrace>javax.xml.transform.TransformerException: XPST0017 : An XSL function {http://example.com/namespace}pi call's argument count is not equal to number of function's param declarations.</errTrace>
       </outResult>
    </testResult>
-   <testResult status="fail" testName="function-2107">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;abc&lt;/out&gt;</outResult>
-   </testResult>
+   <testResult status="pass" testName="function-2107"/>
    <testResult status="fail" testName="function-2108">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;abc&lt;/out&gt;</outResult>
    </testResult>
    <testResult status="fail" testName="function-2109">
       <outResult>
-         <errTrace>Expected ), but found: ,</errTrace>
-         <errTrace>java.lang.ClassCastException</errTrace>
+         <errTrace>org.xml.sax.SAXException: Line# : 63, Column# : 243 XPST0003: Expected ), but found: ,
+java.lang.Exception: Line# : 63, Column# : 243 XPST0003: Expected ), but found: ,</errTrace>
       </outResult>
    </testResult>
    <testResult feature="streaming" status="skipped" testName="function-5001"/>

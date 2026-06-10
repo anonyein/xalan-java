@@ -19,6 +19,7 @@ package org.apache.xalan.templates;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 import javax.xml.XMLConstants;
 import javax.xml.transform.SourceLocator;
@@ -33,9 +34,9 @@ import org.apache.xml.utils.QName;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.compiler.Keywords;
-import org.apache.xpath.composite.SequenceTypeData;
-import org.apache.xpath.composite.SequenceTypeKindTest;
-import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceTypeKindTest;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNodeSetForDOM;
@@ -223,7 +224,7 @@ public class ElemTemplate extends ElemTemplateElement
    * Modes allow an element to be processed multiple times,
    * each time producing a different result.
    */
-  private QName m_mode;
+  private QName m_modeNames[] = null;
 
   /**
    * Set the "mode" attribute.
@@ -233,9 +234,16 @@ public class ElemTemplate extends ElemTemplateElement
    *
    * @param v Value to set the "mode" attribute
    */
-  public void setMode(QName v)
+  public void setMode(Vector v)
   {
-	  m_mode = v;
+	  int n = v.size();
+
+	  m_modeNames = new QName[n];
+
+	  for (int i = 0; i < n; i++)
+	  {
+		  m_modeNames[i] = (QName) v.elementAt(i);
+	  }
   }
 
   /**
@@ -246,9 +254,9 @@ public class ElemTemplate extends ElemTemplateElement
    *
    * @return Value of the "mode" attribute
    */
-  public QName getMode()
+  public QName[] getMode()
   {
-	  return m_mode;
+	  return m_modeNames;
   }
 
   /**
@@ -387,7 +395,7 @@ public class ElemTemplate extends ElemTemplateElement
   }
   
   /**
-   * An XPath expression for 'use-when' attribute. 
+   * An XPath expression for XSL attribute "use-when". 
    */
   private XPath m_useWhen = null;
 
@@ -406,7 +414,7 @@ public class ElemTemplate extends ElemTemplateElement
    * Method definition, to get the value of XSL attribute 
    * "use-when".
    * 
-   * @return			XPath expression for attribute "use-when"
+   * @return			     XPath expression for attribute "use-when"
    */
   public XPath getUseWhen()
   {
@@ -460,6 +468,12 @@ public class ElemTemplate extends ElemTemplateElement
   private int[] m_argsQNameIDs;
   
   /**
+   * An array of ElemParam objects, representing xsl:param instructions
+   * within xsl:template element. 
+   */
+  private ElemParam[] m_elemParamArr = null;
+  
+  /**
    * This function is called after everything else has been
    * recomposed, and allows the template to set remaining
    * values that may be based on some other property that
@@ -509,10 +523,6 @@ public class ElemTemplate extends ElemTemplateElement
 
 	  xctxt.pushRTFContext();
 
-	  if (transformer.getDebug()) {
-		  transformer.getTraceManager().emitTraceEvent(this);
-	  }
-
 	  if (m_asAttr == null) {
 		  transformer.setXslNextMatchWithParamList(m_xslNextMatchWithParamList);
 		  transformer.executeChildTemplates(this, true);
@@ -521,10 +531,14 @@ public class ElemTemplate extends ElemTemplateElement
 		  try {                      
 			  XObject xslTemplateEvalResult = getXslTemplateResult(transformer, xctxt);
 			  
+			  if (ElemMap.m_xpath_map_seq != null) {
+				  xslTemplateEvalResult = ElemMap.m_xpath_map_seq;
+	    	  }
+			  
 			  XPath seqTypeXPath = new XPath(m_asAttr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);
 			  XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
-			  SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeExpressionEvalResult;
-			  SequenceTypeKindTest seqTypeKindTest = seqExpectedTypeData.getSequenceTypeKindTest();
+			  XPathSequenceTypeData seqExpectedTypeData = (XPathSequenceTypeData)seqTypeExpressionEvalResult;
+			  XPathSequenceTypeKindTest seqTypeKindTest = seqExpectedTypeData.getSequenceTypeKindTest();
 			  
 			  boolean isProcessXmlAttributeResult = false;
 			  if (xslTemplateEvalResult instanceof ResultSequence) {
@@ -538,7 +552,7 @@ public class ElemTemplate extends ElemTemplateElement
 				  SerializationHandler handler = transformer.getSerializationHandler();
 				  
 				  if (seqTypeKindTest != null) {
-					  if (seqTypeKindTest.getKindVal() == SequenceTypeSupport.ATTRIBUTE_KIND) {
+					  if (seqTypeKindTest.getKindVal() == XPathSequenceTypeSupport.ATTRIBUTE_KIND) {
 						  String nodeExpectedLocalName = seqTypeKindTest.getNodeLocalName();
 						  String nodeExpectedNsUri = seqTypeKindTest.getNodeNsUri();
 						  String dataTypeExpectedLocalName = seqTypeKindTest.getDataTypeLocalName();
@@ -549,20 +563,22 @@ public class ElemTemplate extends ElemTemplateElement
 							  ResultSequence rSeq = (ResultSequence)xslTemplateEvalResult;
 							  boolean isSeqTypeOccurenceIndicatorCheckOk = false;
 							  int seqTypeItemOccurenceIndicator = seqExpectedTypeData.getItemTypeOccurrenceIndicator();
-							  if ((rSeq.size() == 0) && ((seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
-									                     (seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
+							  if ((rSeq.size() == 0) && ((seqTypeItemOccurenceIndicator == XPathSequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
+									                     (seqTypeItemOccurenceIndicator == XPathSequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
 								  isSeqTypeOccurenceIndicatorCheckOk = true; 
 							  }
 							  else if (rSeq.size() == 1) {
 								  isSeqTypeOccurenceIndicatorCheckOk = true;
 							  }
-							  else if ((rSeq.size() > 1) && ((seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
-									                         (seqTypeItemOccurenceIndicator == SequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY))) {
+							  else if ((rSeq.size() > 1) && ((seqTypeItemOccurenceIndicator == XPathSequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
+									                         (seqTypeItemOccurenceIndicator == XPathSequenceTypeSupport.OccurrenceIndicator.ONE_OR_MANY))) {
 								  isSeqTypeOccurenceIndicatorCheckOk = true;
 							  }
 
 							  if (isSeqTypeOccurenceIndicatorCheckOk) {
-								  for (int idx = 0; idx < rSeq.size(); idx++) {
+								  
+								  int size1 = rSeq.size();								  
+								  for (int idx = 0; idx < size1; idx++) {
 									  XMLAttribute xmlAttribute = (XMLAttribute)(rSeq.item(idx));
 									  String prefix = xmlAttribute.getPrefix();
 									  String localName = xmlAttribute.getLocalName();                	                  	   
@@ -619,18 +635,18 @@ public class ElemTemplate extends ElemTemplateElement
 					  DTM dtm = dtmCursorIterator.getDTM(nextNode);
 					  int childNode = dtm.getFirstChild(nextNode);
 					  if (((dtm.getNodeType(nextNode) == DTM.DOCUMENT_NODE) && (childNode == DTM.NULL)) && 
-							                                             ((seqExpectedTypeData.getItemTypeOccurrenceIndicator() == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
-									                                      (seqExpectedTypeData.getItemTypeOccurrenceIndicator() == SequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
+							                                             ((seqExpectedTypeData.getItemTypeOccurrenceIndicator() == XPathSequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) || 
+									                                      (seqExpectedTypeData.getItemTypeOccurrenceIndicator() == XPathSequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE))) {
 						  xslTemplateEvalResult = new ResultSequence(); 
 					  }
 					  else {
 						  xslTemplateEvalResult = xslTemplateEvalResult.getFresh();						 
-						  xslTemplateEvalResult = SequenceTypeSupport.castXdmValueToAnotherType(xslTemplateEvalResult, m_asAttr, null, xctxt);
+						  xslTemplateEvalResult = XPathSequenceTypeSupport.castXdmValueToAnotherType(xslTemplateEvalResult, m_asAttr, null, xctxt);
 						  xslTemplateEvalResult = xslTemplateEvalResult.getFresh();
 					  }
 				  }
 				  else {
-					  xslTemplateEvalResult = SequenceTypeSupport.castXdmValueToAnotherType(xslTemplateEvalResult, m_asAttr, null, xctxt);
+					  xslTemplateEvalResult = XPathSequenceTypeSupport.castXdmValueToAnotherType(xslTemplateEvalResult, m_asAttr, null, xctxt);
 				  }
 
 				  if (xslTemplateEvalResult != null) {
@@ -727,7 +743,8 @@ public class ElemTemplate extends ElemTemplateElement
 		  
 		  ResultSequence rSeq = new ResultSequence();
 		  
-		  for (int idx = 0; idx < xslAttrList.size(); idx++) {
+		  int size1 = xslAttrList.size();
+		  for (int idx = 0; idx < size1; idx++) {
 			 XslAttributeAndNamePair xslAttributeAndNamePair = xslAttrList.get(idx);
 			 QName attrName = xslAttributeAndNamePair.getAttrName();
 			 String localName = attrName.getLocalName();
@@ -868,7 +885,8 @@ public class ElemTemplate extends ElemTemplateElement
 			   List<XMLNSDecl> prefixTable = this.getPrefixTable();
 			   String nsUri = null;
 			   
-               for (int idx = 0; idx < prefixTable.size(); idx++) {
+			   int size1 = prefixTable.size();
+               for (int idx = 0; idx < size1; idx++) {
             	  XMLNSDecl xmlNSDecl = prefixTable.get(idx);            	  
             	  if ((xmlNSDecl.getPrefix()).equals(prefix)) {
             		  nsUri = xmlNSDecl.getURI();
@@ -886,7 +904,8 @@ public class ElemTemplate extends ElemTemplateElement
 			// xsl:attribute deduplication on attribute's name
 			
 			int pos = -1;
-			for (int idx = 0; idx < xslAttrList.size(); idx++) {
+			int size1 = xslAttrList.size();
+			for (int idx = 0; idx < size1; idx++) {
 			   XslAttributeAndNamePair xslAttributeAndNamePair = xslAttrList.get(idx);
 			   QName attrQName2 = xslAttributeAndNamePair.getAttrName();
 			   if (attrQName2.equals(attrQName)) {
@@ -911,6 +930,71 @@ public class ElemTemplate extends ElemTemplateElement
 	  }
 	  
 	  return xslAttrList;
+  }
+  
+  /**
+   * Method definition, to get xsl:template instruction's ElemParam 
+   * information as an array. 
+   * 
+   * @return                  ElemParam object array
+   */
+  public ElemParam[] getElemParamArray() {
+	  return m_elemParamArr;
+  }
+  
+  /**
+   * Method definition, to get xsl:param object at a specified 
+   * index. 
+   * 
+   * @param i                  Value of the supplied index
+   * @return                   An ElemParam object, at the supplied index
+   */
+  public ElemParam getElemParam(int i) {
+	  ElemParam result = null;
+	  
+	  if (m_elemParamArr.length > (i + 1)) {
+		 result = m_elemParamArr[i];  
+	  }
+	  
+	  return result;
+  }
+  
+  /**
+   * Add a child to the child list.
+   *
+   * @param newChild Child to add to child list
+   *
+   * @return Child just added to child list
+   */
+  public ElemTemplateElement appendChild(ElemTemplateElement newChild)
+  {                
+      ElemTemplateElement childElem = super.appendChild(newChild);
+      
+      if (newChild instanceof ElemParam) {
+    	 if (m_elemParamArr == null) {
+    		m_elemParamArr = new ElemParam[1];
+    		m_elemParamArr[0] = (ElemParam)newChild; 
+    	 }
+    	 else {
+    		int elemParamNewArrSize = m_elemParamArr.length + 1;
+    		ElemParam[] tempArray = new ElemParam[elemParamNewArrSize];
+    		System.arraycopy(m_elemParamArr, 0, tempArray, 0, m_elemParamArr.length);
+    		tempArray[m_elemParamArr.length] = (ElemParam)newChild;
+    		m_elemParamArr = tempArray; 
+    	 }
+      }
+      
+      return childElem;             
+  }
+  
+  /**
+   * Call the children visitors.
+   * 
+   * @param visitor The visitor whose appropriate method will be called.
+   */
+  public void callChildVisitors(XSLTVisitor visitor, boolean callAttributes)
+  {      	    
+      super.callChildVisitors(visitor, callAttributes);
   }
 
 }

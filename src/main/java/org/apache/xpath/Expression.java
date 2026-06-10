@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath;
 
 import java.util.ArrayList;
@@ -158,14 +155,14 @@ public abstract class Expression implements java.io.Serializable, ExpressionNode
    *
    *
    * @param xctxt The XPath runtime context.
-   * @param destructiveOK true if a "safe" object doesn't need to be returned.
+   * @param destructiveOk true if a "safe" object doesn't need to be returned.
    *
    * @return The result of the expression in the form of a <code>XObject</code>.
    *
    * @throws javax.xml.transform.TransformerException if a runtime exception
    *         occurs.
    */
-  public XObject execute(XPathContext xctxt, boolean destructiveOK)
+  public XObject execute(XPathContext xctxt, boolean destructiveOk)
     throws javax.xml.transform.TransformerException
   {
   	return execute(xctxt);
@@ -190,8 +187,7 @@ public abstract class Expression implements java.io.Serializable, ExpressionNode
   /**
    * Evaluate expression to a boolean.
    *
-   *
-   * @param xctxt The XPath runtime context.
+   * @param xctxt              An XPath context object
    * @return false
    *
    * @throws javax.xml.transform.TransformerException
@@ -199,53 +195,53 @@ public abstract class Expression implements java.io.Serializable, ExpressionNode
   public boolean bool(XPathContext xctxt)
           throws javax.xml.transform.TransformerException
   {
-	boolean result = false;
-	
-	XObject xobj1 = execute(xctxt);
-	
-	if (xobj1 instanceof XSUntypedAtomic) {
-		String str1 = ((XSUntypedAtomic)xobj1).stringValue();
-		if (!((str1 == null) || "".equals(str1))) {
-		   result = true;
-		}
-	}    
-	else if (xobj1 instanceof XNumber) {
-		XNumber xNumber = (XNumber)xobj1;
-		double dbl = xNumber.num();
-		if (dbl != 0) {
-		   result = true;
-		}
-	}
-    else if (xobj1 instanceof XSNumericType) {
-    	XSNumericType xsNumericType = (XSNumericType)xobj1;
-    	String str1 = xsNumericType.stringValue();
-    	double dbl = (Double.valueOf(str1)).doubleValue();
-    	if (!Double.isNaN(dbl)) {
-    	   if (dbl == 0) {
-    		   if (xsNumericType instanceof XSDouble) {
-    			   String consFuncArgStr = ((XObject)xsNumericType).getConsFuncArgStr();
-    			   int strLength1 = consFuncArgStr.length();
-    			   for (int idx = 0; idx < strLength1; idx++) {
-    				   char chr1 = consFuncArgStr.charAt(idx);
-    				   if (!((chr1 == '0') || (chr1 == '.'))) {
-    					   // Value of number is not zero
-    					   result = true;
+	  boolean result = false;
 
-    					   break;
-    				   }
-    			   }
-    		   }
-    	   }
- 		   else {
- 			  result = true; 
- 		   }
- 		}
-	}
-	else {
-		result = xobj1.bool(); 
-	}
-	
-    return result;
+	  XObject xobj1 = execute(xctxt);
+
+	  if (xobj1 instanceof XSUntypedAtomic) {
+		  String str1 = ((XSUntypedAtomic)xobj1).stringValue();
+		  if (!((str1 == null) || "".equals(str1))) {
+			  result = true;
+		  }
+	  }    
+	  else if (xobj1 instanceof XNumber) {
+		  XNumber xNumber = (XNumber)xobj1;
+		  double dbl = xNumber.num();
+		  if (dbl != 0) {
+			  result = true;
+		  }
+	  }
+	  else if (xobj1 instanceof XSNumericType) {
+		  XSNumericType xsNumericType = (XSNumericType)xobj1;
+		  String str1 = xsNumericType.stringValue();
+		  double dbl = (Double.valueOf(str1)).doubleValue();
+		  if (!Double.isNaN(dbl)) {
+			  if (dbl == 0) {
+				  if (xsNumericType instanceof XSDouble) {
+					  String consFuncArgStr = ((XObject)xsNumericType).getConsFuncArgStr();
+					  int strLength1 = consFuncArgStr.length();
+					  for (int idx = 0; idx < strLength1; idx++) {
+						  char chr1 = consFuncArgStr.charAt(idx);
+						  if (!((chr1 == '0') || (chr1 == '.'))) {
+							  // Value of number is not zero
+							  result = true;
+
+							  break;
+						  }
+					  }
+				  }
+			  }
+			  else {
+				  result = true; 
+			  }
+		  }
+	  }
+	  else {
+		  result = xobj1.bool(); 
+	  }
+
+	  return result;
   }
 
   /**

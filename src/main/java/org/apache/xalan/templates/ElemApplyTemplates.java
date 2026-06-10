@@ -18,6 +18,7 @@
 package org.apache.xalan.templates;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
@@ -44,8 +45,8 @@ import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
-import org.apache.xpath.composite.SequenceTypeData;
-import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.composite.XPathSequenceConstructor;
 import org.apache.xpath.objects.ElemFunctionItem;
 import org.apache.xpath.objects.ResultSequence;
@@ -220,6 +221,33 @@ public class ElemApplyTemplates extends ElemCallTemplate
   private Vector m_vars;
   
   private int m_globals_size;
+  
+  /**
+   * An XPath expression for XSL attribute "use-when". 
+   */
+  private XPath m_useWhen = null;
+
+  /**
+   * Method definition, to set the value of XSL attribute 
+   * "use-when".
+   * 
+   * @param xpath            XPath expression for attribute "use-when"
+   */
+  public void setUseWhen(XPath xpath)
+  {
+	  m_useWhen = xpath;  
+  }
+
+  /**
+   * Method definition, to get the value of XSL attribute 
+   * "use-when".
+   * 
+   * @return			     XPath expression for attribute "use-when"
+   */
+  public XPath getUseWhen()
+  {
+	  return m_useWhen;
+  }
 
   /**
    * Get an int constant identifying the type of element.
@@ -564,7 +592,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
 
 			  for (int i = 0; i < nParams; i++) 
 			  {
-				  ElemWithParam ewp = m_paramElems[i];
+				  ElemWithParam ewp = m_withParamElems[i];
 				  if (transformer.getDebug())
 					  transformer.getTraceManager().emitTraceEvent(ewp);
 
@@ -608,7 +636,8 @@ public class ElemApplyTemplates extends ElemCallTemplate
 			  }
 
 			  List<XObject> tunnelParamObjList = parentElem.getTunnelParamObjList();
-			  for (int idx = 0; idx < tunnelParamObjList.size(); idx++) {
+			  int size1 = tunnelParamObjList.size();
+			  for (int idx = 0; idx < size1; idx++) {
 				  XObject var = tunnelParamObjList.get(idx);
 				  vars.setLocalVariable(++maxParamStackFrameIndex, var, argsFrame);
 			  }
@@ -625,8 +654,8 @@ public class ElemApplyTemplates extends ElemCallTemplate
 
 		  QName mode = transformer.getMode();
 
-		  QName qnameCurrent = new QName("http://xml.apache.org/xalan/java", "current", true);
-		  QName qnameUnnamed = new QName("http://xml.apache.org/xalan/java", "unnamed", true);
+		  QName qnameCurrent = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_CURRENT, true);
+		  QName qnameUnnamed = new QName(Constants.S_EXTENSIONS_JAVA_URL, Constants.ATTRVAL_UNNAMED, true);
 		  if (qnameCurrent.equals(mode)) {
 			  mode = transformer.getCurrentMode();  
 		  }
@@ -847,7 +876,9 @@ public class ElemApplyTemplates extends ElemCallTemplate
 							  }
 							  else if ((Constants.ATTRVAL_SHALLOW_COPY).equals(onNoMatchStr)) {
 								  template = new ElemTemplate();
-								  template.setMode(elemMode.getName());
+								  Vector vMode = new Vector();
+								  vMode.add(elemMode.getName());
+								  template.setMode(vMode);
 								  template.setStylesheet(sroot);
 								  ErrorListener errListener = xctxt.getErrorListener();
 								  XPath xpathMatch = new XPath("processing-instruction()", sroot, sroot, XPath.MATCH, errListener);
@@ -907,7 +938,9 @@ public class ElemApplyTemplates extends ElemCallTemplate
 							  }
 							  else if ((Constants.ATTRVAL_SHALLOW_COPY).equals(onNoMatchStr)) {
 								  template = new ElemTemplate();
-								  template.setMode(elemMode.getName());
+								  Vector vMode = new Vector();
+								  vMode.add(elemMode.getName());
+								  template.setMode(vMode);
 								  template.setStylesheet(sroot);
 								  ErrorListener errListener = xctxt.getErrorListener();
 								  XPath xpathMatch = new XPath("comment()", sroot, sroot, XPath.MATCH, errListener);
@@ -1058,18 +1091,31 @@ public class ElemApplyTemplates extends ElemCallTemplate
 							  int i;
 							  for (i = 0; i < nParams; i++) 
 							  {
-								  ElemWithParam ewp = m_paramElems[i];
+								  ElemWithParam ewp = m_withParamElems[i];
 								  if (ewp.m_qnameID == ep.m_qnameID)                  
 								  {
-									  XObject obj = vars.getLocalVariable(i, argsFrame);									  
+									  String paramTunnelStrValue = ep.getTunnel();    // xsl:param tunnel value
+									  String wpTunnelStrValue = ewp.getTunnel();      // corresponding xsl:with-param tunnel value
+									  XObject xobj1 = null;									  
+									  
+									  if (((paramTunnelStrValue != null) && XslTransformEvaluationHelper.isTunnelAttributeYes(paramTunnelStrValue)) && 
+											                                                          ((wpTunnelStrValue == null) || "no".equals(wpTunnelStrValue))) {
+										 final int currentNode = xctxt.getCurrentNode();
+										 xobj1 = ep.getValue(transformer, currentNode);
+										 vars.setLocalVariable(i, null);
+									  }
+									  else {
+									     xobj1 = vars.getLocalVariable(i, argsFrame);
+									  }
+									  
 									  String paramAsAttrStrVal = ep.getAs();
 									  if (paramAsAttrStrVal != null) {
-										  XObject argConvertedVal = getParamValueAsAttributeProcessing(obj, templateMatchPatternStr, elem.getPrefixTable(), 
+										  XObject argConvertedVal = getParamValueAsAttributeProcessing(xobj1, templateMatchPatternStr, elem.getPrefixTable(), 
 												  																				i, paramAsAttrStrVal, transformer, srcLocator);
 										  if (argConvertedVal != null) {
-											  if ((obj instanceof XMLNodeCursorImpl) && !(argConvertedVal instanceof XSAnyAtomicType)) {
-												  obj = obj.getFresh();
-												  vars.setLocalVariable(paramIndex, obj);
+											  if ((xobj1 instanceof XMLNodeCursorImpl) && !(argConvertedVal instanceof XSAnyAtomicType)) {
+												  xobj1 = xobj1.getFresh();
+												  vars.setLocalVariable(paramIndex, xobj1);
 											  }
 											  else {
 												  vars.setLocalVariable(paramIndex, argConvertedVal); 
@@ -1081,7 +1127,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
 										  }
 									  }
 									  else {
-										  vars.setLocalVariable(paramIndex, obj);
+										  vars.setLocalVariable(paramIndex, xobj1);
 									  }
 									  
 									  break;
@@ -1117,7 +1163,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
 					  NodeList nodeList2 = (new XRTreeFrag(dtmNodeHandle, xctxt, template)).convertToNodeset();             
 					  XObject templateEvalResultForAsAttr = new XNodeSetForDOM(nodeList2, xctxt);
 
-					  templateEvalResultForAsAttr = SequenceTypeSupport.castXdmValueToAnotherType(templateEvalResultForAsAttr, templateAsAttrVal, 
+					  templateEvalResultForAsAttr = XPathSequenceTypeSupport.castXdmValueToAnotherType(templateEvalResultForAsAttr, templateAsAttrVal, 
 							  																													null, xctxt);
 					  if (templateEvalResultForAsAttr != null) {
 						  SerializationHandler handler = transformer.getSerializationHandler();        
@@ -1396,9 +1442,9 @@ public class ElemApplyTemplates extends ElemCallTemplate
 	  try {
 		  XPath seqTypeXPath = new XPath(paramAsAttrStrVal, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);            
 		  XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
-		  SequenceTypeData seqExpectedTypeData = (SequenceTypeData)seqTypeExpressionEvalResult;
+		  XPathSequenceTypeData seqExpectedTypeData = (XPathSequenceTypeData)seqTypeExpressionEvalResult;
 
-		  XMLNodeCursorImpl nodeSet = SequenceTypeSupport.getNodeReference(srcValue);
+		  XMLNodeCursorImpl nodeSet = XPathSequenceTypeSupport.getNodeReference(srcValue);
 		  if (nodeSet != null) {
 			  XSTypeDefinition typeDef = nodeSet.getXsTypeDefinition();                    	                      	                      	  
 			  if (typeDef != null) {                    		  
@@ -1437,7 +1483,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
 		  }
 
 		  if (argConvertedVal == null) {
-			  argConvertedVal = SequenceTypeSupport.castXdmValueToAnotherType(srcValue, paramAsAttrStrVal, null, xctxt, prefixTable);
+			  argConvertedVal = XPathSequenceTypeSupport.castXdmValueToAnotherType(srcValue, paramAsAttrStrVal, null, xctxt, prefixTable);
 		  }
 
 		  if (argConvertedVal == null) {
@@ -1447,7 +1493,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
 		  }
 	  }
 	  catch (TransformerException ex) {
-		  if ((SequenceTypeSupport.INLINE_FUNCTION_PARAM_TYPECHECK_COUNT_ERROR).equals(ex.getMessage())) {
+		  if ((XPathSequenceTypeSupport.INLINE_FUNCTION_PARAM_TYPECHECK_COUNT_ERROR).equals(ex.getMessage())) {
 			  throw new TransformerException("XTTE0590 : The number of XPath inline function parameters, is not equal to "
 					  																			  + "the number of expected type specifications for them.", srcLocator);   
 		  }
@@ -1545,18 +1591,23 @@ public class ElemApplyTemplates extends ElemCallTemplate
 			  Object hashTableKeyObj = hashTableEntry.getKey();
 			  TemplateSubPatternAssociation hashTableValueObj = (TemplateSubPatternAssociation)(hashTableEntry.getValue());		
 			  elemTemplate = hashTableValueObj.getTemplate();
+			  
+			  QName[] qNameArray = elemTemplate.getMode();
+			  
+			  List<QName> qNameList = new ArrayList<QName>();
+			  if (qNameArray != null) {
+				 qNameList = Arrays.asList(qNameArray);  
+			  }		  		   		   
 
-			  QName templateDefnMode = elemTemplate.getMode();		  		   		   
-
-			  if ((xslTemplateInvokeMode != null) && (templateDefnMode != null)) {
-				  if (xslTemplateInvokeMode.equals(templateDefnMode)) {			  
+			  if ((xslTemplateInvokeMode != null) && (qNameArray != null)) {
+				  if (qNameList.contains(xslTemplateInvokeMode)) {			  
 					  templateSelectedWithoutPriority = true;
 				  }
 			  }
-			  else if ((xslTemplateInvokeMode != null) && (templateDefnMode == null)) {
+			  else if ((xslTemplateInvokeMode != null) && (qNameArray == null)) {
 				  templateSelectedWithoutPriority = false; 
 			  }
-			  else if ((xslTemplateInvokeMode == null) && (templateDefnMode != null)) {
+			  else if ((xslTemplateInvokeMode == null) && (qNameArray != null)) {
 				  templateSelectedWithoutPriority = false; 
 			  }
 			  else {
@@ -1608,18 +1659,22 @@ public class ElemApplyTemplates extends ElemCallTemplate
 				  Object hashTableKeyObj = hashTableEntry.getKey();
 				  TemplateSubPatternAssociation hashTableValueObj = (TemplateSubPatternAssociation)(hashTableEntry.getValue());		
 				  elemTemplate = hashTableValueObj.getTemplate();
+				  
+				  QName[] qNameArray = elemTemplate.getMode();
+                  List<QName> qNameList = new ArrayList<QName>();                  
+                  if (qNameArray != null) {
+                	 qNameList = Arrays.asList(qNameArray);  
+                  }
 
-				  QName templateDefnMode = elemTemplate.getMode();		  		   		   
-
-				  if ((xslTemplateInvokeMode != null) && (templateDefnMode != null)) {
-					  if (xslTemplateInvokeMode.equals(templateDefnMode)) {			  
+				  if ((xslTemplateInvokeMode != null) && (qNameArray != null)) {
+					  if (qNameList.contains(xslTemplateInvokeMode)) {			  
 						  templateSelectedWithoutPriority = true;
 					  }
 				  }
-				  else if ((xslTemplateInvokeMode != null) && (templateDefnMode == null)) {
+				  else if ((xslTemplateInvokeMode != null) && (qNameArray == null)) {
 					  templateSelectedWithoutPriority = false; 
 				  }
-				  else if ((xslTemplateInvokeMode == null) && (templateDefnMode != null)) {
+				  else if ((xslTemplateInvokeMode == null) && (qNameArray != null)) {
 					  templateSelectedWithoutPriority = false; 
 				  }
 				  else {

@@ -25,7 +25,6 @@ import java.util.Vector;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.XMLNSDecl;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
@@ -34,10 +33,9 @@ import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPath;
-import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.XPathVisitor;
-import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.compiler.XPathParser;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XBoolean;
@@ -78,8 +76,8 @@ public class XPathQuantifiedExpr extends Expression {
      * A java.util.List object supporting implementation of XPath quantified 
      * expression. 
      */
-    private List<ForQuantifiedExprVarBinding> m_QuantifiedExprVarBindingList = new 
-                                                        ArrayList<ForQuantifiedExprVarBinding>();
+    private List<XPathForAndQuantifiedExprVarBinding> m_QuantifiedExprVarBindingList = new 
+                                                        ArrayList<XPathForAndQuantifiedExprVarBinding>();
 
     /**
      * This class field represents an XPath expression string, that 
@@ -110,11 +108,7 @@ public class XPathQuantifiedExpr extends Expression {
         
         SourceLocator srcLocator = xctxt.getSAXLocator();
         
-        ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-        List<XMLNSDecl> prefixTable = null;
-        if (elemTemplateElement != null) {
-            prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-        }
+        List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
         
         if (prefixTable != null) {
             m_xpathQuantifierTestStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(
@@ -183,11 +177,11 @@ public class XPathQuantifiedExpr extends Expression {
         this.m_xpathQuantifier = fCurrentXPathQuantifier;
     }
 
-    public List<ForQuantifiedExprVarBinding> getQuantifiedExprVarBindingList() {
+    public List<XPathForAndQuantifiedExprVarBinding> getQuantifiedExprVarBindingList() {
         return m_QuantifiedExprVarBindingList;
     }
 
-    public void setQuantifiedExprVarBindingList(List<ForQuantifiedExprVarBinding> 
+    public void setQuantifiedExprVarBindingList(List<XPathForAndQuantifiedExprVarBinding> 
                                                                       fQuantifiedExprVarBindingList) {
         this.m_QuantifiedExprVarBindingList = fQuantifiedExprVarBindingList;
     }
@@ -214,14 +208,10 @@ public class XPathQuantifiedExpr extends Expression {
         
         int contextNode = xctxt.getContextNode();
         
-        ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-        List<XMLNSDecl> prefixTable = null;
-        if (elemTemplateElement != null) {
-            prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-        }
+        List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
         
         if (listIter.hasNext()) {           
-           ForQuantifiedExprVarBinding quantifiedExprVarBinding = (ForQuantifiedExprVarBinding)listIter.next();            
+           XPathForAndQuantifiedExprVarBinding quantifiedExprVarBinding = (XPathForAndQuantifiedExprVarBinding)listIter.next();            
             
            // Evaluate the current, variable binding xpath expression
            

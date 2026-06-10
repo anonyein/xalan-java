@@ -84,11 +84,11 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
      */
     private boolean m_isXmlValidationEnabled = false;
     
-    private static final String OS_NAME = "os.name";
-    
-    private static final String WINDOWS = "Windows";
+    private static final String OS_NAME = "os.name";        
         
     private static final String BASE_DIR = "base-dir";
+    
+    protected static final String WINDOWS = "Windows";
     
     /**
      * Class field representing file path prefix, that is used for test cases
@@ -147,9 +147,9 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
         	   m_xslTransformerFactory.setAttribute(XalanProperties.INIT_MODE, m_initModeName); 
            }
            
-           StreamSource xsltStreamSrc = new StreamSource(xslDocumentUriStr);
+           StreamSource xslStreamSrc = new StreamSource(xslDocumentUriStr);
        
-           Transformer transformer = m_xslTransformerFactory.newTransformer(xsltStreamSrc);
+           Transformer transformer = m_xslTransformerFactory.newTransformer(xslStreamSrc);
            
            setXslTransformProperties(transformer);
            
@@ -871,7 +871,7 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
      * @param filePathStr1					   The supplied file path string
      * @return                                 The new file path string
      */
-    /*protected String getXslTransformGoldFilePath(String filePathStr1) {
+    protected String getXslTransformGoldFilePath(String filePathStr1) {
     	
     	String result = null;
 
@@ -892,7 +892,7 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
     	}
 
     	return result;
-    }*/
+    }
     
     /**
      * This method is used by, Xalan-J XSL 3 java extension function calls

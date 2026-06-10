@@ -57,12 +57,13 @@ import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.trace.PrintTraceListener;
 import org.apache.xalan.trace.TraceManager;
-import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xalan.transformer.XalanProperties;
 import org.apache.xalan.xslt.util.XslTransformData;
+import org.apache.xerces.parsers.DOMParser;
 import org.apache.xml.utils.DefaultErrorHandler;
 import org.apache.xml.utils.SystemIDResolver;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.EntityResolver;
@@ -848,21 +849,44 @@ public class Process
 			  if (null != stylesheet)
 			  {
 				  if (isSchemaValidation) {       	  
-					  if (null != inFileName) {        		  
-						  ((StylesheetRoot)stylesheet).validateXmlInputDoc(inFileName);
+					  if (null != inFileName) {
+						  DOMParser domParser = new DOMParser();
+						  
+						  InputSource inpSrc = new InputSource(inFileName);
+						  if (encoding != null) {
+							  inpSrc.setEncoding(encoding); 
+						  }
+						  
+						  domParser.parse(inpSrc);
+						  
+						  Document document = domParser.getDocument();
+						  Element elem = document.getDocumentElement();						  
+						  String attrValue1 = elem.getAttributeNS(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "noNamespaceSchemaLocation");
+						  String attrValue2 = elem.getAttributeNS(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "schemaLocation");
+						  if (attrValue1.equals("") && attrValue2.equals("")) {
+							 /**
+							  * Validate an XML input document, with schema information 
+							  * available from xsl:import-schema instruction within
+							  * the stylesheet.
+							  */
+						     ((StylesheetRoot)stylesheet).validateXmlInputDoc(inFileName);
+						  }
 					  }
 				  }
 
 				  Transformer transformer = flavor.equals("th") ? null : stylesheet.newTransformer();
 				  
-				  if (null != xslFileName) {
-					  File file = new File(xslFileName);
-					  URI uri = file.toURI();
-					  ((TransformerImpl)transformer).setUriStrOfXslStylesheet(uri.toString());
-				  }
+				  if (!useXSLTC) {
+					  if (null != xslFileName) {
+						  File file = new File(xslFileName);
+						  URI uri = file.toURI();
+						  ((org.apache.xalan.transformer.TransformerImpl)transformer).setUriStrOfXslStylesheet(uri.toString());
+					  }
 
-				  if (isXslEvaluate) {
-					  ((TransformerImpl)transformer).setProperty(TransformerImpl.XSL_EVALUATE_PROPERTY, Boolean.TRUE);
+					  if (isXslEvaluate) {
+						  ((org.apache.xalan.transformer.TransformerImpl)transformer).setProperty(org.apache.xalan.transformer.TransformerImpl.
+								                                                                                                         XSL_EVALUATE_PROPERTY, Boolean.TRUE);
+					  }
 				  }
 
 				  transformer.setErrorListener(new DefaultErrorHandler(true));
@@ -936,13 +960,27 @@ public class Process
 					  if (encoding != null) {
 						  inpSrc.setEncoding(encoding); 
 					  }
+					  
+					  Node node = null;					  
+					  if (isSchemaValidation) {
+						  DOMParser parser = new DOMParser();
+						  parser.setFeature(Constants.XML_VALIDATION_FEATURE, true);
+				    	  parser.setFeature(Constants.XML_SCHEMA_VALIDATION_FEATURE, true);
+				    	  parser.setFeature(Constants.XML_SCHEMA_FULL_CHECKING_FEATURE, true);
 
-					  Node xmlDoc = docBuilder.parse(inpSrc);						  
+				    	  parser.setProperty(Constants.XML_DOM_DOCUMENT_CLASS_NAME, Constants.XERCES_PSVI_DOCUMENT_IMPL);
+				    		
+						  parser.parse(inpSrc);
+						  node = parser.getDocument();						  
+					  }
+					  else {
+					      node = docBuilder.parse(inpSrc);
+					  }
 
 					  Document doc = docBuilder.newDocument();
 					  org.w3c.dom.DocumentFragment outNode = doc.createDocumentFragment();						  						  
 
-					  transformer.transform(new DOMSource(xmlDoc, inFileName), new DOMResult(outNode));
+					  transformer.transform(new DOMSource(node, inFileName), new DOMResult(outNode));
 
 					  // Now serialize output to disk with identity transformer
 					  Transformer identityTransformer = stf.newTransformer();
@@ -979,7 +1017,7 @@ public class Process
 
 					  // Using an XMLReader to construct SAXSource for an XML input
 					  // document, enables correct XML namespace processing. 
-					  XMLReader xmlReader = XMLReaderFactory.createXMLReader();						  						  
+					  XMLReader xmlReader = XMLReaderFactory.createXMLReader();						  
 
 					  transformer.transform(new SAXSource(xmlReader, inpSrc), new DOMResult(outNode));
 
@@ -1188,7 +1226,11 @@ public class Process
 				  throwable.printStackTrace(dumpWriter);
 			  else
 			  {
-				  DefaultErrorHandler.printLocation(diagnosticsWriter, throwable);
+				  String errMesg = throwable.getMessage();
+				  if ((errMesg != null) && !errMesg.contains("Line# :")) {
+				     DefaultErrorHandler.printLocation(diagnosticsWriter, throwable);
+				  }
+				  
 				  diagnosticsWriter.println(
 						  XSLMessages.createMessage(XSLTErrorResources.ER_XSLT_ERROR, null)
 						  + " (" + throwable.getClass().getName() + "): "

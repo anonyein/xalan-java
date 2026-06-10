@@ -33,6 +33,7 @@ import javax.xml.transform.TransformerException;
 import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.res.XSLTErrorResources;
 import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.xslt.util.StringUtil;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xerces.impl.xs.XSElementDecl;
 import org.apache.xerces.xs.XSElementDeclaration;
@@ -53,7 +54,7 @@ import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.Keywords;
 import org.apache.xpath.compiler.XPathParser;
-import org.apache.xpath.composite.SequenceTypeSupport;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.functions.Function;
 import org.apache.xpath.functions.Function2Args;
 import org.apache.xpath.functions.Function3Args;
@@ -80,14 +81,13 @@ import xml.xpath31.processor.types.XSDouble;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * An instance of this class represents an element inside
- * an xsl:template class.  It has a single "execute" method
- * which is expected to perform the given action on the
- * result tree.
- * This class acts like a Element node, and implements the
- * Element interface, but is not a full implementation
- * of that interface... it only implements enough for
- * basic traversal of the tree.
+ * An object instance of this class represents an XSL stylesheet instruction 
+ * within an xsl:template instruction. This class has a method named "execute"
+ * which is expected to perform the given action on an XSL result tree.
+ * This class acts like a XML element node, and implements the document object
+ * model Element interface, but is not a full implementation of that interface. 
+ * This class only implements enough for required traversal of the tree within 
+ * the context of XSL transformation.
  *
  * @see Stylesheet
  * 
@@ -142,6 +142,18 @@ public class ElemTemplateElement extends UnImplNode
     */
    private List<XObject> m_tunnelParamObjList = new ArrayList<XObject>();
    
+   /**
+    * Class field, that stores a sequence of xdm maps. Evaluation result
+    * of sibling xsl:map instructions are stored within this class field.
+    */
+   public static ResultSequence m_xpath_map_seq = null;
+
+   /**
+    * Class field, that stores an xdm map, that is the result of evaluation
+    * of an xsl:map instruction.
+    */
+   public static XPathMap m_xpath_map = null;
+   
 
   /**
    * Construct a template element instance.
@@ -155,7 +167,20 @@ public class ElemTemplateElement extends UnImplNode
    */
   public boolean isCompiledTemplate()
   {
-    return false;
+	  return false;
+  }
+
+  /**
+   * Method definition, to add key, value pair to an xdm map.
+   * 
+   *  This method is called by, ElemMapEntry class implementation
+   *  which is an implementation of xsl:map-entry instruction.
+   * 
+   * @param key				  Value of map entry's key
+   * @param value             Value of map entry's value
+   */
+  public void put(XObject key, XObject value) {
+	  m_xpath_map.put(key, value);  
   }
 
   /**
@@ -2056,7 +2081,7 @@ public class ElemTemplateElement extends UnImplNode
 		   boolean isXmlStrValid;
 		   String errMesg = null;
 		   try {
-			   isXmlStrValid = SequenceTypeSupport.isXmlStrValid(xmlStr, null, typeDefn);
+			   isXmlStrValid = XPathSequenceTypeSupport.isXmlStrValid(xmlStr, null, typeDefn);
 		   }
 		   catch (Exception ex) {
 			   isXmlStrValid = false;
@@ -2144,7 +2169,7 @@ public class ElemTemplateElement extends UnImplNode
   		boolean isXmlStrValid;
   		String errMesg = null;
   		try {
-  			isXmlStrValid = SequenceTypeSupport.isXmlStrValid(xmlStr, (XSElementDecl)elemDecl, null);
+  			isXmlStrValid = XPathSequenceTypeSupport.isXmlStrValid(xmlStr, (XSElementDecl)elemDecl, null);
   		}
   		catch (Exception ex) {
   			isXmlStrValid = false;
@@ -2353,6 +2378,15 @@ public class ElemTemplateElement extends UnImplNode
   	else if (elemTemplateElem instanceof ElemAssert) {
   		result = ((ElemAssert)elemTemplateElem).getExpandText();  		
   	}
+  	else if (elemTemplateElem instanceof ElemNextMatch) {
+  		result = ((ElemNextMatch)elemTemplateElem).getExpandText();  		
+  	}
+  	else if (elemTemplateElem instanceof ElemMap) {
+  		result = ((ElemMap)elemTemplateElem).getExpandText();  		
+  	}
+  	else if (elemTemplateElem instanceof ElemMapEntry) {
+  		result = ((ElemMapEntry)elemTemplateElem).getExpandText();  		
+  	}
 
   	return result;
   }
@@ -2372,6 +2406,12 @@ public class ElemTemplateElement extends UnImplNode
   public String getStrValueAfterExpandTextProcessing(String strValue, TransformerImpl transformer, 
 		                                                              Vector vars, int varsGlobalsSize) throws TransformerException {
 	 
+	  if (strValue != null) {
+		  if (StringUtil.isStrHasXPathBalancedCommentDelim(strValue)) {    	
+			  strValue = StringUtil.removeXPathComments(strValue);
+		  }  
+	  }
+	  
 	  String result = strValue;	 	 
 
 	  XPathContext xctxt = transformer.getXPathContext();
@@ -2383,6 +2423,42 @@ public class ElemTemplateElement extends UnImplNode
 	  
 	  int idx1 = strValue.indexOf('{');
 	  int idx2 = strValue.indexOf('}');
+	  
+	  int idx3 = strValue.lastIndexOf('}');
+	  
+	  int strLength = strValue.length();
+	  
+	  if ((idx1 == 0) && ((idx3 + 1) == strLength)) {
+		  String xpathExprStr = strValue.substring(1, strLength - 1);
+		  xpathExprStr = xpathExprStr.trim();
+		  if (xpathExprStr.startsWith("if") || xpathExprStr.startsWith("some") || 
+				                                                 xpathExprStr.startsWith("every") || xpathExprStr.startsWith("let") || 
+				                                                                                                 xpathExprStr.startsWith("for")) {
+			  // Evaluating expand-text with stylesheet content like {if ...}, {some ...}, {every ...}, {let ...}, {for ...}
+			  
+			  List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt); 
+
+			  if (prefixTable != null) {
+				  xpathExprStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathExprStr, prefixTable);
+			  }
+
+			  ElemTemplateElement elemTemplateElem =  getParentElem();
+
+			  String xpathDefaultNamespace = XPathParser.getXPathDefaultNamespace(elemTemplateElem);
+
+			  XPath xpath2 = new XPath(xpathExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, xpathDefaultNamespace);
+
+			  if (vars != null) {
+				 xpath2.fixupVariables(vars, varsGlobalsSize);
+			  }
+
+			  XObject xObj = xpath2.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+
+			  result = XslTransformEvaluationHelper.getStrVal(xObj);
+			  
+			  return result;
+		  }
+	  }
 	  
 	  if (idx1 < idx2) {
 		  List<XMLNSDecl> prefixTable = null;
@@ -2413,6 +2489,14 @@ public class ElemTemplateElement extends UnImplNode
 			  strBuff.append(str1);			   
 		  }
 		  
+		  if ((xpathExprStr == null) || "".equals(xpathExprStr.trim())) {		  
+			  if ((remainingStr != null) && "".equals(remainingStr)) {
+				  result = strBuff.toString();
+
+				  return result;
+			  }
+		  }
+		  
 		  ElemTemplateElement elemTemplateElem =  getParentElem();
 		  
 		  String xpathDefaultNamespace = XPathParser.getXPathDefaultNamespace(elemTemplateElem);
@@ -2420,7 +2504,7 @@ public class ElemTemplateElement extends UnImplNode
 		  // Traverse the string value from left to right, and apply expand-text 
 		  // processing to each substring {...} that is found.
 		  while (idx1 > -1) {
-			  if (xpathExprStr != null) {
+			  if ((xpathExprStr != null) && !"".equals(xpathExprStr.trim())) {
 				  if (prefixTable != null) {
 					  xpathExprStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathExprStr, prefixTable);
 				  }
@@ -2469,31 +2553,33 @@ public class ElemTemplateElement extends UnImplNode
 				  strBuff.append(str2);
 			  }
 
-			  idx1 = remainingStr.indexOf('{');
-			  idx2 = remainingStr.indexOf('}');
-			  
-			  if ((idx1 < idx2) && (idx1 > -1)) {				  
-				  str1 = remainingStr.substring(0, idx1);
-				  if ((remainingStr.charAt(idx1 + 1) == '{') && (remainingStr.charAt(idx2 + 1) == '}')) {
-					 // An XSL expand-text escape sequence
-					 str1 = (str1 + remainingStr.substring(idx1 + 1, idx2 + 1));
-					 remainingStr = remainingStr.substring(idx2 + 2);
+			  if (remainingStr != null) {
+				  idx1 = remainingStr.indexOf('{');
+				  idx2 = remainingStr.indexOf('}');
+
+				  if ((idx1 < idx2) && (idx1 > -1)) {				  
+					  str1 = remainingStr.substring(0, idx1);
+					  if ((remainingStr.charAt(idx1 + 1) == '{') && (remainingStr.charAt(idx2 + 1) == '}')) {
+						  // An XSL expand-text escape sequence
+						  str1 = (str1 + remainingStr.substring(idx1 + 1, idx2 + 1));
+						  remainingStr = remainingStr.substring(idx2 + 2);
+					  }
+					  else {
+						  xpathExprStr = remainingStr.substring(idx1 + 1, idx2);
+						  remainingStr = remainingStr.substring(idx2 + 1);
+					  }
+
+					  strBuff.append(str1);
 				  }
 				  else {
-				     xpathExprStr = remainingStr.substring(idx1 + 1, idx2);
-				     remainingStr = remainingStr.substring(idx2 + 1);
+					  strBuff.append(remainingStr);
 				  }
-				  
-				  strBuff.append(str1);
-			  }
-			  else {
-				  strBuff.append(remainingStr);
-			  }
-		  }
+			  }			  
+		  }   // end, while (idx1 > -1) {
 	  }
 
 	  if (strBuff.length() > 0) {
-		  result = strBuff.toString();
+	     result = strBuff.toString();
 	  }
 
 	  return result;

@@ -21,25 +21,29 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Vector;
 
 import javax.xml.transform.ErrorListener;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
 import org.apache.xalan.res.XSLTErrorResources;
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.compiler.PsuedoNames;
+import org.apache.xpath.objects.XObject;
 import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.patterns.StepPattern;
 import org.apache.xpath.patterns.UnionPattern;
 
 /**
- * Encapsulates a template list, and helps locate individual 
- * templates and functions.
+ * Encapsulates XSL template and function list, and helps locate the 
+ * individual templates and functions.
  * 
  * @xsl.usage advanced
  */
@@ -71,7 +75,58 @@ public class TemplateList implements java.io.Serializable
   public void setTemplate(ElemTemplate template) throws TransformerException
   {    
 	  
-    if (!(template instanceof ElemFunction)) {    	
+	  XPath xpathUseWhen = template.getUseWhen();	  
+	  if (xpathUseWhen != null) {
+		  XPathContext xctxt = new XPathContext();
+		  Map<QName, XObject> varMap = xctxt.getXPathVarMap();
+		  
+		  try {
+			  XslTransformData.m_use_when = true;			  
+			  StylesheetRoot stylesheetRoot = XslTransformData.m_stylesheetRoot;
+			  Vector vars = new Vector();
+			  ElemTemplateElement elemTemplateElement = stylesheetRoot.getFirstChildElem();
+			  while (elemTemplateElement != null) {
+				 if (elemTemplateElement instanceof ElemVariable) {
+					ElemVariable elemVar = (ElemVariable)elemTemplateElement;						
+					if (elemVar.getStatic()) {
+					   // Only static variables may be referred, within 
+					   // XSL attribute use-when's XPath expression.
+					   vars.add(elemVar);	
+					}						 
+				 }
+				 
+				 elemTemplateElement = elemTemplateElement.getNextSiblingElem();
+			  }
+			  
+			  int idx = vars.size();			  			  
+			  while (--idx >= 0) {
+				  ElemVariable elemVariable = (ElemVariable)(vars.elementAt(idx));					  
+				  QName varName = elemVariable.getName();					  
+				  XPath xpathObj = elemVariable.getSelect();
+				  
+				  XObject xObj = xpathObj.execute(xctxt, DTM.NULL, null);
+				  
+				  varMap.put(varName, xObj);
+			  }
+			  
+			  XObject xObj = xpathUseWhen.execute(xctxt, DTM.NULL, template);
+			  if (!xObj.bool()) {
+				  return; 
+			  }
+		  }
+		  catch (Exception ex) {
+			  String xpathExprStr = xpathUseWhen.getPatternString();
+			  throw new TransformerException("XPST0003 : An XPath evaluation error occured, while evaluating XSL attribute 'use-when' " + 
+																					                      xpathExprStr + ". Any variable references within "
+																					                      + "XPath 'use-when' expression must be static.");
+		  }
+		  finally {
+			  XslTransformData.m_use_when = false;
+			  varMap.clear();
+		  }
+	  }
+	  
+	  if (!(template instanceof ElemFunction)) {    	
     	XPath matchXPath = template.getMatch();
     	
     	if ((template.getName() == null) && (matchXPath == null))
@@ -144,6 +199,16 @@ public class TemplateList implements java.io.Serializable
     		ElemFunction newFunc = (ElemFunction)template;
     		
     		QName funcName = newFunc.getName();
+    		
+    		String prefix = funcName.getPrefix();
+    		String namespace = funcName.getNamespace();
+    		if ((XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(namespace) || (XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(namespace) || 
+    				                                                                      (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(namespace) ||
+    				                                                                      (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(namespace)) {
+    			throw new TransformerException("XTSE0080 : An XSL user-defined function " + funcName.toString() + " has a namespace prefix '" + prefix + "' "
+					    					                                                                                                 + "within its name, that refers to "
+					    					                                                                                                 + "an XSL reserved namespace.");
+    		}
     		
     		int funcLineNo = newFunc.getLineNumber();
     		int funcColNo = newFunc.getColumnNumber();
@@ -470,15 +535,22 @@ public class TemplateList implements java.io.Serializable
 	  
 	  String patternTableKeyStr = pattern; 
 
-	  QName templateModeQname = template.getMode();
+	  QName[] qNameArray = template.getMode();
 	  
-	  String templateModeStr = null;
-	  if (templateModeQname != null) {
-		  templateModeStr = templateModeQname.toString();   
+	  StringBuffer strBuff = new StringBuffer();
+	  if (qNameArray != null) {
+		 for (int i = 0; i < qNameArray.length; i++) {
+			if (i < (qNameArray.length - 1)) {
+			   strBuff.append(qNameArray[i] + "##");
+			}
+			else {
+			   strBuff.append(qNameArray[i]);
+			}
+		 }
 	  }
 	  
-	  if (templateModeStr != null) {
-		  patternTableKeyStr = (patternTableKeyStr + Constants.XSL_PATTERN_TABLE_DELIM + templateModeStr);  
+	  if (qNameArray != null) {
+		  patternTableKeyStr = (patternTableKeyStr + Constants.XSL_PATTERN_TABLE_DELIM + strBuff.toString());  
 	  }
 	  else {
 		  patternTableKeyStr = (patternTableKeyStr + Constants.XSL_PATTERN_TABLE_DELIM + "mode_unspecified");		  

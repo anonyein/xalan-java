@@ -149,6 +149,8 @@ public class StylesheetRoot extends StylesheetComposed implements java.io.Serial
 	private String m_input_type_annotations;
 
 	private boolean m_initial_context_node_available;
+	
+	private String m_collation_uri;
 
 	private ErrorListener m_errorListener;
 
@@ -1125,8 +1127,11 @@ public class StylesheetRoot extends StylesheetComposed implements java.io.Serial
 	{	  
 		ElemTemplate result = new ElemTemplate();
 
-		result.setStylesheet(this);	
-		result.setMode(mode);	  	  
+		result.setStylesheet(this);
+		
+		Vector vMode = new Vector();
+		vMode.add(mode);		
+		result.setMode(vMode);	  	  
 
 		if (nodeType == DTM.DOCUMENT_NODE) {
 			result = getDefaultRootRule();		  
@@ -1174,7 +1179,10 @@ public class StylesheetRoot extends StylesheetComposed implements java.io.Serial
 	{		  
 		ElemTemplate result = new ElemTemplate();
 
-		result.setMode(mode);
+		Vector vMode = new Vector();
+		vMode.add(mode);		
+		result.setMode(vMode);
+				
 		result.setStylesheet(this);
 
 		XPath xpathMatch = new XPath("node()|@*", this, this, XPath.MATCH, m_errorListener);
@@ -1203,7 +1211,10 @@ public class StylesheetRoot extends StylesheetComposed implements java.io.Serial
 	{	  
 		ElemTemplate result = new ElemTemplate();
 
-		result.setMode(mode);
+		Vector vMode = new Vector();
+		vMode.add(mode);		
+		result.setMode(vMode);
+		
 		result.setStylesheet(this);	  	  
 
 		if (nodeType == DTM.ATTRIBUTE_NODE) {		  
@@ -1256,7 +1267,10 @@ public class StylesheetRoot extends StylesheetComposed implements java.io.Serial
 	{	  
 		ElemTemplate result = new ElemTemplate();
 
-		result.setMode(mode);		result.setStylesheet(this);
+		Vector vMode = new Vector();
+		vMode.add(mode);		
+		result.setMode(vMode);
+				result.setStylesheet(this);
 
 		if (nodeType == DTM.DOCUMENT_NODE) {
 			result = getDefaultRootRule();
@@ -1284,8 +1298,11 @@ public class StylesheetRoot extends StylesheetComposed implements java.io.Serial
 
 		ElemTemplate result = new ElemTemplate();
 
-		result.setStylesheet(this);	
-		result.setMode(mode);	  	  
+		result.setStylesheet(this);
+		
+		Vector vMode = new Vector();
+		vMode.add(mode);		
+		result.setMode(vMode);	  	  
 
 		if (nodeType == DTM.DOCUMENT_NODE) {		  
 			result = getDefaultRootRule();
@@ -1911,10 +1928,21 @@ public class StylesheetRoot extends StylesheetComposed implements java.io.Serial
 		}
 	}
 
+	/**
+	 * Get the compiled object tree corresponding 
+	 * to an XML Schema document.
+	 * 
+	 * @return                An XSModel object instance     
+	 */
 	public XSModel getXsModel() {
 		return m_xsModel;
 	}
 
+	/**
+	 * Set the XSModel object instance. 
+	 * 
+	 * @param xsModel              XSModel object instance
+	 */
 	public void setXsModel(XSModel xsModel) {
 		this.m_xsModel = xsModel;
 	}
@@ -2108,6 +2136,14 @@ public class StylesheetRoot extends StylesheetComposed implements java.io.Serial
 
 	public boolean isInitContextNodeSet() {
 		return m_initial_context_node_available;
+	}
+	
+	public void setCollationUri(String collationUri) {
+		this.m_collation_uri = collationUri; 
+	}
+
+	public String getCollationUri() {
+		return m_collation_uri;
 	}
 
 }

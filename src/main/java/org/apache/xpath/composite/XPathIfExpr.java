@@ -22,7 +22,6 @@ import java.util.Vector;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
-import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.XMLNSDecl;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.Expression;
@@ -35,10 +34,16 @@ import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.functions.XSL3FunctionService;
 import org.apache.xpath.functions.XSLFunctionBuilder;
 import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XBoolean;
+import org.apache.xpath.objects.XBooleanStatic;
+import org.apache.xpath.objects.XMLNodeCursorImpl;
+import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XString;
 
-import xml.xpath31.processor.types.XSAnyType;
 import xml.xpath31.processor.types.XSAnyURI;
+import xml.xpath31.processor.types.XSBoolean;
+import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSString;
 import xml.xpath31.processor.types.XSUntypedAtomic;
 
@@ -54,7 +59,7 @@ public class XPathIfExpr extends Expression {
     
     private static final long serialVersionUID = 4057572946055830336L;
 
-    private String m_ifConditionXPathStr;
+    private String m_ifBranchConditionXPathStr;
     
     private String m_thenExprXPathStr;
     
@@ -79,42 +84,140 @@ public class XPathIfExpr extends Expression {
 
     @Override
     public XObject execute(XPathContext xctxt) throws TransformerException {
-       XObject evalResult = null;
+       
+       XObject result = null;
        
        SourceLocator srcLocator = xctxt.getSAXLocator();
        
        final int currentNode = xctxt.getContextNode();
        
-       ElemTemplateElement elemTemplateElement = (ElemTemplateElement)xctxt.getNamespaceContext();
-       List<XMLNSDecl> prefixTable = null;
-       if (elemTemplateElement != null) {
-          prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-       }
+       List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
+       
+       m_ifBranchConditionXPathStr = m_ifBranchConditionXPathStr.trim();
+       m_thenExprXPathStr = m_thenExprXPathStr.trim();
+       m_elseExprXPathStr = m_elseExprXPathStr.trim();
        
        if (prefixTable != null) {
-          m_ifConditionXPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(
-                                                                                    m_ifConditionXPathStr, prefixTable);
+          m_ifBranchConditionXPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(
+                                                                                    m_ifBranchConditionXPathStr, prefixTable);
        }
        
-       XPath ifConditionXPath = new XPath(m_ifConditionXPathStr, srcLocator, xctxt.getNamespaceContext(), 
+       XPath ifConditionXPath = null;
+       
+       String str1 = null;
+       String str2 = null;
+       
+       boolean x1 = false;
+	   boolean x2 = false;
+       
+       try {
+    	  if (m_ifBranchConditionXPathStr.startsWith("(") && m_ifBranchConditionXPathStr.endsWith(")")) {
+    		 String str3 = m_ifBranchConditionXPathStr.substring(1, m_ifBranchConditionXPathStr.length() - 1);
+    		 if (!"".equals(str3.trim())) {
+    		    m_ifBranchConditionXPathStr = str3; 
+    		 }
+    	  }    	      	  
+    	   
+          ifConditionXPath = new XPath(m_ifBranchConditionXPathStr, srcLocator, xctxt.getNamespaceContext(), 
                                                                                                  XPath.SELECT, null);
-       if (m_vars != null) {
-          ifConditionXPath.fixupVariables(m_vars, m_globals_size);
+       }
+       catch (Exception ex) {
+    	   // There are XPath expressions like (1, 2, 3, a(b()))[...] ,
+    	   // which may be evaluated here within this exception condition
+    	   
+    	   int idx1 = m_ifBranchConditionXPathStr.indexOf('[');    	   
+    	   if (idx1 != -1) {
+    		   x1 = true;
+    		   str1 = m_ifBranchConditionXPathStr.substring(0, idx1);
+    		   str1 = str1.trim();
+    		   str2 = m_ifBranchConditionXPathStr.substring(idx1);
+    		   str2 = str2.trim();
+    		   if (str2.endsWith("]")) {
+    			  x2 = true;
+    			  str2 = str2.substring(1, str2.length() - 1);
+    			  str2 = str2.trim();
+    		   }
+    	   } 
+    	   
+    	   if (!x1 || !x2) {
+    	      throw new TransformerException("XPST0003 : An XPath 3.1 'if' expression branch condition expression " + m_ifBranchConditionXPathStr 
+    			                                                                                                    + " has a syntax error.", srcLocator);
+           }
        }
        
-       XObject ifConditionXPathResult = ifConditionXPath.execute(xctxt, currentNode, xctxt.getNamespaceContext());       
+       XObject ifConditionXPathResult = null;
+       
+       if (!x1 && !x2) {
+    	   if (m_vars != null) {
+    		   ifConditionXPath.fixupVariables(m_vars, m_globals_size);
+    	   }
+
+    	   ifConditionXPathResult = ifConditionXPath.execute(xctxt, currentNode, xctxt.getNamespaceContext());
+       }
+       else {
+    	   try {
+    		   int predicateValue = Integer.valueOf(str2);    		  
+    		   ifConditionXPath = new XPath(str1, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+
+    		   if (m_vars != null) {
+    			   ifConditionXPath.fixupVariables(m_vars, m_globals_size);
+    		   }
+
+    		   ifConditionXPathResult = ifConditionXPath.execute(xctxt, currentNode, xctxt.getNamespaceContext());
+    		   
+    		   if (ifConditionXPathResult instanceof ResultSequence) {
+    			  ResultSequence rSeq = (ResultSequence)ifConditionXPathResult;
+    			  if ((predicateValue >= 1) && (predicateValue <= rSeq.size())) {
+    				 ifConditionXPathResult = rSeq.item(predicateValue - 1);   
+    			  }
+    		   }
+    		   else if (predicateValue != 1) {
+    			  ifConditionXPathResult = new ResultSequence(); 
+    		   }
+    	   }
+    	   catch (Exception ex) {
+    		   throw new TransformerException("XPST0003 : An XPath 3.1 'if' expression branch condition expression " + m_ifBranchConditionXPathStr 
+    				                                                                                                 + " has a syntax error.", srcLocator); 
+    	   }    	       	   
+       }
        
        boolean ifConditionEvalResult = false;
        boolean ifConditionEagerCheck = false;
        String strVal = null;
-       if ((ifConditionXPathResult instanceof XSString) || (ifConditionXPathResult instanceof XSAnyURI) || 
-    		                                               (ifConditionXPathResult instanceof XSUntypedAtomic)) {
+       
+       boolean ifBranchConditionEmptySeq = ((ifConditionXPathResult instanceof ResultSequence) && 
+    		                                                                          (((ResultSequence)ifConditionXPathResult).size() == 0)) ? 
+    		                                                                        		                                  true : false;  
+       
+       if ((ifConditionXPathResult instanceof XString) || (ifConditionXPathResult instanceof XSString) 
+    		                                           || (ifConditionXPathResult instanceof XSAnyURI) || 
+    		                                              (ifConditionXPathResult instanceof XSUntypedAtomic)) {
     	   ifConditionEagerCheck = true;
-    	   XSAnyType xsAnyType = (XSAnyType)ifConditionXPathResult;
-    	   strVal = xsAnyType.stringValue();
+    	   strVal = XslTransformEvaluationHelper.getStrVal(ifConditionXPathResult);
     	   if ((strVal != null) && (strVal.length() > 0)) {
     		   ifConditionEvalResult = true;  
     	   }
+       }
+       else if ((ifConditionXPathResult instanceof XNumber) || (ifConditionXPathResult instanceof XSNumericType)) {
+    	   ifConditionEagerCheck = true;    	   
+    	   strVal = XslTransformEvaluationHelper.getStrVal(ifConditionXPathResult);
+    	   if (!"NaN".equals(strVal)) {
+    		  double dbl = Double.valueOf(strVal);
+    		  if (dbl != 0) {
+    			 ifConditionEvalResult = true;   
+    		  }
+    	   }
+       }       
+       else if ((ifConditionXPathResult instanceof XSBoolean) || (ifConditionXPathResult instanceof XBoolean) 
+    		                                                                                         || (ifConditionXPathResult instanceof XBooleanStatic)) {
+    	   ifConditionEagerCheck = true;
+    	   if (ifConditionXPathResult.bool()) {
+    		  ifConditionEvalResult = true;  
+    	   }
+       }
+       else if (!ifBranchConditionEmptySeq && !(ifConditionXPathResult instanceof XMLNodeCursorImpl)) {
+    	   throw new TransformerException("FORG0006 : XPath 3.1 effective boolean value is defined only for xdm items with "
+    	   		                                                                                           + "types boolean, string, number, uri and node.", srcLocator);
        }
        
        if ((ifConditionEagerCheck && ifConditionEvalResult) || (!ifConditionEagerCheck && ifConditionXPathResult.bool())) {
@@ -123,8 +226,17 @@ public class XPathIfExpr extends Expression {
                                                                                         m_thenExprXPathStr, prefixTable);
            }
            
-           XPath thenExprXPath = new XPath(m_thenExprXPathStr, srcLocator, xctxt.getNamespaceContext(), 
+           XPath thenExprXPath = null;
+           try {
+              thenExprXPath = new XPath(m_thenExprXPathStr, srcLocator, xctxt.getNamespaceContext(), 
                                                                                                XPath.SELECT, null);
+           }
+           catch (Exception ex) {
+        	  throw new TransformerException("XPST0003 : An XPath 3.1 'if' expression then clause " + m_thenExprXPathStr 
+                                                                                                    + " has a syntax error.", srcLocator); 
+           }
+           
+           
            if (m_vars != null) {
               thenExprXPath.fixupVariables(m_vars, m_globals_size);
            }                      
@@ -134,17 +246,17 @@ public class XPathIfExpr extends Expression {
                       
            if ((expr instanceof SelfIteratorNoPredicate) && (ifConditionEvalResult || (xpath3CtxtItem != null))) {
         	  if (ifConditionEvalResult) {
-        		 evalResult = new XSString(strVal); 
+        		 result = new XSString(strVal); 
         	  }
         	  else {
-        		 evalResult = xpath3CtxtItem;  
+        		 result = xpath3CtxtItem;  
         	  }        	    
            }
            else if (expr instanceof XPathNamedFunctionReference) {
-        	  evalResult = (XPathNamedFunctionReference)expr;   
+        	  result = (XPathNamedFunctionReference)expr;   
            }
            else {
-              evalResult = thenExprXPath.execute(xctxt, currentNode, xctxt.getNamespaceContext());
+              result = thenExprXPath.execute(xctxt, currentNode, xctxt.getNamespaceContext());
            }
        }
        else if ((ifConditionEagerCheck && !ifConditionEvalResult) || (!ifConditionEagerCheck && !ifConditionXPathResult.bool())) {
@@ -153,27 +265,35 @@ public class XPathIfExpr extends Expression {
                                                                                                           prefixTable);
            }
            
-           XPath elseExprXPath = new XPath(m_elseExprXPathStr, srcLocator, xctxt.getNamespaceContext(), 
+           XPath elseExprXPath = null;
+           try {
+              elseExprXPath = new XPath(m_elseExprXPathStr, srcLocator, xctxt.getNamespaceContext(), 
                                                                                               XPath.SELECT, null);
+           }
+           catch (Exception ex) {
+        	  throw new TransformerException("XPST0003 : An XPath 3.1 'if' expression else clause " + m_elseExprXPathStr 
+                                                                                                    + " has a syntax error.", srcLocator); 
+           }
+           
            if (m_vars != null) {
               elseExprXPath.fixupVariables(m_vars, m_globals_size);
            }
            
            Expression expr = elseExprXPath.getExpression();
            XObject xpath3CtxtItem = xctxt.getXPath3ContextItem();
-           if ((expr instanceof SelfIteratorNoPredicate) && (xpath3CtxtItem != null)) {
-        	  evalResult = xpath3CtxtItem;  
+           if ((xpath3CtxtItem != null) && (expr instanceof SelfIteratorNoPredicate)) {
+        	  result = xpath3CtxtItem;  
            }
            else if (expr instanceof XPathNamedFunctionReference) {
-        	  evalResult = (XPathNamedFunctionReference)expr;   
+        	  result = (XPathNamedFunctionReference)expr;   
            }
            else {
-              evalResult = elseExprXPath.execute(xctxt, currentNode, xctxt.getNamespaceContext());
+              result = elseExprXPath.execute(xctxt, currentNode, xctxt.getNamespaceContext());
            }
        }
        
-       if ((evalResult instanceof XPathNamedFunctionReference) && (m_xpathSuffixStr != null)) {
-    	   XPathNamedFunctionReference xPathNamedFunctionReference = (XPathNamedFunctionReference)evalResult;
+       if ((result instanceof XPathNamedFunctionReference) && (m_xpathSuffixStr != null)) {
+    	   XPathNamedFunctionReference xPathNamedFunctionReference = (XPathNamedFunctionReference)result;
     	   String funcNamespace = xPathNamedFunctionReference.getFuncNamespace();
     	   if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace) || 
     		   (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(funcNamespace) ||
@@ -198,14 +318,14 @@ public class XPathIfExpr extends Expression {
     			   }
     		   }
 
-    		   evalResult = xsl3FunctionService.evaluateXPathNamedFunctionReference((XPathNamedFunctionReference)evalResult, null, argSeq, 
+    		   result = xsl3FunctionService.evaluateXPathNamedFunctionReference((XPathNamedFunctionReference)result, null, argSeq, 
 																									    				   prefixTable, m_vars, m_globals_size, 
 																									    				   getExpressionOwner(), xctxt); 
     		  
     	   }
        }
        
-       return evalResult;
+       return result;
     }        
 
     @Override
@@ -214,12 +334,12 @@ public class XPathIfExpr extends Expression {
         m_globals_size = globalsSize; 
     }
     
-    public String getIfConditionXPathStr() {
-        return m_ifConditionXPathStr;
+    public String getIfBranchConditionXPathStr() {
+        return m_ifBranchConditionXPathStr;
     }
 
-    public void setIfConditionXPathStr(String ifConditionXPathStr) {
-    	this.m_ifConditionXPathStr = ifConditionXPathStr;
+    public void setIfBranchConditionXPathStr(String ifConditionXPathStr) {
+    	this.m_ifBranchConditionXPathStr = ifConditionXPathStr;
     }
 
     public String getThenExprXPathStr() {
