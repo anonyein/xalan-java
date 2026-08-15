@@ -39,7 +39,7 @@ import org.apache.xpath.regex.PatternSyntaxException;
 import org.apache.xpath.res.XPATHErrorResources;
 
 /**
- * Implementation of the fn:tokenize function.
+ * Implementation of an XPath 3.1 function fn:tokenize.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -55,15 +55,14 @@ public class FuncTokenize extends Function3Args {
    * Class constructor.
    */
   public FuncTokenize() {
-	  m_defined_arity = new Short[] { 1, 2, 3 };
+	  m_arity = new Short[] { 1, 2, 3 };
   }
 
   /**
    * Evaluate the function. The function must return a valid object.
    * 
-   * @param xctxt The current execution context.
-   * 
-   * @return A valid XObject.
+   * @param xctxt                        An XPath context object
+   * @return                             A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
@@ -74,7 +73,7 @@ public class FuncTokenize extends Function3Args {
       
         SourceLocator srcLocator = xctxt.getSAXLocator();
         
-        String arg0Str = XslTransformEvaluationHelper.getStrVal(m_arg0.execute(xctxt));
+        String arg0Str = XslTransformEvaluationHelper.getStrVal(getFunctionArgEffectiveValue(m_arg0, xctxt));
         
         XMLString inputStr = new XString(arg0Str);
         
@@ -104,10 +103,20 @@ public class FuncTokenize extends Function3Args {
                                                           									ER_INVALID_REGEX, new Object[]{ FUNCTION_NAME }), srcLocator);   
             }
             catch (Exception ex) {
-                throw new javax.xml.transform.TransformerException(ex.getMessage(), srcLocator); 
+            	String errMesg = ex.getMessage();        	
+            	
+            	String errCode = "FORX0004";
+            	if (errMesg.startsWith("No group")) {
+            	   errCode = "FORX0003";
+            	}
+            	
+            	errMesg = errCode + " : " + errMesg;  
+            	
+                throw new javax.xml.transform.TransformerException(errMesg, srcLocator);
             }
             
-            for (int idx = 0; idx < tokenList.size(); idx++) {
+            int size1 = tokenList.size();
+            for (int idx = 0; idx < size1; idx++) {
                 resultSeq.add(new XString(tokenList.get(idx)));    
             }
         }
@@ -115,14 +124,15 @@ public class FuncTokenize extends Function3Args {
         	String patternStr = null;
 
         	if (m_arg1 != null) {
-        	    patternStr = XslTransformEvaluationHelper.getStrVal(m_arg1.execute(xctxt));
+        	    patternStr = XslTransformEvaluationHelper.getStrVal(getFunctionArgEffectiveValue(m_arg1, xctxt));
         	}
 
         	String flagsStr = null;
 
         	if (m_arg2 != null) {
-        		flagsStr = XslTransformEvaluationHelper.getStrVal(m_arg2.execute(xctxt));
-        		if (!RegexEvaluationSupport.isFlagStrValid(flagsStr)) {               
+        		flagsStr = XslTransformEvaluationHelper.getStrVal(getFunctionArgEffectiveValue(m_arg2, xctxt));
+        		
+        		if (!RegexEvaluationSupport.isRegexFlagStrValid(flagsStr)) {               
         			throw new javax.xml.transform.TransformerException(XSLMessages.createXPATHMessage(XPATHErrorResources.
         																						ER_INVALID_REGEX_FLAGS, new Object[]{ FUNCTION_NAME }), srcLocator); 
         		}
@@ -141,8 +151,8 @@ public class FuncTokenize extends Function3Args {
         		throw new javax.xml.transform.TransformerException(ex.getMessage(), srcLocator);   
         	}
 
-        	int count1 = tokenList.size();
-        	for (int idx = 0; idx < count1; idx++) {
+        	int size1 = tokenList.size();
+        	for (int idx = 0; idx < size1; idx++) {
         		resultSeq.add(new XString(tokenList.get(idx)));    
         	}
         }
@@ -186,7 +196,7 @@ public class FuncTokenize extends Function3Args {
       Matcher regexMatcher = null;
 
       try {
-          regexMatcher = RegexEvaluationSupport.getRegexMatcher(RegexEvaluationSupport.transformRegexStrForSubtractionOp(
+          regexMatcher = RegexEvaluationSupport.getRegexMatcher(RegexEvaluationSupport.transformRegexStrForSubtrOp(
                                                                                             pattern.toString()), flags != null ? 
                                                                                             flags.toString() : null, inputStr.toString());
       }

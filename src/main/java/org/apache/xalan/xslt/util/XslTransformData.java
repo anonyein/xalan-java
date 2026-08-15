@@ -39,9 +39,15 @@ public class XslTransformData {
     
 	/**    
      * This class field represents, an XSL stylesheet 
-     * document's uri, if available.
+     * document's uri string value, if available.
      */
     public static String m_xslSystemId;
+    
+    /**
+     * This class field represents, an XSL transformation's 
+     * XML document input uri string value, if available.
+     */
+    public static String m_xmlSystemId;
     
     /**
      * This class field represents, xdm function items that 
@@ -139,6 +145,7 @@ public class XslTransformData {
 	 */
 	public static void reset() {
 		m_xslSystemId = null;
+		m_xmlSystemId = null;
 		m_xpathInlineFunction = null;
 		m_xpathArray = null;
 		m_xpathMap = null;

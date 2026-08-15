@@ -120,9 +120,14 @@ public class XPathDynamicFunctionCall extends Expression {
     private XSL3FunctionService m_xsl3FunctionService = XSLFunctionBuilder.getXSLFunctionService();
     
     /**
-     * Evaluate an XPath dynamic function call expression.
-     */
-    @Override
+	 * Evaluate an XPath 3.1 dynamic function call. The function must 
+	 * return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
     public XObject execute(XPathContext xctxt) throws TransformerException {
         
        XObject evalResult = null;
@@ -796,8 +801,14 @@ public class XPathDynamicFunctionCall extends Expression {
 			result = elemFunction.evaluateXslFunction(transformerImpl, argSequence);
 		}
 		else {
+			ResultSequence argSeq = null;
+			if ((m_argList == null) && (m_ArrowOpArgObj != null)) {
+			   argSeq = new ResultSequence();
+			   argSeq.add(m_ArrowOpArgObj);
+			}
+			
 		    result = m_xsl3FunctionService.evaluateXPathNamedFunctionReference((XPathNamedFunctionReference)functionRef, m_argList, 
-																				   null, prefixTable, m_vars, m_globals_size, getExpressionOwner(), 
+		    		                                                               argSeq, prefixTable, m_vars, m_globals_size, getExpressionOwner(), 
 																				   xctxt);
 		}
 		
@@ -852,7 +863,7 @@ public class XPathDynamicFunctionCall extends Expression {
 			}
 			
 			expandedFuncName = "{" + funcNamespace + ":" + funcLocalName + "}#" + runTimeArityValue;
-			Short[] funcDefinedArity = funcObj.getDefinedArity();
+			Short[] funcDefinedArity = funcObj.getArity();
 			List<Short> arityList = Arrays.asList(funcDefinedArity);
 			int listSize1 = arityList.size();
 			StringBuffer strBuff = new StringBuffer();

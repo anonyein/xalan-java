@@ -34,7 +34,7 @@ import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Implementation of XSLT 3.0 xsl:param element.
+ * Implementation of an XSLT instruction xsl:param.
  * 
  * @xsl.usage advanced
  */
@@ -184,7 +184,7 @@ public class ElemParam extends ElemVariable
   }
   
   /**
-   * Execute a variable declaration and push it onto the variable stack.
+   * Evaluate a variable declaration and push it onto the variable stack.
    *
    * @param transformer non-null reference to the the current transform-time state.
    *

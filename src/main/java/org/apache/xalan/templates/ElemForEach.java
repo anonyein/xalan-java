@@ -45,7 +45,7 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.Keywords;
-import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceType;
 import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.composite.XPathForExpr;
 import org.apache.xpath.composite.XPathNamedFunctionReference;
@@ -61,7 +61,7 @@ import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.InstanceOf;
-import org.apache.xpath.operations.Operation;
+import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.types.DateTimeUtil;
 import org.xml.sax.SAXException;
@@ -73,7 +73,7 @@ import xml.xpath31.processor.types.XSDateTime;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * Implementation of the XSLT 3.0 xsl:for-each instruction.
+ * Implementation of an XSLT 3.0 instruction xsl:for-each.
  * 
  * @author Scott Boag <scott_boag@us.ibm.com>
  * @author Joseph Kesselman <keshlam@alum.mit.edu>, Myriam Midy <mmidy@apache.org>,
@@ -580,7 +580,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     	
         return;
     }
-    else if (m_selectExpression instanceof Operation) {
+    else if (m_selectExpression instanceof XPathOperator) {
         XObject  evalResult = m_selectExpression.execute(xctxt);
         
         if (evalResult instanceof ResultSequence) {            
@@ -924,7 +924,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     				transformer.getTraceManager().emitTraceEvent(this);
     			}
 
-    			// And execute the child templates.
+    			// And evaluate the child templates.
     			// Loop through the children of the template, calling execute on 
     			// each of them.
     			for (ElemTemplateElement t = this.m_firstChild; t != null;
@@ -1168,7 +1168,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   if ((dataTypeStr != null) && !("text".equals(dataTypeStr) || "number".equals(dataTypeStr))) {							  
 						   XPath seqTypeXPath = new XPath(dataTypeStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);            
 						   XObject seqTypeObj = seqTypeXPath.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());            
-						   XPathSequenceTypeData seqExpectedTypeData = (XPathSequenceTypeData)seqTypeObj;
+						   XPathSequenceType seqExpectedTypeData = (XPathSequenceType)seqTypeObj;
 						   InstanceOf instanceOf = new InstanceOf();
 						   XObject xObj = instanceOf.operate(resultSeqItem, seqExpectedTypeData);
 						   if (!xObj.bool()) {

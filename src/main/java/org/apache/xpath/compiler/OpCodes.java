@@ -565,6 +565,11 @@ public class OpCodes
    * Added for XSLT 3.0
    */
   public static final int NODETYPE_DOCUMENT = 1036;
+  
+  /**
+   * Added for XSLT 3.0
+   */
+  public static final int NODETYPE_ATTRIBUTE = 1037;
 
   /**
    * [FROM_stepType]
@@ -781,7 +786,7 @@ public class OpCodes
 
 	  public static final int OP_FUNC_ARG_PLACEHOLDER = 136;
 
-	  public static final int OP_TEXT_AND_NODE_EXPR = 137;
+	  public static final int OP_XPATH_BUILT_IN_NODE_KIND_EXPR = 137;
 
 	  public static final int OP_FUNCTION2 = 138;
 	  

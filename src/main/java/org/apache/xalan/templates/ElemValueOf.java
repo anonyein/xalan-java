@@ -30,7 +30,6 @@ import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
-import org.apache.xml.dtm.DTMManager;
 import org.apache.xml.serializer.SerializationHandler;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
@@ -54,7 +53,7 @@ import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.Div;
-import org.apache.xpath.operations.Operation;
+import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.types.DateTimeUtil;
 import org.w3c.dom.DOMException;
@@ -73,7 +72,7 @@ import xml.xpath31.processor.types.XSQName;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * Implementation of XSLT 3.0 xsl:value-of instruction.
+ * Implementation of an XSLT instruction xsl:value-of.
  * 
  * @author Scott Boag <scott_boag@us.ibm.com>
  * @author Ilene Seelemann
@@ -359,15 +358,16 @@ public class ElemValueOf extends ElemTemplateElement {
   }
 
   /**
-   * Execute the string expression and copy the text to the
-   * result tree.
-   * The required select attribute is an expression; this expression
-   * is evaluated and the resulting object is converted to a string
+   * Evaluate an XSL stylesheet xsl:value-of instruction and copy the text to
+   * XSL stylesheet result tree.
+   * 
+   * xsl:value-of instruction's required 'select' attribute is an XPath expression, 
+   * which is evaluated and the resulting object is converted to a string
    * as if by a call to the string function. The string specifies
    * the string-value of the created text node. If the string is
    * empty, no text node will be created. The created text node will
    * be merged with any adjacent text nodes.
-   * @see <a href="http://www.w3.org/TR/xslt#value-of">value-of in XSLT Specification</a>
+   * @see <a href="https://www.w3.org/TR/xslt-30/#value-of">value-of within XSLT specification</a>
    *
    * @param transformer non-null reference to the the current transform-time state.
    *
@@ -732,7 +732,7 @@ public class ElemValueOf extends ElemTemplateElement {
                       
                       (new XString(strValue)).dispatchCharactersEvents(rth);
                   }
-                  else if (expr instanceof Operation) {
+                  else if (expr instanceof XPathOperator) {
                 	 XObject evalResult = expr.execute(xctxt);
                 	 if (evalResult instanceof XString) {
                 		XString xString = (XString)evalResult;
@@ -813,14 +813,28 @@ public class ElemValueOf extends ElemTemplateElement {
                            if (func != null) {
                         	  // Evaluate an XPath expression like /a/b/funcCall(..).
                         	  // Find one result item for a sequence of items.
-                              XObject evalResult = evaluateXPathSuffixFunction(xctxt, srcLocator, func, xdmNodeObj);
-                              resultStr = XslTransformEvaluationHelper.getStrVal(evalResult);                               
+                        	   try {
+                        		   xctxt.pushCurrentNode(nextNode);
+                        		   XObject evalResult = evaluateXPathSuffixFunction(xctxt, srcLocator, func, xdmNodeObj);
+                        		   
+                        		   resultStr = XslTransformEvaluationHelper.getStrVal(evalResult);
+                        	   }
+                        	   finally {
+                        		   xctxt.popCurrentNode();
+                        	   }                        	                                                                
                            }
                            else if (dfc != null) {
                         	   // Evaluate an XPath expression like /a/b/$funcCall(..).
                         	   // Find one result item for a sequence of items.
-                               XObject evalResult = evaluateXPathSuffixDfc(xctxt, dfc, xdmNodeObj);
-                               resultStr = XslTransformEvaluationHelper.getStrVal(evalResult);                               
+                               try {
+                            	  xctxt.pushCurrentNode(nextNode);
+                        	      XObject evalResult = evaluateXPathSuffixDfc(xctxt, dfc, xdmNodeObj);
+                        	      
+                                  resultStr = XslTransformEvaluationHelper.getStrVal(evalResult);
+                               }
+                               finally {
+                            	   xctxt.popCurrentNode(); 
+                               }
                            }
                            else {
                               resultStr = xdmNodeObj.str();
@@ -1257,36 +1271,46 @@ public class ElemValueOf extends ElemTemplateElement {
   private void evaluateXslValueOfSeqConstructorAndEmitResult(TransformerImpl transformer, XPathContext xctxt, 
 		                                                     SerializationHandler rth, String separatorStrValue) throws TransformerException, SAXException {
 	  
-	  int rtfNodeHandle = transformer.transformToRTF(this);
-	  DTMManager dtmMgr = xctxt.getDTMManager();        	  
-	  DTM dtm = dtmMgr.getDTM(rtfNodeHandle);        	  
+	  int rtfNodeHandle = transformer.transformToRTF(this);      	  
+	  
+	  DTM dtm = xctxt.getDTM(rtfNodeHandle);
+	  
 	  int nodeType = dtm.getNodeType(rtfNodeHandle);
 
-	  StringBuffer nodeStrValBuff = new StringBuffer();
-
-	  if (nodeType == DTM.DOCUMENT_NODE) {
+	  if (nodeType == DTM.DOCUMENT_NODE) {		  		 
+		  StringBuffer strBuff = new StringBuffer(); 
 		  Node docNode = dtm.getNode(rtfNodeHandle);
 		  NodeList nodeList = docNode.getChildNodes();
-		  if ((nodeList != null) && (nodeList.getLength() > 0)) {
-			  for (int idx = 0; idx < nodeList.getLength(); idx++) {
+		  String nodeStrVal = null;
+		  if ((nodeList != null) && (nodeList.getLength() > 1)) {
+			  int size1 = nodeList.getLength();
+			  for (int idx = 0; idx < size1; idx++) {
 				  Node node = nodeList.item(idx);
-				  String nodeStrVal = node.getTextContent();
-				  if (idx < (nodeList.getLength() - 1)) {
+				  String str1 = node.getTextContent();
+				  if (idx < (size1 - 1)) {
 					  if (separatorStrValue != null) {
-						  nodeStrValBuff.append(nodeStrVal + separatorStrValue);
+						  strBuff.append(str1 + separatorStrValue);
 					  }
 					  else {
-						  nodeStrValBuff.append(nodeStrVal); 
+						  strBuff.append(str1); 
 					  }
 				  }
 				  else {
-					  nodeStrValBuff.append(nodeStrVal);
+					  strBuff.append(str1);
 				  }
 			  }
+			  
+			  nodeStrVal = strBuff.toString();
 		  }
-
-		  String nodeStrVal = (nodeStrValBuff.toString()).trim();
-		  boolean status1 = false;		  
+		  else {		  
+			  nodeStrVal = (dtm.getStringValue(rtfNodeHandle)).toString();			  
+			  if (separatorStrValue != null) {
+				  nodeStrVal = nodeStrVal.replace(" ", separatorStrValue);  
+			  }
+		  }		  		  
+		  
+		  boolean status1 = false;
+		  
 		  if (nodeStrVal.contains(ElemSequence.SER_INTEGER_SUFFIX_ID)) {
 			  nodeStrVal = nodeStrVal.replace(ElemSequence.SER_INTEGER_SUFFIX_ID, "");
 			  status1 = true;
@@ -1326,10 +1350,11 @@ public class ElemValueOf extends ElemTemplateElement {
 		  (new XString(nodeStrVal)).dispatchCharactersEvents(rth);
 	  }
 	  else {
-		  // xsl:value-of's 'separator' attribute is ignored 
-		  // in this case. 
+		  // xsl:value-of 'separator' attribute is ignored here
+		  
 		  Node node = dtm.getNode(rtfNodeHandle);
 		  String nodeStrVal = node.getTextContent();
+		  
 		  (new XString(nodeStrVal)).dispatchCharactersEvents(rth);
 	  }
    }

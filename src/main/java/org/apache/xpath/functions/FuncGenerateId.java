@@ -17,9 +17,14 @@
  */
 package org.apache.xpath.functions;
 
+import javax.xml.transform.SourceLocator;
+import javax.xml.transform.TransformerException;
+
 import org.apache.xml.dtm.DTM;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
+import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.objects.XdmAttributeItem;
@@ -29,69 +34,104 @@ import org.apache.xpath.objects.XdmProcessingInstructionItem;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * Implementation of XPath 3.1 fn:generate-id function.
+ * Implementation of an XPath 3.1 function fn:generate-id.
  * 
  * @xsl.usage advanced
  */
 public class FuncGenerateId extends FunctionDef1Arg
 {
-    static final long serialVersionUID = 973544842091724273L;
-    
-    /**
+	static final long serialVersionUID = 973544842091724273L;
+
+	/**
 	 * Class constructor.
 	 */
 	public FuncGenerateId() {
-	   m_defined_arity = new Short[] { 0, 1 };
+		m_arity = new Short[] { 0, 1 };
 	}
 
-  /**
-   * Evaluate the function. The function must return
-   * a valid object.
-   * 
-   * @param xctxt                     The current XPath evaluation context
-   * @return                          A valid XObject
-   *
-   * @throws javax.xml.transform.TransformerException
-   */
-  public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
-  {
-	  XObject result = null;
-	  
-	  if ((m_arg0 == null) || (m_arg0 instanceof SelfIteratorNoPredicate)) {
-		 XObject contextItem = xctxt.getXPath3ContextItem();
-		 
-		 if (contextItem != null) {
-			 if (contextItem instanceof XdmAttributeItem) {
-				 result = new XSString(((XdmAttributeItem)contextItem).getIdValue()); 
-			 }
-			 else if (contextItem instanceof XdmCommentItem) {
-				 result = new XSString(((XdmCommentItem)contextItem).getIdValue());
-			 }
-			 else if (contextItem instanceof XdmProcessingInstructionItem) {
-				 result = new XSString(((XdmProcessingInstructionItem)contextItem).getIdValue());
-			 }
-			 
-			 if (result != null) {
-				 return result;
-			 }
-		 }		 		 
-	  }
+	/**
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
+	public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
+	{
+		
+		XObject result = null;
+		
+		SourceLocator srcLocator = xctxt.getSAXLocator();
 
-	  int which = getArg0AsNode(xctxt);
+		XObject xpath3CtxtItem = null;
+		
+		if ((m_arg0 == null) || (m_arg0 instanceof SelfIteratorNoPredicate)) {			
+			xpath3CtxtItem = xctxt.getXPath3ContextItem();
 
-	  if (DTM.NULL != which)
-	  {
-		  // Note that this is a different value than in previous releases
-		  // of Xalan. It's sensitive to the exact encoding of the node
-		  // handle anyway, so fighting to maintain backward compatability
-		  // really didn't make sense; it may change again as we continue
-		  // to experiment with balancing document and node numbers within
-		  // that value.
-		  result = new XSString("N" + Integer.toHexString(which).toUpperCase());
-	  }
-	  else
-		  result = new XSString((XString.EMPTYSTRING).str());
-	  
-	  return result;
-  }
+			if (xpath3CtxtItem != null) {
+				if (xpath3CtxtItem instanceof XdmAttributeItem) {
+					result = new XSString(((XdmAttributeItem)xpath3CtxtItem).getIdValue()); 
+				}
+				else if (xpath3CtxtItem instanceof XdmCommentItem) {
+					result = new XSString(((XdmCommentItem)xpath3CtxtItem).getIdValue());
+				}
+				else if (xpath3CtxtItem instanceof XdmProcessingInstructionItem) {
+					result = new XSString(((XdmProcessingInstructionItem)xpath3CtxtItem).getIdValue());
+				}
+
+				if (result != null) {
+					return result;
+				}
+			}		 		 
+		}	
+		
+		int which = DTM.NULL;
+		
+		if ((xpath3CtxtItem == null) && (m_arg0 != null)) {
+			XObject xObj0 = getFunctionArgEffectiveValue(m_arg0, xctxt);			
+			
+			if (xObj0 instanceof ResultSequence) {
+			   ResultSequence rSeq = (ResultSequence)xObj0;			   
+			   
+			   if (rSeq.size() == 1) {
+				  xObj0 = rSeq.item(0);				  
+			   }
+			   else if (rSeq.size() == 0) {
+				  result = new XSString("");
+				  
+				  return result;
+			   }
+			   else {
+				  throw new TransformerException("XPTY0004 : An XPath function 'generate-id' first argument is "
+				  		                                                                          + "an xdm sequence with size "
+				  		                                                                          + "greater than one.", srcLocator); 
+			   }
+			   
+			   if (xObj0 instanceof XMLNodeCursorImpl) {
+				  which = (((XMLNodeCursorImpl)xObj0).iter()).nextNode(); 
+			   }
+			   else {
+				  throw new TransformerException("XPTY0004 : An XPath function 'generate-id' first argument is not an xdm node.", srcLocator);
+			   }
+			}
+			else if (!(xObj0 instanceof XMLNodeCursorImpl)) {
+				throw new TransformerException("XPTY0004 : An XPath function 'generate-id' first argument is not an xdm node.", srcLocator);
+			}
+		}
+		
+		if (which == DTM.NULL) {
+		   which = getArg0AsNode(xctxt);
+		}
+
+		if (DTM.NULL != which)
+		{			
+			result = new XSString("N" + Integer.toHexString(which).toUpperCase());
+		}
+		else {
+			result = new XSString((XString.EMPTYSTRING).str());
+		}
+
+		return result;
+	}
 }

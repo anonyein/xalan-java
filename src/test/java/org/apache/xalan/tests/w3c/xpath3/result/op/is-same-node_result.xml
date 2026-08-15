@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-06-05T16:21:37Z" fail="14" name="op-is-same-node" pass="8" run="22" statusUnknown="0">
-   <testResult status="fail" testName="nodeexpression1"/>
-   <testResult status="fail" testName="nodeexpression3"/>
-   <testResult status="fail" testName="nodeexpression4"/>
-   <testResult status="fail" testName="nodeexpression9"/>
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-14T15:20:22Z" fail="5" name="op-is-same-node" pass="17" run="22" statusUnknown="0">
+   <testResult status="pass" testName="nodeexpression1"/>
+   <testResult status="pass" testName="nodeexpression3"/>
+   <testResult status="pass" testName="nodeexpression4"/>
+   <testResult status="pass" testName="nodeexpression9"/>
    <testResult status="pass" testName="nodeexpression11"/>
    <testResult status="fail" testName="nodeexpression12"/>
    <testResult status="fail" testName="nodeexpression13"/>
@@ -13,12 +13,12 @@
    <testResult status="pass" testName="nodeexpressionhc3"/>
    <testResult status="pass" testName="nodeexpressionhc4"/>
    <testResult status="pass" testName="nodeexpressionhc5"/>
-   <testResult status="fail" testName="nodecomparisonerr-1"/>
-   <testResult status="fail" testName="K-NodeSame-1"/>
-   <testResult status="fail" testName="K-NodeSame-2"/>
+   <testResult status="pass" testName="nodecomparisonerr-1"/>
+   <testResult status="pass" testName="K-NodeSame-1"/>
+   <testResult status="pass" testName="K-NodeSame-2"/>
    <testResult status="pass" testName="K-NodeSame-3"/>
-   <testResult status="fail" testName="K-NodeSame-4"/>
+   <testResult status="pass" testName="K-NodeSame-4"/>
    <testResult status="fail" testName="K-NodeSame-5"/>
-   <testResult status="fail" testName="K-NodeSame-6"/>
+   <testResult status="pass" testName="K-NodeSame-6"/>
    <testResult status="fail" testName="cbcl-is-same-node-002"/>
 </testrun>

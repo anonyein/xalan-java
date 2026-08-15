@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.templates;
 
 import javax.xml.transform.SourceLocator;
@@ -33,14 +30,8 @@ import org.apache.xpath.objects.XObject;
 import xml.xpath31.processor.types.XSAnyType;
 
 /**
- * The XSLT xsl:if element, is used to perform conditional processing,
- * within an XSLT stylesheet.
- * 
- * <xsl:if
-        test = expression>
-       <!-- Content: sequence-constructor -->
-   </xsl:if>
-
+ * Implementation of an XSLT instruction xsl:if.
+ *
  * @xsl.usage advanced
  */
 public class ElemIf extends ElemTemplateElement
@@ -210,7 +201,8 @@ public class ElemIf extends ElemTemplateElement
   }
 
   /**
-   * Conditionally execute a sub-template.
+   * Conditionally evaluate a sub-template.
+   * 
    * The expression is evaluated and the resulting object is converted
    * to a boolean as if by a call to the boolean function. If the result
    * is true, then the content template is instantiated; otherwise, nothing

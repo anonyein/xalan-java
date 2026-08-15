@@ -15,14 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.functions;
 
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.XPathContext;
-import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 
 /**
@@ -38,26 +34,24 @@ public class FuncCount extends FunctionOneArg
      * Default constructor.
      */
     public FuncCount() {
-    	m_defined_arity = new Short[] { 1 };	
+    	m_arity = new Short[] { 1 };	
     }
 
-  /**
-   * Evaluate the function. The function must return a valid object.
-   * 
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
-   *
-   * @throws javax.xml.transform.TransformerException
-   */
-  public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
-  {
-      XObject result = null;
-      
-	  XNumber xNumber = XslTransformEvaluationHelper.getSequenceItemCount(m_arg0, xctxt);
-	  
-	  result = xNumber;
-      
-      return result;    
-  }
+    /**
+     * Evaluate the function. The function must return a valid object.
+     * 
+     * @param xctxt                        An XPath context object
+     * @return                             A valid XObject
+     *
+     * @throws javax.xml.transform.TransformerException
+     */
+    public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
+    {
+    	XObject result = null;
+
+    	result = XslTransformEvaluationHelper.getSequenceItemCount(m_arg0, xctxt);
+
+    	return result;    
+    }
   
 }

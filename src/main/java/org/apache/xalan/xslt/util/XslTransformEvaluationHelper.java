@@ -20,6 +20,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +43,6 @@ import org.apache.xalan.templates.Stylesheet;
 import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.templates.TemplateList;
 import org.apache.xalan.templates.XMLNSDecl;
-import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xml.dtm.DTMManager;
@@ -72,10 +72,11 @@ import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.objects.XdmAttributeItem;
 import org.apache.xpath.objects.XdmNamespaceItem;
-import org.apache.xpath.operations.Operation;
 import org.apache.xpath.operations.Range;
 import org.apache.xpath.operations.SimpleMapOperator;
 import org.apache.xpath.operations.Variable;
+import org.apache.xpath.operations.VcEquals;
+import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.types.DateTimeUtil;
 import org.w3c.dom.Attr;
@@ -92,13 +93,18 @@ import org.xml.sax.InputSource;
 
 import xml.xpath31.processor.types.XSAnyAtomicType;
 import xml.xpath31.processor.types.XSAnyType;
+import xml.xpath31.processor.types.XSAnyURI;
 import xml.xpath31.processor.types.XSBoolean;
 import xml.xpath31.processor.types.XSDateTime;
+import xml.xpath31.processor.types.XSDayTimeDuration;
 import xml.xpath31.processor.types.XSDecimal;
-import xml.xpath31.processor.types.XSDouble;
+import xml.xpath31.processor.types.XSDuration;
+import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSNumericType;
+import xml.xpath31.processor.types.XSString;
 import xml.xpath31.processor.types.XSUntyped;
 import xml.xpath31.processor.types.XSUntypedAtomic;
+import xml.xpath31.processor.types.XSYearMonthDuration;
 
 /**
  * A class definition, that has few utility methods that provide 
@@ -109,8 +115,7 @@ import xml.xpath31.processor.types.XSUntypedAtomic;
  * @xsl.usage advanced
  */
 public class XslTransformEvaluationHelper {
-    
-    
+        
 	/**
      * Method definition, to do, given an xdm input sequence, expand the 
      * sequence to produce a new sequence none of whose items are sequence 
@@ -205,8 +210,11 @@ public class XslTransformEvaluationHelper {
     }
     
     /**
-     * Method definition, to get string value of XPath 3.1 
-     * xdm item. 
+     * Method definition, to get string value for an 
+     * XPath 3.1 supplied xdm item.
+     * 
+     * @param xObj                  An XPath 3.1 supplied xdm item
+     * @return                      The computed string value
      */
     public static String getStrVal(XObject xObj) {       
        
@@ -214,19 +222,21 @@ public class XslTransformEvaluationHelper {
        
        if (xObj instanceof XSDecimal) {    	  
     	  result = (((XSDecimal)xObj).getValue()).toPlainString();
-    	  int i = result.indexOf('.');
-    	  if (i > -1) {
-    		  // Delete trailing 0's to RHS of decimal point, for string value
-    		  String prefix = result.substring(0, i);
-    		  String suffix = result.substring(i + 1);
+    	  int idx1 = result.indexOf('.');
+    	  if (idx1 > -1) {
+    		  // Removing trailing 0's from rhs of decimal point, 
+    		  // for string value.
+    		  String prefix = result.substring(0, idx1);
+    		  String suffix = result.substring(idx1 + 1);
     		  int suffixLength = suffix.length();
-    		  int j = suffixLength;
-    		  for (j = (suffixLength - 1); j > -1; j--) {
-    			  if (suffix.charAt(j) != '0') {
+    		  int idx2 = suffixLength;
+    		  for (idx2 = (suffixLength - 1); idx2 > -1; idx2--) {
+    			  if (suffix.charAt(idx2) != '0') {
     				  break; 
     			  }
-    		  }    		
-    		  suffix = suffix.substring(0, j + 1);
+    		  }
+    		  
+    		  suffix = suffix.substring(0, idx2 + 1);
     		  result = (suffix.length() > 0) ? (prefix + "." + suffix) : prefix;
     	  }
        }
@@ -235,7 +245,7 @@ public class XslTransformEvaluationHelper {
        }
        else if (xObj instanceof XSAnyType) {
           result = ((XSAnyType)xObj).stringValue();    
-       }
+       }       
        else {
           result = xObj.str();  
        }
@@ -251,12 +261,12 @@ public class XslTransformEvaluationHelper {
      * @throws TransformerException 
      */
     public static void addItemToResultSequence(ResultSequence resultSeq, XObject inpItem, 
-                                                                     boolean cardinalityCheck) throws TransformerException {
+                                                                     boolean cardinalityCheck, XPathContext xctxt) throws TransformerException {
         if (cardinalityCheck) {
             if (resultSeq.size() == 0) {                     
                 resultSeq.add(inpItem);    
             }
-            else if (!contains(resultSeq, inpItem, null, null)) {
+            else if (!contains(resultSeq, inpItem, null, null, xctxt)) {
                 resultSeq.add(inpItem);
             }   
         }
@@ -275,13 +285,13 @@ public class XslTransformEvaluationHelper {
     public static void addItemToResultSequence(ResultSequence resultSeq, XObject inpItem, 
                                                                      boolean cardinalityCheck,
                                                                      String collationUri,
-                                                                     XPathCollationSupport xpathCollationSupport) 
-                                                                    		                  throws TransformerException {
+                                                                     XPathCollationSupport xpathCollationSupport,
+                                                                     XPathContext xctxt) throws TransformerException {
         if (cardinalityCheck) {
             if (resultSeq.size() == 0) {                     
                 resultSeq.add(inpItem);    
             }
-            else if (!contains(resultSeq, inpItem, collationUri, xpathCollationSupport)) {
+            else if (!contains(resultSeq, inpItem, collationUri, xpathCollationSupport, xctxt)) {
                 resultSeq.add(inpItem);
             }   
         }
@@ -332,9 +342,11 @@ public class XslTransformEvaluationHelper {
         
         List<Integer> dtmNodeHandleList = new ArrayList<Integer>();
         
-        int rSeqLength = resultSeq.size();        
+        int rSeqLength = resultSeq.size();
+        
         for (int idx = 0; idx < rSeqLength; idx++) {
            XObject xObj = resultSeq.item(idx);
+           
            if (xObj instanceof XMLNodeCursorImpl) {
               int nodeDtmHandle = (((XMLNodeCursorImpl)xObj).iter()).nextNode();
               dtmNodeHandleList.add(nodeDtmHandle);
@@ -407,7 +419,15 @@ public class XslTransformEvaluationHelper {
            if (resultObj instanceof ResultSequence) {
               ResultSequence resultSeq = (ResultSequence)resultObj;
               sum = sumResultSequence(resultSeq);          
-           }  
+           }
+           else if (resultObj instanceof XNumber) {
+        	  sum = ((XNumber)resultObj).num(); 
+           }
+           else if (resultObj instanceof XSNumericType) {
+        	  String str1 = ((XSNumericType)resultObj).stringValue();
+        	  
+        	  sum = Double.valueOf(str1);
+           }
         }
         else if (expr instanceof XPathForExpr) {
            XPathForExpr forExpr = (XPathForExpr)expr;
@@ -447,6 +467,18 @@ public class XslTransformEvaluationHelper {
            
            nodes.detach();
         }
+        else {
+           XObject xObj = expr.execute(xctxt);                      
+           
+           if (xObj instanceof XSNumericType) {
+        	  String str1 = ((XSNumericType)xObj).stringValue();
+        	  
+        	  sum = Double.valueOf(str1);
+           }
+           else if (xObj instanceof XNumber) {
+        	  sum = ((XNumber)xObj).num();   
+           }
+        }
 
         return new XNumber(sum);    
     }
@@ -456,7 +488,7 @@ public class XslTransformEvaluationHelper {
      * and an XPath context object, find the count of xdm items represented by the 
      * provided compiled XPath expression object.  
      */
-    public static XNumber getSequenceItemCount(Expression expr, XPathContext xctxt) throws 
+    public static XSInteger getSequenceItemCount(Expression expr, XPathContext xctxt) throws 
                                                                                   javax.xml.transform.TransformerException {
         int xdmSequenceSize = 0;
         
@@ -504,8 +536,8 @@ public class XslTransformEvaluationHelper {
                 ResultSequence resultSeq = (ResultSequence)(((XPathForExpr)expr).execute(xctxt));
                 xdmSequenceSize = resultSeq.size();   
             }
-            else if (expr instanceof Operation) {
-            	Operation opn1 = (Operation)expr;
+            else if (expr instanceof XPathOperator) {
+            	XPathOperator opn1 = (XPathOperator)expr;
             	Expression lOpn = opn1.getLeftOperand();
             	Expression rOpn = opn1.getRightOperand();            	
             	XObject lObj1 = lOpn.execute(xctxt);
@@ -537,7 +569,7 @@ public class XslTransformEvaluationHelper {
             	}
 
             	if (isLEmpty || isREmpty) {
-            		// If one or both of the LHS and RHS of an XPath binary 
+            		// If one or both of the lhs and rhs of an XPath binary 
             		// operation is empty, then count of result sequence is zero.            		
             		xdmSequenceSize = 0;
             	}
@@ -568,7 +600,7 @@ public class XslTransformEvaluationHelper {
             }
         }
     
-        return new XNumber((double)xdmSequenceSize);
+        return new XSInteger(xdmSequenceSize + "");
     }
     
     /**
@@ -576,14 +608,16 @@ public class XslTransformEvaluationHelper {
      * contains a specified xdm item.
      */
     public static boolean contains(ResultSequence resultSeq, XObject srch, String collationUri,
-    		                                                                   XPathCollationSupport xpathCollationSupport) 
-    		                                                                		               throws TransformerException {
+    		                                                                   XPathCollationSupport xpathCollationSupport,
+    		                                                                   XPathContext xctxt) throws TransformerException {
        
     	boolean result = false;
 
     	int size1 = resultSeq.size();
+    	
     	for (int idx = 0; idx < size1; idx++) {
     		XObject resultSeqItem = resultSeq.item(idx);
+    		
     		if ((resultSeqItem instanceof XSUntyped) && (srch instanceof XSUntyped)) {
     			if (((XSUntyped)resultSeqItem).equals((XSUntyped)srch, collationUri, xpathCollationSupport)) {
     				result = true;
@@ -608,54 +642,91 @@ public class XslTransformEvaluationHelper {
     				break;    
     			}
     		}
-    		else if ((resultSeqItem instanceof XSNumericType) && (srch instanceof XSNumericType)) {
-    			// When comparing numeric values, collationUri is not used
-    			String lStr = ((XSNumericType)resultSeqItem).stringValue();
-    			XSDouble lDouble = new XSDouble(lStr);
+    		else if ((resultSeqItem instanceof XSNumericType) && (srch instanceof XSNumericType)) {   			
+    			VcEquals vcEquals = new VcEquals();
+        		vcEquals.setLeftRight(resultSeqItem, srch);
+        		
+        		try {
+        			XObject xObj1 = vcEquals.execute(xctxt);
+        			if (xObj1.bool()) {
+        				result = true;
 
-    			String rStr = ((XSNumericType)srch).stringValue();
-    			XSDouble rDouble = new XSDouble(rStr);
-
-    			if (lDouble.equals(rDouble)) {
-    				result = true;
-    				break;  
-    			}
+        				break;    			
+        			}
+        		}
+        		catch (TransformerException ex) {
+        		   // No op
+        		}
     		}
-    		else if ((resultSeqItem instanceof XSNumericType) && (srch instanceof XNumber)) {
-    			// When comparing numeric values, collationUri is not used
-    			String lStr = ((XSNumericType)resultSeqItem).stringValue();
-    			XSDouble lDouble = new XSDouble(lStr);
+    		else if ((resultSeqItem instanceof XSNumericType) && (srch instanceof XNumber)) {    			
+    			VcEquals vcEquals = new VcEquals();
+        		vcEquals.setLeftRight(resultSeqItem, srch);
+        		
+        		try {
+        			XObject xObj1 = vcEquals.execute(xctxt);
+        			if (xObj1.bool()) {
+        				result = true;
 
-    			double rdbl = ((XNumber)srch).num();
-    			XSDouble rDouble = new XSDouble(rdbl);
-
-    			if (lDouble.equals(rDouble)) {
-    				result = true;
-    				break;  
-    			}
+        				break;    			
+        			}
+        		}
+        		catch (TransformerException ex) {
+        		   // No op
+        		}
     		}
-    		else if ((resultSeqItem instanceof XNumber) && (srch instanceof XSNumericType)) {
-    			// When comparing numeric values, collationUri is not used
-    			double ldbl = ((XNumber)resultSeqItem).num();
-    			XSDouble lDouble = new XSDouble(ldbl);
+    		else if ((resultSeqItem instanceof XNumber) && (srch instanceof XSNumericType)) {    			
+    			VcEquals vcEquals = new VcEquals();
+        		vcEquals.setLeftRight(resultSeqItem, srch);
+        		
+        		try {
+        			XObject xObj1 = vcEquals.execute(xctxt);
+        			if (xObj1.bool()) {
+        				result = true;
 
-    			String rStr = ((XSNumericType)srch).stringValue();
-    			XSDouble rDouble = new XSDouble(rStr);
-
-    			if (lDouble.equals(rDouble)) {
-    				result = true;
-    				break;  
-    			} 
+        				break;    			
+        			}
+        		}
+        		catch (TransformerException ex) {
+        		   // No op
+        		}
     		}
-    		else if ((resultSeqItem instanceof XNumber) && (srch instanceof XNumber)) {
-    			// When comparing numeric values, collationUri is not used
-    			double num1 = ((XNumber)resultSeqItem).num();
-    			double num2 = ((XNumber)srch).num();
+    		else if ((resultSeqItem instanceof XNumber) && (srch instanceof XNumber)) {    			
+    			VcEquals vcEquals = new VcEquals();
+        		vcEquals.setLeftRight(resultSeqItem, srch);
+        		
+        		try {
+        			XObject xObj1 = vcEquals.execute(xctxt);
+        			if (xObj1.bool()) {
+        				result = true;
 
-    			if ((num1 == num2) || (Double.isNaN(num1) && Double.isNaN(num2))) {
-    				result = true;
-    				break; 
+        				break;    			
+        			}
+        		}
+        		catch (TransformerException ex) {
+        		   // No op
+        		}
+    		}
+    		else if ((resultSeqItem instanceof XSYearMonthDuration) && (srch instanceof XSDayTimeDuration)) {
+    			if (((XSAnyType)resultSeqItem).equals((XSAnyType)srch, collationUri, xpathCollationSupport)) {
+    			   XSDuration xsDayTimeDurationRef = XSDayTimeDuration.parseDayTimeDuration("P0D"); 	
+    			   if (((XSDayTimeDuration)srch).equals(xsDayTimeDurationRef)) {
+    				   result = true;
+       				   break; 
+    			   }
     			}
+    			
+    			result = false;
+    		}
+            else if ((resultSeqItem instanceof XSDayTimeDuration) && (srch instanceof XSYearMonthDuration)) {
+            	if (((XSAnyType)resultSeqItem).equals((XSAnyType)srch, collationUri, xpathCollationSupport)) {
+     			   XSDuration xsDayTimeDurationRef = XSDayTimeDuration.parseDayTimeDuration("P0D"); 	
+     			   if (((XSDayTimeDuration)resultSeqItem).equals(xsDayTimeDurationRef)) {
+     				   result = true;
+        			   break; 
+     			   }
+     			}
+     			
+     			result = false;
     		}
     		else if ((resultSeqItem instanceof XSAnyType) && (srch instanceof XSAnyType)) {
     			if (((XSAnyType)resultSeqItem).equals((XSAnyType)srch, collationUri, xpathCollationSupport)) {
@@ -663,9 +734,21 @@ public class XslTransformEvaluationHelper {
     				break;    
     			}   
     		}
-    		else if (resultSeqItem.equals(srch, collationUri, xpathCollationSupport)) {
-    			result = true;
-    			break;    
+    		else {
+    			VcEquals vcEquals = new VcEquals();
+        		vcEquals.setLeftRight(resultSeqItem, srch);
+        		
+        		try {
+        			XObject xObj1 = vcEquals.execute(xctxt);
+        			if (xObj1.bool()) {
+        				result = true;
+
+        				break;    			
+        			}
+        		}
+        		catch (TransformerException ex) {
+        		   // No op
+        		}
     		}
     	}
 
@@ -682,17 +765,18 @@ public class XslTransformEvaluationHelper {
      * @throws Exception
      */
     public static String serializeXmlDomElementNode(Node node) throws Exception {
-    	String resultStr = null;
+    	
+    	String result = null;
 
     	DOMImplementationLS domImplLS = (DOMImplementationLS)((DOMImplementationRegistry.
     																				 newInstance()).getDOMImplementation("LS"));    	
     	LSSerializer lsSerializer = domImplLS.createLSSerializer();
     	DOMConfiguration domConfig = lsSerializer.getDomConfig();
     	domConfig.setParameter(XSL3FunctionService.XML_DOM_FORMAT_PRETTY_PRINT, Boolean.TRUE);
-    	resultStr = lsSerializer.writeToString(node);
-    	resultStr = resultStr.replaceFirst(XSL3FunctionService.UTF_16, XSL3FunctionService.UTF_8);
+    	result = lsSerializer.writeToString(node);
+    	result = result.replaceFirst(XSL3FunctionService.UTF_16, XSL3FunctionService.UTF_8);
         		
-    	return resultStr;
+    	return result;
     }
     
     /**
@@ -701,6 +785,7 @@ public class XslTransformEvaluationHelper {
      * values "yes", "true", or "1").
      */
     public static boolean isTunnelAttributeYes(String val) {
+       
        boolean result = false;
        
        if (val != null) {
@@ -805,55 +890,54 @@ public class XslTransformEvaluationHelper {
      * 
      * @param nodeTest							   A NodeTest object instance constructed from XPath 
      *                                             named function reference like fn0:abc#1.
-     * @param transformerImpl					   An XSL transform TransformerImpl object
      * @param srcLocator						   SourceLocator object in XPath context
      * @return									   An ElemFunction object if available, otherwise null
      * 
      * @throws javax.xml.transform.TransformerException
      */
-    public static ElemFunction getElemFunctionFromNodeTestExpression(NodeTest nodeTest, TransformerImpl transformerImpl, 
-  		                                                             SourceLocator srcLocator) throws javax.xml.transform.TransformerException {
+    public static ElemFunction getElemFunctionFromNodeTestExpression(NodeTest nodeTest, SourceLocator srcLocator) 
+    																							               throws javax.xml.transform.TransformerException {
 
-  	  ElemFunction result = null;
+    	ElemFunction result = null;
 
-  	  String funcNameRef = nodeTest.getLocalName();
-  	  String funcNamespace = nodeTest.getNamespace();
+    	String funcNameRef = nodeTest.getLocalName();
+    	String funcNamespace = nodeTest.getNamespace();
 
-  	  ExpressionNode expressionNode = nodeTest.getExpressionOwner();
-  	  ExpressionNode stylesheetRootNode = null;
-  	  while (expressionNode != null) {
-  		  stylesheetRootNode = expressionNode;
-  		  expressionNode = expressionNode.exprGetParent();                     
-  	  }
+    	ExpressionNode expressionNode = nodeTest.getExpressionOwner();
+    	ExpressionNode stylesheetRootNode = null;
+    	while (expressionNode != null) {
+    		stylesheetRootNode = expressionNode;
+    		expressionNode = expressionNode.exprGetParent();                     
+    	}
 
-  	  StylesheetRoot stylesheetRoot = (StylesheetRoot)stylesheetRootNode;  	    	  
+    	StylesheetRoot stylesheetRoot = (StylesheetRoot)stylesheetRootNode;  	    	  
 
-  	  if (stylesheetRoot != null) {
-  		  TemplateList templateList = stylesheetRoot.getTemplateListComposed();  		  
-  		  XSL3FunctionService xslFunctionService = XSLFunctionBuilder.getXSLFunctionService();  		  
-  		  if (xslFunctionService.isFuncArityWellFormed(funcNameRef)) {        	   
-  			  int hashCharIdx = funcNameRef.indexOf('#');
-  			  String funcNameRef2 = funcNameRef.substring(0, hashCharIdx);
-  			  int funcArity = Integer.valueOf(funcNameRef.substring(hashCharIdx + 1));        		   
-  			  ElemTemplate elemTemplate = templateList.getXslFunction(new QName(funcNamespace, funcNameRef2), funcArity);        		   
-  			  if (elemTemplate != null) {
-  				  result = (ElemFunction)elemTemplate;
-  				  int xslFuncDefnParamCount = result.getArity();                      
-  				  String str = funcNameRef.substring(hashCharIdx + 1);
-  				  int funcRefParamCount = (Integer.valueOf(str)).intValue();
-  				  if (funcRefParamCount != xslFuncDefnParamCount) {
-  					  throw new javax.xml.transform.TransformerException("FORG0006 : An XPath named function reference " + funcNameRef + " cannot resolve to a function "
-  																													                 + "definition.", srcLocator); 
-  				  }
-  			  }
-  		  }
-  		  else {
-  			  throw new javax.xml.transform.TransformerException("FORG0006 : An XPath named function reference " + funcNameRef + " cannot resolve to a function "
-  																											                 + "definition.", srcLocator);
-  		  }
-  	  }
+    	if (stylesheetRoot != null) {
+    		TemplateList templateList = stylesheetRoot.getTemplateListComposed();  		  
+    		XSL3FunctionService xslFunctionService = XSLFunctionBuilder.getXSLFunctionService();  		  
+    		if (xslFunctionService.isFuncArityWellFormed(funcNameRef)) {        	   
+    			int hashCharIdx = funcNameRef.indexOf('#');
+    			String funcNameRef2 = funcNameRef.substring(0, hashCharIdx);
+    			int funcArity = Integer.valueOf(funcNameRef.substring(hashCharIdx + 1));        		   
+    			ElemTemplate elemTemplate = templateList.getXslFunction(new QName(funcNamespace, funcNameRef2), funcArity);        		   
+    			if (elemTemplate != null) {
+    				result = (ElemFunction)elemTemplate;
+    				int xslFuncDefnParamCount = result.getArity();                      
+    				String str = funcNameRef.substring(hashCharIdx + 1);
+    				int funcRefParamCount = (Integer.valueOf(str)).intValue();
+    				if (funcRefParamCount != xslFuncDefnParamCount) {
+    					throw new javax.xml.transform.TransformerException("FORG0006 : An XPath named function reference " + funcNameRef + " cannot resolve to a function "
+    																													                 + "definition.", srcLocator); 
+    				}
+    			}
+    		}
+    		else {
+    			throw new javax.xml.transform.TransformerException("FORG0006 : An XPath named function reference " + funcNameRef + " cannot resolve to a function "
+    																															 + "definition.", srcLocator);
+    		}
+    	}
 
-  	  return result;  	  
+    	return result;  	  
     }
     
     /**
@@ -950,7 +1034,7 @@ public class XslTransformEvaluationHelper {
     		   result = (StylesheetRoot)stylesheetRootExprNode;
     		}
     		catch (Exception ex) {
-    		   // no op	
+    		   // No op	
     		}
     	}
 
@@ -958,24 +1042,26 @@ public class XslTransformEvaluationHelper {
     }
     
     /**
-     * Method definition, to produce a random permutation of
+     * Method definition, to produce a random permutation for
      * the supplied xdm sequence.
      * 
-     * @param rSeq                   Supplied xdm sequence, object instance
-     * @return                       Random permutation of the supplied sequence
+     * @param rSeq                   An xdm sequence, supplied as an 
+     *                               argument to this method.
+     * @return                       Random permutation for the supplied 
+     *                               xdm sequence.
      */
     public static XObject permute(ResultSequence rSeq)
     {
     	ResultSequence result = new ResultSequence();
 
-    	int rSeqLength = rSeq.size();
+    	int size1 = rSeq.size();
     	List<XObject> list1 = new ArrayList<XObject>();
-    	for (int idx = 0; idx < rSeqLength; idx++) {
+    	for (int idx = 0; idx < size1; idx++) {
     		list1.add(rSeq.item(idx));  
     	}
 
     	Collections.shuffle(list1);
-    	for (int idx = 0; idx < rSeqLength; idx++) {
+    	for (int idx = 0; idx < size1; idx++) {
     		result.add(list1.get(idx));  
     	}
 
@@ -1027,7 +1113,7 @@ public class XslTransformEvaluationHelper {
     		}
     	}
     	catch (Exception ex) {
-    		// no op
+    		// No op
     	}
 
     	return result;  	  
@@ -1044,6 +1130,7 @@ public class XslTransformEvaluationHelper {
     	List<XMLNSDecl> result = null;
 
     	PrefixResolver prefixResolver = xctxt.getNamespaceContext();
+    	
     	if (prefixResolver instanceof ElemTemplateElement) {
     		ElemTemplateElement elemTemplateElement = (ElemTemplateElement)prefixResolver; 
     		result = (List<XMLNSDecl>)(elemTemplateElement.getPrefixTable());
@@ -1066,6 +1153,87 @@ public class XslTransformEvaluationHelper {
 
     	return result;
     }
+    
+    /**
+	 * Method definition, to normalize an xdm map key values.
+	 * 
+	 * An xdm map keys with types xs:untypedAtomic, xs:anyURI
+	 * are normalized to xs:string values. XML namespace strings
+	 * like 'a : b' (produced various times by Xalan-J, 
+	 * XPath 3.1 parse) are normalized to 'a:b'.
+	 * 
+	 * A java.util.Map object returned by this method, is a clone
+	 * of the supplied map with required modifications to map keys.
+	 * 
+	 * @param map1                       The supplied xdm native map
+	 * @return                           An xdm normalized, native map
+	 */
+	public static Map<XObject,XObject> getNormalizedClonedMap(Map<XObject,XObject> map1) {
+		
+		Map<XObject,XObject> result = new HashMap<XObject,XObject>();
+		
+		Set<XObject> keySet1 = map1.keySet();
+		Iterator<XObject> iter1 = keySet1.iterator();
+		
+		while (iter1.hasNext()) {
+		   XObject key1 = iter1.next();
+		   XObject value1 = map1.get(key1);
+		   XObject newKey1 = null;
+		   if (key1 instanceof XString) {
+			   String str1 = ((XString)key1).str();
+			   str1 = str1.replace(" : ", ":");
+			   newKey1 = new XSString(str1);
+		   }
+		   else if (key1 instanceof XSString) {
+			  String str1 = ((XSString)key1).stringValue();
+			  str1 = str1.replace(" : ", ":");
+			  newKey1 = new XSString(str1);
+		   }		   
+		   else if (key1 instanceof XSUntypedAtomic) {
+			  newKey1 = new XSString(((XSUntypedAtomic)key1).stringValue());			  
+		   }
+		   else if (key1 instanceof XSAnyURI) {
+			  String str1 = ((XSAnyURI)key1).stringValue();
+			  str1 = str1.replace(" : ", ":");
+			  newKey1 = new XSString(str1);
+		   }
+		   else {
+			  newKey1 = key1;  
+		   }
+		   
+		   result.put(newKey1, value1);
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * Method definition, to get an xdm numeric value,
+	 * from the supplied XNumber object instance. 
+	 * 
+	 * @param xNumber                   The supplied XNumber object 
+	 *                                  instance. 
+	 * @return                          An xdm numeric value
+	 */
+	public static XObject getXdmNumericValueFromXNumber(XNumber xNumber) {
+
+		XObject result = null;
+
+		if (xNumber.getXsDecimal() != null) {
+			result = xNumber.getXsDecimal();  
+		}
+		else if (xNumber.getXsDouble() != null) {
+			result = xNumber.getXsDouble(); 
+		}
+		else if (xNumber.getXsInteger() != null) {
+			result = xNumber.getXsInteger(); 
+		}
+		else {
+		    result = xNumber; 
+		}
+
+		return result;
+	}
     
     /**
      * Method definition, to get numerical sum from xdm sequence items.

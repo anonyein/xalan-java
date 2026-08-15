@@ -21,18 +21,16 @@ import java.util.List;
 import javax.xml.transform.SourceLocator;
 
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
-import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.Function3Args;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
-import org.apache.xpath.operations.Variable;
 
 import xml.xpath31.processor.types.XSNumericType;
 
 /**
- * Implementation of the array:put function.
+ * Implementation of an XPath 3.1 function array:put.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -46,86 +44,70 @@ public class FuncArrayPut extends Function3Args {
 	 * Class constructor.
 	 */
 	public FuncArrayPut() {
-		m_defined_arity = new Short[] { 3 };
+		m_arity = new Short[] { 3 };
 	}
 
+	/**
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
 	public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
 	{
 	    XObject result = null;
 	       
 	    SourceLocator srcLocator = xctxt.getSAXLocator();
-	       
-	    Expression arg0Expr = getArg0();	    
-	    Expression arg1Expr = getArg1();	    
-	    Expression arg2Expr = getArg2();
 	    
-	    XPathArray arg0XPathArr = null;
+	    List<XObject> nativeArr = null;
 	    
-	    List<XObject> nativeArr = null;	    
-	    if (arg0Expr instanceof Variable) {
-	       XObject xObject = ((Variable)arg0Expr).execute(xctxt);
-	       if (xObject instanceof XPathArray) {
-	    	  arg0XPathArr = (XPathArray)xObject;
-		      nativeArr = arg0XPathArr.getNativeArray();
-		   }
-	       else {
-	    	   throw new javax.xml.transform.TransformerException("FORG0006 : The 1st argument of array:put function call, "
-                                                                         + "needs to be an xdm array", srcLocator);   
-	       }
+	    XObject xObj0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
+	    
+	    if (xObj0 instanceof XPathArray) {
+	    	nativeArr = ((XPathArray)xObj0).getNativeArray();
 	    }
 	    else {
-	    	XObject xObject = arg0Expr.execute(xctxt);
-		    if (xObject instanceof XPathArray) {
-		       arg0XPathArr = (XPathArray)xObject;
-			   nativeArr = arg0XPathArr.getNativeArray();
-			}
-		    else {
-		       throw new javax.xml.transform.TransformerException("FORG0006 : The 1st argument of array:put function call, "
-	                                                                         + "needs to be an xdm array", srcLocator);   
-		    }
+	    	throw new javax.xml.transform.TransformerException("FORG0006 : The first argument of array:put function call, "
+	    			         																			+ "needs to be an xdm array", srcLocator);   
 	    }
 	    
-	    XObject arg1XObj = null;
-	    if (arg1Expr instanceof Variable) {
-	       arg1XObj = ((Variable)arg1Expr).execute(xctxt);
-	       if (!((arg1XObj instanceof XSNumericType) || (arg1XObj instanceof XNumber))) {
-	    	  throw new javax.xml.transform.TransformerException("FOAY0001 : The 2nd argument of array:put function "
-                                                                                               + "call, needs to be an xs:integer value", srcLocator); 
-	       }
-	    }
-	    else {
-	       arg1XObj = arg1Expr.execute(xctxt);
-	       if (!((arg1XObj instanceof XSNumericType) || (arg1XObj instanceof XNumber))) {
-		      throw new javax.xml.transform.TransformerException("FOAY0001 : The 2nd argument of array:put function "
-	                                                                                           + "call, needs to be an xs:integer value", srcLocator); 
-		   }
+	    XObject xObj1 = getFunctionArgEffectiveValue(m_arg1, xctxt);
+	    
+	    if (!((xObj1 instanceof XSNumericType) || (xObj1 instanceof XNumber))) {
+	    	throw new javax.xml.transform.TransformerException("FOAY0001 : The second argument of array:put function "
+	    																								+ "call, needs to be an xs:integer "
+	    																								+ "value", srcLocator); 
 	    }
 	    
-	    XObject arg2XObj = null;
-	    if (arg2Expr instanceof Variable) {
-		   arg2XObj = ((Variable)arg2Expr).execute(xctxt);
-		}
-		else {
-		   arg2XObj = arg2Expr.execute(xctxt);
-		}
+	    XObject xObj2 = getFunctionArgEffectiveValue(m_arg2, xctxt);
 	    
-	    int arg1Int;	    
+	    int arg1Int = 0;	    
+	    
 	    try {
-	       arg1Int = Integer.valueOf(XslTransformEvaluationHelper.getStrVal(arg1XObj));
-	       int inpArrSize = nativeArr.size();
-	       if ((arg1Int < 1) || (arg1Int > inpArrSize)) {
-	    	   throw new javax.xml.transform.TransformerException("FOAY0001 : The 2nd argument of array:put function all, needs to be "
-	    	   		                                                       + "an xs:integer value in the range 1 to array:size($array) inclusive", srcLocator);  
-	       }	       
+	       arg1Int = Integer.valueOf(XslTransformEvaluationHelper.getStrVal(xObj1));
+	       
+	       int inpArrSize = nativeArr.size();	       
+	       if (!((arg1Int < 1) || (arg1Int > inpArrSize))) {
+	    	   nativeArr.set(arg1Int - 1, xObj2);
+		   	    
+	   	       XPathArray xpathArr = new XPathArray();	    
+	   	       xpathArr.setNativeArray(nativeArr);
+	   	    
+	   	       result = xpathArr; 
+	       }
+	       else {	    	   	   	       
+	   	       throw new javax.xml.transform.TransformerException("FOAY0001 : The second argument of array:put function all, needs to be "
+                                                                                                        + "an xs:integer value in the range 1 to "
+                                                                                                        + "array:size($array) inclusive", srcLocator);
+	       }
 	    }
 	    catch (NumberFormatException ex) {
-	       throw new javax.xml.transform.TransformerException("FOAY0001 : The 2nd argument of array:put function "
-                                                                      + "call, needs to be an xs:integer value", srcLocator); 
-	    }
-	    
-	    nativeArr.set(arg1Int - 1, arg2XObj);
-	    
-	    result = arg0XPathArr;
+	       throw new javax.xml.transform.TransformerException("FOAY0001 : The second argument of array:put function "
+                                                                                                        + "call, needs to be an xs:integer "
+                                                                                                        + "value", srcLocator); 
+	    }	    	    
 	    
 	    return result;
 	}

@@ -34,7 +34,6 @@ import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.ElemCopyOf;
 import org.apache.xalan.templates.ElemFunction;
 import org.apache.xalan.templates.ElemTemplateElement;
-import org.apache.xalan.templates.FuncFormatNumber;
 import org.apache.xalan.templates.OutputProperties;
 import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.templates.XMLNSDecl;
@@ -106,7 +105,7 @@ public class FuncSerialize extends FunctionMultiArgs {
 	 * Class constructor.
 	 */
 	public FuncSerialize() {
-		m_defined_arity = new Short[] {1, 2}; 
+		m_arity = new Short[] {1, 2}; 
 	}
 	
 	/**
@@ -135,7 +134,7 @@ public class FuncSerialize extends FunctionMultiArgs {
 		TransformerImpl transformer = stylesheetRoot.getTransformerImpl();
 		
 		if (m_arg0 != null) {
-			XObject arg0XObj = m_arg0.execute(xctxt);
+			XObject arg0XObj = getFunctionArgEffectiveValue(m_arg0, xctxt);
 			
 			String itemSeparatorStr = null;
 			
@@ -165,7 +164,7 @@ public class FuncSerialize extends FunctionMultiArgs {
 			else {
 				// An XPath 3.1 function call fn:serialize is called with two arguments
 				
-				XObject arg1Obj = m_arg1.execute(xctxt);
+				XObject arg1Obj = getFunctionArgEffectiveValue(m_arg1, xctxt);
 				
 				if (arg1Obj instanceof XPathMap) {
 					// XPath 3.1 function fn:serialization parameters are specified using an 
@@ -920,7 +919,7 @@ public class FuncSerialize extends FunctionMultiArgs {
 			}
 			
 			if ((size1 == 0) && (arg0Expr instanceof NodeTest)) {
-				ElemFunction elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)arg0Expr, transformer, srcLocator);
+				ElemFunction elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)arg0Expr, srcLocator);
                 if (elemFunction != null) {				
                 	QName fQName = elemFunction.getName();
                 	String localPart = fQName.getLocalPart();

@@ -40,19 +40,17 @@ import org.apache.xml.utils.PrefixResolverDefault;
 import org.apache.xml.utils.XMLString;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
-import org.apache.xpath.XPathArithmeticOp;
+import org.apache.xpath.XPathArithmeticUtil;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathException;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.functions.FuncArgPlaceholder;
-import org.apache.xpath.objects.ElemFunctionItem;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XBooleanStatic;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
-import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 import org.w3c.dom.Node;
@@ -71,29 +69,31 @@ import xml.xpath31.processor.types.XSUntypedAtomic;
 import xml.xpath31.processor.types.XSYearMonthDuration;
 
 /**
- * An XPath '*' operation implementation.
+ * An implementation of XPath operator '*'.
  * 
  * @author Scott Boag <scott_boag@us.ibm.com>
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  *         (XPath 3.1 specific changes, to this class)
  */
-public class Mult extends XPathArithmeticOp
+public class Mult extends XPathArithmeticUtil
 {
    static final long serialVersionUID = -4956770147013414675L;
 
   /**
-   * Apply the operation to two operands, and return the result.
+   * Apply XPath operator to two operands, and return the result.
    *
-   * @param left non-null reference to the evaluated left operand.
-   * @param right non-null reference to the evaluated right operand.
+   * @param left non-null reference to the evaluated first operand.
+   * @param right non-null reference to the evaluated second operand.
    *
-   * @return non-null reference to the XObject that represents the result of the operation.
+   * @return non-null reference to an XObject object reference that,
+   *         represents the result of XPath expression evaluation.
    *
    * @throws javax.xml.transform.TransformerException
    */
   public XObject operate(XObject left, XObject right) throws javax.xml.transform.TransformerException
   {
+	  
 	  XObject result = null;
 	  
 	  Object lObj = left.object();
@@ -131,13 +131,13 @@ public class Mult extends XPathArithmeticOp
 																												  + "type which cannot be atomized.", this); 
 	  }
 	  
-	  if ((left instanceof XPathInlineFunction) || (left instanceof ElemFunctionItem)) {
+	  if (isXPathOperandXdmFunctionItem(left)) {
 		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first operand of '*', but "
 																												  + "the supplied type is a function "
 																												  + "type which cannot be atomized.", this); 
 	  }
 
-	  if ((right instanceof XPathInlineFunction) || (right instanceof ElemFunctionItem)) {
+	  if (isXPathOperandXdmFunctionItem(right)) {
 		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the second operand of '*', but "
 																												  + "the supplied type is a function "
 																												  + "type which cannot be atomized.", this); 
@@ -231,8 +231,6 @@ public class Mult extends XPathArithmeticOp
 							 typeNs1 = xsTypeDefn.getNamespace();
 						 }
 					  }
-					  
-					  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 				  }
 			  }
 			  else if (node instanceof AttributePSVI) {
@@ -261,8 +259,6 @@ public class Mult extends XPathArithmeticOp
 						  typeNs1 = xsTypeDefn.getNamespace();
 					  }
 				  }
-				  
-				  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 			  }
 
 			  XMLString xmlStr1 = dtm.getStringValue(nodeHandle);
@@ -348,8 +344,6 @@ public class Mult extends XPathArithmeticOp
 							  typeNs2 = xsTypeDefn.getNamespace();
 						  }
 					  }
-					  
-					  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 				  }
 			  }
 			  else if (node instanceof AttributePSVI) {
@@ -378,8 +372,6 @@ public class Mult extends XPathArithmeticOp
 						  typeNs2 = xsTypeDefn.getNamespace();
 					  }
 				  }
-				  
-				  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 			  }
 
 			  XMLString xmlStr2 = dtm.getStringValue(nodeHandle);

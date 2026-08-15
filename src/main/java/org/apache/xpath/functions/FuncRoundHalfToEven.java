@@ -42,7 +42,7 @@ import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSNumericType;
 
 /**
- * Implementation of XPath 3.1 function fn:round-half-to-even.
+ * Implementation of an XPath 3.1 function fn:round-half-to-even.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -57,14 +57,14 @@ public class FuncRoundHalfToEven extends Function2Args
       * Class constructor.
       */
       public FuncRoundHalfToEven() {
-    	  m_defined_arity = new Short[] { 1, 2 };  
+    	  m_arity = new Short[] { 1, 2 };  
       }
     
       /**
        * Evaluate the function. The function must return a valid object.
        * 
-       * @param xctxt The current execution context
-       * @return A valid XObject
+       * @param xctxt                        An XPath context object
+       * @return                             A valid XObject
        *
        * @throws javax.xml.transform.TransformerException
        */
@@ -107,7 +107,7 @@ public class FuncRoundHalfToEven extends Function2Args
           }
           
           if (!((m_arg0 instanceof XSNumericType) || (m_arg0 instanceof XNumber))) {
-        	  m_arg0 = m_arg0.execute(xctxt); 
+        	  m_arg0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
           }
           
           if (m_arg0 instanceof XSFloat) {
@@ -212,7 +212,7 @@ public class FuncRoundHalfToEven extends Function2Args
       }
       
       /**
-       * Execute the first argument expression that is expected to return a
+       * Evaluate the first argument expression that is expected to return a
        * string. If the argument is null, then get the string value from the
        * current context node.
        *

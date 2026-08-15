@@ -38,6 +38,7 @@ import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.patterns.NodeTest;
+import org.apache.xpath.util.XPath3ExpressionUtil;
 
 /**
  * Implementation of XPath 3.1 function fn:fold-left.
@@ -54,12 +55,17 @@ public class FuncFoldLeft extends XPathHigherOrderBuiltinFunction {
      * Class constructor.
      */
     public FuncFoldLeft() {
- 	   m_defined_arity = new Short[] { 3 };
+ 	   m_arity = new Short[] { 3 };
     }
 
     /**
-     * Evaluate the function call.
-     */
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
     {
         XObject evalResult = new ResultSequence();
@@ -72,7 +78,7 @@ public class FuncFoldLeft extends XPathHigherOrderBuiltinFunction {
         
         if (m_arg0 instanceof LocPathIterator) {
         	foldLeftFirstArgSeq = new ResultSequence();         	
-        	XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)(m_arg0.execute(xctxt));
+        	XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)(getFunctionArgEffectiveValue(m_arg0, xctxt));
         	DTMCursorIterator dtmCursorIter = xmlNodeCursorImpl.asIterator(xctxt, contextNode);
         	int nextNode;
         	while ((nextNode = dtmCursorIter.nextNode()) != DTM.NULL) {
@@ -84,7 +90,7 @@ public class FuncFoldLeft extends XPathHigherOrderBuiltinFunction {
             foldLeftFirstArgSeq = constructSequenceFromXPathExpression(m_arg0, xctxt);
         }
         
-        XObject foldLeftBaseVal = m_arg1.execute(xctxt);
+        XObject foldLeftBaseVal = getFunctionArgEffectiveValue(m_arg1, xctxt);
         
         XPathInlineFunction foldLeftInlineFuncArg = null;
         
@@ -93,7 +99,8 @@ public class FuncFoldLeft extends XPathHigherOrderBuiltinFunction {
         TransformerImpl transformerImpl = null;
         
         if (m_arg2 instanceof Variable) {
-           XObject arg2XObj = m_arg2.execute(xctxt);
+           XObject arg2XObj = getFunctionArgEffectiveValue(m_arg2, xctxt);
+           
            if (arg2XObj instanceof XPathInlineFunction) {
               foldLeftInlineFuncArg = (XPathInlineFunction)arg2XObj;
            }
@@ -111,7 +118,7 @@ public class FuncFoldLeft extends XPathHigherOrderBuiltinFunction {
         else if (m_arg2 instanceof NodeTest) {
            transformerImpl = getTransformerImplFromXPathExpression(m_arg2);
            
-           elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)m_arg2, transformerImpl, srcLocator);          
+           elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)m_arg2, srcLocator);          
         }
         else {
            throw new javax.xml.transform.TransformerException("FORG0006 : The third argument to function call "
@@ -134,8 +141,12 @@ public class FuncFoldLeft extends XPathHigherOrderBuiltinFunction {
         		}
 
         		XPath inlineFuncXPath = new XPath(inlineFnXPathStr, srcLocator, xctxt.getNamespaceContext(), 
-        																									XPath.SELECT, null);              
-        		for (int idx = 0; idx < foldLeftFirstArgSeq.size(); idx++) {
+        																									XPath.SELECT, null);
+        		
+        		XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(inlineFuncXPath.getExpression(), inlineFnXPathStr, srcLocator);
+        		
+        		int size1 = foldLeftFirstArgSeq.size();        		
+        		for (int idx = 0; idx < size1; idx++) {
         			Map<QName, XObject> inlineFunctionVarMap = xctxt.getXPathVarMap();
         			
         			if (idx == 0) {                    
@@ -160,15 +171,18 @@ public class FuncFoldLeft extends XPathHigherOrderBuiltinFunction {
 																					        				+ "parameters. Expected 2.", srcLocator); 
         	}
         }
-        else if (elemFunction != null) {        						
-        	for (int idx = 0; idx < foldLeftFirstArgSeq.size(); idx++) {
+        else if (elemFunction != null) {
+        	int size1 = foldLeftFirstArgSeq.size();        	
+        	for (int idx = 0; idx < size1; idx++) {
         		ResultSequence argSequence = new ResultSequence();        		        		        		
+        		
         		if (idx == 0) {                        				    				    				
         			argSequence.add(foldLeftBaseVal);
         		}
         		else {
         			argSequence.add(evalResult);    				                   
-        		}        		        		
+        		}
+        		
         		argSequence.add(foldLeftFirstArgSeq.item(idx));
 
         		evalResult = elemFunction.evaluateXslFunction(transformerImpl, argSequence);

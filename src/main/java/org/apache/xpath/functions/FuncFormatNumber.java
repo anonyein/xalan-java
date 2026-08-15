@@ -1,0 +1,240 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.xpath.functions;
+
+import javax.xml.transform.ErrorListener;
+import javax.xml.transform.SourceLocator;
+import javax.xml.transform.TransformerException;
+
+import org.apache.xalan.res.XSLMessages;
+import org.apache.xalan.res.XSLTErrorResources;
+import org.apache.xalan.templates.Constants;
+import org.apache.xalan.templates.ElemTemplateElement;
+import org.apache.xalan.templates.StylesheetRoot;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
+import org.apache.xml.utils.QName;
+import org.apache.xml.utils.SAXSourceLocator;
+import org.apache.xpath.XPathContext;
+import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathInlineFunction;
+import org.apache.xpath.objects.XString;
+import org.apache.xpath.patterns.NodeTest;
+
+import xml.xpath31.processor.types.XSString;
+
+/**
+ * Implementation of an XPath 3.1 function fn:format-number.
+ * 
+ * @xsl.usage advanced
+ */
+public class FuncFormatNumber extends Function3Args
+{
+    static final long serialVersionUID = -8869935264870858636L;
+    
+    /**
+     * This class field represents whether, the function fn:format-number 
+     * is called from function call fn:serialize.
+     */
+    private boolean m_fn_serialize_call = false;
+    
+    /**
+     * Class constructor.
+     */
+    public FuncFormatNumber() {
+  	   m_arity = new Short[] {2, 3}; 
+    }
+
+    /**
+     * Evaluate the function. The function must return a valid object.
+     * 
+     * @param xctxt The current execution context
+     * @return A valid XObject
+     *
+     * @throws javax.xml.transform.TransformerException
+     */
+     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
+     {
+
+    	 ElemTemplateElement templElem = (ElemTemplateElement) xctxt.getNamespaceContext();
+    	 
+    	 StylesheetRoot stylesheetRoot = templElem.getStylesheetRoot();
+    	 
+    	 java.text.DecimalFormat formatter = null;
+    	 java.text.DecimalFormatSymbols dfs = null;
+
+    	 SourceLocator srcLocator = xctxt.getSAXLocator();
+
+    	 if (m_arg0 instanceof NodeTest) {
+    		 if (XslTransformEvaluationHelper.isNodeTestExpressionFuntionType((NodeTest)m_arg0)) {
+    			 throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function format-number(), "
+    					 																 + "but the supplied type is a function type, which cannot be atomized.", srcLocator); 
+    		 }
+    	 }
+    	 else if (m_arg0 instanceof XPathInlineFunction) {
+    		 throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first argument of XPath function format-number(), "
+						                                                                 + "but the supplied type is a function type, which cannot be atomized.", srcLocator);
+    	 }
+    	 
+    	 XObject xObjArg0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
+    	 
+    	 String str1 = XslTransformEvaluationHelper.getStrVal(xObjArg0);
+    	 double num = Double.valueOf(str1);
+    	 
+    	 XObject xObjArg1 = getFunctionArgEffectiveValue(m_arg1, xctxt);
+    	 
+    	 String patternStr = XslTransformEvaluationHelper.getStrVal(xObjArg1);
+    	 
+    	 boolean isSmallCaseExponentSymbol = false;
+    	 if (patternStr.contains("e")) {
+    	    isSmallCaseExponentSymbol = true;
+    	    patternStr = patternStr.replace('e', 'E');
+    	 }    	     	 
+
+    	 // TODO: what should be the behavior here??
+    	 if (patternStr.indexOf(0x00A4) > 0)
+    		 stylesheetRoot.error(XSLTErrorResources.ER_CURRENCY_SIGN_ILLEGAL);  // currency sign not allowed
+
+    	 // An XPath function fn:format-number third argument is not a locale name.
+    	 // This is name of decimal-format declared within an XSL stylesheet (i.e, xsl:decimal-format).    	 
+    	 try
+    	 {    		 
+    		 if (m_arg2 != null)
+    		 {
+    			 String dfName = (getFunctionArgEffectiveValue(m_arg2, xctxt)).str();
+    			 
+    			 QName qname = new QName(dfName, xctxt.getNamespaceContext());
+
+    			 dfs = stylesheetRoot.getDecimalFormatComposed(qname);
+
+    			 if (dfs == null)
+    			 {
+    				 warn(xctxt, XSLTErrorResources.WG_NO_DECIMALFORMAT_DECLARATION,
+    						 new Object[]{ dfName });
+    			 }
+    			 else
+    			 {
+    				 formatter = new java.text.DecimalFormat();
+
+    				 formatter.setDecimalFormatSymbols(dfs);
+    				 formatter.applyLocalizedPattern(patternStr);
+    			 }
+    		 }
+    		 
+    		 if (formatter == null)
+    		 {    			    			     			 
+    			 if (!m_fn_serialize_call) {
+    				 // look for a possible default decimal-format
+    				 dfs = stylesheetRoot.getDecimalFormatComposed(new QName(""));
+
+    				 if (dfs != null)
+    				 {
+    					 formatter = new java.text.DecimalFormat();
+
+    					 formatter.setDecimalFormatSymbols(dfs);
+    					 formatter.applyLocalizedPattern(patternStr);
+    				 }
+    				 else
+    				 {
+    					 dfs = new java.text.DecimalFormatSymbols(java.util.Locale.US);
+
+    					 dfs.setInfinity(Constants.ATTRVAL_INFINITY);
+    					 dfs.setNaN(Constants.ATTRVAL_NAN);
+
+    					 formatter = new java.text.DecimalFormat();
+
+    					 formatter.setDecimalFormatSymbols(dfs);
+
+    					 if (patternStr != null)
+    						 formatter.applyLocalizedPattern(patternStr);
+    				 }
+    			 }
+    			 else {
+    				 formatter = new java.text.DecimalFormat(patternStr);
+    			 }
+    		 }
+    		 
+    		 String formattedStr = formatter.format(num);
+    		 if (isSmallCaseExponentSymbol) {
+    		     formattedStr = formattedStr.replace('E', 'e'); 
+    		 }
+
+    		 return new XSString(formattedStr);
+    	 }
+    	 catch (Exception iae)
+    	 {
+    		 templElem.error(XSLTErrorResources.ER_MALFORMED_FORMAT_STRING,
+    				 new Object[]{ patternStr });
+
+    		 return XString.EMPTYSTRING;
+    	 }
+  }
+
+  /**
+   * Warn the user of a problem.
+   *
+   * @param xctxt The XPath runtime state.
+   * @param msg Warning message key
+   * @param args Arguments to be used in warning message
+   * @throws XSLProcessorException thrown if the active ProblemListener and XPathContext decide
+   * the error condition is severe enough to halt processing.
+   *
+   * @throws javax.xml.transform.TransformerException
+   */
+  public void warn(XPathContext xctxt, String msg, Object args[])
+          throws javax.xml.transform.TransformerException
+  {
+
+    String formattedMsg = XSLMessages.createWarning(msg, args);
+    ErrorListener errHandler = xctxt.getErrorListener();
+
+    errHandler.warning(new TransformerException(formattedMsg,
+                                             (SAXSourceLocator)xctxt.getSAXLocator()));
+  }
+
+  /**
+   * Override the superclass method to allow one or two arguments. 
+   *
+   * @param argNum Number of arguments passed in
+   *
+   * @throws WrongNumberArgsException
+   */
+  public void checkNumberArgs(int argNum) throws WrongNumberArgsException
+  {
+	  if ((argNum > 3) || (argNum < 2))
+		  reportWrongNumberArgs();
+  }
+
+  public boolean isCalledFromFnSerialize() {
+	  return m_fn_serialize_call;
+  }
+  
+  public void setIsCalledFromFnSerialize(boolean bool) {
+	  m_fn_serialize_call = bool;
+  }
+
+  /**
+   * Constructs and throws a WrongNumberArgException with the appropriate
+   * message for this function object.
+   *
+   * @throws WrongNumberArgsException
+   */
+  protected void reportWrongNumberArgs() throws WrongNumberArgsException {
+      throw new WrongNumberArgsException(XSLMessages.createMessage(XSLTErrorResources.ER_TWO_OR_THREE, null)); //"2 or 3");
+  }
+  
+}

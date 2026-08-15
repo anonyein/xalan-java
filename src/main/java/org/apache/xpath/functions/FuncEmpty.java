@@ -28,7 +28,7 @@ import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Implementation of XPath 3.1 function fn:empty.
+ * Implementation of an XPath 3.1 function fn:empty.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -42,17 +42,17 @@ public class FuncEmpty extends FunctionOneArg {
 	 * Class constructor.
 	 */
 	public FuncEmpty() {
-		m_defined_arity = new Short[] { 1 }; 
+		m_arity = new Short[] { 1 }; 
 	}
 
-    /**
-     * Evaluate the function. The function must return a valid object.
-     * 
-     * @param xctxt The current execution context.
-     * @return A valid XObject.
-     *
-     * @throws javax.xml.transform.TransformerException
-     */
+	/**
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
     {
         
@@ -61,7 +61,7 @@ public class FuncEmpty extends FunctionOneArg {
         XObject arg0Obj = null;
         
         try {
-           arg0Obj = m_arg0.execute(xctxt);
+           arg0Obj = getFunctionArgEffectiveValue(m_arg0, xctxt);
         }
         catch (Exception ex) {
            if (ex instanceof TransformerException) {

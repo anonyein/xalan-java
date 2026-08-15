@@ -31,7 +31,7 @@ import org.apache.xpath.objects.XObject;
 import org.w3c.dom.DOMException;
 
 /**
- * Implementation of XSLT 3.0 xsl:comment element.
+ * Implementation of an XSLT 3.0 instruction xsl:comment.
  * 
  * @xsl.usage advanced
  */
@@ -225,7 +225,7 @@ public class ElemComment extends ElemTemplateElement
   }
 
   /**
-   * Execute the xsl:comment transformation 
+   * Evaluate the xsl:comment transformation 
    *
    *
    * @param transformer non-null reference to the the current transform-time state.

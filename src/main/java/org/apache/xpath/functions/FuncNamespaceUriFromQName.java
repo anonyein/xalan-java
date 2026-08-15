@@ -19,7 +19,6 @@ package org.apache.xpath.functions;
 
 import javax.xml.transform.SourceLocator;
 
-import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XObject;
@@ -37,47 +36,46 @@ import xml.xpath31.processor.types.XSQName;
 public class FuncNamespaceUriFromQName extends FunctionDef1Arg {
 
 	private static final long serialVersionUID = 4356910888178229773L;
-	
+
 	/**
 	 * Class constructor.
 	 */
 	public FuncNamespaceUriFromQName() {
-		m_defined_arity = new Short[] { 1 };
+		m_arity = new Short[] { 1 };
 	}
 
-   /**
-   * Evaluate the function. The function must return
-   * a valid object.
-   * 
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
-   *
-   * @throws javax.xml.transform.TransformerException
-   */
-   public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException {
+	/**
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
+	public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException {
 
-	  XObject result = null;
-    
-      SourceLocator srcLocator = xctxt.getSAXLocator();
-	  
-	  Expression arg0 = getArg0();
-	  XObject arg0Value = arg0.execute(xctxt);
-	  
-	  if (arg0Value instanceof XSQName) {
-		 XSQName xsQName = (XSQName)arg0Value;
-		 String nsUri = xsQName.getNamespaceUri();
-		 if (nsUri != null) {
-		    result = new XSAnyURI(nsUri);
-		 }
-		 else {
-			result = new ResultSequence(); 
-		 }
-	  }
-	  else {
-		 throw new javax.xml.transform.TransformerException("FOAP0001: The first argument within fn:namespace-uri-from-QName "
-		 		                                                         + "function call is not of type xs:QName", srcLocator);  
-	  }
+		XObject result = null;
 
-      return result;
-  }
+		SourceLocator srcLocator = xctxt.getSAXLocator();
+
+		XObject arg0Value = getFunctionArgEffectiveValue(m_arg0, xctxt);
+
+		if (arg0Value instanceof XSQName) {
+			XSQName xsQName = (XSQName)arg0Value;
+			String nsUri = xsQName.getNamespaceUri();
+			if (nsUri != null) {
+				result = new XSAnyURI(nsUri);
+			}
+			else {
+				result = new ResultSequence(); 
+			}
+		}
+		else {
+			throw new javax.xml.transform.TransformerException("FOAP0001: The first argument within fn:namespace-uri-from-QName "
+																											+ "function call is not of type "
+																											+ "xs:QName", srcLocator);  
+		}
+
+		return result;
+	}
 }

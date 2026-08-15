@@ -23,7 +23,7 @@ import org.junit.Test;
 
 /**
  * Xalan-J XSL 3 test driver, to run W3C XPath 3.1 test cases
- * for XPath 3.1 node and numeric operators.
+ * for XPath 3.1 string comparison.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -36,15 +36,11 @@ public class XPath3OpTestsSix extends W3CXPath3TestsUtil {
     	
     	m_xsl_test_set_base_dir = W3C_XPATH3_TESTS_META_DATA_DIR_HOME + "op/";
     	
-        m_test_set_fileArr = new String[] { "node-after.xml", "node-before.xml", "numeric-add.xml", "numeric-equal.xml", "numeric-divide.xml",
-        		                            "numeric-greater-than.xml", "numeric-less-than.xml", "numeric-mod.xml", "numeric-multiply.xml", 
-        		                            "numeric-subtract.xml", "numeric-unary-minus.xml", "numeric-unary-plus.xml" };
+        m_test_set_fileArr = new String[] { "string-equal.xml", "string-greater-than.xml", "string-less-than.xml" };
         
         m_resultSubFolderName = "op";
         
-        m_test_set_result_fileArr = new String[] { "node-after_result.xml", "node-before_result.xml", "numeric-add_result.xml", "numeric-equal_result.xml", "numeric-divide_result.xml",
-									                "numeric-greater-than_result.xml", "numeric-less-than_result.xml", "numeric-mod_result.xml", "numeric-multiply_result.xml", 
-									                "numeric-subtract_result.xml", "numeric-unary-minus_result.xml", "numeric-unary-plus_result.xml" };
+        m_test_set_result_fileArr = new String[] { "string-equal_result.xml", "string-greater-than_result.xml", "string-less-than_result.xml" };
     }
 
     @AfterClass

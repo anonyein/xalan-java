@@ -45,7 +45,7 @@ import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
-import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceType;
 import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.composite.XPathSequenceConstructor;
 import org.apache.xpath.objects.ElemFunctionItem;
@@ -67,8 +67,8 @@ import org.xml.sax.SAXException;
 import xml.xpath31.processor.types.XSAnyAtomicType;
 import xml.xpath31.processor.types.XSBoolean;
 
-/**
- * Implementation of XSLT 3.0 xsl:apply-templates element.
+/** 
+ * Implementation of an XSLT 3.0 instruction xsl:apply-templates.
  * 
  * @xsl.usage advanced
  */
@@ -1442,7 +1442,7 @@ public class ElemApplyTemplates extends ElemCallTemplate
 	  try {
 		  XPath seqTypeXPath = new XPath(paramAsAttrStrVal, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);            
 		  XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
-		  XPathSequenceTypeData seqExpectedTypeData = (XPathSequenceTypeData)seqTypeExpressionEvalResult;
+		  XPathSequenceType seqExpectedTypeData = (XPathSequenceType)seqTypeExpressionEvalResult;
 
 		  XMLNodeCursorImpl nodeSet = XPathSequenceTypeSupport.getNodeReference(srcValue);
 		  if (nodeSet != null) {
@@ -1462,8 +1462,8 @@ public class ElemApplyTemplates extends ElemCallTemplate
 				  DTMCursorIterator dtmIter = nodeSet.getContainedIter();                    		  
 				  if (dtmIter instanceof NodeTest) {
 					  try {
-						  ElemFunction elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression(
-								  																					(NodeTest)dtmIter, transformer, srcLocator);
+						  ElemFunction elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)dtmIter, 
+								   																											srcLocator);
 						  if (elemFunction != null) {
 							  // REVISIT : To check for elemFunction object's conformance with details in 
 							  // the object seqExpectedTypeData.getSequenceTypeFunctionTest()  

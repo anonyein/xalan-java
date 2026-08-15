@@ -42,7 +42,7 @@ import xml.xpath31.processor.types.XSQName;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * An implementation of, XSLT 3.0 xsl:try instruction.
+ * Implementation of an XSLT 3.0 instruction xsl:try.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -267,7 +267,7 @@ public class ElemTry extends ElemTemplateElement implements ExpressionOwner {
 	}
 	
 	/**
-	 * Run an xsl:try transformation.
+	 * Evaluate an xsl:try transformation.
 	 *
 	 * @param transformer non-null reference to the the current transform-time state.
 	 *

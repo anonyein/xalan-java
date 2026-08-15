@@ -25,10 +25,7 @@ import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPath;
 
 /**
- * Implementation of the XSLT 3.0 xsl:merge-key instruction.
- * 
- * One or more xsl:merge-key elements appear as child elements
- * of xsl:merge-source elements.
+ * Implementation of an XSLT 3.0 instruction xsl:merge-key.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  *  
@@ -125,7 +122,7 @@ public class ElemMergeKey extends ElemTemplateElement
   }
 
   /**
-   * Execute the xsl:merge-key transformation.
+   * Evaluate the xsl:merge-key transformation.
    *
    * @param transformer non-null reference to the the current transform-time state.
    *

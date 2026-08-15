@@ -64,7 +64,7 @@ import org.xml.sax.InputSource;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * Implementation of the XSLT 3.0 xsl:result-document instruction.
+ * Implementation of an XSLT 3.0 instruction xsl:result-document.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  *  
@@ -241,7 +241,7 @@ public class ElemResultDocument extends ElemTemplateElement
   }
 
   /**
-   * Execute the xsl:result-document transformation.
+   * Evaluate the xsl:result-document transformation.
    *
    * @param transformer non-null reference to the the current transform-time state.
    *

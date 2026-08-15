@@ -41,8 +41,8 @@ public class FunctionDef1Arg extends FunctionOneArg
   static final long serialVersionUID = 2325189412814149264L;
 
   /**
-   * Execute the first argument expression that is expected to return a
-   * nodeset.  If the argument is null, then return the current context node.
+   * Evaluate the first argument expression that is expected to return a
+   * nodeset. If the argument is null, then return the current context node.
    *
    * @param xctxt Runtime XPath context.
    *
@@ -70,11 +70,11 @@ public class FunctionDef1Arg extends FunctionOneArg
   }
 
   /**
-   * Execute the first argument expression that is expected to return a
-   * string.  If the argument is null, then get the string value from the
+   * Evaluate the first argument expression that is expected to return a
+   * string. If the argument is null, then get the string value from the
    * current context node.
    *
-   * @param xctxt Runtime XPath context.
+   * @param xctxt                    An XPath context object
    *
    * @return The string value of the first argument, or the string value of the
    *         current context node if the first argument is null.
@@ -85,47 +85,57 @@ public class FunctionDef1Arg extends FunctionOneArg
   protected XMLString getArg0AsString(XPathContext xctxt)
           throws javax.xml.transform.TransformerException
   {
-    XMLString resultVal = null;
-      
-    if (m_arg0 == null)
-    {
-      int currentNode = xctxt.getCurrentNode();
-      if (DTM.NULL == currentNode) {
-          resultVal = XString.EMPTYSTRING;
-      }
-      else
-      {
-          DTM dtm = xctxt.getDTM(currentNode);
-          resultVal = dtm.getStringValue(currentNode);
-      }      
-    }
-    else if (m_arg0 instanceof SelfIteratorNoPredicate) {
-       XObject xpath3ContextItem = xctxt.getXPath3ContextItem();
-       if (xpath3ContextItem != null) {
-          resultVal = new XString(XslTransformEvaluationHelper.getStrVal(xpath3ContextItem));
-       }
-       else {
-          XObject arg0XObject = m_arg0.execute(xctxt);
-           
-          resultVal = new XString(XslTransformEvaluationHelper.getStrVal(arg0XObject));
-       }
-    }
-    else if (m_arg0 instanceof XSString) {
-       String strVal = ((XSString)m_arg0).stringValue();
-       resultVal = new XString(strVal);
-    }
-    else {
-       XObject arg0XObject = m_arg0.execute(xctxt);
-        
-       resultVal = new XString(XslTransformEvaluationHelper.getStrVal(arg0XObject));  
-    }
-    
-    return resultVal;
+	  XMLString result = null;
+
+	  if (m_arg0 == null)
+	  {
+		  XObject xObj0 = xctxt.getXPath3ContextItem();
+		  if (xObj0 != null) {
+              FuncString funcString = new FuncString();
+              funcString.setArg0(xObj0);
+              
+              XSString xsString = (XSString)(funcString.execute(xctxt));
+              result = new XString(xsString.stringValue());
+		  }
+		  else {
+			  int currentNode = xctxt.getCurrentNode();
+			  if (DTM.NULL == currentNode) {
+				  result = XString.EMPTYSTRING;
+			  }
+			  else
+			  {
+				  DTM dtm = xctxt.getDTM(currentNode);
+				  result = dtm.getStringValue(currentNode);
+			  }
+		  }
+	  }
+	  else if (m_arg0 instanceof SelfIteratorNoPredicate) {
+		  XObject xpath3ContextItem = xctxt.getXPath3ContextItem();
+		  if (xpath3ContextItem != null) {
+			  result = new XString(XslTransformEvaluationHelper.getStrVal(xpath3ContextItem));
+		  }
+		  else {
+			  XObject arg0XObject = getFunctionArgEffectiveValue(m_arg0, xctxt);
+
+			  result = new XString(XslTransformEvaluationHelper.getStrVal(arg0XObject));
+		  }
+	  }
+	  else if (m_arg0 instanceof XSString) {
+		  String strVal = ((XSString)m_arg0).stringValue();
+		  result = new XString(strVal);
+	  }
+	  else {
+		  XObject arg0XObject = getFunctionArgEffectiveValue(m_arg0, xctxt);
+
+		  result = new XString(XslTransformEvaluationHelper.getStrVal(arg0XObject));  
+	  }
+
+	  return result;
   }
 
   /**
-   * Execute the first argument expression that is expected to return a
-   * number.  If the argument is null, then get the number value from the
+   * Evaluate the first argument expression that is expected to return a
+   * number. If the argument is null, then get the number value from the
    * current context node.
    *
    * @param xctxt Runtime XPath context.
@@ -159,11 +169,12 @@ public class FunctionDef1Arg extends FunctionOneArg
     		return (Double.valueOf(argStrVal)).doubleValue();
     	}
     	else {
-    	   return m_arg0.execute(xctxt).num();
+    	   return (getFunctionArgEffectiveValue(m_arg0, xctxt)).num();
     	}
     }    	
     else {
-       XObject xObj = m_arg0.execute(xctxt);
+       XObject xObj = getFunctionArgEffectiveValue(m_arg0, xctxt);
+       
        if (xObj instanceof XSString) {
     	   XString xStr = new XString(((XSString)xObj).stringValue());
     	   
@@ -188,7 +199,7 @@ public class FunctionDef1Arg extends FunctionOneArg
     	   return xsDecimal.doubleValue();
        }
        else {
-    	   return m_arg0.execute(xctxt).num();   
+    	   return (getFunctionArgEffectiveValue(m_arg0, xctxt)).num();   
        }
     }
   }

@@ -29,8 +29,7 @@ import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Implementation of xsl:merge instruction's current-merge-group() 
- * function.
+ * Implementation of an XSLT 3.0 function fn:current-merge-group.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -39,16 +38,23 @@ import org.apache.xpath.objects.XObject;
 public class FuncCurrentMergeGroup extends Function
 {
 	
-	private static final long serialVersionUID = 4774706928214182885L;
+   private static final long serialVersionUID = 4774706928214182885L;
+   
+   /**
+    * Class constructor.
+    */
+   public FuncCurrentMergeGroup() {
+	   m_arity = new Short[] { 0, 1 };
+   }
 
-	/**
-      * Evaluate the function. The function must return a valid object.
-      * 
-      * @param xctxt The current execution context.
-      * @return a valid XObject.
-      *
-      * @throws javax.xml.transform.TransformerException
-   */
+   /**
+    * Evaluate the function. The function must return a valid object.
+    * 
+    * @param xctxt The current execution context.
+    * @return a valid XObject.
+    *
+    * @throws javax.xml.transform.TransformerException
+    */
    public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
    {
        ResultSequence result = null;

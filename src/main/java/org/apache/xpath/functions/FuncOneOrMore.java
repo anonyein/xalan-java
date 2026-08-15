@@ -40,7 +40,7 @@ public class FuncOneOrMore extends FunctionDef1Arg {
 	 * Class constructor.
 	 */
 	public FuncOneOrMore() {
-		m_defined_arity = new Short[] { 1 };
+		m_arity = new Short[] { 1 };
 	}
 	
 	/**
@@ -58,7 +58,7 @@ public class FuncOneOrMore extends FunctionDef1Arg {
 		
 		SourceLocator srcLocator = xctxt.getSAXLocator();
 		
-		XObject arg0 = m_arg0.execute(xctxt);
+		XObject arg0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
 		
 		if (arg0 instanceof ResultSequence) {
 		   ResultSequence rSeq = (ResultSequence)arg0;

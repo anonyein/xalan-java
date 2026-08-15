@@ -50,7 +50,7 @@ import org.xml.sax.SAXException;
 import xml.xpath31.processor.types.XSAnyAtomicType;
 
 /**
- * Implementation of the XSLT 3.0 xsl:iterate instruction.
+ * Implementation of an XSLT 3.0 instruction xsl:iterate.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -259,7 +259,7 @@ public class ElemIterate extends ElemTemplateElement implements ExpressionOwner
        }
 
        /**
-        * Execute an xsl:iterate transformation.
+        * Evaluate an xsl:iterate transformation.
         *
         * @param transformer non-null reference to the the current transform-time state.
         *

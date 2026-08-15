@@ -31,27 +31,47 @@ import org.apache.xpath.objects.XObject;
  * 
  * @xsl.usage advanced
  */
-public class NodeComparisonIs extends Operation
+public class NodeComparisonIs extends XPathOperator
 {
     
     private static final long serialVersionUID = 7254558212157001252L;
    
     /**
-    * Apply the operation to two operands, and return the result.
-    *
-    * @param left non-null reference to the evaluated left operand.
-    * @param right non-null reference to the evaluated right operand.
-    *
-    * @return non-null reference to the XObject that represents the result of the operation.
-    *
-    * @throws javax.xml.transform.TransformerException
-    */
+     * Apply an XPath operator to its two operands, and return the result.
+     *
+     * @param left  non-null reference to an XPath operator's evaluated 
+     *              first operand.              
+     * @param right non-null reference to an XPath operator's evaluated 
+     *              second operand.
+     *
+     * @return non-null reference to an XObject object instance, that 
+     *         represents the result of XPath operator evaluation. 
+     *
+     * @throws javax.xml.transform.TransformerException
+     */
    public XObject operate(XObject left, XObject right) throws javax.xml.transform.TransformerException
    {
-       XObject result = null;
+       
+	   XObject result = null;
        
        XMLNodeCursorImpl lNodeSet = null;
        XMLNodeCursorImpl rNodeSet = null;
+       
+       if (left instanceof ResultSequence) {
+    	  if (((ResultSequence)left).size() == 0) {
+    		 result = new ResultSequence();
+    		 
+    		 return result;
+    	  }
+       }
+       
+       if (right instanceof ResultSequence) {
+    	   if (((ResultSequence)right).size() == 0) {
+    		  result = new ResultSequence();
+    		  
+    		  return result;
+    	   }
+       }
        
        if (left instanceof XMLNodeCursorImpl) {
           lNodeSet = (XMLNodeCursorImpl)left;
@@ -77,25 +97,26 @@ public class NodeComparisonIs extends Operation
           rNodeSet = (XMLNodeCursorImpl)(rNodeSet.getFresh());
        }
        
-       if ((lNodeSet != null) && (rNodeSet != null)) {
-    	  int lNodeHandle = lNodeSet.asNode(m_xctxt);
-          int rNodeHandle = rNodeSet.asNode(m_xctxt);                               
-          if ((lNodeHandle == DTM.NULL) || (rNodeHandle == DTM.NULL)) {
-        	  result = new ResultSequence();  
-          }
-          else if (lNodeHandle == rNodeHandle) {
-        	  result = XBoolean.S_TRUE;
-          }
-          else {
-        	  result = XBoolean.S_FALSE;  
-          }
+       if ((lNodeSet != null) && (rNodeSet != null)) {    	   
+    	   int lNodeHandle = (lNodeSet.iter()).nextNode();
+    	   int rNodeHandle = (rNodeSet.iter()).nextNode();
+
+    	   if ((lNodeHandle == DTM.NULL) || (rNodeHandle == DTM.NULL)) {
+    		   result = new ResultSequence();  
+    	   }
+    	   else if (lNodeHandle == rNodeHandle) {
+    		   result = XBoolean.S_TRUE;
+    	   }
+    	   else {
+    		   result = XBoolean.S_FALSE;  
+    	   }
        }
        else if (lNodeSet == null) {
-    	   throw new javax.xml.transform.TransformerException("XPTY0004 : The supplied item type of LHS operand of XPath "
+    	   throw new javax.xml.transform.TransformerException("XPTY0004 : The supplied item type of lhs operand of XPath "
     	   		                                                                                  + "operator 'is' is not a singleton node."); 
        }
        else if (rNodeSet == null) {
-    	   throw new javax.xml.transform.TransformerException("XPTY0004 : The supplied item type of RHS operand of XPath "
+    	   throw new javax.xml.transform.TransformerException("XPTY0004 : The supplied item type of rhs operand of XPath "
     	   		                                                                                  + "operator 'is' is not a singleton node.");
        }
        

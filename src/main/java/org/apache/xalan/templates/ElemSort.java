@@ -28,8 +28,9 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
 
 /**
- * A class definition, to implement XSLT 3.0's xsl:sort 
- * instruction. 
+ * Implementation of an XSLT 3.0 instruction xsl:sort.
+ *
+ * @xsl.usage advanced
  */
 public class ElemSort extends ElemTemplateElement
 {
@@ -388,6 +389,13 @@ public class ElemSort extends ElemTemplateElement
     return Constants.ELEMNAME_SORT_STRING;
   }
   
+  /**
+   * Evaluate an XSL instruction xsl:sort.
+   * 
+   * @param transformer non-null reference to the the current transform-time state.
+   *
+   * @throws TransformerException
+   */
   public void execute(TransformerImpl transformer) throws TransformerException 
   {
 	  XPathContext xctxt = transformer.getXPathContext();	  

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-06-05T16:33:34Z" fail="25" name="function" pass="62" run="87" skipped="23" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-14T15:17:10Z" fail="20" name="function" pass="67" run="87" skipped="23" statusUnknown="0">
    <testResult status="pass" testName="function-0001"/>
    <testResult status="pass" testName="function-0002"/>
    <testResult status="pass" testName="function-0003"/>
@@ -36,12 +36,12 @@
    <testResult status="pass" testName="function-0302b"/>
    <testResult status="pass" testName="function-0303"/>
    <testResult status="pass" testName="function-0401"/>
-   <testResult status="pass" testName="function-0501"/>
+   <testResult status="fail" testName="function-0501"/>
    <testResult status="pass" testName="function-0601"/>
    <testResult status="pass" testName="function-0602"/>
    <testResult status="fail" testName="function-0701">
       <outResult>
-         <errTrace>java.lang.NumberFormatException</errTrace>
+         <errTrace>XTTE0570 : The supplied value cannot be cast to type xs:integer*.</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="function-0901"/>
@@ -52,21 +52,15 @@
    <testResult status="fail" testName="function-1005"/>
    <testResult status="fail" testName="function-1007"/>
    <testResult status="fail" testName="function-1009"/>
-   <testResult status="fail" testName="function-1011">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out result=""/&gt;</outResult>
-   </testResult>
+   <testResult status="pass" testName="function-1011"/>
    <testResult status="pass" testName="function-1012"/>
    <testResult status="fail" testName="function-1013"/>
    <testResult reason="Xalan configured" status="skipped" testName="function-1014"/>
    <testResult status="pass" testName="function-1015"/>
-   <testResult status="fail" testName="function-1016">
-      <outResult>
-         <errTrace>java.lang.RuntimeException: ElemTemplateElement error: XTSE0770 : Found more than one XSL stylesheet function named: x:test with arity 1</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="function-1016"/>
    <testResult status="fail" testName="function-1017">
       <outResult>
-         <errTrace>Unknown error in XPath.</errTrace>
+         <errTrace>XTTE0570 : The supplied value cannot be cast to type xs:integer.</errTrace>
       </outResult>
    </testResult>
    <testResult status="fail" testName="function-1018">
@@ -79,31 +73,17 @@
    </testResult>
    <testResult status="fail" testName="function-1022">
       <outResult>
-         <errTrace>java.lang.NullPointerException</errTrace>
+         <errTrace>org.xml.sax.SAXException: Line# : 85, Column# : 44 XPST0003 : A location path was expected, but the following token was encountered =.
+java.lang.Exception: Line# : 85, Column# : 44 XPST0003 : A location path was expected, but the following token was encountered =.</errTrace>
       </outResult>
    </testResult>
    <testResult status="skipped" testName="function-1023" xsltVersion="XSLT 2.0/1.0 only test case"/>
    <testResult status="pass" testName="function-1024"/>
-   <testResult status="fail" testName="function-1025">
-      <outResult>
-         <errTrace>org.xml.sax.SAXException: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).
-java.lang.Exception: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="function-1025"/>
    <testResult status="pass" testName="function-1026"/>
-   <testResult status="fail" testName="function-1027">
-      <outResult>
-         <errTrace>org.xml.sax.SAXException: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).
-java.lang.Exception: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="function-1027"/>
    <testResult status="pass" testName="function-1028"/>
-   <testResult status="fail" testName="function-1029">
-      <outResult>
-         <errTrace>org.xml.sax.SAXException: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).
-java.lang.Exception: Line# : 26, Column# : 57 XPST0003 : A location path was expected, but the following token was encountered ).</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="function-1029"/>
    <testResult status="pass" testName="function-1030"/>
    <testResult status="pass" testName="function-1031"/>
    <testResult status="pass" testName="function-1032"/>
@@ -112,7 +92,7 @@ java.lang.Exception: Line# : 26, Column# : 57 XPST0003 : A location path was exp
    </testResult>
    <testResult status="fail" testName="function-1034">
       <outResult>
-         <errTrace>XPST0081 : An XML namespace binding for prefix '' is not available.</errTrace>
+         <errTrace>XPST0003 : A location path was expected, but the following token was encountered [.</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="function-1035"/>
@@ -132,10 +112,7 @@ java.lang.Exception: Line# : 26, Column# : 57 XPST0003 : A location path was exp
    <testResult status="pass" testName="function-2001"/>
    <testResult status="skipped" testName="function-2002" xsltVersion="XSLT 2.0/1.0 only test case"/>
    <testResult status="fail" testName="function-2101">
-      <outResult>
-         <errTrace>XTSE0010 : t:function requires attribute: name</errTrace>
-         <errTrace>java.lang.RuntimeException: ElemTemplateElement error: xsl:function must have a name attribute.</errTrace>
-      </outResult>
+      <outResult/>
    </testResult>
    <testResult status="fail" testName="function-2102">
       <outResult>
@@ -157,12 +134,7 @@ java.lang.Exception: Line# : 26, Column# : 57 XPST0003 : A location path was exp
    <testResult status="fail" testName="function-2108">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;abc&lt;/out&gt;</outResult>
    </testResult>
-   <testResult status="fail" testName="function-2109">
-      <outResult>
-         <errTrace>org.xml.sax.SAXException: Line# : 63, Column# : 243 XPST0003: Expected ), but found: ,
-java.lang.Exception: Line# : 63, Column# : 243 XPST0003: Expected ), but found: ,</errTrace>
-      </outResult>
-   </testResult>
+   <testResult status="pass" testName="function-2109"/>
    <testResult feature="streaming" status="skipped" testName="function-5001"/>
    <testResult feature="streaming" status="skipped" testName="function-5002"/>
    <testResult feature="streaming" status="skipped" testName="function-5003"/>

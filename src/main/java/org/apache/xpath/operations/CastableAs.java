@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.operations;
 
 import org.apache.xalan.templates.Constants;
@@ -26,8 +23,9 @@ import org.apache.xerces.impl.dv.InvalidDatatypeValueException;
 import org.apache.xerces.impl.dv.XSSimpleType;
 import org.apache.xerces.impl.dv.xs.XSSimpleTypeDecl;
 import org.apache.xerces.xs.XSTypeDefinition;
-import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceType;
 import org.apache.xpath.composite.XPathSequenceTypeSupport;
+import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 
 import xml.xpath31.processor.types.XSAnyAtomicType;
@@ -36,27 +34,34 @@ import xml.xpath31.processor.types.XSDecimal;
 import xml.xpath31.processor.types.XSDouble;
 import xml.xpath31.processor.types.XSDuration;
 import xml.xpath31.processor.types.XSFloat;
+import xml.xpath31.processor.types.XSNormalizedString;
+import xml.xpath31.processor.types.XSNumericType;
+import xml.xpath31.processor.types.XSToken;
 import xml.xpath31.processor.types.XSUntypedAtomic;
 
 /**
- * The XPath 3.1 "castable as" operation.
+ * Class definition, to implement XPath 3.1 operator 
+ * 'castable as'.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
  * @xsl.usage advanced
  */
-public class CastableAs extends Operation
+public class CastableAs extends XPathOperator
 {
 
   private static final long serialVersionUID = 7722658885378043019L;
 
   /**
-   * Apply the operation to two operands, and return the result.
+   * Apply an XPath operator to its two operands, and return the result.
    *
-   * @param left non-null reference to the evaluated left operand.
-   * @param right non-null reference to the evaluated right operand.
+   * @param left  non-null reference to an XPath operator's evaluated 
+   *              first operand.              
+   * @param right non-null reference to an XPath operator's evaluated 
+   *              second operand.
    *
-   * @return non-null reference to the XObject that represents the result of the operation.
+   * @return non-null reference to an XObject object instance, that 
+   *         represents the result of XPath operator evaluation. 
    *
    * @throws javax.xml.transform.TransformerException
    */
@@ -65,27 +70,48 @@ public class CastableAs extends Operation
   {
 	  XObject result = null;
       
-      XPathSequenceTypeData seqTypedData = (XPathSequenceTypeData)right;
+      XPathSequenceType seqTypedData = (XPathSequenceType)right;
       
       try {    	  
     	 if ((left instanceof XSAnyAtomicType) && ((seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.STRING) || 
     			                                   (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_UNTYPED_ATOMIC))) {
-    		result = new XSBoolean(true);
-    		
-    		return result;
+    		 result = new XSBoolean(true);
+
+    		 return result;
     	 }
     	 else if ((left instanceof XSBoolean) && ((seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_FLOAT) || 
     			                                  (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_DOUBLE) ||
     			                                  (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_DECIMAL) ||
     			                                  (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_INTEGER))) {
-    		result = new XSBoolean(true);
-     		
-     		return result; 
-    	 }
-    	 else if ((left instanceof XSFloat) && (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_DECIMAL)) {
-            result = new XSBoolean(true);
+    		 result = new XSBoolean(true);
 
-            return result; 
+    		 return result; 
+    	 }
+    	 else if (((left instanceof XNumber) || (left instanceof XSNumericType)) && 
+    			                                                              ((seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.STRING) || 
+                                                                               (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_NORMALIZED_STRING) || 
+                                                                               (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_TOKEN))) {
+    		 result = new XSBoolean(true);
+
+    		 return result;
+    	 }
+    	 else if ((left instanceof XSNormalizedString) && ((seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.STRING) || 
+                                                           (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_NORMALIZED_STRING))) {
+    		 result = new XSBoolean(true);
+
+    		 return result; 
+    	 }
+    	 else if ((left instanceof XSToken) && ((seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.STRING) || 
+    			                                (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_NORMALIZED_STRING) ||
+                                                (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_TOKEN))) {
+             result = new XSBoolean(true);
+
+             return result; 
+         }
+    	 else if ((left instanceof XSFloat) && (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_DECIMAL)) {
+    		 result = new XSBoolean(true);
+
+    		 return result; 
          }
     	 else if (((left instanceof XSDecimal) || (left instanceof XSFloat) || (left instanceof XSDouble)) && 
     			                                                                     (seqTypedData.getBuiltInSequenceType() == XPathSequenceTypeSupport.XS_INTEGER)) {

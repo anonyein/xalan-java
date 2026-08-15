@@ -30,7 +30,7 @@ import org.w3c.dom.Node;
 import xml.xpath31.processor.types.XSQName;
 
 /**
- * Implementation of XPath 3.1 function fn:node-name.
+ * Implementation of an XPath 3.1 function fn:node-name.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -44,7 +44,7 @@ public class FuncNodeName extends FunctionDef1Arg {
     * Class constructor.
     */
    public FuncNodeName() {
-	   m_defined_arity = new Short[] { 0, 1 };
+	   m_arity = new Short[] { 0, 1 };
    }
 
    /**
@@ -80,7 +80,7 @@ public class FuncNodeName extends FunctionDef1Arg {
 	  }
 	  else {
 		  try {
-			 XObject xObj = m_arg0.execute(xctxt);			 
+			 XObject xObj = getFunctionArgEffectiveValue(m_arg0, xctxt);			 
 			 
 			 if (xObj instanceof XMLNodeCursorImpl) {
 				XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xObj;				

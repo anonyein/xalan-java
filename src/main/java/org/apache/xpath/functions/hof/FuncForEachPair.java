@@ -43,6 +43,7 @@ import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.patterns.NodeTest;
+import org.apache.xpath.util.XPath3ExpressionUtil;
 
 /**
  * Implementation of XPath 3.1 function fn:for-each-pair.
@@ -59,18 +60,17 @@ public class FuncForEachPair extends XPathHigherOrderBuiltinFunction {
      * Class constructor.
      */
     public FuncForEachPair() {
- 	   m_defined_arity = new Short[] { 3 };
+ 	   m_arity = new Short[] { 3 };
     }
 
     /**
-     * Evaluation of the function call. The function must return a valid object.
-     * 
-     * @param xctxt The current execution context.
-     * 
-     * @return A valid XObject.
-     *
-     * @throws javax.xml.transform.TransformerException
-     */
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
     {
         XObject evalResult = null;
@@ -97,7 +97,7 @@ public class FuncForEachPair extends XPathHigherOrderBuiltinFunction {
         	   DTMCursorIterator dtmIter = xmlNodeCursorImpl.getContainedIter();
         	   transformerImpl = getTransformerImplFromXPathExpression((NodeTest)dtmIter);
 
-        	   elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)dtmIter, transformerImpl, srcLocator);
+        	   elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)dtmIter, srcLocator);
            }
            else {
               QName varQname = (((Variable)m_arg2).getElemVariable()).getName();
@@ -116,7 +116,7 @@ public class FuncForEachPair extends XPathHigherOrderBuiltinFunction {
         else if (m_arg2 instanceof NodeTest) {
            transformerImpl = getTransformerImplFromXPathExpression(m_arg2);
             
-           elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)m_arg2, transformerImpl, srcLocator);           
+           elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)m_arg2, srcLocator);           
         }
         else {
            throw new javax.xml.transform.TransformerException("FORG0006 : The third argument to function call "
@@ -146,30 +146,38 @@ public class FuncForEachPair extends XPathHigherOrderBuiltinFunction {
            FunctionTable funcTable = xctxt.getFunctionTable();
            
            Object funcIdObj = null;
-           if (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace)) {
-              funcIdObj = funcTable.getFunctionId(funcLocalName);
+           if ((funcNamespace == null) || (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace))) {
+        	   funcIdObj = funcTable.getFunctionIdForXSLBuiltinFuncs(funcLocalName);
            }
            else if (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI.equals(funcNamespace)) {
-              funcIdObj = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcLocalName);
+        	   funcIdObj = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcLocalName);
            }
            else if (XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI.equals(funcNamespace)) {
-              funcIdObj = funcTable.getFunctionIdForXPathBuiltinMapFuncs(funcLocalName);
+        	   funcIdObj = funcTable.getFunctionIdForXPathBuiltinMapFuncs(funcLocalName);
            }
            else if (XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI.equals(funcNamespace)) {
-              funcIdObj = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcLocalName);
+        	   funcIdObj = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcLocalName);
            }
-           
+
+           String funcExpandedName = null;
+           if (funcNamespace != null) {
+        	   funcExpandedName = "{" + funcNamespace + ":" + funcLocalName + "}#" + funcArity;
+           }
+           else {
+        	   funcExpandedName = "{" + funcLocalName + "}#" + funcArity;
+           }
+
            if (funcIdObj != null) {
-              String funcIdStr = funcIdObj.toString();
-              Function function = funcTable.getFunction(Integer.valueOf(funcIdStr));               
-              try {
-            	 evalResult = evaluateForEachPairNamedFuncReference(function, inpSeq1, inpSeq2, xctxt);
-			  } 
-              catch (WrongNumberArgsException ex) {				
-            	  String expandedFuncName = "{" + funcNamespace + ":" + funcLocalName + "}#" + funcArity;  
-    			  throw new javax.xml.transform.TransformerException("XPTY0004 : Wrong number of arguments provided, "
-    					                                           										+ "during function call " + expandedFuncName + ".", srcLocator);
-			  }               
+        	   String funcIdStr = funcIdObj.toString();
+        	   Function function = funcTable.getFunction(Integer.valueOf(funcIdStr));               
+        	   try {
+        		   evalResult = evaluateForEachPairNamedFuncReference(function, inpSeq1, inpSeq2, xctxt);
+        	   } 
+        	   catch (WrongNumberArgsException ex) {				 
+        		   throw new javax.xml.transform.TransformerException("XPTY0004 : Wrong number of arguments provided, "
+        				   																					  + "during function call " 
+        				                                                                                      + funcExpandedName + ".", srcLocator);
+        	   }               
            }
         }
         else if ((elemFunction != null) && (transformerImpl != null)) {
@@ -216,6 +224,8 @@ public class FuncForEachPair extends XPathHigherOrderBuiltinFunction {
             
             XPath inlineFuncXPath = new XPath(inlineFnXPathStr, srcLocator, xctxt.getNamespaceContext(), 
                                                                                             XPath.SELECT, null);
+            
+            XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(inlineFuncXPath.getExpression(), inlineFnXPathStr, srcLocator);
             
             int inpEffectiveIterationSize = 0;        
             if (inpSeq1.size() <= inpSeq2.size()) {

@@ -7,7 +7,8 @@ package xml.xpath31.processor.types;
 import org.apache.xpath.objects.ResultSequence;
 
 /**
- * An XML Schema data type representation, of the xs:double datatype.
+ * An XML Schema data type representation, for the 
+ * xs:double datatype.
  */
 public class XSDouble extends XSNumericType {
 
@@ -18,37 +19,41 @@ public class XSDouble extends XSNumericType {
 	private Double _value;
 	
 	private XPath3DecimalFormat xpath3DecimalFormat = new XPath3DecimalFormat(
-	                                                              "0.################E0");
+	                                                              "0.#################E0");
 
-	/*
+	/**
 	 * Class constructor.
 	 */
 	public XSDouble(double val) {
 	    _value = Double.valueOf(val);
 	}
 
-	/*
-     * Class constructor.
+	/**
+     * Default constructor.
      */
 	public XSDouble() {
 	    this(0);
 	}
 
-	/*
+	/**
      * Class constructor.
      */
 	public XSDouble(String strVal) throws javax.xml.transform.TransformerException {
 		try {
-			if (strVal.equals("-INF")) {
+			if ("-INF".equals(strVal)) {
 				_value = Double.valueOf(Double.NEGATIVE_INFINITY);
-			} else if (strVal.equals("INF")) {
+			} 
+			else if ("INF".equals(strVal) || "+INF".equals(strVal)) {
+				// +INF is rejected with XSD 1.0				
 				_value = Double.valueOf(Double.POSITIVE_INFINITY);
-			} else {
+			} 
+			else {
 				_value = Double.valueOf(strVal);
 			}
-		} catch (NumberFormatException ex) {
+		} 
+		catch (NumberFormatException ex) {
 			throw new javax.xml.transform.TransformerException("FORG0006 : The string value '" + 
-		                                                             strVal + "' cannot be cast to xs:double."); 
+		                                                                                    strVal + "' cannot be cast to schema type double."); 
 		}
 	}
 
@@ -65,18 +70,22 @@ public class XSDouble extends XSNumericType {
 		try {
 			Double d1 = null;
 			
-			if (strVal.equals("INF")) {
+			if ("INF".equals(strVal) || "+INF".equals(strVal)) {
+				// +INF is rejected with XSD 1.0
 				d1 = Double.valueOf(Double.POSITIVE_INFINITY);
-			} else if (strVal.equals("-INF")) {
+			} 
+			else if ("-INF".equals(strVal)) {
 				d1 = Double.valueOf(Double.NEGATIVE_INFINITY);
-			} else {
+			} 
+			else {
 				d1 = Double.valueOf(strVal);
 			}
 			
 			return new XSDouble(d1.doubleValue());			
-		} catch (NumberFormatException ex) {
+		} 
+		catch (NumberFormatException ex) {
 		    throw new javax.xml.transform.TransformerException("FORG0006 : The string value '" + 
-		                                                             strVal + "' cannot be cast to xs:double.");
+		                                                                                   strVal + "' cannot be cast to schema type double.");
 		}		
 	}
 	
@@ -91,20 +100,24 @@ public class XSDouble extends XSNumericType {
         
         XSAnyType xsAnyType = (XSAnyType)arg.item(0);
         
-        XSDouble xsAnyTypeConvertedToDouble = null;
+        XSDouble xsDoubleResult = null;
         
         if (xsAnyType instanceof XSBoolean) {
             if (xsAnyType.stringValue().equals("true")) {
-                xsAnyTypeConvertedToDouble = new XSDouble(1.0E0);
+                xsDoubleResult = new XSDouble(1.0E0);
             } else {
-                xsAnyTypeConvertedToDouble = new XSDouble(0.0E0);
+                xsDoubleResult = new XSDouble(0.0E0);
             }
         }
+        else if (xsAnyType instanceof XSDouble) {
+        	double dbl = ((XSDouble)xsAnyType).doubleValue();
+        	xsDoubleResult = new XSDouble(dbl);
+        }
         else {
-            xsAnyTypeConvertedToDouble = parseDouble(xsAnyType.stringValue());
+            xsDoubleResult = parseDouble(xsAnyType.stringValue());
         }
         
-        resultSeq.add(xsAnyTypeConvertedToDouble);
+        resultSeq.add(xsDoubleResult);
         
         return resultSeq;
     }

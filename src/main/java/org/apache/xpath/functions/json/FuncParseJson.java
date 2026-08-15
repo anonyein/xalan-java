@@ -64,17 +64,17 @@ public class FuncParseJson extends JsonFunction {
        OPTION_SUPPORTED_LIST.add(XSLJsonConstants.LIBERAL);
        OPTION_SUPPORTED_LIST.add(XSLJsonConstants.DUPLICATES);
        
-       m_defined_arity = new Short[] { 1, 2 };
+       m_arity = new Short[] { 1, 2 };
     }
     
     /**
-     * Evaluate the function. The function must return a valid object.
-     * 
-     * @param xctxt The current execution context.
-     * @return A valid XObject.
-     *
-     * @throws javax.xml.transform.TransformerException
-     */
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException {
         
         XObject result = null;
@@ -170,12 +170,14 @@ public class FuncParseJson extends JsonFunction {
      */
     public void checkNumberArgs(int argNum) throws WrongNumberArgsException
     {
-       if (!((argNum == 1) || (argNum == 2))) {
+       /*if (!((argNum == 1) || (argNum == 2))) {
           reportWrongNumberArgs();
        }
        else {
           fNumOfArgs = argNum;   
-       }
+       }*/
+       
+       fNumOfArgs = argNum;
     }
     
     /**

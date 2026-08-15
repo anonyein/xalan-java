@@ -20,11 +20,15 @@
  */
 package org.apache.xpath.functions;
 
+import java.math.BigInteger;
+
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+
+import xml.xpath31.processor.types.XSInteger;
 
 /**
  * Implementation of an XPath 3.1 function fn:avg.
@@ -42,14 +46,14 @@ public class FuncAvg extends FunctionOneArg
    * Class constructor.
    */
   public FuncAvg() {
-	  m_defined_arity = new Short[] { 1 };
+	  m_arity = new Short[] { 1 };
   }
 
   /**
-   * Evaluate the function. The function must return
-   * a valid object.
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
+   * Evaluate the function. The function must return a valid object.
+   * 
+   * @param xctxt                        An XPath context object
+   * @return                             A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
@@ -57,16 +61,15 @@ public class FuncAvg extends FunctionOneArg
   {          
       XObject result = null;
       
-      XNumber sumOfValues = XslTransformEvaluationHelper.getSumOfValues(
-                                                                     m_arg0, xctxt);
+      XNumber sumOfValues = XslTransformEvaluationHelper.getSumOfValues(m_arg0, xctxt);
       
-      XNumber countOfSeqItems = XslTransformEvaluationHelper.getSequenceItemCount(
-                                                                     m_arg0, xctxt);
-      if (countOfSeqItems.num() > 0) {
-         result = new XNumber(sumOfValues.num() / countOfSeqItems.num()); 
+      XSInteger countOfSeqItems = XslTransformEvaluationHelper.getSequenceItemCount(m_arg0, xctxt);
+      BigInteger bigIntCount = countOfSeqItems.intValue();
+      if (bigIntCount.compareTo(new BigInteger("0")) > 0) {    	  
+         result = new XNumber(sumOfValues.num() / bigIntCount.longValue()); 
       }
       else {
-         // if this function's argument has evaluated to an empty sequence,
+         // If this function's argument has evaluated to an empty sequence,
          // the result of this function call is empty sequence.
          result = new ResultSequence();
       }

@@ -21,15 +21,13 @@ import java.util.List;
 
 import javax.xml.transform.SourceLocator;
 
-import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.FunctionOneArg;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
-import org.apache.xpath.operations.Variable;
 
 /**
- * Implementation of the array:reverse function.
+ * Implementation of an XPath 3.1 function array:reverse.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -43,34 +41,38 @@ public class FuncArrayReverse extends FunctionOneArg {
 	 * Class constructor.
 	 */
 	public FuncArrayReverse() {
-		m_defined_arity = new Short[] { 1 };
+		m_arity = new Short[] { 1 };
 	}
 
+	/**
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
 	public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
 	{
 	    XObject result = null;
 	       
 	    SourceLocator srcLocator = xctxt.getSAXLocator();
-	       
-	    Expression arg0 = getArg0();
 	    
-	    XObject xObject = null;
-	    
-	    if (arg0 instanceof Variable) {
-	       xObject = ((Variable)arg0).execute(xctxt);
-	    }
-	    else {
-	       xObject = arg0.execute(xctxt);
-	    }
+	    XObject xObject = getFunctionArgEffectiveValue(m_arg0, xctxt);
 	    
 	    if (xObject instanceof XPathArray) {
 	       XPathArray xpathArr = (XPathArray)xObject;
-	       List<XObject> nativeArr = xpathArr.getNativeArray();
+	       
+	       List<XObject> nativeArr = xpathArr.getNativeArray();	       
 	       Collections.reverse(nativeArr);
+	       
+	       xpathArr = new XPathArray();
+	       xpathArr.setNativeArray(nativeArr);
+	       
 	       result = xpathArr;
 	    }
 	    else {
-	    	throw new javax.xml.transform.TransformerException("FOAY0001 : The 1st argument of function array:reverse, needs to be an array.", srcLocator);  	
+	    	throw new javax.xml.transform.TransformerException("FOAY0001 : The first argument of function array:reverse, needs to be an array.", srcLocator);  	
 	    }
 	    
 	    return result;

@@ -17,6 +17,7 @@
  */
 package org.apache.xpath.operations;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -40,16 +41,15 @@ import org.apache.xml.utils.PrefixResolverDefault;
 import org.apache.xml.utils.XMLString;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
-import org.apache.xpath.XPathArithmeticOp;
+import org.apache.xpath.XPathArithmeticUtil;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.OpCodes;
 import org.apache.xpath.functions.FuncArgPlaceholder;
-import org.apache.xpath.objects.ElemFunctionItem;
+import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
-import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 import org.w3c.dom.Node;
@@ -62,27 +62,29 @@ import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * An XPath 'idiv' operation implementation.
+ * An implementation of XPath 3.1 operator 'idiv'.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  */
-public class IDiv extends XPathArithmeticOp
+public class IDiv extends XPathArithmeticUtil
 {
 
   private static final long serialVersionUID = 5138215729063791579L;
 
   /**
-   * Apply the operation to two operands, and return the result.
+   * Apply XPath operator to two operands, and return the result.
    *
-   * @param left non-null reference to the evaluated left operand.
-   * @param right non-null reference to the evaluated right operand.
+   * @param left non-null reference to the evaluated first operand.
+   * @param right non-null reference to the evaluated second operand.
    *
-   * @return non-null reference to the XObject that represents the result of the operation.
+   * @return non-null reference to an XObject object reference that,
+   *         represents the result of XPath expression evaluation.
    *
    * @throws javax.xml.transform.TransformerException
    */
   public XObject operate(XObject left, XObject right) throws javax.xml.transform.TransformerException
   {
+	  
 	  XObject result = null;
 	  
 	  Object lObj = left.object();
@@ -120,16 +122,36 @@ public class IDiv extends XPathArithmeticOp
 																												  + "type which cannot be atomized.", this); 
 	  }
 	  
-	  if ((left instanceof XPathInlineFunction) || (left instanceof ElemFunctionItem)) {
+	  if (isXPathOperandXdmFunctionItem(left)) {
 		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first operand of 'idiv', but "
 																												  + "the supplied type is a function "
 																												  + "type which cannot be atomized.", this); 
 	  }
 
-	  if ((right instanceof XPathInlineFunction) || (right instanceof ElemFunctionItem)) {
+	  if (isXPathOperandXdmFunctionItem(right)) {
 		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the second operand of 'idiv', but "
 																												  + "the supplied type is a function "
 																												  + "type which cannot be atomized.", this); 
+	  }
+	  
+	  if ((left instanceof ResultSequence) && (((ResultSequence)left).size() == 0)) {
+		  return new ResultSequence();  
+	  }
+
+	  if ((right instanceof ResultSequence) && (((ResultSequence)right).size() == 0)) {
+		  return new ResultSequence();  
+	  }
+	  
+	  if (stylesheetRoot == null) {
+		  // Stricter type checking, when invoked via an XPath api call
+		  
+		  if ((left instanceof XSString) || (left instanceof XString)) {
+			  throw new TransformerException("XPTY0004 : An XPath operator 'idiv' cannot have a string valued operand.");  
+		  }
+
+		  if ((right instanceof XSString) || (right instanceof XString)) {		  
+			  throw new TransformerException("XPTY0004 : An XPath operator 'idiv' cannot have a string valued operand.");  
+		  }
 	  }
 	  
 	  java.lang.String lNodeStr = null;
@@ -140,12 +162,44 @@ public class IDiv extends XPathArithmeticOp
 	  
 	  ElemTemplateElement elemTemplateElement = (ElemTemplateElement)getExpressionOwner();
 	  
+	  if ((left instanceof XNumber) || (left instanceof XSNumericType)) {
+		  if (right instanceof XMLNodeCursorImpl) {
+			  java.lang.String str1 = ((XMLNodeCursorImpl)right).str();			
+
+			  try {
+				  double dbl = Double.valueOf(str1);
+
+				  right = new XSDouble(dbl);
+			  }
+			  catch (NumberFormatException ex) {
+				  right = right.getFresh(); 
+			  }
+		  }
+	  }
+
+	  if ((right instanceof XNumber) || (right instanceof XSNumericType)) {
+		  if (left instanceof XMLNodeCursorImpl) {
+			  java.lang.String str1 = ((XMLNodeCursorImpl)left).str();			
+
+			  try {
+				  double dbl = Double.valueOf(str1);
+
+				  left = new XSDouble(dbl);
+			  }
+			  catch (NumberFormatException ex) {
+				  left = left.getFresh(); 
+			  }
+		  }
+	  }
+	  
 	  if (left instanceof XMLNodeCursorImpl) {
 		  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)left;
-		  int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
-		  if (nodeHandle != DTM.NULL) {
-			  DTM dtm = xctxt.getDTM(nodeHandle);
-			  Node node = dtm.getNode(nodeHandle);
+		  
+		  int nextNode = xmlNodeCursorImpl.asNode(xctxt);
+		  
+		  if (nextNode != DTM.NULL) {
+			  DTM dtm = xctxt.getDTM(nextNode);
+			  Node node = dtm.getNode(nextNode);
 			  if (node instanceof ElementPSVI) {
 				  ElementPSVI elementPsvi = (ElementPSVI)node;
 				  XSTypeDefinition typeDefn = elementPsvi.getTypeDefinition();
@@ -176,8 +230,6 @@ public class IDiv extends XPathArithmeticOp
 							 typeNs1 = xsTypeDefn.getNamespace();
 						 }
 					  }
-					  
-					  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 				  }
 			  }
 			  else if (node instanceof AttributePSVI) {
@@ -206,11 +258,9 @@ public class IDiv extends XPathArithmeticOp
 						  typeNs1 = xsTypeDefn.getNamespace();
 					  }
 				  }
-				  
-				  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 			  }
 
-			  XMLString xmlStr1 = dtm.getStringValue(nodeHandle);
+			  XMLString xmlStr1 = dtm.getStringValue(nextNode);
 			  lNodeStr = xmlStr1.toString();
 		  }
 	  }
@@ -220,10 +270,12 @@ public class IDiv extends XPathArithmeticOp
 	  
 	  if (right instanceof XMLNodeCursorImpl) {
 		  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)right;
-		  int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
-		  if (nodeHandle != DTM.NULL) {
-			  DTM dtm = xctxt.getDTM(nodeHandle);
-			  Node node = dtm.getNode(nodeHandle);
+		  
+		  int nextNode = xmlNodeCursorImpl.asNode(xctxt);
+		  
+		  if (nextNode != DTM.NULL) {
+			  DTM dtm = xctxt.getDTM(nextNode);
+			  Node node = dtm.getNode(nextNode);
 			  if (node instanceof ElementPSVI) {
 				  ElementPSVI elementPsvi = (ElementPSVI)node;
 				  XSTypeDefinition typeDefn = elementPsvi.getTypeDefinition();
@@ -254,8 +306,6 @@ public class IDiv extends XPathArithmeticOp
 							  typeNs2 = xsTypeDefn.getNamespace();
 						  }
 					  }
-					  
-					  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 				  }
 			  }
 			  else if (node instanceof AttributePSVI) {
@@ -284,11 +334,9 @@ public class IDiv extends XPathArithmeticOp
 						  typeNs2 = xsTypeDefn.getNamespace();
 					  }
 				  }
-				  
-				  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 			  }
 
-			  XMLString xmlStr2 = dtm.getStringValue(nodeHandle);
+			  XMLString xmlStr2 = dtm.getStringValue(nextNode);
 			  rNodeStr = xmlStr2.toString();
 		  }
 	  }
@@ -427,41 +475,59 @@ public class IDiv extends XPathArithmeticOp
 
 	  java.lang.String xpathCastAsStr = "(" + arg0Str + " div " + arg1Str + ") cast as xs:integer";
 
-	  List<XMLNSDecl> prefixTable = (List<XMLNSDecl>)elemTemplateElement.getPrefixTable();
-	  Iterator<XMLNSDecl> iter = prefixTable.iterator();
+	  List<XMLNSDecl> prefixTable = null;
+	  
+	  boolean isXsNsDeclAvailable = false;
+	  Iterator<XMLNSDecl> iter = null;
+	  
+	  if ((elemTemplateElement != null) && (elemTemplateElement.getPrefixTable() != null)) {
+		  prefixTable = elemTemplateElement.getPrefixTable();
+		  iter = prefixTable.iterator();
+		    	      
+		  while (iter.hasNext()) {
+			  XMLNSDecl xmlNSDecl = iter.next();
+			  java.lang.String uri = xmlNSDecl.getURI();
+			  if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(uri)) {
+				  isXsNsDeclAvailable = true;
 
-	  boolean isXsNsDeclAvailable = false;  	      
-	  while (iter.hasNext()) {
-		  XMLNSDecl xmlNSDecl = iter.next();
-		  java.lang.String uri = xmlNSDecl.getURI();
-		  if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(uri)) {
-			  isXsNsDeclAvailable = true;
-
-			  break;
-		  }  	    	 
+				  break;
+			  }  	    	 
+		  }
 	  }
+	  
+	  XslTransformData.m_xpathCallingOpCode = OpCodes.XPath3OpCodes.OP_IDIV;
 
 	  try {
 		  // Add XML Schema namespace binding to Xalan-J namespace prefix table, 
 		  // if this namespace binding is currently not there in prefix table.
-		  if (!isXsNsDeclAvailable) {
+		  if (!isXsNsDeclAvailable && (prefixTable != null)) {
 			  prefixTable.add(new XMLNSDecl("xs", XMLConstants.W3C_XML_SCHEMA_NS_URI, false));  
 		  }
+		  
+		  XPath xpathObj1 = null;
+		  
+		  IDivEvaluatorPrefixResolver idivOpPrefixResolver = null;
 
-		  IDivEvaluatorPrefixResolver iDivOpPrefixResolver = new IDivEvaluatorPrefixResolver(prefixTable);
-
-		  XPath xpath = new XPath(xpathCastAsStr, this, iDivOpPrefixResolver, XPath.SELECT, null);
-
-		  XslTransformData.m_xpathCallingOpCode = OpCodes.XPath3OpCodes.OP_IDIV;
+		  if (prefixTable != null) {
+			  idivOpPrefixResolver = new IDivEvaluatorPrefixResolver(prefixTable);
+			  xpathObj1 = new XPath(xpathCastAsStr, this, idivOpPrefixResolver, XPath.SELECT, null);
+		  }
+		  else {
+			  prefixTable = new ArrayList<XMLNSDecl>();
+			  prefixTable.add(new XMLNSDecl("xs", XMLConstants.W3C_XML_SCHEMA_NS_URI, false));
+			  
+			  idivOpPrefixResolver = new IDivEvaluatorPrefixResolver(prefixTable);
+			  xpathObj1 = new XPath(xpathCastAsStr, this, idivOpPrefixResolver, XPath.SELECT, null);
+		  }		  
 
 		  // Get the result of XPath 'idiv' operator evaluation
-		  result = xpath.execute(xctxt, xctxt.getCurrentNode(), xctxt.getNamespaceContext());
+		  result = xpathObj1.execute(xctxt, xctxt.getCurrentNode(), idivOpPrefixResolver);
 	  }
 	  finally {
 		  // Remove XML Schema namespace binding from Xalan-J namespace prefix 
 		  // table, that was previously added to evaluate XPath 'idiv' operation.
 
-		  if (!isXsNsDeclAvailable) {
+		  if (!isXsNsDeclAvailable && (iter != null)) {
 			  iter = prefixTable.iterator();
 			  while (iter.hasNext()) {
 				  XMLNSDecl xmlNSDecl = iter.next();
@@ -473,6 +539,8 @@ public class IDiv extends XPathArithmeticOp
 				  }  	    	 
 			  }
 		  }
+		  
+		  XslTransformData.m_xpathCallingOpCode = Integer.MIN_VALUE;
 	  }
 
 	  return result;

@@ -24,7 +24,6 @@ import javax.xml.transform.SourceLocator;
 import org.apache.xalan.templates.XMLNSDecl;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.utils.QName;
-import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.Function3Args;
@@ -33,6 +32,7 @@ import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.operations.Variable;
+import org.apache.xpath.util.XPath3ExpressionUtil;
 
 /**
  * Implementation of the array:for-each-pair function.
@@ -49,21 +49,26 @@ public class FuncArrayForEachPair extends Function3Args {
 	 * Class constructor.
 	 */
 	public FuncArrayForEachPair() {
-		m_defined_arity = new Short[] { 3 };
+		m_arity = new Short[] { 3 };
 	}
 
+	/**
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
 	public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
     {
         XObject result = null;
         
         SourceLocator srcLocator = xctxt.getSAXLocator();
         
-        Expression arg0 = getArg0();
-        Expression arg1 = getArg1();
-        Expression arg2 = getArg2();
+        XObject arg0Obj = getFunctionArgEffectiveValue(m_arg0, xctxt);
         
-        XObject arg0Obj = arg0.execute(xctxt);
-        XObject arg1Obj = arg1.execute(xctxt);
+        XObject arg1Obj = getFunctionArgEffectiveValue(m_arg1, xctxt);
         
         if (!((arg0Obj instanceof XPathArray) || (arg1Obj instanceof XPathArray))) {
            throw new javax.xml.transform.TransformerException("FORG0006 : The function call array:for-each-pair's 1st and 2nd "
@@ -72,20 +77,21 @@ public class FuncArrayForEachPair extends Function3Args {
         
         XPathInlineFunction funcItem3rdArg = null;
         
-        if (arg2 instanceof Variable) {
-           XObject arg2XObj = arg2.execute(xctxt);
+        if (m_arg2 instanceof Variable) {
+           XObject arg2XObj = getFunctionArgEffectiveValue(m_arg2, xctxt);
+           
            if (arg2XObj instanceof XPathInlineFunction) {
               funcItem3rdArg = (XPathInlineFunction)arg2XObj;
            }
            else {
-              QName varQname = (((Variable)arg2).getElemVariable()).getName();
+              QName varQname = (((Variable)m_arg2).getElemVariable()).getName();
               throw new javax.xml.transform.TransformerException("FORG0006 : The 3rd argument to function call array:for-each-pair "
               		                                                    + "is a variable reference '" + varQname.getLocalName() + "', that doesn't "
               		                                                    + "evaluate to a function item.", srcLocator);  
            }
         }        
-        else if (arg2 instanceof XPathInlineFunction) {
-           funcItem3rdArg = (XPathInlineFunction)arg2;                                           
+        else if (m_arg2 instanceof XPathInlineFunction) {
+           funcItem3rdArg = (XPathInlineFunction)m_arg2;                                           
         }
         else {
            throw new javax.xml.transform.TransformerException("FORG0006 : The 3rd argument to function call array:for-each-pair is not a function "
@@ -121,6 +127,8 @@ public class FuncArrayForEachPair extends Function3Args {
             
             XPath inlineFuncXPath = new XPath(inlineFnXPathStr, srcLocator, xctxt.getNamespaceContext(), 
                                                                                             XPath.SELECT, null);
+            
+            XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(inlineFuncXPath.getExpression(), inlineFnXPathStr, srcLocator);
             
             // As per XPath 3.1 F&O spec, if the arrays have different size, excess members in the 
             // longer array are ignored.

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-06-10T11:59:54Z" fail="15" name="fn-compare" pass="51" run="66" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-14T15:20:24Z" fail="13" name="fn-compare" pass="54" run="67" statusUnknown="0">
    <testResult status="pass" testName="fn-compare2args-1"/>
    <testResult status="pass" testName="fn-compare2args-2"/>
    <testResult status="pass" testName="fn-compare2args-3"/>
@@ -40,7 +40,7 @@
    <testResult status="fail" testName="K-compareFunc-12"/>
    <testResult status="fail" testName="K-compareFunc-13"/>
    <testResult status="pass" testName="K-compareFunc-14"/>
-   <testResult status="fail" testName="K-compareFunc-15"/>
+   <testResult status="pass" testName="K-compareFunc-15"/>
    <testResult status="pass" testName="compare-001"/>
    <testResult status="pass" testName="compare-002"/>
    <testResult status="pass" testName="compare-003"/>
@@ -50,6 +50,7 @@
    <testResult status="pass" testName="compare-007"/>
    <testResult status="pass" testName="compare-008"/>
    <testResult status="pass" testName="compare-009"/>
+   <testResult status="fail" testName="compare-010"/>
    <testResult status="fail" testName="compare-011"/>
    <testResult status="pass" testName="compare-012"/>
    <testResult status="pass" testName="compare-013"/>
@@ -57,8 +58,8 @@
    <testResult status="pass" testName="compare-015"/>
    <testResult status="pass" testName="compare-016"/>
    <testResult status="fail" testName="K2-CompareFunc-1"/>
-   <testResult status="fail" testName="K2-CompareFunc-2"/>
-   <testResult status="fail" testName="K2-CompareFunc-3"/>
+   <testResult status="pass" testName="K2-CompareFunc-2"/>
+   <testResult status="pass" testName="K2-CompareFunc-3"/>
    <testResult status="pass" testName="K2-CompareFunc-4"/>
    <testResult status="pass" testName="K2-CompareFunc-5"/>
    <testResult status="pass" testName="K2-CompareFunc-6"/>

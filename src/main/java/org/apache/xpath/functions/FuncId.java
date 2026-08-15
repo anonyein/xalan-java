@@ -32,7 +32,8 @@ import org.apache.xpath.objects.XObject;
 import org.apache.xpath.res.XPATHErrorResources;
 
 /**
- * Execute the Id() function.
+ * Evaluate the Id() function.
+ * 
  * @xsl.usage advanced
  */
 public class FuncId extends FunctionOneArg
@@ -43,7 +44,7 @@ public class FuncId extends FunctionOneArg
 	 * Class constructor.
 	 */
 	public FuncId() {
-	   m_defined_arity = new Short[] { 1, 2 };
+	   m_arity = new Short[] { 1, 2 };
 	}
 
   /**
@@ -103,10 +104,10 @@ public class FuncId extends FunctionOneArg
   }
 
   /**
-   * Evaluate the function. The function must return
-   * a valid object.
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
+   * Evaluate the function. The function must return a valid object.
+   * 
+   * @param xctxt                        An XPath context object
+   * @return                             A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
@@ -120,7 +121,8 @@ public class FuncId extends FunctionOneArg
     if (DTM.NULL == docContext)
       error(xctxt, XPATHErrorResources.ER_CONTEXT_HAS_NO_OWNERDOC, null);
 
-    XObject arg = m_arg0.execute(xctxt);
+    XObject arg = getFunctionArgEffectiveValue(m_arg0, xctxt);
+    
     int argType = arg.getType();
     XMLNodeCursorImpl nodes = new XMLNodeCursorImpl(xctxt.getDTMManager());
     NodeSetDTM nodeSet = nodes.mutableNodeset();

@@ -4,17 +4,23 @@
  */
 package xml.xpath31.processor.types;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
 import javax.xml.transform.TransformerException;
 
+import org.apache.xpath.XPathContext;
+import org.apache.xpath.functions.WrongNumberArgsException;
+import org.apache.xpath.functions.datetime.FuncAdjustDateToTimezone;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XObject;
 
 /**
- * An XML Schema data type representation, of the xs:date datatype.
+ * An XML Schema data type representation, for the 
+ * xs:date data type.
  */
 public class XSDate extends XSCalendarType {
 
@@ -33,6 +39,7 @@ public class XSDate extends XSCalendarType {
      * object is constructed via XPath function call fn:current-date().
      */
     private boolean isPopulatedFromFnCurrentDate = false;
+    
     
     /**
      * Class constructor.
@@ -101,13 +108,13 @@ public class XSDate extends XSCalendarType {
             if (idx == -1) {
                 idx = strVal.indexOf('-', 1);
                 if (idx == -1) {
-                    throw new TransformerException("XTTE0570 : The supplied string value '" + 
-                                                                         strVal + "' cannot be parsed to a xs:date value."); 
+                    throw new TransformerException("XTTE0570 : The supplied string value '" + strVal + "' cannot be parsed to "
+                                                                                         		     + "schema type 'date' value."); 
                 }
                 idx = strVal.indexOf('-', idx + 1);
                 if (idx == -1) {
-                    throw new TransformerException("XTTE0570 : The supplied string value '" + 
-                                                                         strVal + "' cannot be parsed to a xs:date value.");
+                    throw new TransformerException("XTTE0570 : The supplied string value '" + strVal + "' cannot be parsed to "
+                                                                                         		     + "schema type 'date' value.");
                 }
                 idx = strVal.indexOf('-', idx + 1);
             }
@@ -125,19 +132,20 @@ public class XSDate extends XSCalendarType {
             XSDateTime dateTime = XSDateTime.parseDateTime(dateStr);
             
             if (dateTime != null) {
-                result = new XSDate(dateTime.getCalendar(), dateTime.getTimezone());;
+                result = new XSDate(dateTime.getCalendar(), dateTime.getTimezone());
             }
             else {
-                throw new TransformerException("XTTE0570 : The supplied string value '" + 
-                                                                                  strVal + "' cannot be parsed to a xs:date value."); 
+                throw new TransformerException("XTTE0570 : The supplied string value '" + strVal + "' cannot be parsed to "
+                																				 + "schema type 'date' value."); 
             }
         }
         catch (TransformerException ex) {
-           throw ex;  
+        	throw new TransformerException("XTTE0570 : The supplied string value '" + strVal + "' cannot be parsed to "
+					 																		 + "schema type 'date' value.");  
         }
         catch (Exception ex) {
-            throw new TransformerException("XTTE0570 : The supplied string value '" + 
-                                                                                  strVal + "' cannot be parsed to a xs:date value."); 
+            throw new TransformerException("XTTE0570 : The supplied string value '" + strVal + "' cannot be parsed to "
+            																				 + "schema type 'date' value."); 
         }
         
         return result;
@@ -199,11 +207,11 @@ public class XSDate extends XSCalendarType {
 	   return _calendar.get(Calendar.DAY_OF_MONTH);
 	}
     
-    /**
-     * Check whether this XSDate object has an, timezone associated with it.
+	/**
+     * Method definition, to determine whether this xs:date
+     * value has a non-null timezone component.
      * 
-     * @return true    if there is a timezone associated with this XSDate object.
-     *                 false otherwise.
+     * @return                          Boolean value true or false
      */
     public boolean isDateTimezoned() {
         return _timezoned;
@@ -211,7 +219,8 @@ public class XSDate extends XSCalendarType {
 
     @Override
     public String stringValue() {
-        String xsDateStrValue = "";
+        
+    	String xsDateStrValue = "";
 
         Calendar calendarObj = getCalendar();
 
@@ -253,10 +262,15 @@ public class XSDate extends XSCalendarType {
     }
     
     /**
-     * Determine whether, two XSDate objects are equal.
+     * Method definition, to determine whether this xs:date
+     * value is equal to the supplied xs:date value instance.
+     * 
+     * @param xsDate                    The supplied xs:date value instance
+     * @return                          Boolean value true or false
      */
     public boolean equals(XSDate xsDate) {
-        boolean isDateEqual = false;
+        
+    	boolean result = false;
         
         Calendar cal1 = getCalendar();
         Calendar cal2 = xsDate.getCalendar();                
@@ -272,11 +286,11 @@ public class XSDate extends XSCalendarType {
         XSDuration tz1 = getTimezone();
         XSDuration tz2 = xsDate.getTimezone();
         
-        isDateEqual = ((year1 == year2) && (month1 == month2) && (date1 == date2)) && 
-                                               isTimezoneEqual(tz1, tz2, isPopulatedFromFnCurrentDate, 
-                                                                                   xsDate.isPopulatedFromFnCurrentDate()); 
+        result = ((year1 == year2) && (month1 == month2) && (date1 == date2)) && 
+                                                           isTimezoneEqual(tz1, tz2, isPopulatedFromFnCurrentDate, 
+                                                                                     xsDate.isPopulatedFromFnCurrentDate()); 
         
-        return isDateEqual; 
+        return result; 
     }
     
     @Override
@@ -298,11 +312,15 @@ public class XSDate extends XSCalendarType {
     }
     
     /**
-     * Determine whether, this XSDate object is less that, the 
-     * XSDate object provided as an argument to this method. 
+     * Method definition, to determine whether this xs:date
+     * value is less than the supplied xs:date value instance.
+     * 
+     * @param xsDate               The supplied xs:date value instance
+     * @return                     Boolean value true or false
      */
     public boolean lt(XSDate xsDate) {
-        boolean isDateBefore = false;
+        
+    	boolean result = false;
         
         Calendar cal1 = getCalendar();
         Calendar cal2 = xsDate.getCalendar();
@@ -312,17 +330,21 @@ public class XSDate extends XSCalendarType {
         Date date2 = new Date(cal2.get(Calendar.YEAR), cal2.get(Calendar.MONTH), 
                                                                      cal2.get(Calendar.DATE));
         
-        isDateBefore = date1.before(date2); 
+        result = date1.before(date2); 
         
-        return isDateBefore;
+        return result;
     }
     
     /**
-     * Determine whether, this XSDate object is greater than, the 
-     * XSDate object provided as an argument to this method. 
+     * Method definition, to determine whether this xs:date
+     * value is greater than the supplied xs:date value instance.
+     * 
+     * @param xsDate               The supplied xs:date value instance
+     * @return                     Boolean value true or false
      */
     public boolean gt(XSDate xsDate) {
-        boolean isDateAfter = false;
+        
+    	boolean result = false;
         
         Calendar cal1 = getCalendar();
         Calendar cal2 = xsDate.getCalendar();                
@@ -332,35 +354,45 @@ public class XSDate extends XSCalendarType {
         Date date2 = new Date(cal2.get(Calendar.YEAR), cal2.get(Calendar.MONTH), 
                                                                       cal2.get(Calendar.DATE));
         
-        isDateAfter = date1.after(date2); 
+        result = date1.after(date2); 
         
-        return isDateAfter; 
+        return result; 
     }
        
     /**
-    * Implementation of addition operation between this XSDate value, and a supplied value
-    * (as per XPath 3.1 spec, xs:yearMonthDuration and xs:dayTimeDuration are the only permissible 
-    * data type values, that may be added to an xs:date value).
-    */
-    public XObject add(XObject xObject) throws TransformerException {
-        XObject result = null;
+     * Method definition, to add supplied xs:yearMonthDuration, xs:dayTimeDuration
+     * value to xs:date value, and get a new xs:date value instance.   
+     * 
+     * @param xObj								The supplied xs:yearMonthDuration, or 
+     *                                          xs:dayTimeDuration value. 
+     * @return                                  An xs:date value instance                        
+     * @throws TransformerException
+     */
+    public XObject add(XObject xObj) throws TransformerException {
         
-        if (!((xObject instanceof XSYearMonthDuration) || (xObject instanceof XSDayTimeDuration))) {
-           throw new TransformerException("XPTY0004 : The values of types xs:yearMonthDuration or "
-                                                                               + "xs:dayTimeDuration are only ones that may be added to an xs:date value.");
+    	XObject result = null;
+        
+        if (!((xObj instanceof XSYearMonthDuration) || (xObj instanceof XSDayTimeDuration))) {
+           throw new TransformerException("XPTY0004 : The values of schema types 'yearMonthDuration', and "
+                                                                                 + "'dayTimeDuration' are the only "
+                                                                                 + "ones that may be added to schema type 'date' value.");
         }
         
-        if (xObject instanceof XSYearMonthDuration) {
-           XSYearMonthDuration argVal = (XSYearMonthDuration)xObject;
+        if (xObj instanceof XSYearMonthDuration) {
+           XSYearMonthDuration xsYearMonthDuration = (XSYearMonthDuration)xObj;
+           
            Calendar cal1 = (Calendar)((getCalendar()).clone());
-           cal1.add(Calendar.MONTH, argVal.monthValue());
+           cal1.add(Calendar.MONTH, xsYearMonthDuration.monthValue());
+           
            result = new XSDate(cal1, getTimezone());
         }
-        else if (xObject instanceof XSDayTimeDuration) {
-           XSDayTimeDuration argVal = (XSDayTimeDuration)xObject;
-           double argValSecs = argVal.value();
+        else if (xObj instanceof XSDayTimeDuration) {
+           XSDayTimeDuration xsDayTimeDuration = (XSDayTimeDuration)xObj;           
+           double secsDbl = xsDayTimeDuration.value();
+           
            Calendar cal1 = (Calendar)((getCalendar()).clone());
-           cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)argValSecs * 1000))));
+           cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)secsDbl * 1000))));
+           
            result = new XSDate(cal1, getTimezone());
         }
         
@@ -368,51 +400,179 @@ public class XSDate extends XSCalendarType {
     }
     
     /**
-    * Implementation of subtraction operation between this XSDate value, and a supplied value
-    * (as per XPath 3.1 spec, xs:date, xs:yearMonthDuration and xs:dayTimeDuration are the only
-    * permissible data type values, that may be subtracted from an xs:date value).
-    */
-    public XObject subtract(XObject xObject) throws TransformerException {
-        XObject result = null;
+     * Method definition, to subtract supplied xs:date, xs:yearMonthDuration, 
+     * xs:dayTimeDuration value from an xs:date value.
+     * 
+     * @param xObj                           The supplied xs:date, xs:yearMonthDuration, or 
+     *                                       xs:dayTimeDuration value. 
+     * @return                               An xs:dayTimeDuration, or xs:date value
+     * @throws TransformerException
+     */
+    public XObject subtract(XObject xObj) throws TransformerException {
         
-        if (!((xObject instanceof XSDate) || (xObject instanceof XSYearMonthDuration)
-                                          || (xObject instanceof XSDayTimeDuration))) {
-           throw new TransformerException("XPTY0004 : The values of types xs:date, xs:yearMonthDuration or "
-                                                                                 + "xs:dayTimeDuration are only ones that may be subtracted from an xs:date value.");
+    	XObject result = null;
+        
+        if (!((xObj instanceof XSDate) || (xObj instanceof XSYearMonthDuration)
+                                       || (xObj instanceof XSDayTimeDuration))) {
+           throw new TransformerException("XPTY0004 : The values of schema types 'date', 'yearMonthDuration' and "
+                                                                                 + "'dayTimeDuration' are the only ones that "
+                                                                                 + "may be subtracted from schema type 'date' value.");
         }
         
-        if (xObject instanceof XSDate) {                   	        	
-        	Calendar cal1 = getCalendar();
-            Calendar cal2 = ((XSDate)xObject).getCalendar();            
-            long diff1 = (cal1.getTimeInMillis() - cal2.getTimeInMillis());
-            long daysFactor = (1000 * 60 * 60 * 24); 
-            long days = (diff1 / daysFactor);
-            long modulusValue = (diff1 % daysFactor); 
-            if (modulusValue > 0) {
-               days++;
-            }
-            
-            result = XSDayTimeDuration.parseDayTimeDuration("P" + days + "D");
+        if (xObj instanceof XSDate) {                   	        	        	        	
+        	XPathContext xctxt = new XPathContext();
+        	
+        	XSDate dtClone1 = null;
+        	XSDate dtClone2 = null;
+        	
+        	try {
+        	   dtClone1 = (XSDate)(clone());
+        	   dtClone2 = (XSDate)(((XSDate)xObj).clone());
+        	}
+        	catch (CloneNotSupportedException ex) {
+        	   // No op	
+        	}
+
+        	if (!_timezoned) {
+        	   _tz = xctxt.getTimezone();        		
+        	}
+        	
+        	XSDate xsDate = (XSDate)xObj;
+        	
+    		if (xsDate.getTimezone() == null) {
+    		   xsDate.setTimezone(xctxt.getTimezone());
+    		}
+    		
+    		XSDuration utcTz = new XSDuration();
+        	
+        	try {
+        		FuncAdjustDateToTimezone funcAdjustDateToTimezone = new FuncAdjustDateToTimezone();
+        		
+        		XSDate xsDate1 = null;        		
+        		XSDate xsDate2 = null;
+        		
+        		if (!_tz.equals(utcTz)) {        			
+        			funcAdjustDateToTimezone.setArg(this, 0);
+        			funcAdjustDateToTimezone.setArg(utcTz, 1);
+
+        			xsDate1 = (XSDate)(funcAdjustDateToTimezone.execute(xctxt));
+        		}
+        		else {
+        			xsDate1 = this;
+        		}
+        		
+        		XSDuration tz2 = xsDate.getTimezone(); 
+        		
+        		if (!tz2.equals(utcTz)) {        			
+        			funcAdjustDateToTimezone.setArg(xsDate, 0);
+        			funcAdjustDateToTimezone.setArg(utcTz, 1);
+
+        			xsDate2 = (XSDate)(funcAdjustDateToTimezone.execute(xctxt));
+        		}
+        		else {
+        			xsDate2 = xsDate; 
+        		}
+        		
+        		String isoDateStr1 = xsDate1.stringValue();
+        		String isoDateStr2 = xsDate2.stringValue();
+        		
+        		isoDateStr1 = getXsDateTimeStrFromXsDateStr(isoDateStr1);
+        		isoDateStr2 = getXsDateTimeStrFromXsDateStr(isoDateStr2);
+        		
+        		Instant instant1 = Instant.parse(isoDateStr1);
+        		Instant instant2 = Instant.parse(isoDateStr2);
+        		
+        		Duration duration = Duration.between(instant2, instant1);
+        		long days = duration.toDays();
+        		
+        		long milliSecs = duration.toMillis();
+        		long days2 = milliSecs / (1000 * 60 * 60 * 24); 
+        		
+        		if (days2 != days) {
+        		   String xsDayTimeDurationStr = "P" + Math.abs(days) + "D";
+        		   xsDayTimeDurationStr = ((days < 0) ? "-" + xsDayTimeDurationStr : xsDayTimeDurationStr);
+        		   
+        		   result = (XSDayTimeDuration)(XSDayTimeDuration.parseDayTimeDuration(xsDayTimeDurationStr));
+        		}
+        		else {        			
+        			String str1 = dtClone1.stringValue();
+                	
+                	String dateTimeStr1 = getXsDateTimeStrFromXsDateStr(str1);
+                	XSDateTime xsDateTime1 = XSDateTime.parseDateTime(dateTimeStr1);
+
+                	String str2 = dtClone2.stringValue();
+                	String dateTimeStr2 = getXsDateTimeStrFromXsDateStr(str2);
+                	XSDateTime xsDateTime2 = XSDateTime.parseDateTime(dateTimeStr2);
+                	
+                	result = xsDateTime1.subtract(xsDateTime2);	
+        		}        		        		 
+        	}
+        	catch (WrongNumberArgsException ex) {
+        		// No op 
+        	} 
         }
-        else if (xObject instanceof XSYearMonthDuration) {
-           XSYearMonthDuration argVal = (XSYearMonthDuration)xObject;           
-           Calendar cal1 = (Calendar)((getCalendar()).clone());
-           cal1.add(Calendar.MONTH, argVal.monthValue() * -1);
+        else if (xObj instanceof XSYearMonthDuration) {
+           XSYearMonthDuration xsYearMonthDuration = (XSYearMonthDuration)xObj;           
            
-           result = new XSDate(cal1, getTimezone());
+           Calendar cal1 = (Calendar)((getCalendar()).clone());
+           cal1.add(Calendar.MONTH, xsYearMonthDuration.monthValue() * -1);
+           
+           XSDuration tz = getTimezone();
+           
+           if (_timezoned) {
+              result = new XSDate(cal1, getTimezone());
+           }
+           else {
+        	   result = new XSDate(cal1, null); 
+           }
         }
-        else if (xObject instanceof XSDayTimeDuration) {
-           XSDayTimeDuration argVal = (XSDayTimeDuration)xObject;
-           double argValSecs = argVal.value();
-           Calendar cal1 = (Calendar)((getCalendar()).clone());
-           cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)argValSecs * 1000)) * -1));
+        else if (xObj instanceof XSDayTimeDuration) {
+           XSDayTimeDuration xsDayTimeDuration = (XSDayTimeDuration)xObj;
+           double secsValue = xsDayTimeDuration.value();
            
-           result = new XSDate(cal1, getTimezone());
+           Calendar cal1 = (Calendar)((getCalendar()).clone());
+           cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)secsValue * 1000)) * -1));
+           
+           if (_timezoned) {
+        	   result = new XSDate(cal1, getTimezone());
+           }
+           else {
+        	   result = new XSDate(cal1, null); 
+           }
         }
         
         return result;
     }
+    
+    public int getType() {
+        return CLASS_XS_DATE;
+    }
+    
+    /**
+     * Method definition, to cast the supplied XSAnyType object value
+     * to xs:date value. 
+     * 
+     * @param xsAnyType                         The supplied XSAnyType object value
+     * @return                                  An xs:date value
+     * @throws TransformerException
+     */
+    private XSDate castToDate(XSAnyType xsAnyType) throws TransformerException {
+        
+    	if (xsAnyType instanceof XSDate) {
+            XSDate xsDate = (XSDate)xsAnyType;
+            
+            return new XSDate(xsDate.getCalendar(), xsDate.getTimezone());
+        }
 
+        if (xsAnyType instanceof XSDateTime) {
+            XSDateTime xsDateTime = (XSDateTime)xsAnyType;
+            
+            return new XSDate(xsDateTime.getCalendar(), xsDateTime.getTimezone());
+        }
+
+        return parseDate(xsAnyType.stringValue());
+    }
+    
     public boolean isPopulatedFromFnCurrentDate() {
         return isPopulatedFromFnCurrentDate;
     }
@@ -421,26 +581,48 @@ public class XSDate extends XSCalendarType {
         this.isPopulatedFromFnCurrentDate = isPopulatedFromFnCurrentDate;
     }
     
-    public int getType() {
-        return CLASS_XS_DATE;
+    public void setTimezone(XSDuration tz) {
+    	_tz = tz; 
     }
     
     /**
-     * Do a data type cast, of an XSAnyType argument passed to this method, to
-     * an XSDate object.
+     * Method definition, to get xs:dateTime string, from
+     * supplied xs:date string, by having a cosmetic time infix 
+     * string T00:00:00 within the returned string value. 
+     * 
+     * @param xsDateStr                 The supplied xs:date string
+     *                                  value.
+     * @return                          The xs:dateTime string
      */
-    private XSDate castToDate(XSAnyType xsAnyType) throws TransformerException {
-        if (xsAnyType instanceof XSDate) {
-            XSDate date = (XSDate) xsAnyType;
-            return new XSDate(date.getCalendar(), date.getTimezone());
-        }
-
-        if (xsAnyType instanceof XSDateTime) {
-            XSDateTime dateTime = (XSDateTime) xsAnyType;
-            return new XSDate(dateTime.getCalendar(), dateTime.getTimezone());
-        }
-
-        return parseDate(xsAnyType.stringValue());
-    }
+    private String getXsDateTimeStrFromXsDateStr(String xsDateStr) {
+		
+		String result = null;
+		
+		if (xsDateStr.contains("+")) {
+		   int idx = xsDateStr.indexOf('+');
+		   String dateStr1 = xsDateStr.substring(0, idx);
+		   
+		   result = dateStr1 + "T00:00:00" + xsDateStr.substring(idx);  
+		}
+		else if (xsDateStr.endsWith("Z")) {
+		   String dateStr1 = xsDateStr.substring(0, xsDateStr.length() - 1);
+		   
+		   result = dateStr1 + "T00:00:00Z";
+		}
+		else {
+		   String[] strArray = xsDateStr.split("\\-");
+		   
+		   int length1 = strArray.length;
+		   
+		   if (length1 == 3) {
+			  result = xsDateStr + "T00:00:00"; 
+		   }
+		   else {
+			  result = (strArray[0] + "-" + strArray[1] + "-" + strArray[2]  + "T00:00:00" + "-" + strArray[3]);  
+		   }
+		}
+		
+		return result;
+	}
 
 }

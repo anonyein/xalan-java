@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.res;
 
 import java.util.ListResourceBundle;
@@ -138,7 +135,7 @@ public class XPATHErrorResources extends ListResourceBundle
   public static final String ER_UNCLOSED_XPATH_COMMENT ="ER_UNCLOSED_XPATH_COMMENT";
   public static final String ER_NS_BINDING = "ER_NS_BINDING";
   public static final String ER_EXPECTED_CLOSING_SQUARE_BRACKET = "ER_EXPECTED_CLOSING_SQUARE_BRACKET";
-  public static final String ER_CANNOT_APPLY_FUNC = "ER_CANNOT_APPLY_FUNC";
+  public static final String ER_CANNOT_APPLY_FUNC = "ER_CANNOT_APPLY_FUNC";  
   public static final String ER_MAP_DUPLICATE_KEY = "ER_MAP_DUPLICATE_KEY";
   public static final String ER_IF_EXPR = "ER_IF_EXPR";
   public static final String ER_IF_EXPR_WELL_FORMED = "ER_IF_EXPR_WELL_FORMED";
@@ -148,6 +145,19 @@ public class XPATHErrorResources extends ListResourceBundle
 	 "ER_EXPECTED_SINGLE_QUOTE";
   public static final String ER_EMPTY_EXPRESSION = "ER_EMPTY_EXPRESSION";
   public static final String ER_EXPECTED_BUT_FOUND = "ER_EXPECTED_BUT_FOUND";
+  public static final String ER_FOR_EXPR_1 = "ER_FOR_EXPR_IN";
+  public static final String ER_FOR_EXPR_2 = "ER_FOR_EXPR_2";
+  public static final String ER_FOR_EXPR_3 = "ER_FOR_EXPR_3";
+  public static final String ER_FOR_EXPR_4 = "ER_FOR_EXPR_4";
+  public static final String ER_FOR_EXPR_5 = "ER_FOR_EXPR_5";
+  public static final String ER_FOR_EXPR_6 = "ER_FOR_EXPR_6";  
+  public static final String ER_IS_EXPR_1 = "ER_IS_EXPR_1";  
+  public static final String ER_XPATH_NUMERIC_EXPR_SUFFIX = "ER_XPATH_NUMERIC_EXPR_SUFFIX";
+  
+  public static final String ER_UNEXPECTED_TOKEN = "ER_UNEXPECTED_TOKEN";
+  
+  public static final String ER_UNEXPECTED_TOKEN_1 = "ER_UNEXPECTED_TOKEN_1";
+  
   public static final String ER_INCORRECT_PROGRAMMER_ASSERTION = 
 	 "ER_INCORRECT_PROGRAMMER_ASSERTION";
   public static final String ER_BOOLEAN_ARG_NO_LONGER_OPTIONAL = 
@@ -167,7 +177,7 @@ public class XPATHErrorResources extends ListResourceBundle
   public static final String ER_PATTERN_LITERAL_NEEDS_BE_QUOTED = 
 	 "ER_PATTERN_LITERAL_NEEDS_BE_QUOTED";
   public static final String ER_COULDNOT_BE_FORMATTED_TO_NUMBER = 
-	 "ER_COULDNOT_BE_FORMATTED_TO_NUMBER";
+	 "ER_COULDNOT_BE_FORMATTED_TO_NUMBER";  
   public static final String ER_COULDNOT_CREATE_XMLPROCESSORLIAISON = 
 	 "ER_COULDNOT_CREATE_XMLPROCESSORLIAISON";
   public static final String ER_DIDNOT_FIND_XPATH_SELECT_EXP = 
@@ -207,8 +217,8 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   public static final String ER_OIERROR = "ER_OIERROR";
   public static final String ER_CANNOT_CREATE_URL = "ER_CANNOT_CREATE_URL";
   public static final String ER_XPATH_READOBJECT = "ER_XPATH_READOBJECT";
- public static final String ER_FUNCTION_TOKEN_NOT_FOUND = 
-	 "ER_FUNCTION_TOKEN_NOT_FOUND";
+  public static final String ER_FUNCTION_TOKEN_NOT_FOUND = "ER_FUNCTION_TOKEN_NOT_FOUND";
+  public static final String ER_FUNCTION_TOKEN_NOT_FOUND2 = "ER_FUNCTION_TOKEN_NOT_FOUND2";
   public static final String ER_CANNOT_DEAL_XPATH_TYPE = 
 	 "ER_CANNOT_DEAL_XPATH_TYPE";
   public static final String ER_NODESET_NOT_MUTABLE = "ER_NODESET_NOT_MUTABLE";
@@ -393,8 +403,6 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   public static final String ER_LE_OPERAND_CARDINALITY_ERROR = "ER_LE_OPERAND_CARDINALITY_ERROR";
   
   public static final String ER_GE_OPERAND_CARDINALITY_ERROR = "ER_GE_OPERAND_CARDINALITY_ERROR";
-  
-  public static final String ER_TYPE_COMPARISON_ERROR = "ER_TYPE_COMPARISON_ERROR";
 
   // Error messages...
 
@@ -505,19 +513,49 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
      "XPST0003 : An XPath 3.1 ''if'' keyword is not followed by a sequence of ''then'' and ''else'' keywords." },
 
   { ER_EXPECTED_DOUBLE_QUOTE,
-      "misquoted literal... expected double quote!"},
+      "XPST0003 : Misquoted string literal. Expected double quote."},
 
   { ER_EXPECTED_SINGLE_QUOTE,
-      "misquoted literal... expected single quote!"},
+      "XPST0003 : Misquoted string literal. Expected single quote."},
 
   { ER_EMPTY_EXPRESSION,
      "Empty expression!"},
 
   { ER_EXPECTED_BUT_FOUND,
-     "Expected {0}, but found: {1}"},
+     "XPST0003 : Expected {0}, but found: {1}"},  
+  
+  { ER_FOR_EXPR_1,
+     "XPST0003 : An XPath ''for'' expression has multiple ''in'' statements for single variable binding."},
+  
+  { ER_FOR_EXPR_2,
+     "XPST0003 : An illegal token ''for'' is there after a token ''for''."},
+  
+  { ER_FOR_EXPR_3,
+     "XPST0003 : An XPath ''for'' expression after variable bindings has a trailing ','."},
+  
+  { ER_FOR_EXPR_4,
+     "XPST0003 : An XPath ''for'' expression has no variable bindings, within ''for'' expression."},
+  
+  { ER_FOR_EXPR_5,
+     "XPST0003 : An XPath ''for'' expression contains multiple ''return'' statements."},
+  
+  { ER_FOR_EXPR_6,
+     "XPST0003 : An XPath ''for'' expression within function argument, has syntax error."},
+  
+  { ER_IS_EXPR_1,
+     "XPST0003 : Unexpected token ''{0}'' after ''is''."},
+  
+  { ER_XPATH_NUMERIC_EXPR_SUFFIX,
+     "XPST0003 : Unexpected token ''{0}'' after a number."},
+  
+  { ER_UNEXPECTED_TOKEN,
+     "XPST0003 : Unexpected token ''{0}'' after ''{1}''."},
+  
+  { ER_UNEXPECTED_TOKEN_1,
+     "XPST0003 : Unexpected token ''{0}''."},
 
   { ER_INCORRECT_PROGRAMMER_ASSERTION,
-      "Programmer assertion is incorrect! - {0}"},
+      "Programmer assertion is incorrect, {0}"},
 
   { ER_BOOLEAN_ARG_NO_LONGER_OPTIONAL,
       "boolean(...) argument is no longer optional with 19990709 XPath draft."},
@@ -544,10 +582,10 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
      "Unknown nodetype: {0}"},
 
   { ER_PATTERN_LITERAL_NEEDS_BE_QUOTED,
-      "Pattern literal ({0}) needs to be quoted!"},
+      "Pattern literal ({0}) needs to be quoted."},
 
   { ER_COULDNOT_BE_FORMATTED_TO_NUMBER,
-      "{0} could not be formatted to a number!"},
+      "XPST0003 : {0} could not be formatted to a number."},
 
   { ER_COULDNOT_CREATE_XMLPROCESSORLIAISON,
       "Could not create XML TransformerFactory Liaison: {0}"},
@@ -574,10 +612,10 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
       "The count function should take one argument!"},
 
   { ER_COULDNOT_FIND_FUNCTION,
-     "Could not find function: {0}"},
+      "XPST0017 : Could not find function: {0}"},
 
   { ER_UNSUPPORTED_ENCODING,
-     "Unsupported encoding: {0}"},
+      "Unsupported encoding: {0}"},
 
   { ER_PROBLEM_IN_DTM_NEXTSIBLING,
       "Problem occured in DTM in getNextSibling... trying to recover"},
@@ -625,7 +663,10 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
      "In XPath.readObject: {0}"},
 
   { ER_FUNCTION_TOKEN_NOT_FOUND,
-      "function token not found."},
+      "XPST0017 : An XPath function token not found."},
+  
+  { ER_FUNCTION_TOKEN_NOT_FOUND2,
+      "XPST0017 : An XPath function token ''{0}'' not found."},
 
   { ER_CANNOT_DEAL_XPATH_TYPE,
        "Can not deal with XPath type: {0}"},
@@ -678,9 +719,6 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
 
   { ER_FASTSTRINGBUFFER_CANNOT_BE_NULL,
       "The FastStringBuffer argument can not be null"},
-  
-  { ER_TYPE_COMPARISON_ERROR,
-      "Value of type {0} cannot be compared with value of type {1}"},
 
   { ER_ZERO, "0"},
   
@@ -726,7 +764,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
        "Can not call setShouldCacheNodes after nextNode has been called!"},
 
   { ER_ONLY_ALLOWS,
-       "XPST0017 : An XPath function ''{0}'' only allows {1} arguments."},
+       "XPST0017 : An XPath 3.1 function ''{0}'' only allows {1} arguments."},
 
   { ER_UNKNOWN_STEP,
        "Programmer''s assertion in getNextStepPos: unknown stepType: {0}"},
@@ -913,10 +951,10 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
        "Attempting to set a null XPathVariableResolver:{0}#setXPathVariableResolver(null)"},
   
   { ER_INVALID_REGEX_FLAGS,
-       "FORX0001: Invalid regex flag(s) usage, with function call {0}."},
+       "FORX0001 : Invalid regex flag(s) usage, with function call {0}."},
   
   { ER_INVALID_REGEX,
-       "FORX0002: Invalid regex syntax used, with function call {0}."},
+       "FORX0002 : Invalid regex syntax used, with function call {0}."},
   
   { ER_EQ_OPERAND_CARDINALITY_ERROR,
        "XPTY0004 : none of the eq's operands can be a sequence with length greater than one."},
@@ -962,7 +1000,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
       "function token not found."},
 
   { WG_COULDNOT_FIND_FUNCTION,
-      "Could not find function: {0}"},
+      "XPST0017 : Could not find function: {0}"},
 
   { WG_CANNOT_MAKE_URL_FROM,
       "Can not make URL from: {0}"},

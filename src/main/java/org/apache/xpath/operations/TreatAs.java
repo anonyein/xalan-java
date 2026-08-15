@@ -20,7 +20,7 @@
  */
 package org.apache.xpath.operations;
 
-import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceType;
 import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.objects.XObject;
 
@@ -31,18 +31,21 @@ import org.apache.xpath.objects.XObject;
  * 
  * @xsl.usage advanced
  */
-public class TreatAs extends Operation
+public class TreatAs extends XPathOperator
 {
 
   private static final long serialVersionUID = 8897640092248117520L;
 
   /**
-   * Apply the operation to two operands, and return the result.
+   * Apply an XPath operator to its two operands, and return the result.
    *
-   * @param left non-null reference to the evaluated left operand.
-   * @param right non-null reference to the evaluated right operand.
+   * @param left  non-null reference to an XPath operator's evaluated 
+   *              first operand.              
+   * @param right non-null reference to an XPath operator's evaluated 
+   *              second operand.
    *
-   * @return non-null reference to the XObject that represents the result of the operation.
+   * @return non-null reference to an XObject object instance, that 
+   *         represents the result of XPath operator evaluation. 
    *
    * @throws javax.xml.transform.TransformerException
    */
@@ -50,7 +53,7 @@ public class TreatAs extends Operation
   {
 	  XObject result = null;
       
-      XPathSequenceTypeData seqTypedData = (XPathSequenceTypeData)right;
+      XPathSequenceType seqTypedData = (XPathSequenceType)right;
       
       result = XPathSequenceTypeSupport.castXdmValueToAnotherType(left, seqTypedData, true);
       

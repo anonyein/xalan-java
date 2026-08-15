@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.functions;
 
 import java.text.DecimalFormat;
@@ -39,26 +36,27 @@ import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.res.XPATHErrorResources;
 
 /**
- * Implementation of XPath 3.1 function fn:round.
+ * Implementation of an XPath 3.1 function fn:round.
  * 
  * @xsl.usage advanced
  */
 public class FuncRound extends Function2Args
 {
-      static final long serialVersionUID = -7970583902573826611L;
+      
+	  static final long serialVersionUID = -7970583902573826611L;
       
       /**
        * Class constructor.
        */
       public FuncRound() {
-    	  m_defined_arity = new Short[] { 1, 2 };  
+    	  m_arity = new Short[] { 1, 2 };  
       }
     
       /**
        * Evaluate the function. The function must return a valid object.
        * 
-       * @param xctxt The current execution context
-       * @return A valid XObject
+       * @param xctxt                        An XPath context object
+       * @return                             A valid XObject
        *
        * @throws javax.xml.transform.TransformerException
        */
@@ -112,8 +110,10 @@ public class FuncRound extends Function2Args
                      
                   if (arg1AsInt >= 0) {
                      DecimalFormat decimalFormat = new DecimalFormat("#." + XslTransformEvaluationHelper.getStrWithZeros(arg1AsInt));
-                     double valAfterRounding = Double.valueOf(decimalFormat.format(Double.valueOf(strValueOfArg0)));                     
-                     result = new XNumber(valAfterRounding);
+                     
+                     double valRound = Double.valueOf(decimalFormat.format(Double.valueOf(strValueOfArg0)));                     
+                     
+                     result = new XNumber(valRound);
                   }
                   else {
                      throw new javax.xml.transform.TransformerException("FORG0006 : A negative integer value of second argument to "
@@ -157,7 +157,7 @@ public class FuncRound extends Function2Args
       }
       
       /**
-       * Execute the first argument expression that is expected to return a
+       * Evaluate the first argument expression that is expected to return a
        * string. If the argument is null, then get the string value from the
        * current context node.
        *

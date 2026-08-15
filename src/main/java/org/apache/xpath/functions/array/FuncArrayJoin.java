@@ -21,16 +21,14 @@ import java.util.List;
 
 import javax.xml.transform.SourceLocator;
 
-import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.FunctionOneArg;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
-import org.apache.xpath.operations.Variable;
 
 /**
- * Implementation of the array:join function.
+ * Implementation of an XPath 3.1 function array:join.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -44,34 +42,37 @@ public class FuncArrayJoin extends FunctionOneArg {
 	 * Class constructor.
 	 */
 	public FuncArrayJoin() {
-		m_defined_arity = new Short[] { 1 };
+		m_arity = new Short[] { 1 };
 	}
 
+	/**
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
 	public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
 	{
 	    XObject result = null;
 	       
 	    SourceLocator srcLocator = xctxt.getSAXLocator();
-	       
-	    Expression arg0 = getArg0();
 	    
-	    XObject arg0Obj = null;
-	    
-	    if (arg0 instanceof Variable) {
-	       arg0Obj = ((Variable)arg0).execute(xctxt);
-	    }
-	    else {
-	       arg0Obj = arg0.execute(xctxt);
-	    }	    
+	    XObject arg0Obj = getFunctionArgEffectiveValue(m_arg0, xctxt);	    
 	    	    
 	    if (arg0Obj instanceof ResultSequence) {
-	       ResultSequence rSeq = (ResultSequence)arg0Obj;	       	       
-	       if (rSeq.size() == 0) {
+	       ResultSequence rSeq = (ResultSequence)arg0Obj;
+	       
+	       int size1 = rSeq.size();
+	       
+	       if (size1 == 0) {
 	          result = new XPathArray();
 	       }
 	       else {
 	    	  List<XObject> resultNativeArr = new ArrayList<XObject>();
-	    	  for (int idx = 0; idx < rSeq.size(); idx++) {
+	    	  
+	    	  for (int idx = 0; idx < size1; idx++) {
 	 	    	XObject item = rSeq.item(idx);
 	 	    	if (item instanceof XPathArray) {
 	 	    	   List<XObject> nativeArr = ((XPathArray)item).getNativeArray();

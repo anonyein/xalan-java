@@ -26,7 +26,6 @@ import java.time.temporal.ChronoField;
 import java.util.Locale;
 
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
-import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.FunctionOneArg;
 import org.apache.xpath.objects.ResultSequence;
@@ -49,14 +48,14 @@ public class FuncParseIetfDate extends FunctionOneArg {
 	 * Class constructor.
 	 */
 	public FuncParseIetfDate() {
-		m_defined_arity = new Short[] { 1 };	
+		m_arity = new Short[] { 1 };	
 	}
 	
 	/**
 	 * Evaluate the function. The function must return a valid object.
 	 * 
-	 * @param xctxt The current execution context
-	 * @return A valid XObject
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
 	 *
 	 * @throws javax.xml.transform.TransformerException
 	 */
@@ -64,9 +63,7 @@ public class FuncParseIetfDate extends FunctionOneArg {
 	{
 		XObject result = null;
 
-		Expression arg0Expr = getArg0();
-
-		XObject xObj0 = arg0Expr.execute(xctxt);
+		XObject xObj0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
 
 		if (xObj0 instanceof ResultSequence) {
 			result = new ResultSequence();

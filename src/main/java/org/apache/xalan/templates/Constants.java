@@ -17,6 +17,8 @@
  */
 package org.apache.xalan.templates;
 
+import javax.xml.XMLConstants;
+
 /**
  * Specification of primary constant values used in the 
  * TransformerImpl classes.
@@ -158,9 +160,16 @@ public class Constants extends org.apache.xml.utils.Constants
       ELEMNAME_MERGE_ACTION_STRING = "merge-action",
       ELEMNAME_TRY_STRING = "try",
       ELEMNAME_CATCH_STRING = "catch",
-      ELEMNAME_ANALYZESTRING_STRING = "analyze-string",
+      ELEMNAME_ANALYZESTRING_STRING = "analyze-string",      
       ELEMNAME_MATCHINGSUBSTRING_STRING = "matching-substring",
       ELEMNAME_NONMATCHINGSUBSTRING_STRING = "non-matching-substring",
+      
+      ELEMNAME_ANALYZESTRING_RESULT_STRING = "analyze-string-result",
+      ELEMNAME_ANALYZESTRING_NON_MATCH_STRING = "non-match",
+      ELEMNAME_ANALYZESTRING_MATCH_STRING = "match",
+      ELEMNAME_ANALYZESTRING_GROUP_STRING = "group",
+      ELEMNAME_ANALYZESTRING_NR_STRING = "nr",
+      
       ELEMNAME_ITERATE_STRING = "iterate",
       ELEMNAME_ITERATE_ONCOMPLETION_STRING = "on-completion",
       ELEMNAME_ITERATE_NEXTITERATION_STRING = "next-iteration",
@@ -486,6 +495,9 @@ public class Constants extends org.apache.xml.utils.Constants
   
   public static final String ANONYMOUS_FUNCTION = "anonymous_func";
   
+  // An XPath 3.1 expression string representing UTC timezone
+  public static final String XS_DAYTIME_DURATION_UTC = "xs:dayTimeDuration('PT0H')";
+  
   public static final String ATTRVAL_TEXT_ONLY_COPY = "text-only-copy".intern(); 
   public static final String ATTRVAL_DEEP_COPY = "deep-copy".intern();
   public static final String ATTRVAL_SHALLOW_COPY = "shallow-copy".intern();
@@ -529,8 +541,17 @@ public class Constants extends org.apache.xml.utils.Constants
   
   public static final String ATTRVAL_ABSENT = "absent";
   
+  /**
+   * An xsl:fork instruction's xsl:sequence run-time
+   * timeout, in seconds. Specification of this time-out
+   * value is Xalan-J specific.
+   */
+  public static final int XSL_FORK_SEQ_RUN_TIMEOUT = 30;
+  
   public static final String XSL_SER_NAMESACE = "http://www.w3.org/2010/xslt-xquery-serialization";
   
   public static final String XSL_SER_PARAMS = "serialization-parameters";
+  
+  public static final String XMLNS_COLON = (XMLConstants.XMLNS_ATTRIBUTE + ":");
   
 }

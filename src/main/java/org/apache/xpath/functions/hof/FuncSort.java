@@ -26,13 +26,11 @@ import javax.xml.transform.SourceLocator;
 
 import org.apache.xalan.res.XSLMessages;
 import org.apache.xalan.templates.ElemFunction;
-import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.XMLNSDecl;
 import org.apache.xalan.transformer.TransformerImpl;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
-import org.apache.xml.dtm.DTMManager;
 import org.apache.xml.utils.QName;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
@@ -51,6 +49,7 @@ import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.res.XPATHErrorResources;
+import org.apache.xpath.util.XPath3ExpressionUtil;
 
 /**
  * Implementation of XPath 3.1 function fn:sort.
@@ -68,7 +67,7 @@ public class FuncSort extends FunctionMultiArgs
      * Class constructor.
      */
     public FuncSort() {
- 	   m_defined_arity = new Short[] { 1, 2, 3 };
+ 	   m_arity = new Short[] { 1, 2, 3 };
     }
     
     /**
@@ -78,13 +77,13 @@ public class FuncSort extends FunctionMultiArgs
     private int numOfArgs = 0;
 
     /**
-     * Evaluate the function. The function must return a valid object.
-     * 
-     * @param xctxt The current execution context.
-     * @return A valid XObject.
-     *
-     * @throws javax.xml.transform.TransformerException
-     */
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
     {
     	
@@ -95,7 +94,7 @@ public class FuncSort extends FunctionMultiArgs
         String collationUri = xctxt.getDefaultCollation();
         
         if ((numOfArgs == 2) || (numOfArgs == 3)) {           
-           XObject XObjArg1 = m_arg1.execute(xctxt);
+           XObject XObjArg1 = getFunctionArgEffectiveValue(m_arg1, xctxt);
             
            if ((XObjArg1 instanceof ResultSequence) && 
                                                 (((ResultSequence)XObjArg1).size() == 0)) {
@@ -107,7 +106,7 @@ public class FuncSort extends FunctionMultiArgs
            }
         }
         
-        XObject arg0Obj = m_arg0.execute(xctxt);              
+        XObject arg0Obj = getFunctionArgEffectiveValue(m_arg0, xctxt);              
         
         List<InpSeqItemWithSortKeyValue> inpSeqItemWithSortKeyValueList = new ArrayList<InpSeqItemWithSortKeyValue>();
         
@@ -117,9 +116,7 @@ public class FuncSort extends FunctionMultiArgs
         
         ElemFunction elemFunction = null;
         
-        if (arg0Obj instanceof XMLNodeCursorImpl) {
-           DTMManager dtmMgr = (DTMManager)xctxt;
-            
+        if (arg0Obj instanceof XMLNodeCursorImpl) {            
            XMLNodeCursorImpl xNodeSet = (XMLNodeCursorImpl)arg0Obj;           
            DTMCursorIterator sourceNodes = xNodeSet.iter();                      
            
@@ -127,14 +124,14 @@ public class FuncSort extends FunctionMultiArgs
            
            List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
 
-           int nextNode;         
+           int nextNode = DTM.NULL;         
            
            while ((nextNode = sourceNodes.nextNode()) != DTM.NULL) {
-              XMLNodeCursorImpl xNodeSetItem = new XMLNodeCursorImpl(nextNode, dtmMgr);
+              XMLNodeCursorImpl xNodeSetItem = new XMLNodeCursorImpl(nextNode, xctxt);
               
               if (numOfArgs == 3) {
             	  if (m_arg2 instanceof Variable) {
-            		  XObject arg2obj = ((Variable)m_arg2).execute(xctxt);
+            		  XObject arg2obj = getFunctionArgEffectiveValue(m_arg2, xctxt);
             		  
             		  if (arg2obj instanceof XPathInlineFunction) {
             			  XPathInlineFunction arg2InlineFunc = (XPathInlineFunction)arg2obj;
@@ -150,7 +147,10 @@ public class FuncSort extends FunctionMultiArgs
                 		  }
 
                 		  XPath sortKeyXPathExpr = new XPath(sortKeyXPathStr, srcLocator, xctxt.getNamespaceContext(), 
-                				                             XPath.SELECT, null);
+                				                                                                                  XPath.SELECT, null);
+                		  
+                		  XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(sortKeyXPathExpr.getExpression(), sortKeyXPathStr, srcLocator);
+                		  
                 		  XObject sortKeyVal = sortKeyXPathExpr.execute(xctxt, nextNode, xctxt.getNamespaceContext());
 
                 		  // Reset the function item argument reference value
@@ -165,7 +165,7 @@ public class FuncSort extends FunctionMultiArgs
                 			 
             			     transformerImpl = getTransformerImplFromXPathExpression((NodeTest)dtmIter);
             			     elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression(
-            			    		                                                                    (NodeTest)dtmIter, transformerImpl, srcLocator);
+            			    		                                                                    (NodeTest)dtmIter, srcLocator);
             			  }                      	  
                       	  
                       	  ResultSequence argSeq = new ResultSequence(); 
@@ -189,7 +189,10 @@ public class FuncSort extends FunctionMultiArgs
             		  }
 
             		  XPath sortKeyXPathExpr = new XPath(sortKeyXPathStr, srcLocator, xctxt.getNamespaceContext(), 
-            				                             XPath.SELECT, null);
+            				                             														XPath.SELECT, null);
+            		  
+            		  XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(sortKeyXPathExpr.getExpression(), sortKeyXPathStr, srcLocator);
+            		  
             		  XObject sortKeyVal = sortKeyXPathExpr.execute(xctxt, nextNode, xctxt.getNamespaceContext());
 
             		  // Reset the function item argument reference value
@@ -201,8 +204,10 @@ public class FuncSort extends FunctionMultiArgs
              		  XPathNamedFunctionReference namedFuncRef = (XPathNamedFunctionReference)m_arg2;
                       String funcNamespace = namedFuncRef.getFuncNamespace();
                       String funcLocalName = namedFuncRef.getFuncName();
+                      
                       int funcArity = 0;           
-                	  if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace) && 
+                	  
+                      if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace) && 
                 			  															        (Keywords.FUNC_CONCAT_STRING).equals(funcLocalName)) {
                 		  funcArity = namedFuncRef.getConcatArity();
                 	  }
@@ -213,30 +218,43 @@ public class FuncSort extends FunctionMultiArgs
                       FunctionTable funcTable = xctxt.getFunctionTable();
                       
                       Object funcIdObj = null;
-                      if (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace)) {
-                         funcIdObj = funcTable.getFunctionId(funcLocalName);
+                      
+                      if ((funcNamespace == null) || (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace))) {
+                    	  funcIdObj = funcTable.getFunctionIdForXSLBuiltinFuncs(funcLocalName);
                       }
                       else if (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI.equals(funcNamespace)) {
-                         funcIdObj = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcLocalName);
+                    	  funcIdObj = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcLocalName);
                       }
                       else if (XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI.equals(funcNamespace)) {
-                         funcIdObj = funcTable.getFunctionIdForXPathBuiltinMapFuncs(funcLocalName);
+                    	  funcIdObj = funcTable.getFunctionIdForXPathBuiltinMapFuncs(funcLocalName);
                       }
                       else if (XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI.equals(funcNamespace)) {
-                         funcIdObj = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcLocalName);
+                    	  funcIdObj = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcLocalName);
                       }
+
+                      String funcExpandedName = null;
                       
+                      if (funcNamespace != null) {
+                    	  funcExpandedName = "{" + funcNamespace + ":" + funcLocalName + "}#" + funcArity;
+                      }
+                      else {
+                    	  funcExpandedName = "{" + funcLocalName + "}#" + funcArity;
+                      }
+
                       if (funcIdObj != null) {
                     	  String funcIdStr = funcIdObj.toString();
                     	  Function function = funcTable.getFunction(Integer.valueOf(funcIdStr));
                     	  try {
                     		  function.setArg(xNodeSetItem, 0);
-                    	  } catch (WrongNumberArgsException ex) {
-                    		  String expandedFuncName = "{" + funcNamespace + ":" + funcLocalName + "}#" + funcArity;  
+                    	  } 
+                    	  catch (WrongNumberArgsException ex) {  
                     		  throw new javax.xml.transform.TransformerException("XPTY0004 : Wrong number of arguments provided, "
-                    				                                          + "during function call " + expandedFuncName + ".", srcLocator);
+                    				  																				+ "during function call " 
+                    				  																				+ funcExpandedName + ".", srcLocator);
                     	  }
+                    	  
                     	  XObject sortKeyVal = function.execute(xctxt);
+                    	  
                     	  inpSeqItemWithSortKeyValueList.add(new InpSeqItemWithSortKeyValue(xNodeSetItem, sortKeyVal));               
                       } 
              	   }            	  
@@ -244,7 +262,7 @@ public class FuncSort extends FunctionMultiArgs
             		   transformerImpl = getTransformerImplFromXPathExpression(m_arg2);
                        
                    	   elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression(
-                   			                                                                      (NodeTest)m_arg2, transformerImpl, srcLocator);
+                   			                                                                      (NodeTest)m_arg2, srcLocator);
                    	   
                    	   ResultSequence argSeq = new ResultSequence(); 
                    	   argSeq.add(xNodeSetItem);
@@ -266,7 +284,9 @@ public class FuncSort extends FunctionMultiArgs
               throw new javax.xml.transform.TransformerException(fnSortComparator.getErrMessage(), srcLocator); 
            }
            
-           for (int idx = 0; idx < inpSeqItemWithSortKeyValueList.size(); idx++) {
+           int size1 = inpSeqItemWithSortKeyValueList.size();
+           
+           for (int idx = 0; idx < size1; idx++) {
               InpSeqItemWithSortKeyValue inpSeqItemWithSortKeyValue = inpSeqItemWithSortKeyValueList.get(idx);
               sortedResultSeq.add(inpSeqItemWithSortKeyValue.getInpSeqItem()); 
            }
@@ -275,12 +295,53 @@ public class FuncSort extends FunctionMultiArgs
         else if (arg0Obj instanceof ResultSequence) {
            ResultSequence arg0ResultSeq = (ResultSequence)arg0Obj;
            
+           int size1 = arg0ResultSeq.size();
+           
+           ResultSequence rSeqNew = new ResultSequence();
+           
+           for (int idx = 0; idx < size1; idx++) {
+        	  XObject xObj = arg0ResultSeq.item(idx);
+        	  
+        	  if (xObj instanceof XMLNodeCursorImpl) {        		 
+        		 XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xObj;
+        		 DTMCursorIterator dtmCursorIter = xmlNodeCursorImpl.iter();
+        		 
+        		 int nextNode = DTM.NULL;
+        		 
+        		 while ((nextNode = dtmCursorIter.nextNode()) != DTM.NULL) {
+        			XMLNodeCursorImpl node1 = new XMLNodeCursorImpl(nextNode, xctxt);
+        			rSeqNew.add(node1);
+        		 }
+        	  }
+        	  else {
+        		 rSeqNew.add(xObj); 
+        	  }
+           }
+           
+           arg0ResultSeq = rSeqNew;
+           
+           if ((arg0ResultSeq.size() > 0) && (arg0ResultSeq.item(0) instanceof XMLNodeCursorImpl)) {        	   
+        	  m_arg0 = XslTransformEvaluationHelper.getXNodeSetFromResultSequence(arg0ResultSeq, xctxt);
+        	  
+        	  if (m_arg0 != null) {        		 
+        		 result = execute(xctxt);
+        		 
+        		 return result;
+        	  }
+        	  else {
+        		 throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 function sort's first argument comprises a mix of nodes "
+        		 		                                                                                          + "and other xdm types, making the "
+        		 		                                                                                          + "supplied sequence not sortable.", srcLocator);
+        	  }
+           }
+           
            Map<QName, XObject> inlineFunctionVarMap = xctxt.getXPathVarMap();
            
-           List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
-           
-           for (int idx = 0; idx < arg0ResultSeq.size(); idx++) {
+           List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);           
+                      
+           for (int idx = 0; idx < size1; idx++) {
               XObject inputSeqItem = arg0ResultSeq.item(idx);
+              
               if (numOfArgs == 3) {
             	  if (m_arg2 instanceof XPathInlineFunction) {
 	                 XPathInlineFunction arg2InlineFunc = (XPathInlineFunction)m_arg2;
@@ -297,6 +358,9 @@ public class FuncSort extends FunctionMultiArgs
 	                 
 	                 XPath sortKeyXPathExpr = new XPath(sortKeyXPathStr, srcLocator, xctxt.getNamespaceContext(), 
 	                                                                                                     XPath.SELECT, null);
+	                 
+	                 XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(sortKeyXPathExpr.getExpression(), sortKeyXPathStr, srcLocator);
+	                 
 	                 XObject sortKeyVal = sortKeyXPathExpr.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
 	                 
 	                 // Reset the function item argument reference value
@@ -308,7 +372,9 @@ public class FuncSort extends FunctionMultiArgs
             		 XPathNamedFunctionReference namedFuncRef = (XPathNamedFunctionReference)m_arg2;
                      String funcNamespace = namedFuncRef.getFuncNamespace();
                      String funcLocalName = namedFuncRef.getFuncName();
+                     
                      int funcArity = 0;           
+                     
                      if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace) && 
                     		                                                                   (Keywords.FUNC_CONCAT_STRING).equals(funcLocalName)) {
                     	 funcArity = namedFuncRef.getConcatArity();
@@ -320,38 +386,50 @@ public class FuncSort extends FunctionMultiArgs
                      FunctionTable funcTable = xctxt.getFunctionTable();
                      
                      Object funcIdObj = null;
-                     if (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace)) {
-                        funcIdObj = funcTable.getFunctionId(funcLocalName);
+                     
+                     if ((funcNamespace == null) || (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace))) {
+                    	 funcIdObj = funcTable.getFunctionIdForXSLBuiltinFuncs(funcLocalName);
                      }
                      else if (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI.equals(funcNamespace)) {
-                        funcIdObj = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcLocalName);
+                    	 funcIdObj = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcLocalName);
                      }
                      else if (XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI.equals(funcNamespace)) {
-                        funcIdObj = funcTable.getFunctionIdForXPathBuiltinMapFuncs(funcLocalName);
+                    	 funcIdObj = funcTable.getFunctionIdForXPathBuiltinMapFuncs(funcLocalName);
                      }
                      else if (XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI.equals(funcNamespace)) {
-                        funcIdObj = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcLocalName);
+                    	 funcIdObj = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcLocalName);
                      }
+
+                     String funcExpandedName = null;
                      
+                     if (funcNamespace != null) {
+                    	 funcExpandedName = "{" + funcNamespace + ":" + funcLocalName + "}#" + funcArity;
+                     }
+                     else {
+                    	 funcExpandedName = "{" + funcLocalName + "}#" + funcArity;
+                     }
+
                      if (funcIdObj != null) {
-                        String funcIdStr = funcIdObj.toString();
-                        Function function = funcTable.getFunction(Integer.valueOf(funcIdStr));
-            			try {
-							function.setArg(inputSeqItem, 0);
-						} catch (WrongNumberArgsException ex) {
-							String expandedFuncName = "{" + funcNamespace + ":" + funcLocalName + "}#" + funcArity;  
- 							throw new javax.xml.transform.TransformerException("XPTY0004 : Wrong number of arguments provided, "
- 									                                           + "during function call " + expandedFuncName + ".", srcLocator);
-						}
-            			XObject sortKeyVal = function.execute(xctxt);
-            			inpSeqItemWithSortKeyValueList.add(new InpSeqItemWithSortKeyValue(inputSeqItem, sortKeyVal));               
+                    	 String funcIdStr = funcIdObj.toString();
+                    	 Function function = funcTable.getFunction(Integer.valueOf(funcIdStr));
+                    	 try {
+                    		 function.setArg(inputSeqItem, 0);
+                    	 } 
+                    	 catch (WrongNumberArgsException ex) {  
+                    		 throw new javax.xml.transform.TransformerException("XPTY0004 : Wrong number of arguments provided, "
+                    				 																				+ "during function call " 
+                    				 																				+ funcExpandedName + ".", srcLocator);
+                    	 }
+
+                    	 XObject sortKeyVal = function.execute(xctxt);
+                    	 inpSeqItemWithSortKeyValueList.add(new InpSeqItemWithSortKeyValue(inputSeqItem, sortKeyVal));               
                      } 
             	 }
             	 else if (m_arg2 instanceof NodeTest) {
             		 transformerImpl = getTransformerImplFromXPathExpression(m_arg2);
 
             		 elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression(
-            				                                                                    (NodeTest)m_arg2, transformerImpl, srcLocator);
+            				                                                                    (NodeTest)m_arg2, srcLocator);
 
             		 ResultSequence argSeq = new ResultSequence(); 
             		 argSeq.add(inputSeqItem);
@@ -373,7 +451,9 @@ public class FuncSort extends FunctionMultiArgs
               throw new javax.xml.transform.TransformerException(fnSortComparator.getErrMessage(), srcLocator); 
            }
                
-           for (int idx = 0; idx < inpSeqItemWithSortKeyValueList.size(); idx++) {
+           int size2 = inpSeqItemWithSortKeyValueList.size();
+           
+           for (int idx = 0; idx < size2; idx++) {
               InpSeqItemWithSortKeyValue inpSeqItemWithSortKeyValue = inpSeqItemWithSortKeyValueList.get(idx);
               sortedResultSeq.add(inpSeqItemWithSortKeyValue.getInpSeqItem()); 
            }           
@@ -395,13 +475,8 @@ public class FuncSort extends FunctionMultiArgs
      * @throws WrongNumberArgsException
      */
     public void checkNumberArgs(int argNum) throws WrongNumberArgsException
-    {
-       if (!(argNum > 0 && argNum <= 3)) {
-          reportWrongNumberArgs();
-       }
-       else {
-          numOfArgs = argNum;   
-       }
+    {      
+       numOfArgs = argNum;
     }
 
     /**

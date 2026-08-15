@@ -38,6 +38,7 @@ import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.patterns.NodeTest;
+import org.apache.xpath.util.XPath3ExpressionUtil;
 
 /**
  * Implementation of XPath 3.1 function fn:fold-right.
@@ -54,12 +55,17 @@ public class FuncFoldRight extends XPathHigherOrderBuiltinFunction {
      * Class constructor.
      */
     public FuncFoldRight() {
- 	   m_defined_arity = new Short[] { 3 };
+ 	   m_arity = new Short[] { 3 };
     }
 
     /**
-     * Evaluate the function call.
-     */
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
     {
         XObject evalResult = new ResultSequence();
@@ -72,7 +78,9 @@ public class FuncFoldRight extends XPathHigherOrderBuiltinFunction {
         
         if (m_arg0 instanceof LocPathIterator) {
         	foldRightFirstArgSeq = new ResultSequence();         	
-        	XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)(m_arg0.execute(xctxt));
+        	
+        	XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)(getFunctionArgEffectiveValue(m_arg0, xctxt));
+        	
         	DTMCursorIterator dtmCursorIter = xmlNodeCursorImpl.asIterator(xctxt, contextNode);
         	int nextNode;
         	while ((nextNode = dtmCursorIter.nextNode()) != DTM.NULL) {
@@ -84,7 +92,7 @@ public class FuncFoldRight extends XPathHigherOrderBuiltinFunction {
         	foldRightFirstArgSeq = constructSequenceFromXPathExpression(m_arg0, xctxt);
         }
         
-        XObject foldRightBaseVal = m_arg1.execute(xctxt);
+        XObject foldRightBaseVal = getFunctionArgEffectiveValue(m_arg1, xctxt);
         
         XPathInlineFunction foldRightInlineFuncArg = null;
         
@@ -92,7 +100,8 @@ public class FuncFoldRight extends XPathHigherOrderBuiltinFunction {
         TransformerImpl transformerImpl = null;
         
         if (m_arg2 instanceof Variable) {
-           XObject arg2XObj = m_arg2.execute(xctxt);
+           XObject arg2XObj = getFunctionArgEffectiveValue(m_arg2, xctxt);
+           
            if (arg2XObj instanceof XPathInlineFunction) {
               foldRightInlineFuncArg = (XPathInlineFunction)arg2XObj;
            }
@@ -110,7 +119,7 @@ public class FuncFoldRight extends XPathHigherOrderBuiltinFunction {
         else if (m_arg2 instanceof NodeTest) {
            transformerImpl = getTransformerImplFromXPathExpression(m_arg2);
            
-           elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)m_arg2, transformerImpl, srcLocator);          
+           elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)m_arg2, srcLocator);          
         }
         else {
            throw new javax.xml.transform.TransformerException("FORG0006 : The third argument to function call "
@@ -134,8 +143,12 @@ public class FuncFoldRight extends XPathHigherOrderBuiltinFunction {
         		}
 
         		XPath inlineFuncXPath = new XPath(inlineFnXPathStr, srcLocator, xctxt.getNamespaceContext(), 
-        																								XPath.SELECT, null);              
-        		for (int idx = foldRightFirstArgSeq.size() - 1; idx >= 0; idx--) {
+        																								XPath.SELECT, null);
+        		
+        		XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(inlineFuncXPath.getExpression(), inlineFnXPathStr, srcLocator);
+        		
+        		int size1 = foldRightFirstArgSeq.size();
+        		for (int idx = size1 - 1; idx >= 0; idx--) {
         			Map<QName, XObject> inlineFunctionVarMap = xctxt.getXPathVarMap();
         			
         			inlineFunctionVarMap.put(new QName(funcItemFirstArgName), foldRightFirstArgSeq.item(idx));
@@ -160,8 +173,9 @@ public class FuncFoldRight extends XPathHigherOrderBuiltinFunction {
                                                                                                                   + "parameters. Expected 2.", srcLocator); 
             }
         }
-        else if (elemFunction != null) { 
-           for (int idx = foldRightFirstArgSeq.size() - 1; idx >= 0; idx--) {
+        else if (elemFunction != null) {
+           int size1 = foldRightFirstArgSeq.size();
+           for (int idx = size1 - 1; idx >= 0; idx--) {
         	   ResultSequence argSequence = new ResultSequence();        	   
         	   argSequence.add(foldRightFirstArgSeq.item(idx));        	           	   
         	   if (idx == (foldRightFirstArgSeq.size() - 1)) {        		   

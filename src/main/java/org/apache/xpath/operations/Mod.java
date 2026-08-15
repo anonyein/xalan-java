@@ -39,23 +39,24 @@ import org.apache.xml.utils.PrefixResolverDefault;
 import org.apache.xml.utils.XMLString;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
-import org.apache.xpath.XPathArithmeticOp;
+import org.apache.xpath.XPathArithmeticUtil;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathException;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
+import org.apache.xpath.composite.XPathSequenceType;
 import org.apache.xpath.functions.FuncArgPlaceholder;
-import org.apache.xpath.objects.ElemFunctionItem;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
-import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 import org.w3c.dom.Node;
 
+import xml.xpath31.processor.types.XSAnyAtomicType;
 import xml.xpath31.processor.types.XSDecimal;
 import xml.xpath31.processor.types.XSDouble;
+import xml.xpath31.processor.types.XSFloat;
 import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSString;
 import xml.xpath31.processor.types.XSUntyped;
@@ -63,29 +64,31 @@ import xml.xpath31.processor.types.XSUntypedAtomic;
 import xml.xpath31.processor.types.XSYearMonthDuration;
 
 /**
- * An XPath 'mod' operation implementation.
+ * An implementation of XPath operator 'mod'.
  * 
  * @author Scott Boag <scott_boag@us.ibm.com>
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  *         (XSLT 3 specific changes, to this class)
  */
-public class Mod extends XPathArithmeticOp
+public class Mod extends XPathArithmeticUtil
 {
    static final long serialVersionUID = 5009471154238918201L;
 
   /**
-   * Apply the operation to two operands, and return the result.
+   * Apply XPath operator to two operands, and return the result.
    *
-   * @param left non-null reference to the evaluated left operand.
-   * @param right non-null reference to the evaluated right operand.
+   * @param left non-null reference to the evaluated first operand.
+   * @param right non-null reference to the evaluated second operand.
    *
-   * @return non-null reference to the XObject that represents the result of the operation.
+   * @return non-null reference to an XObject object reference that,
+   *         represents the result of XPath expression evaluation.
    *
    * @throws javax.xml.transform.TransformerException
    */
   public XObject operate(XObject left, XObject right) throws javax.xml.transform.TransformerException
   {
+	  
 	  XObject result = null;
 	  
 	  Object lObj = left.object();
@@ -123,17 +126,67 @@ public class Mod extends XPathArithmeticOp
 																												  + "type which cannot be atomized.", this); 
 	  }
 	  
-	  if ((left instanceof XPathInlineFunction) || (left instanceof ElemFunctionItem)) {
+	  if (isXPathOperandXdmFunctionItem(left)) {
 		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first operand of 'mod', but "
 																												  + "the supplied type is a function "
 																												  + "type which cannot be atomized.", this); 
 	  }
 
-	  if ((right instanceof XPathInlineFunction) || (right instanceof ElemFunctionItem)) {
+	  if (isXPathOperandXdmFunctionItem(right)) {
 		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the second operand of 'mod', but "
 																												  + "the supplied type is a function "
 																												  + "type which cannot be atomized.", this); 
 	  }
+	  
+	  if ((left instanceof ResultSequence) && (((ResultSequence)left).size() == 0)) {
+		 return new ResultSequence();  
+	  }
+	  
+	  if ((right instanceof ResultSequence) && (((ResultSequence)right).size() == 0)) {
+		 return new ResultSequence();  
+	  }
+	  
+	  if (stylesheetRoot == null) {
+		  // Stricter type checking, when invoked via an XPath api call
+		  
+		  if ((left instanceof XSString) || (left instanceof XString)) {
+			  throw new TransformerException("XPTY0004 : An XPath operator 'mod' cannot have a string valued operand.");  
+		  }
+
+		  if ((right instanceof XSString) || (right instanceof XString)) {		  
+			  throw new TransformerException("XPTY0004 : An XPath operator 'mod' cannot have a string valued operand.");  
+		  }
+	  }
+	  
+	  if (left instanceof XNumber) {
+		  XNumber xNumber = (XNumber)left;		 
+
+		  if (xNumber.getXsDecimal() != null) {
+			  left = xNumber.getXsDecimal(); 
+		  }
+		  else if (xNumber.getXsDouble() != null) {
+			  left = xNumber.getXsDouble();  
+		  }
+		  else if (xNumber.getXsInteger() != null) {
+			  left = xNumber.getXsInteger();  
+		  }
+	  }
+
+	  if (right instanceof XNumber) {
+		  XNumber xNumber = (XNumber)right;		 
+
+		  if (xNumber.getXsDecimal() != null) {
+			  right = xNumber.getXsDecimal(); 
+		  }
+		  else if (xNumber.getXsDouble() != null) {
+			  right = xNumber.getXsDouble();  
+		  }
+		  else if (xNumber.getXsInteger() != null) {
+			  right = xNumber.getXsInteger();  
+		  }
+	  }
+	  
+	  XPathSequenceType xpathSeqTypeResultData = getXdmSequenceTypeResultData(left, right);
 
 	  java.lang.String lNodeStr = null;
 	  java.lang.String rNodeStr = null;
@@ -143,12 +196,44 @@ public class Mod extends XPathArithmeticOp
 
 	  ElemTemplateElement elemTemplateElement = (ElemTemplateElement)getExpressionOwner();
 	  
+	  if ((left instanceof XNumber) || (left instanceof XSNumericType)) {
+		  if (right instanceof XMLNodeCursorImpl) {
+			  java.lang.String str1 = ((XMLNodeCursorImpl)right).str();			
+
+			  try {
+				  double dbl = Double.valueOf(str1);
+
+				  right = new XSDouble(dbl);
+			  }
+			  catch (NumberFormatException ex) {
+				  right = right.getFresh(); 
+			  }
+		  }
+	  }
+
+	  if ((right instanceof XNumber) || (right instanceof XSNumericType)) {
+		  if (left instanceof XMLNodeCursorImpl) {
+			  java.lang.String str1 = ((XMLNodeCursorImpl)left).str();			
+
+			  try {
+				  double dbl = Double.valueOf(str1);
+
+				  left = new XSDouble(dbl);
+			  }
+			  catch (NumberFormatException ex) {
+				  left = left.getFresh(); 
+			  }
+		  }
+	  }
+	  
 	  if (left instanceof XMLNodeCursorImpl) {
 		  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)left;
-		  int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
-		  if (nodeHandle != DTM.NULL) {
-			  DTM dtm = xctxt.getDTM(nodeHandle);
-			  Node node = dtm.getNode(nodeHandle);
+		  
+		  int nextNode = xmlNodeCursorImpl.asNode(xctxt);
+		  
+		  if (nextNode != DTM.NULL) {
+			  DTM dtm = xctxt.getDTM(nextNode);
+			  Node node = dtm.getNode(nextNode);
 			  if (node instanceof ElementPSVI) {
 				  ElementPSVI elementPsvi = (ElementPSVI)node;
 				  XSTypeDefinition typeDefn = elementPsvi.getTypeDefinition();
@@ -179,8 +264,6 @@ public class Mod extends XPathArithmeticOp
 							  typeNs1 = xsTypeDefn.getNamespace();
 						  }
 					  }
-					  
-					  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 				  }
 			  }
 			  else if (node instanceof AttributePSVI) {
@@ -209,11 +292,9 @@ public class Mod extends XPathArithmeticOp
 						  typeNs1 = xsTypeDefn.getNamespace();
 					  }
 				  }
-				  
-				  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 			  }
 
-			  XMLString xmlStr1 = dtm.getStringValue(nodeHandle);
+			  XMLString xmlStr1 = dtm.getStringValue(nextNode);
 			  lNodeStr = xmlStr1.toString();
 		  }
 	  }
@@ -223,10 +304,12 @@ public class Mod extends XPathArithmeticOp
 	  
 	  if (right instanceof XMLNodeCursorImpl) {
 		  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)right;
-		  int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
-		  if (nodeHandle != DTM.NULL) {
-			  DTM dtm = xctxt.getDTM(nodeHandle);
-			  Node node = dtm.getNode(nodeHandle);
+		  
+		  int nextNode = xmlNodeCursorImpl.asNode(xctxt);
+		  
+		  if (nextNode != DTM.NULL) {
+			  DTM dtm = xctxt.getDTM(nextNode);
+			  Node node = dtm.getNode(nextNode);
 			  if (node instanceof ElementPSVI) {
 				  ElementPSVI elementPsvi = (ElementPSVI)node;
 				  XSTypeDefinition typeDefn = elementPsvi.getTypeDefinition();
@@ -257,8 +340,6 @@ public class Mod extends XPathArithmeticOp
 							  typeNs2 = xsTypeDefn.getNamespace();
 						  }
 					  }
-					  
-					  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 				  }
 			  }
 			  else if (node instanceof AttributePSVI) {
@@ -287,55 +368,51 @@ public class Mod extends XPathArithmeticOp
 						  typeNs2 = xsTypeDefn.getNamespace();
 					  }
 				  }
-				  
-				  // To do, xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_LIST
 			  }
 
-			  XMLString xmlStr2 = dtm.getStringValue(nodeHandle);
+			  XMLString xmlStr2 = dtm.getStringValue(nextNode);
 			  rNodeStr = xmlStr2.toString();
 		  }
 	  }
 	  
-	  if (left instanceof XSNumericType) {
-		  if ((right instanceof XSString) || (right instanceof XString)) {
-			  java.lang.String str2 = XslTransformEvaluationHelper.getStrVal(right);
-			  
-			  try {
-				  double dbl2 = Double.valueOf(str2);
-				  right = new XSDouble(dbl2);
-
-				  typeName2 = "double";
-				  typeNs2 = XMLConstants.W3C_XML_SCHEMA_NS_URI;
-			  }
-			  catch (NumberFormatException ex) {
-				  // no op	
-			  }
-		  }
+	  if (left instanceof XSAnyAtomicType) {
+		  typeName1 = ((XSAnyAtomicType)left).typeName();
+		  typeNs1 = XMLConstants.W3C_XML_SCHEMA_NS_URI; 
+	  }
+	  else if (left instanceof XNumber) {
+		  typeName1 = "double";
+		  typeNs1 = XMLConstants.W3C_XML_SCHEMA_NS_URI; 
 	  }
 
-	  if (right instanceof XSNumericType) {
-		  if ((left instanceof XSString) || (left instanceof XString)) {
-			  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(left);
-			  
-			  try {
-				  double dbl1 = Double.valueOf(str1);
-				  left = new XSDouble(dbl1);
-
-				  typeName2 = "double";
-				  typeNs2 = XMLConstants.W3C_XML_SCHEMA_NS_URI;
-			  }
-			  catch (NumberFormatException ex) {
-				  // no op	
-			  }
-		  }
+	  if (right instanceof XSAnyAtomicType) {
+		  typeName2 = ((XSAnyAtomicType)right).typeName();
+		  typeNs2 = XMLConstants.W3C_XML_SCHEMA_NS_URI; 
 	  }
+	  else if (right instanceof XNumber) {
+		  typeName2 = "double";
+		  typeNs2 = XMLConstants.W3C_XML_SCHEMA_NS_URI; 
+	  } 	  
+
+	  java.lang.String typeName1Actual = typeName1;
+	  java.lang.String typeName2Actual = typeName2;
+
+	  if ("untypedAtomic".equals(typeName1)) {
+		  typeName1 = "double";
+		  typeNs1 = XMLConstants.W3C_XML_SCHEMA_NS_URI; 
+	  }
+
+	  if ("untypedAtomic".equals(typeName2)) {
+		  typeName2 = "double";
+		  typeNs2 = XMLConstants.W3C_XML_SCHEMA_NS_URI;
+	  }
+	  	  	  
+	  // Validating an XPath 3.1 operator 'mod' operands compatibility for evaluating, mod
 	  
-	  // Validating an XPath 3.1 operator 'mod' operands compatibility for computing modulus	  
 	  if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs1) && (XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs2)) {
 		  if ((isXsBuiltInTypeNumeric(typeName1) && !isXsBuiltInTypeNumeric(typeName2)) || 
 				                                                                   (isXsBuiltInTypeNumeric(typeName2) && !isXsBuiltInTypeNumeric(typeName1))) {
-			  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath 3.1 operator 'mod' cannot apply values of schema "
-					                                                                                                        + "types " + typeName1 + " and " + typeName2 + ".");
+			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 operator 'mod' cannot apply values of schema "
+					                                                                                                        + "types " + typeName1Actual + " and " + typeName2Actual + ".");
 		  }			 
 
 		  List<XMLNSDecl> nsPrefixTable = null;	  
@@ -384,24 +461,42 @@ public class Mod extends XPathArithmeticOp
 
 	  if ((lObj instanceof FuncArgPlaceholder) && (rObj instanceof FuncArgPlaceholder)) {
 		  java.lang.String xpathInlineFuncExprStr = "function($arg0, $arg1) { $arg0 mod $arg1 }";
+		  
 		  XPath xpathObj = new XPath(xpathInlineFuncExprStr, null, null, XPath.SELECT, null);
+		  
 		  result = xpathObj.execute(xctxt, DTM.NULL, null);
+		  
+		  if (xpathSeqTypeResultData != null) {
+  			 result.setCastAsType(xpathSeqTypeResultData); 
+  		  }
 
 		  return result;
 	  }
 	  else if ((lObj instanceof FuncArgPlaceholder) && !(rObj instanceof FuncArgPlaceholder)) {
 		  java.lang.String rStr = XslTransformEvaluationHelper.getStrVal(right);
 		  java.lang.String xpathInlineFuncExprStr = "function($arg0) { $arg0 mod " + rStr + " }";
+		  
 		  XPath xpathObj = new XPath(xpathInlineFuncExprStr, null, null, XPath.SELECT, null);
+		  
 		  result = xpathObj.execute(xctxt, DTM.NULL, null);
+		  
+		  if (xpathSeqTypeResultData != null) {
+	  		 result.setCastAsType(xpathSeqTypeResultData); 
+	  	  }
 
 		  return result;
 	  }
 	  else if (!(lObj instanceof FuncArgPlaceholder) && (rObj instanceof FuncArgPlaceholder)) {
 		  java.lang.String lStr = XslTransformEvaluationHelper.getStrVal(left);
 		  java.lang.String xpathInlineFuncExprStr = "function($arg1) { " + lStr + " mod $arg1 }";
+		  
 		  XPath xpathObj = new XPath(xpathInlineFuncExprStr, null, null, XPath.SELECT, null);
+		  
 		  result = xpathObj.execute(xctxt, DTM.NULL, null);
+		  
+		  if (xpathSeqTypeResultData != null) {
+	  		 result.setCastAsType(xpathSeqTypeResultData); 
+	  	  }
 
 		  return result;
 	  }
@@ -415,6 +510,74 @@ public class Mod extends XPathArithmeticOp
 	  if (rightOperandExpr instanceof SelfIteratorNoPredicate) {
 		 right = getModifiedOperandValue(right, (SelfIteratorNoPredicate)rightOperandExpr);
 	  }
+	  
+	  if (left instanceof XSDouble) {
+		  if (right instanceof XSNumericType) {
+			 java.lang.String str2 = ((XSNumericType)right).stringValue();
+			 if (!("INF".equals(str2) || "-INF".equals(str2) || "NaN".equals(str2))) {
+				XSDouble xsDouble1 = (XSDouble)left;
+				if (xsDouble1.infinite()) {
+				   return new XSDouble(Double.NaN);
+				}
+			 }
+		  }
+	  }
+	  
+      if (left instanceof XSFloat) {
+    	  if (right instanceof XSNumericType) {
+ 			 java.lang.String str2 = ((XSNumericType)right).stringValue();
+ 			 if (!("INF".equals(str2) || "-INF".equals(str2) || "NaN".equals(str2))) {
+ 				XSFloat xsFloat1 = (XSFloat)left;
+ 				if (xsFloat1.infinite()) {
+ 				   return new XSDouble(Double.NaN);
+ 				}
+ 			 }
+ 		  } 
+	  }
+      
+      if (left instanceof XSNumericType) {
+    	  java.lang.String str1 = ((XSNumericType)left).stringValue(); 
+    	  if (!("INF".equals(str1) || "-INF".equals(str1) || "NaN".equals(str1))) {
+    		 if (right instanceof XSDouble) {
+    			XSDouble xsDouble = (XSDouble)right;
+    			java.lang.String str2 = xsDouble.stringValue();
+    			if ("INF".equals(str2)) {
+    			   return left;
+    			}
+    		 }
+    	  }
+      }
+      
+      if (left instanceof XSNumericType) {
+    	  java.lang.String str1 = ((XSNumericType)left).stringValue(); 
+    	  if (!("INF".equals(str1) || "-INF".equals(str1) || "NaN".equals(str1))) {
+    		 if (right instanceof XSFloat) {
+    			 XSFloat xsFloat = (XSFloat)right;
+    			java.lang.String str2 = xsFloat.stringValue();
+    			if ("INF".equals(str2)) {
+    			   return left;
+    			}
+    		 }
+    	  }
+      }
+      
+      if ((left instanceof XSNumericType) && (right instanceof XSNumericType)) {
+    	  java.lang.String str1 = ((XSNumericType)left).stringValue(); 
+    	  java.lang.String str2 = ((XSNumericType)right).stringValue();
+    	  
+    	  if ("INF".equals(str1) && "INF".equals(str2)) {
+    		  return new XSDouble(Double.NaN); 
+    	  }
+    	  else if ("INF".equals(str1) && "-INF".equals(str2)) {
+    		  return new XSDouble(Double.NaN);
+    	  }
+    	  else if ("-INF".equals(str1) && "INF".equals(str2)) {
+    		  return new XSDouble(Double.NaN);
+    	  }
+          else if ("-INF".equals(str1) && "-INF".equals(str2)) {
+        	  return new XSDouble(Double.NaN);
+    	  }
+      }
 
 	  if ((left instanceof XSUntyped) && (right instanceof XSUntyped)) {
           java.lang.String lStrVal = ((XSUntyped)left).stringValue();
@@ -454,20 +617,24 @@ public class Mod extends XPathArithmeticOp
       }
 	  else if ((left instanceof XNumber) && (right instanceof XSNumericType)) {
 		  XNumber rightXNumber = getXNumberFromXSNumericType((XSNumericType)right);
+		  
     	  result = arithmeticOpOnXNumberValues((XNumber)left, rightXNumber, OP_SYMBOL_MOD, elemTemplateElement);
 	  }
 	  else if ((left instanceof XSNumericType) && (right instanceof XNumber)) {
 		  XNumber leftXNumber = getXNumberFromXSNumericType((XSNumericType)left);
+		  
     	  result = arithmeticOpOnXNumberValues(leftXNumber, (XNumber)right, OP_SYMBOL_MOD, elemTemplateElement);
 	  }     
 	  else if ((left instanceof XSNumericType) && (right instanceof XSNumericType)) {
 		  XNumber leftXNumber = getXNumberFromXSNumericType((XSNumericType)left);
     	  XNumber rightXNumber = getXNumberFromXSNumericType((XSNumericType)right);
+    	  
     	  result = arithmeticOpOnXNumberValues(leftXNumber, rightXNumber, OP_SYMBOL_MOD, elemTemplateElement);
 	  }
 	  else if ((left instanceof XNumber) && (right instanceof XNumber)) {
 		  XNumber lNumber = (XNumber)left;
 	   	  XNumber rNumber = (XNumber)right;
+	   	  
 	   	  result = arithmeticOpOnXNumberValues(lNumber, rNumber, OP_SYMBOL_MOD, elemTemplateElement);
 	  }
 	  else if ((left instanceof XNumber) && (right instanceof XMLNodeCursorImpl)) {
@@ -635,8 +802,10 @@ public class Mod extends XPathArithmeticOp
 		  try {
 			  java.lang.String lStrVal = XslTransformEvaluationHelper.getStrVal(rSeq.item(0));
 			  java.lang.String rStrVal = XslTransformEvaluationHelper.getStrVal(right);
+			  
 			  lBigDecimal = new BigDecimal(lStrVal); 
 			  rBigDecimal = new BigDecimal(rStrVal);
+			  
 			  result = new XSDecimal(lBigDecimal.remainder(rBigDecimal));
 		  }
 		  catch (NumberFormatException ex) {
@@ -649,6 +818,7 @@ public class Mod extends XPathArithmeticOp
 	  else if (left instanceof XSYearMonthDuration) {
 		  try {
 			  java.lang.String rStrVal = XslTransformEvaluationHelper.getStrVal(right);
+			  
 			  result = ((XSYearMonthDuration)left).div(new XSDouble(rStrVal));
 		  }
 		  catch (XPathException ex) {
@@ -678,16 +848,29 @@ public class Mod extends XPathArithmeticOp
 		  catch (ArithmeticException ex) {
 			  error(DIV_BY_ZERO_ERR_MESG, new java.lang.String[] {"FOAR0001"}, elemTemplateElement);
 		  }         
-	  }	       
+	  }
+	  else if ((left instanceof XString) || (left instanceof XSString)) {
+		  throw new TransformerException("XPTY0004 : An XPath operator 'mod' is not defined for schema type string valued operands.");
+	  }
+      else if ((right instanceof XString) || (right instanceof XSString)) {
+    	  throw new TransformerException("XPTY0004 : An XPath operator 'mod' is not defined for schema type string valued operands.");
+	  }
 	  else {
 		  try {
 			  java.lang.String lStrVal = XslTransformEvaluationHelper.getStrVal(left);
-			  java.lang.String rStrVal = XslTransformEvaluationHelper.getStrVal(right);            
+			  java.lang.String rStrVal = XslTransformEvaluationHelper.getStrVal(right);
+			  
 			  result = new XSDecimal(BigDecimal.valueOf(Double.valueOf(lStrVal) % Double.valueOf(rStrVal)));
 		  }
 		  catch (NumberFormatException ex) {
 			  error(OPERAND_NOT_NUMERIC_ERR_MESG, new java.lang.String[] {"XPTY0004", OP_SYMBOL_MOD}, elemTemplateElement); 
 		  }
+	  }
+	  
+	  if (result != null) {
+		  if (xpathSeqTypeResultData != null) {
+			  result.setCastAsType(xpathSeqTypeResultData); 
+		  } 
 	  }
 
 	  return result;

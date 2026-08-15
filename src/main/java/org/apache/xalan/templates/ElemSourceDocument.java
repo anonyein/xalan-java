@@ -38,7 +38,7 @@ import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Implementation of the XSLT 3.0 xsl:source-document instruction.
+ * Implementation of an XSLT 3.0 instruction xsl:source-document.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  *  
@@ -176,7 +176,7 @@ public class ElemSourceDocument extends ElemTemplateElement
   }
 
   /**
-   * Execute the xsl:source-document transformation.
+   * Evaluate the xsl:source-document transformation.
    *
    * @param transformer non-null reference to the the current transform-time state.
    *

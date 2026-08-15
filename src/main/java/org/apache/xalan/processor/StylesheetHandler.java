@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.processor;
 
 import java.util.Hashtable;
@@ -128,12 +125,12 @@ public class StylesheetHandler extends DefaultHandler
   public StylesheetHandler(XSL3TransformerFactoryImpl processor)
           throws TransformerConfigurationException
   {
-    Class func = org.apache.xalan.templates.FuncDocument.class;
+    /*Class func = org.apache.xalan.templates.FuncDocument.class;
     m_funcTable.installFunction("document", func);
 
     func = org.apache.xalan.templates.FuncFormatNumber.class;
 
-    m_funcTable.installFunction("format-number", func);
+    m_funcTable.installFunction("format-number", func);*/
 
     m_optimize =((Boolean) processor.getAttribute(
             XSL3TransformerFactoryImpl.FEATURE_OPTIMIZE)).booleanValue();
@@ -435,8 +432,8 @@ public class StylesheetHandler extends DefaultHandler
 
     if (elemProcessor == null) {
        if (processorImportSchema == null) {
-    	   // added for XSLT 3.0
-    	   error(XSLMessages.createMessage(XSLTErrorResources.ER_NOT_ALLOWED_IN_POSITION, new Object[] {rawName}), null);
+    	   // Added for XSLT 3.0
+    	   error(XSLMessages.createMessage(XSLTErrorResources.ER_NOT_ALLOWED_IN_POSITION, new Object[] { rawName }), null);
        }
     }            
                 

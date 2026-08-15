@@ -17,6 +17,8 @@
  */
 package org.apache.xpath.operations;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,28 +35,34 @@ import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
+import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 
+import xml.xpath31.processor.types.XSDecimal;
+import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSString;
 
 /**
  * An XPath 3.1 operator '>' evaluator.
  */
-public class Gt extends Operation
+public class Gt extends XPathOperator
 {
    static final long serialVersionUID = 8927078751014375950L;
 
-  /**
-   * Apply the operation to two operands, and return the result.
-   *
-   * @param left non-null reference to the evaluated left operand
-   * @param right non-null reference to the evaluated right operand
-   *
-   * @return non-null reference to the XObject that represents the result of the operation
-   *
-   * @throws javax.xml.transform.TransformerException
-   */
+   /**
+    * Apply an XPath operator to its two operands, and return the result.
+    *
+    * @param left  non-null reference to an XPath operator's evaluated 
+    *              first operand.              
+    * @param right non-null reference to an XPath operator's evaluated 
+    *              second operand.
+    *
+    * @return non-null reference to an XObject object instance, that 
+    *         represents the result of XPath operator evaluation. 
+    *
+    * @throws javax.xml.transform.TransformerException
+    */
   public XObject operate(XObject left, XObject right)
           throws javax.xml.transform.TransformerException
   {
@@ -95,6 +103,137 @@ public class Gt extends Operation
 		  result = XBoolean.S_FALSE;
 
 		  return result;
+	  }
+	  
+	  BigInteger bigInt1 = null;
+	  BigInteger bigInt2 = null;
+	  
+	  BigDecimal bigDecimal1 = null;
+	  BigDecimal bigDecimal2 = null;
+	  
+	  if ((left instanceof XNumber) && !(right instanceof ResultSequence)) {
+		  XNumber xNumber = (XNumber)left;
+		  
+		  if (xNumber.getXsDecimal() != null) {
+			  left = xNumber.getXsDecimal();
+			  XSDecimal xsDecimal =(XSDecimal)left;
+			  
+			  bigDecimal1 = xsDecimal.getValue(); 
+		  }
+		  else if (xNumber.getXsDouble() != null) {
+			  left = xNumber.getXsDouble();  
+		  }
+		  else if (xNumber.getXsInteger() != null) {			  			  
+			  left = xNumber.getXsInteger();
+			  XSInteger xsInteger =(XSInteger)left;
+			  
+			  bigInt1 = xsInteger.intValue();
+		  }
+		  
+		  if (right instanceof XMLNodeCursorImpl) {
+			  right = right.getFresh();
+			  
+			  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)right;			  			  
+			  DTMCursorIterator dtmCursorIterator = xmlNodeCursorImpl.iter();
+			  
+			  int nextNode = DTM.NULL;
+			  while ((nextNode = dtmCursorIterator.nextNode()) != DTM.NULL) {
+				 XMLNodeCursorImpl node1 = new XMLNodeCursorImpl(nextNode, m_xctxt); 
+				 java.lang.String str1 = node1.str();
+				 
+				 BigDecimal bigDecimalVal = null;
+				 
+				 try {
+				    bigDecimalVal = new BigDecimal(str1);
+				 }
+				 catch (NumberFormatException ex) {
+					throw new TransformerException("FORG0001 : A string value '" + str1 + "' cannot be converted to double."); 
+				 }
+				 
+				 if (bigInt1 != null) {
+					bigDecimal1 = new BigDecimal(bigInt1);
+				 }
+				 
+				 if (bigDecimal1 != null) {
+					if (bigDecimal1.compareTo(bigDecimalVal) > 0) {
+					   return XBoolean.S_TRUE;	
+					}					
+				 }
+			  }
+			  
+			  return XBoolean.S_FALSE;
+		  }
+	  }
+	  
+	  if ((right instanceof XNumber) && !(left instanceof ResultSequence)) {
+		  XNumber xNumber = (XNumber)right;
+		  
+		  if (xNumber.getXsDecimal() != null) {
+			  right = xNumber.getXsDecimal();
+			  XSDecimal xsDecimal =(XSDecimal)right;
+			  
+			  bigDecimal2 = xsDecimal.getValue(); 
+		  }
+		  else if (xNumber.getXsDouble() != null) {
+			  right = xNumber.getXsDouble();  
+		  }
+		  else if (xNumber.getXsInteger() != null) {
+			  right = xNumber.getXsInteger();
+			  XSInteger xsInteger =(XSInteger)right;
+			  
+			  bigInt2 = xsInteger.intValue();  
+		  }
+		  
+		  if (left instanceof XMLNodeCursorImpl) {
+			  left = left.getFresh();
+			  
+			  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)left;			  			  
+			  DTMCursorIterator dtmCursorIterator = xmlNodeCursorImpl.iter();
+			  
+			  int nextNode = DTM.NULL;
+			  while ((nextNode = dtmCursorIterator.nextNode()) != DTM.NULL) {
+				 XMLNodeCursorImpl node1 = new XMLNodeCursorImpl(nextNode, m_xctxt); 
+				 java.lang.String str1 = node1.str();
+				 
+				 BigDecimal bigDecimalVal = null;
+				 
+				 try {
+				    bigDecimalVal = new BigDecimal(str1);
+				 }
+				 catch (NumberFormatException ex) {
+					throw new TransformerException("FORG0001 : A string value '" + str1 + "' cannot be converted to double."); 
+				 }
+				 
+				 if (bigInt2 != null) {
+					bigDecimal2 = new BigDecimal(bigInt2);
+				 }
+				 
+				 if (bigDecimal2 != null) {
+					if (bigDecimalVal.compareTo(bigDecimal2) > 0) {
+					   return XBoolean.S_TRUE;	
+					}					
+				 }
+			  }
+			  
+			  return XBoolean.S_FALSE;
+		  }
+	  }
+	  
+	  if ((bigInt1 != null) && (bigInt2 != null)) {
+		  if (bigInt1.compareTo(bigInt2) > 0) {
+			  return XBoolean.S_TRUE; 
+		  }
+		  else {
+			  return XBoolean.S_FALSE;
+		  }
+	  }
+	  else if ((bigDecimal1 != null) && (bigDecimal2 != null)) {
+		  if (bigDecimal1.compareTo(bigDecimal2) > 0) {
+			  return XBoolean.S_TRUE; 
+		  }
+		  else {
+			  return XBoolean.S_FALSE;
+		  }
 	  }
 	  
 	  XObject lObj = null;
@@ -217,7 +356,7 @@ public class Gt extends Operation
 		  int lSize = rSeqL.size();
 		  int rSize = strListR.size();		   
 		  for (int idx = 0; idx < lSize; idx++) {
-			 // Loop the LHS ResultSequence object			  
+			 // Loop the lhs ResultSequence object			  
 			 XObject xObj1 = rSeqL.item(idx);
 			 Double lDbl = null;
 			 java.lang.String lStr = null;
@@ -232,7 +371,7 @@ public class Gt extends Operation
 				lStr = XslTransformEvaluationHelper.getStrVal(xObj1);  
 			 }
 			 
-			 // Loop the RHS node list string values
+			 // Loop the rhs node list string values
 			 for (int idx2 = 0; idx2 < rSize; idx2++) {
 				 java.lang.String strRhs = strListR.get(idx2);
 				 if ((lStr != null) && (lStr.compareTo(strRhs) > 0)) {
@@ -278,7 +417,7 @@ public class Gt extends Operation
 		  int lSize = rSeqL.size();
 		  int rSize = strListR.size();		   
 		  for (int idx = 0; idx < lSize; idx++) {
-			 // Loop the LHS ResultSequence object			  
+			 // Loop the lhs ResultSequence object			  
 			 XObject xObj1 = rSeqL.item(idx);
 			 Double lDbl = null;
 			 java.lang.String lStr = null;
@@ -293,7 +432,7 @@ public class Gt extends Operation
 				lStr = XslTransformEvaluationHelper.getStrVal(xObj1);  
 			 }
 			 
-			 // Loop the RHS node list string values
+			 // Loop the rhs node list string values
 			 for (int idx2 = 0; idx2 < rSize; idx2++) {
 				 java.lang.String strRhs = strListR.get(idx2);
 				 if ((lStr != null) && (lStr.compareTo(strRhs) > 0)) {
@@ -342,9 +481,9 @@ public class Gt extends Operation
 		  result = ((dbl1 > dbl2) ? XBoolean.S_TRUE : XBoolean.S_FALSE);
 	  }
       else if ((left instanceof XNumber) && (right instanceof XSNumericType)) {
+    	  double dbl1 = ((XNumber)left).num();
     	  java.lang.String rStr = ((XSNumericType)right).stringValue();
-		  double dbl1 = (Double.valueOf(rStr)).doubleValue();
-		  double dbl2 = ((XNumber)left).num();
+		  double dbl2 = (Double.valueOf(rStr)).doubleValue();		  
 		  
 		  result = ((dbl1 > dbl2) ? XBoolean.S_TRUE : XBoolean.S_FALSE); 
 	  }
@@ -451,6 +590,22 @@ public class Gt extends Operation
 				  throw new TransformerException("FORG0001 : The string value '" + rStrVal + "' cannot be converted to double.");
 			  }
 		  }
+	  }
+	  else if (left instanceof XPathMap) {
+		  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath 3.1 map cannot be atomized. An xdm map is provided as "
+		  																															+ "operator '>' lhs operand.");
+	  }
+      else if (right instanceof XPathMap) {
+    	  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath 3.1 map cannot be atomized. An xdm map is provided as "
+    	  																															+ "operator '>' rhs operand."); 
+	  }
+	  else if (isXPathOperandXdmFunctionItem(left)) {
+		  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath 3.1 function item cannot be atomized. An XPath function "
+		  		                                                                                                                    + "item is provided as operator '>' lhs operand.");
+	  }
+      else if (isXPathOperandXdmFunctionItem(right)) {
+    	  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath 3.1 function item cannot be atomized. An XPath function "
+                                                                                                                                    + "item is provided as operator '>' rhs operand."); 
 	  }
 	  else {
 		  result = left.greaterThan(right) ? XBoolean.S_TRUE : XBoolean.S_FALSE;

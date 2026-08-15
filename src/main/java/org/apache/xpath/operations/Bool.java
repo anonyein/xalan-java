@@ -27,17 +27,18 @@ import org.apache.xpath.objects.XObject;
 /**
  * The 'boolean()' operation expression executer.
  */
-public class Bool extends XPath3UnaryOperation
+public class Bool extends XPath3UnaryOperator
 {
     static final long serialVersionUID = 44705375321914635L;
 
   /**
-   * Apply the operation to two operands, and return the result.
+   * Apply an XPath operator to its operand, and return the result.
    *
+   * @param right non-null reference to an XPath operator's evaluated 
+   *              operand.
    *
-   * @param right non-null reference to the evaluated right operand.
-   *
-   * @return non-null reference to the XObject that represents the result of the operation.
+   * @return non-null reference to an XObject object instance, that 
+   *         represents the result of XPath operator evaluation. 
    *
    * @throws javax.xml.transform.TransformerException
    */

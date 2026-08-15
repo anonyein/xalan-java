@@ -36,7 +36,7 @@ public class FuncReverse extends FunctionOneArg {
      * Class constructor.
      */
     public FuncReverse() {
-    	m_defined_arity = new Short[] { 1 };
+    	m_arity = new Short[] { 1 };
     }
 
     /**
@@ -52,7 +52,7 @@ public class FuncReverse extends FunctionOneArg {
         
         ResultSequence result = new ResultSequence();
 
-        XObject xObject0 = m_arg0.execute(xctxt);
+        XObject xObject0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
             
         ResultSequence rsArg0 = XslTransformEvaluationHelper.getResultSequenceFromXObject(
                                                                                       xObject0, xctxt);            

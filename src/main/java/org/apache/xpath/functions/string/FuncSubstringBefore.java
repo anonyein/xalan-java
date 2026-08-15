@@ -34,7 +34,7 @@ import org.apache.xpath.res.XPATHErrorResources;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * Implementation of XPath 3.1 function fn:substring-before.
+ * Implementation of an XPath 3.1 function fn:substring-before.
  * 
  * @xsl.usage advanced
  */
@@ -47,7 +47,7 @@ public class FuncSubstringBefore extends XSL3StringCollationAwareFunction
    * Class constructor.
    */
   public FuncSubstringBefore() {
-	 m_defined_arity = new Short[] { 2, 3 };
+	 m_arity = new Short[] { 2, 3 };
   }
   
   /**
@@ -59,18 +59,18 @@ public class FuncSubstringBefore extends XSL3StringCollationAwareFunction
   /**
    * Evaluate the function. The function must return a valid object.
    * 
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
+   * @param xctxt                        An XPath context object
+   * @return                             A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
   public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
   {
-      
+
 	  XObject result = null;
-	  
+
 	  SourceLocator srcLocator = xctxt.getSAXLocator();
-	  
+
 	  /**
 	   * An XPath expression FuncArgPlaceholder if not null, for one or more of
 	   * the function arguments, signifies that the corresponding function argument
@@ -82,7 +82,8 @@ public class FuncSubstringBefore extends XSL3StringCollationAwareFunction
 	  String arg0StrValue = null;	        
 	  if ((m_arg0 != null) && !(m_arg0 instanceof FuncArgPlaceholder)) {
 		  if (m_arg0 instanceof Variable) {
-			  XObject obj1 = m_arg0.execute(xctxt);
+			  XObject obj1 = getFunctionArgEffectiveValue(m_arg0, xctxt);
+
 			  arg0StrValue = XslTransformEvaluationHelper.getStrVal(obj1);
 		  }
 		  else {
@@ -93,7 +94,8 @@ public class FuncSubstringBefore extends XSL3StringCollationAwareFunction
 	  String arg1StrValue = null;	        
 	  if ((m_arg1 != null) && !(m_arg1 instanceof FuncArgPlaceholder)) {
 		  if (m_arg1 instanceof Variable) {
-			  XObject obj1 = m_arg1.execute(xctxt);
+			  XObject obj1 = getFunctionArgEffectiveValue(m_arg1, xctxt);
+
 			  Object object1 = obj1.object();
 			  if (!(object1 instanceof FuncArgPlaceholder)) {
 				  arg1StrValue = XslTransformEvaluationHelper.getStrVal(obj1);
@@ -107,7 +109,8 @@ public class FuncSubstringBefore extends XSL3StringCollationAwareFunction
 	  String collationUri = null;	        
 	  if ((m_arg2 != null) && !(m_arg2 instanceof FuncArgPlaceholder)) {
 		  if (m_arg2 instanceof Variable) {
-			  XObject obj1 = m_arg2.execute(xctxt);
+			  XObject obj1 = getFunctionArgEffectiveValue(m_arg2, xctxt);
+
 			  Object object1 = obj1.object();
 			  if (!(object1 instanceof FuncArgPlaceholder)) {
 				  collationUri = XslTransformEvaluationHelper.getStrVal(obj1);
@@ -117,13 +120,13 @@ public class FuncSubstringBefore extends XSL3StringCollationAwareFunction
 			  collationUri = getArgStringValue(xctxt, m_arg2);
 		  }
 	  }
-	        
+
 	  XPathCollationSupport xPathCollationSupport = xctxt.getXPathCollationSupport();
-	    
+
 	  if ((arg0StrValue != null) && (arg1StrValue != null)) {	    	
 		  if (numOfArgs == 2) {
 			  int index = arg0StrValue.indexOf(arg1StrValue);
-				 
+
 			  result = ((index == -1) ? new XSString("") : new XSString(arg0StrValue.substring(0, index)));
 		  }
 		  else if (collationUri != null) {			 
@@ -136,7 +139,7 @@ public class FuncSubstringBefore extends XSL3StringCollationAwareFunction
 					  int comparisonResult = xPathCollationSupport.compareStringsUsingCollation(tempStr, arg1StrValue, collationUri);
 					  if (comparisonResult == 0) {
 						  subsMatchFound = true;
-						  
+
 						  break;
 					  }
 				  }
@@ -229,8 +232,8 @@ public class FuncSubstringBefore extends XSL3StringCollationAwareFunction
 			  result = xpathObj.execute(xctxt, DTM.NULL, null);
 		  }
 	  }
-	  
-      return result;	  
+
+	  return result;	  
   }
   
   /**
@@ -242,12 +245,14 @@ public class FuncSubstringBefore extends XSL3StringCollationAwareFunction
    */
   public void checkNumberArgs(int argNum) throws WrongNumberArgsException
   {
-	  if (!(argNum > 1 && argNum <= 3)) {
+	  /*if (!(argNum > 1 && argNum <= 3)) {
 		  reportWrongNumberArgs();
 	  }
 	  else {
 		  numOfArgs = argNum;   
-	  }
+	  }*/
+	  
+	  numOfArgs = argNum;
   }
   
   /**

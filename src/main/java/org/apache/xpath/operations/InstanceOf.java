@@ -22,6 +22,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
@@ -51,7 +54,7 @@ import org.apache.xml.utils.QName;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.composite.XPathSequenceTypeArrayTest;
-import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceType;
 import org.apache.xpath.composite.XPathSequenceTypeKindTest;
 import org.apache.xpath.composite.XPathSequenceTypeMapTest;
 import org.apache.xpath.composite.XPathSequenceTypeSupport;
@@ -125,21 +128,24 @@ import xml.xpath31.processor.types.XSYearMonthDuration;
  * 
  * @xsl.usage advanced
  */
-public class InstanceOf extends Operation
+public class InstanceOf extends XPathOperator
 {
 
    private static final long serialVersionUID = -5941900193967481806L;
 
    /**
-   * Apply the operation to two operands, and return the result.
-   *
-   * @param left non-null reference to the evaluated left operand
-   * @param right non-null reference to the evaluated right operand
-   *
-   * @return non-null reference to the XObject that represents the result of the operation
-   *
-   * @throws javax.xml.transform.TransformerException
-   */
+    * Apply an XPath operator to its two operands, and return the result.
+    *
+    * @param left  non-null reference to an XPath operator's evaluated 
+    *              first operand.              
+    * @param right non-null reference to an XPath operator's evaluated 
+    *              second operand.
+    *
+    * @return non-null reference to an XObject object instance, that 
+    *         represents the result of XPath operator evaluation. 
+    *
+    * @throws javax.xml.transform.TransformerException
+    */
   public XObject operate(XObject left, XObject right) 
                                                  throws javax.xml.transform.TransformerException
   {            
@@ -147,6 +153,25 @@ public class InstanceOf extends Operation
       XObject result = null;
       
       XPathContext xctxt = null;
+      
+      if (left.getCastAsType() != null) {
+    	 XPathSequenceType xpathSeqTypeData1 = left.getCastAsType();    	 
+    	 XPathSequenceType xpathSeqTypeData2 = (XPathSequenceType)right;
+    	 
+    	 int builtInSeqType1 = xpathSeqTypeData1.getBuiltInSequenceType();
+    	 int builtInSeqType2 = xpathSeqTypeData2.getBuiltInSequenceType();
+    	 
+    	 if (builtInSeqType1 != 0) {
+    		if (builtInSeqType1 == builtInSeqType2) {
+    			result = XBoolean.S_TRUE;
+    		}
+    		else {
+    			result = XBoolean.S_FALSE;
+    		}
+    		
+    		return result;
+    	 }
+      }
       
       StylesheetRoot stylesheetRoot = XslTransformEvaluationHelper.getXslStylesheetRootFromXslElementRef(this);
       if (stylesheetRoot != null) {
@@ -159,11 +184,11 @@ public class InstanceOf extends Operation
 	  	  
 	  PrefixResolver xmlNsPrefixResolver = xctxt.getNamespaceContext();
 	  
-      XPathSequenceTypeData seqTypedData = null;      
-      XPathSequenceTypeData castAsType = left.getCastAsType();
+      XPathSequenceType seqTypedData = null;      
+      XPathSequenceType castAsType = left.getCastAsType();
       
       if (castAsType != null) {    	  
-    	  if (castAsType.equal((XPathSequenceTypeData)right)) {
+    	  if (castAsType.equal((XPathSequenceType)right)) {
     		 result = XBoolean.S_TRUE; 
     	  }
     	  else {
@@ -173,7 +198,7 @@ public class InstanceOf extends Operation
     	  return result;
       }
       else {    	  	  	  
-    	  seqTypedData = (XPathSequenceTypeData)right;  
+    	  seqTypedData = (XPathSequenceType)right;  
       }
       
       int xsBuiltInSeqType = seqTypedData.getBuiltInSequenceType();      
@@ -181,37 +206,70 @@ public class InstanceOf extends Operation
       int seqTypeOccurenceIndicator = seqTypedData.getItemTypeOccurrenceIndicator();
       
       int xsBuiltInType = seqTypedData.getBuiltInSequenceType();
+      
+      if (sequenceTypeKindTest != null) {
+    	 if (sequenceTypeKindTest.getKindVal() == XPathSequenceTypeSupport.ITEM_KIND) {
+    		if (seqTypeOccurenceIndicator == XPathSequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY) {
+    		   result = XBoolean.S_TRUE;
+    		   
+    		   return result;
+    		}
+    	 }
+      }
+      
       if (xsBuiltInType == XPathSequenceTypeSupport.XS_INTEGER) {
     	  if (left instanceof XNumber) {
     		  XNumber xNumber = (XNumber)left;
+    		      		      		      		      		  
+    		  XSInteger xsInteger = xNumber.getXsInteger();
+    		  if (xsInteger != null) {
+    			 return XBoolean.S_TRUE; 
+    		  }
+    		  
+    		  XSDouble xsDouble = xNumber.getXsDouble();
+    		  if (xsDouble != null) {
+    			 return XBoolean.S_FALSE; 
+    		  }
+    		  
+    		  XSDecimal xsDecimal = xNumber.getXsDecimal();
+    		  if (xsDecimal != null) {
+    			  double dbl = xsDecimal.doubleValue();
+    			  if ((dbl == (int)dbl) || (dbl == (long)dbl)) {
+    				  return XBoolean.S_TRUE; 
+    			  }
+    			  else {
+    				  return XBoolean.S_FALSE; 
+    			  } 
+    		  }
+    		  
     		  double dbl = xNumber.num();
     		  if ((dbl == (int)dbl) || (dbl == (long)dbl)) {
     			  return XBoolean.S_TRUE; 
     		  }
-    	  }
-    	  
-    	  if (left instanceof XSDouble) {
-    		  XSDouble xsDouble = (XSDouble)left;
-    		  double dbl = xsDouble.doubleValue();
-    		  if ((dbl == (int)dbl) || (dbl == (long)dbl)) {
-    			  return XBoolean.S_TRUE; 
+    		  else {
+    			  return XBoolean.S_FALSE; 
     		  }
-    	  }
-    	  
-    	  if (left instanceof XSFloat) {
-    		  XSFloat xsFloat = (XSFloat)left;
-    		  double fl1 = xsFloat.floatValue();
-    		  if ((fl1 == (int)fl1) || (fl1 == (long)fl1)) {
-    			  return XBoolean.S_TRUE; 
-    		  }
-    	  }
-    	  
-    	  if (left instanceof XSDecimal) {
+    	  }    	  
+    	  else if (left instanceof XSDouble) {    		  
+    		  return XBoolean.S_FALSE;
+    	  }    	  
+    	  else if (left instanceof XSFloat) {    		  
+    		  return XBoolean.S_FALSE;
+    	  }    	  
+    	  else if (left instanceof XSDecimal) {
     		  XSDecimal xsDecimal = (XSDecimal)left;
     		  double dbl = xsDecimal.doubleValue();
     		  if ((dbl == (int)dbl) || (dbl == (long)dbl)) {
     			  return XBoolean.S_TRUE; 
     		  }
+    		  else {
+    			  return XBoolean.S_FALSE; 
+    		  }
+    	  }
+      }  
+      else if (xsBuiltInType == XPathSequenceTypeSupport.XS_DECIMAL) {
+    	  if ((left instanceof XNumber) || (left instanceof XSDouble) || (left instanceof XSFloat)) {
+    		 return XBoolean.S_TRUE; 
     	  }
       }
       
@@ -330,7 +388,7 @@ public class InstanceOf extends Operation
     		java.lang.String xmlStr = XslTransformEvaluationHelper.serializeXmlDomElementNode(node);
     		xmlStr = xmlStr.trim();
     		if ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>".equals(xmlStr)) {
-    			// XPath 'instance of' operator's LHS is an empty sequence    			
+    			// XPath 'instance of' operator's lhs is an empty sequence    			
     			boolean isSequenceCardinalityOk = false;    			
     			if ((seqTypeOccurenceIndicator == XPathSequenceTypeSupport.OccurrenceIndicator.ZERO_OR_ONE) || 
     				                                                                  (seqTypeOccurenceIndicator == XPathSequenceTypeSupport.OccurrenceIndicator.ZERO_OR_MANY)) {
@@ -393,7 +451,7 @@ public class InstanceOf extends Operation
    * @throws TransformerException
    * @throws Exception
    */
-  private boolean isInstanceOf(XObject xdmValue, XPathSequenceTypeData seqTypeData) 
+  private boolean isInstanceOf(XObject xdmValue, XPathSequenceType seqTypeData) 
 		                                                                    throws ParserConfigurationException, SAXException, 
                                                                                    IOException, TransformerException, Exception {
     
@@ -748,7 +806,7 @@ public class InstanceOf extends Operation
    * @throws TransformerException
    * @throws Exception
    */
-  private boolean isNodesetInstanceOfType(XMLNodeCursorImpl nodeSet, XPathSequenceTypeData seqTypeData) throws 
+  private boolean isNodesetInstanceOfType(XMLNodeCursorImpl nodeSet, XPathSequenceType seqTypeData) throws 
                                                                          ParserConfigurationException, SAXException, 
                                                                          IOException, TransformerException, Exception {
 	  
@@ -1124,7 +1182,7 @@ public class InstanceOf extends Operation
    * @throws TransformerException
    * @throws Exception
    */
-  private boolean isSequenceInstanceOfType(ResultSequence resultSeq, XPathSequenceTypeData seqTypeData) 
+  private boolean isSequenceInstanceOfType(ResultSequence resultSeq, XPathSequenceType seqTypeData) 
 		                                                                            throws ParserConfigurationException, 
                                                                                            SAXException, IOException, 
                                                                                            TransformerException, Exception {
@@ -1143,7 +1201,7 @@ public class InstanceOf extends Operation
 		  result = false;
 	  }
 
-	  XPathSequenceTypeData sequenceTypeDataNew = new XPathSequenceTypeData();          
+	  XPathSequenceType sequenceTypeDataNew = new XPathSequenceType();          
 	  if (seqTypeData.getSequenceTypeKindTest() != null) {
 		  sequenceTypeDataNew.setSequenceTypeKindTest(seqTypeData.getSequenceTypeKindTest()); 
 	  }
@@ -1171,21 +1229,64 @@ public class InstanceOf extends Operation
    * Method definition, to checks whether, an xdm map conforms with 
    * the supplied sequence type.
    * 
-   * @param map								The supplied xdm map object
+   * @param xpathMap						The supplied xdm map object
    * @param seqTypeData						An xdm sequence type information
    * @return                                Boolean value true or false
    */
-  private boolean isXdmMapConformsWithSeqType(XPathMap map, XPathSequenceTypeData seqTypeData) {
-	  boolean isInstanceOf = false;
+  private boolean isXdmMapConformsWithSeqType(XPathMap xpathMap, XPathSequenceType seqTypeData) {
+	  
+	  boolean result = false;
 	  
 	  XPathSequenceTypeMapTest sequenceTypeMapTest = seqTypeData.getSequenceTypeMapTest();
+	  
 	  if (sequenceTypeMapTest != null) {
 		 if (sequenceTypeMapTest.isAnyMapTest()) {
-		    isInstanceOf = true;
+		    result = true;
+		 }
+		 else {
+			Map<XObject, XObject> nativeMap = xpathMap.getNativeMap();
+			Set<Entry<XObject, XObject>> entrySet = nativeMap.entrySet();
+			
+			// We check below each of an xdm map items, with an expected type
+			
+			result = true;
+			
+			XPathSequenceType mapKeyTypeInfo = sequenceTypeMapTest.getKeySequenceTypeData();
+			XPathSequenceType mapValueTypeInfo = sequenceTypeMapTest.getValueSequenceTypeData();
+			
+			Iterator<Entry<XObject, XObject>> iter1 = entrySet.iterator();
+			while (iter1.hasNext()) {
+			   Entry<XObject, XObject> entry = iter1.next();
+			   XObject key1 = entry.getKey();
+			   XObject value1 = entry.getValue();
+			   
+			   try {
+				   XObject keyTypeCheckResult = XPathSequenceTypeSupport.castXdmValueToAnotherType(
+						                                                                          key1, null, mapKeyTypeInfo, null);
+				   if (keyTypeCheckResult == null) {             				
+					   result = false;
+
+					   break;
+				   }
+
+				   XObject valueTypeCheckResult = XPathSequenceTypeSupport.castXdmValueToAnotherType(
+						                                                                            value1, null, mapValueTypeInfo, null);
+				   if (valueTypeCheckResult == null) {             				
+					   result = false;
+
+					   break;
+				   }
+			   }
+			   catch (TransformerException ex) {
+				   result = false;
+
+				   break; 
+			   }
+			}
 		 }
 	  }
 	  
-	  return isInstanceOf; 
+	  return result; 
   }
   
   /**
@@ -1196,37 +1297,44 @@ public class InstanceOf extends Operation
    * @param seqTypeData						An xdm sequence type information
    * @return                                Boolean value true or false
    */
-  private boolean isXdmArrayConformsWithSeqType(XPathArray xpathArr, XPathSequenceTypeData seqTypeData) {
+  private boolean isXdmArrayConformsWithSeqType(XPathArray xpathArr, XPathSequenceType seqTypeData) {
 	  
-	  boolean isInstanceOf = false;
+	  boolean result = false;
 	  
 	  XPathSequenceTypeArrayTest sequenceTypeArrayTest = seqTypeData.getSequenceTypeArrayTest();
+	  
 	  if (sequenceTypeArrayTest != null) {
 		  if (sequenceTypeArrayTest.isAnyArrayTest()) {
-			  isInstanceOf = true;
+			  result = true;
 		  }
 		  else {
 			  List<XObject> nativeArr = xpathArr.getNativeArray();
 			  Iterator<XObject> arrIter = nativeArr.iterator();
+			  
 			  // We check below each of array items, with an expected type
-			  isInstanceOf = true; 
+			  
+			  result = true;
+			  
+			  XPathSequenceType arrayItemTypeInfo = sequenceTypeArrayTest.getArrayItemTypeInfo();
+			  
 			  while (arrIter.hasNext()) {
 				  XObject arrItem = arrIter.next();
+				  
 				  if (arrItem instanceof ResultSequence) {
 					  arrItem = ((ResultSequence)arrItem).item(0);
-				  }
-				  XPathSequenceTypeData arrayItemTypeInfo = sequenceTypeArrayTest.getArrayItemTypeInfo();
+				  }				  
+				  				  
 				  try {
 					  XObject arrayItemTypeCheckResult = XPathSequenceTypeSupport.castXdmValueToAnotherType(
 							                                                                          arrItem, null, arrayItemTypeInfo, null);
 					  if (arrayItemTypeCheckResult == null) {             				
-						  isInstanceOf = false;
+						  result = false;
 						  
 						  break;
 					  }
 				  }
 				  catch (TransformerException ex) {
-					  isInstanceOf = false;
+					  result = false;
 					  
 					  break; 
 				  }
@@ -1234,7 +1342,8 @@ public class InstanceOf extends Operation
 		  }
 	  }
 	  
-	  return isInstanceOf;
+	  return result;
+	  
   }
   
 }

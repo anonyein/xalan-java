@@ -30,7 +30,7 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Implementation of the XSLT 3.0 instruction xsl:non-matching-substring.
+ * Implementation of an XSLT 3.0 instruction xsl:non-matching-substring.
  *    
  * @author Mukul Gandhi <mukulg@apache.org>
  *   
@@ -178,7 +178,7 @@ public class ElemNonMatchingSubstring extends ElemTemplateElement implements Exp
   }
 
   /**
-   * Execute the non-matching-substring transformation.
+   * Evaluate the non-matching-substring transformation.
    *
    * @param transformer non-null reference to the the current transform-time state.
    *

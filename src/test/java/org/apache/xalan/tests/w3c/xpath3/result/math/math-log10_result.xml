@@ -1,10 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-06-05T16:19:45Z" fail="2" name="math-log10" pass="6" run="8" statusUnknown="0">
-   <testResult status="fail" testName="math-log10-001"/>
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-14T15:20:16Z" fail="0" name="math-log10" pass="9" run="9" statusUnknown="0">
+   <testResult status="pass" testName="math-log10-001"/>
+   <testResult status="pass" testName="math-log10-002"/>
    <testResult status="pass" testName="math-log10-003"/>
    <testResult status="pass" testName="math-log10-004"/>
    <testResult status="pass" testName="math-log10-005"/>
    <testResult status="pass" testName="math-log10-006"/>
    <testResult status="pass" testName="math-log10-007"/>
-   <testResult status="fail" testName="math-log10-008"/>
+   <testResult status="pass" testName="math-log10-008"/>
    <testResult status="pass" testName="math-log10-009"/>
 </testrun>

@@ -27,7 +27,7 @@ import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
 
 /**
- * Implementation of XSLT 3.0 xsl:character-map element.
+ * Implementation of an XSLT 3.0 instruction xsl:character-map.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -154,7 +154,7 @@ public class ElemCharacterMap extends ElemTemplateElement
 	}
 	
 	/**
-	 * Execute an XSL xsl:character-map transformation.
+	 * Evaluate an XSL xsl:character-map transformation.
 	 */
 	public void execute(TransformerImpl transformer) throws TransformerException {	    
 		// no op

@@ -60,7 +60,7 @@ public class FuncData extends FunctionDef1Arg
    * Class constructor.
    */
   public FuncData() {
-	  m_defined_arity = new Short[] {0, 1}; 
+	  m_arity = new Short[] {0, 1}; 
   }
 
   /**
@@ -109,7 +109,7 @@ public class FuncData extends FunctionDef1Arg
       else {
          // An explicit argument was provided, to the fn:data 
          // function call.
-         argObj = m_arg0.execute(xctxt);
+         argObj = getFunctionArgEffectiveValue(m_arg0, xctxt);
          
          if (argObj instanceof ResultSequence) {
         	ResultSequence rSeq = (ResultSequence)argObj;
@@ -161,7 +161,8 @@ public class FuncData extends FunctionDef1Arg
          ResultSequence expandedResultSeq = new ResultSequence();
          XslTransformEvaluationHelper.expandResultSequence(rSeq, expandedResultSeq);
          
-         for (int idx = 0; idx < expandedResultSeq.size(); idx++) {
+         int size1 = expandedResultSeq.size();
+         for (int idx = 0; idx < size1; idx++) {
             XObject xdmItem = expandedResultSeq.item(idx);
             if ((xdmItem instanceof XSAnyAtomicType) || (xdmItem instanceof XBooleanStatic) || 
             	(xdmItem instanceof XBoolean) || (xdmItem instanceof XNumber) || (xdmItem instanceof XString) ||

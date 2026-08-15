@@ -1,12 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-02-20T15:34:51Z" fail="12" name="construct-node" pass="22" run="34" skipped="0" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-14T15:18:16Z" fail="10" name="construct-node" pass="24" run="34" skipped="0" statusUnknown="0">
    <testResult status="pass" testName="construct-node-001"/>
    <testResult status="pass" testName="construct-node-002"/>
    <testResult status="pass" testName="construct-node-003"/>
    <testResult status="pass" testName="construct-node-004"/>
    <testResult status="pass" testName="construct-node-005"/>
-   <testResult status="fail" testName="construct-node-006"/>
+   <testResult status="pass" testName="construct-node-006"/>
    <testResult status="pass" testName="construct-node-007"/>
-   <testResult status="fail" testName="construct-node-008"/>
+   <testResult status="pass" testName="construct-node-008"/>
    <testResult status="pass" testName="construct-node-009"/>
    <testResult status="pass" testName="construct-node-010"/>
    <testResult status="pass" testName="construct-node-011"/>
@@ -31,18 +31,12 @@
    <testResult status="pass" testName="construct-node-030"/>
    <testResult status="fail" testName="construct-node-031"/>
    <testResult status="fail" testName="construct-node-032">
-      <outResult>
-         <errTrace>java.lang.RuntimeException: ElemTemplateElement error: 13,128 : An XSL transformation processing could not add 'sequence' to 'comment'.</errTrace>
-      </outResult>
+      <outResult/>
    </testResult>
    <testResult status="fail" testName="construct-node-033">
-      <outResult>
-         <errTrace>java.lang.RuntimeException: ElemTemplateElement error: 13,128 : An XSL transformation processing could not add 'sequence' to 'processing-instruction'.</errTrace>
-      </outResult>
+      <outResult/>
    </testResult>
    <testResult status="fail" testName="construct-node-034">
-      <outResult>
-         <errTrace>java.lang.NullPointerException</errTrace>
-      </outResult>
+      <outResult/>
    </testResult>
 </testrun>

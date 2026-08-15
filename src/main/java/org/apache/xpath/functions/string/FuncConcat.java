@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xpath.functions.string;
 
 import javax.xml.transform.TransformerException;
@@ -38,33 +35,27 @@ import xml.xpath31.processor.types.XSUntyped;
 import xml.xpath31.processor.types.XSUntypedAtomic;
 
 /**
- * Implementation of XPath 3.1 function fn:concat.
+ * Implementation of an XPath 3.1 function fn:concat.
  * 
  * @xsl.usage advanced
  */
 public class FuncConcat extends FunctionMultiArgs
 {
 	static final long serialVersionUID = 1737228885202314413L;
-
-	private int m_min_arity = 2;
-
-	private int m_max_arity = Integer.MAX_VALUE - 1;
-	
-	private int m_defined_arity = 0;
 	
 	/**
 	 * Class constructor.
 	 */
 	public FuncConcat() {
-		// no op
+		m_min_arity = 2;
+		m_max_arity = Integer.MAX_VALUE - 1;
 	}
 
 	/**
-	 * Evaluate the function. The function must return
-	 * a valid object.
+	 * Evaluate the function. The function must return a valid object.
 	 * 
-	 * @param xctxt The current execution context.
-	 * @return A valid XObject.
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
 	 *
 	 * @throws javax.xml.transform.TransformerException
 	 */
@@ -82,9 +73,9 @@ public class FuncConcat extends FunctionMultiArgs
 		}
 
 		if (m_args != null) {
-			for (int i = 0; i < m_args.length; i++) {
-				sb.append(inspectXPathSelfAxesExpression(m_args[i], xctxt));
-			}
+			for (int idx = 0; idx < m_args.length; idx++) {
+				sb.append(inspectXPathSelfAxesExpression(m_args[idx], xctxt));
+			} 
 		}
 
 		return new XString(sb.toString());
@@ -148,28 +139,5 @@ public class FuncConcat extends FunctionMultiArgs
 
 		return resultStr;      
 	}
-
-	public int getMinArity() {
-		return m_min_arity;
-	}
-
-	public void setMinArity(int minArity) {
-		this.m_min_arity = minArity;
-	}
-
-	public int getMaxArity() {
-		return m_max_arity;
-	}
-
-	public void setMaxArity(int maxArity) {
-		this.m_max_arity = maxArity;
-	}
-	
-	public int getActualArity() {
-	    return m_defined_arity; 
-	}
-	  
-	public void setActualArity(int definedArity) {
-	    this.m_defined_arity = definedArity; 
-	}  
+ 
 }

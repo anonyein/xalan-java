@@ -49,24 +49,24 @@ public class FuncParseXml extends FunctionOneArg {
      * Class constructor.
      */
     public FuncParseXml() {
- 	   m_defined_arity = new Short[] { 1 };
+ 	   m_arity = new Short[] { 1 };
     }
 
     /**
-     * Evaluate the function. The function must return a valid object.
-     * 
-     * @param xctxt The current execution context
-     * @return A valid XObject
-     *
-     * @throws javax.xml.transform.TransformerException
-     */
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
     public XObject execute(XPathContext xctxt) throws 
                                                    javax.xml.transform.TransformerException {        
         XObject result = null;
         
         SourceLocator srcLocator = xctxt.getSAXLocator();
 
-        XObject xObject0 = m_arg0.execute(xctxt);
+        XObject xObject0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
             
         String argStrVal = XslTransformEvaluationHelper.getStrVal(xObject0);
             

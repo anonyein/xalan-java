@@ -29,6 +29,7 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathVisitor;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathArray;
 
 /**
  * Base class for functions that accept one argument.
@@ -182,23 +183,91 @@ public class FunctionOneArg extends Function implements ExpressionOwner
   /**
    * Get the effective value of function argument.
    */
-  protected XObject getEffectiveFuncArgValue(Expression argExpr, XPathContext xctxt) throws TransformerException {
-	  XObject argValue = null;
+  
+  /**
+   * Method definition, to get function call effective
+   * argument value.
+   *  
+   * @param argExpr                          An XPath compiled expression
+   *                                         object.
+   * @param xctxt                            An XPath context object
+   * @return                                 Run-time value of function argument
+   * @throws TransformerException
+   */
+  protected XObject getFunctionArgEffectiveValue(Expression argExpr, XPathContext xctxt) throws TransformerException {
+	  
+	  XObject result = null;
 
 	  if (argExpr instanceof SelfIteratorNoPredicate) {
 		  XObject contextItem = xctxt.getXPath3ContextItem();
 		  if (contextItem != null) {
-			  argValue = contextItem;  
+			  result = contextItem;  
 		  }
 		  else {
-			  argValue = argExpr.execute(xctxt); 
+			  result = argExpr.execute(xctxt); 
 		  }
 	  }
 	  else {  
-		  argValue = argExpr.execute(xctxt);
+		  result = argExpr.execute(xctxt);
 	  }
 	  
-	  return argValue;
+	  return result;
   }
+  
+  /**
+   * Method definition, to normalize the supplied xdm array,
+   * to be able to use for XPath 3.1 array, functions from namespace
+   * http://www.w3.org/2005/xpath-functions/array.
+   * 
+   * @param xpathArr                       The supplied xdm array, object
+   *                                       instance.
+   * @return                               The normalized, xdm array
+   */
+  protected XPathArray getNormalizedXdmArray(XPathArray xpathArr) {
+
+ 	 XPathArray result = new XPathArray();
+
+ 	 int size2 = xpathArr.size();
+ 	 for (int idx = 0; idx < size2; idx++) {
+ 		 XObject xObj = xpathArr.get(idx);
+ 		 if (xObj instanceof XPathArray) {
+ 			 if (((XPathArray)xObj).size() > 0) {
+ 				 result.add(xObj);  
+ 			 }
+ 		 }
+ 		 else {
+ 			 result.add(xObj);  
+ 		 }
+ 	 }
+
+ 	 return result;
+  }
+  
+  /**
+   * Method definition, to check whether the supplied xdm array 
+   * is empty, to be able to use for XPath 3.1 array, functions 
+   * from namespace http://www.w3.org/2005/xpath-functions/array.
+   * 
+   * @param xpathArr                       The supplied xdm array, object
+   *                                       instance.
+   * @return                               Boolean value true or false
+   */
+  protected boolean isXdmArrayEmpty(XPathArray xpathArr) {
+
+ 	  boolean result = false;
+
+ 	  if (xpathArr.size() == 0) {
+ 		  result = true;	
+ 	  }
+ 	  else if (xpathArr.size() == 1) {
+ 		  XObject xObj = xpathArr.get(0);
+ 		  
+ 		  if ((xObj instanceof XPathArray) && (((XPathArray)xObj).size() == 0)) {
+ 			  result = true; 
+ 		  }
+ 	  }
+
+ 	  return result;
+   }
 
 }

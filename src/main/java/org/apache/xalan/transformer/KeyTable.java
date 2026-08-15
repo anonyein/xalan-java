@@ -15,31 +15,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.transformer;
 
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 
 import javax.xml.transform.TransformerException;
 
+import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.KeyDeclaration;
+import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xml.utils.PrefixResolver;
 import org.apache.xml.utils.QName;
 import org.apache.xml.utils.WrappedRuntimeException;
 import org.apache.xml.utils.XMLString;
+import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.functions.WrongNumberArgsException;
+import org.apache.xpath.functions.datetime.FuncAdjustDateTimeToTimezone;
+import org.apache.xpath.functions.datetime.FuncAdjustDateToTimezone;
+import org.apache.xpath.functions.datetime.FuncAdjustTimeToTimezone;
+import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
+import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XString;
+
+import xml.xpath31.processor.types.XSDate;
+import xml.xpath31.processor.types.XSDateTime;
+import xml.xpath31.processor.types.XSNumericType;
+import xml.xpath31.processor.types.XSTime;
 
 /**
- * Table of element keys, keyed by document node.  An instance of this
- * class is keyed by a Document node that should be matched with the
- * root of the current context.
+ * Table for XML element keys, keyed by document node. An 
+ * object instance of this class is keyed by a Document node 
+ * that should be matched with the root of the current context.
+ * 
  * @xsl.usage advanced
  */
 public class KeyTable
@@ -60,7 +74,7 @@ public class KeyTable
    * Key is XMLString, the ref value
    * Value is XNodeSet, the key() function result for the given ref value.
    */
-  private Hashtable m_refsTable = null;
+  private Map<XMLString, XMLNodeCursorImpl> m_refsTable = null;
 
   /**
    * Get the document root matching this key.  
@@ -115,33 +129,36 @@ public class KeyTable
   public XMLNodeCursorImpl getNodeSetDTMByKey(QName name, XMLString ref)
 
   {
-    XMLNodeCursorImpl refNodes = (XMLNodeCursorImpl) getRefsTable().get(ref);
-    // clone wiht reset the node set
-   try
-    {
-      if (refNodes != null)
-      {
-         refNodes = (XMLNodeCursorImpl) refNodes.cloneWithReset();
-       }
-    }
-    catch (CloneNotSupportedException e)
-    {
-      refNodes = null;
-    }
+	  XMLNodeCursorImpl refNodes = (XMLNodeCursorImpl)((getRefsTable()).get(ref));
+	  
+	  // Clone with reset the node set	  
+	  try
+	  {
+		  if (refNodes != null)
+		  {
+			  refNodes = (XMLNodeCursorImpl) refNodes.cloneWithReset();
+		  }
+	  }
+	  catch (CloneNotSupportedException e)
+	  {
+		  refNodes = null;
+	  }
 
-    if (refNodes == null) {
-     //  create an empty XNodeSet
-      KeyIterator ki = (KeyIterator) (m_keyNodes).getContainedIter();
-      XPathContext xctxt = ki.getXPathContext();
-      refNodes = new XMLNodeCursorImpl(xctxt.getDTMManager()) {
-        public void setRoot(int nodeHandle, Object environment) {
-          // Root cannot be set on non-iterated node sets. Ignore it.
-        }
-      };
-      refNodes.reset();
-    }
+	  if (refNodes == null) {
+		  //  Create an empty XNodeSet		  
+		  KeyIterator ki = (KeyIterator) (m_keyNodes).getContainedIter();
+		  XPathContext xctxt = ki.getXPathContext();
+		  
+		  refNodes = new XMLNodeCursorImpl(xctxt.getDTMManager()) {
+			  public void setRoot(int nodeHandle, Object environment) {
+				  // Root cannot be set on non-iterated node sets. Ignore it.
+			  }
+		  };
+		  
+		  refNodes.reset();
+	  }
 
-    return refNodes;
+	  return refNodes;
   }
 
   /**
@@ -176,57 +193,179 @@ public class KeyTable
     return keyDecls;
   }
 
-  /**
+  /** 
    * @return lazy initialized refs table associating evaluation of key function
    *         with a XNodeSet
    */
-  private Hashtable getRefsTable()
+  private Map<XMLString, XMLNodeCursorImpl> getRefsTable()
   {
-    if (m_refsTable == null) {
-      // initial capacity set to a prime number to improve hash performance
-      m_refsTable = new Hashtable(89);
+	  if (m_refsTable == null) {
+		  m_refsTable = new HashMap<XMLString, XMLNodeCursorImpl>();
 
-      KeyIterator ki = (KeyIterator) (m_keyNodes).getContainedIter();
-      XPathContext xctxt = ki.getXPathContext();
+		  KeyIterator keyIter = (KeyIterator) (m_keyNodes).getContainedIter();
+		  XPathContext xctxt = keyIter.getXPathContext();
 
-      Vector keyDecls = getKeyDeclarations();
-      int nKeyDecls = keyDecls.size();
+		  Vector keyDecls = getKeyDeclarations();
+		  int nKeyDecls = keyDecls.size();
 
-      int currentNode;
-      m_keyNodes.reset();
-      while (DTM.NULL != (currentNode = m_keyNodes.nextNode()))
-      {
-        try
-        {
-          for (int keyDeclIdx = 0; keyDeclIdx < nKeyDecls; keyDeclIdx++) {
-            KeyDeclaration keyDeclaration =
-                (KeyDeclaration) keyDecls.elementAt(keyDeclIdx);
-            XObject xuse =
-                keyDeclaration.getUse().execute(xctxt,
-                                                currentNode,
-                                                ki.getPrefixResolver());
+		  int nextNode = DTM.NULL;		  
+		  m_keyNodes.reset();
+		  
+		  while (DTM.NULL != (nextNode = m_keyNodes.nextNode()))
+		  {
+			  try
+			  {
+				  for (int keyDeclIdx = 0; keyDeclIdx < nKeyDecls; keyDeclIdx++) {
+					  KeyDeclaration keyDeclaration = (KeyDeclaration) keyDecls.elementAt(keyDeclIdx);					  					  
+					  
+					  XObject xuse = null;					  
+					  XPath xpathKeyUse = keyDeclaration.getUse();
+					  if (xpathKeyUse != null) {
+						  xuse = xpathKeyUse.execute(xctxt, nextNode, keyIter.getPrefixResolver());  
+					  }
+					  else if (keyDeclaration.getFirstChildElem() == null) {
+						  xuse = XString.EMPTYSTRING;
+					  }
+					  else {
+						  xctxt.pushCurrentNode(nextNode);
+						  
+						  try {
+							  TransformerImpl transformer = (TransformerImpl)(xctxt.getOwnerObject());
+							  
+							  String str1 = transformer.transformToString(keyDeclaration); 
+							  
+							  xuse = new XString(str1);
+						  }
+						  finally {
+							  xctxt.popCurrentNode();  
+						  }
+					  }
+					  
+					  XNumber xNum = null;
+					  if ((xuse instanceof XSNumericType) || (xuse instanceof XNumber)) {
+						 String str1 = XslTransformEvaluationHelper.getStrVal(xuse);						 
+						 xNum = new XNumber(Double.valueOf(str1)); 
+					  }					  
 
-            if (xuse.getType() != xuse.CLASS_NODESET) {
-              XMLString exprResult = xuse.xstr();
-              addValueInRefsTable(xctxt, exprResult, currentNode);
-            } else {
-              DTMCursorIterator i = ((XMLNodeCursorImpl)xuse).iterRaw();
-              int currentNodeInUseClause;
+					  boolean isXslKeyComosite = keyDeclaration.getComposite();
 
-              while (DTM.NULL != (currentNodeInUseClause = i.nextNode())) {
-                DTM dtm = xctxt.getDTM(currentNodeInUseClause);
-                XMLString exprResult =
-                    dtm.getStringValue(currentNodeInUseClause);
-                addValueInRefsTable(xctxt, exprResult, currentNode);
-              }
-            }
-          }
-        } catch (TransformerException te) {
-          throw new WrappedRuntimeException(te);
-        }
-      }
-    }
-    return m_refsTable;
+					  if (xuse.getType() != xuse.CLASS_NODESET) {
+						  XMLString exprResult = null;
+
+						  if (isXslKeyComosite && (xuse.getType() == xuse.CLASS_RESULT_SEQUENCE)) {
+							  ResultSequence rSeq = (ResultSequence)xuse;
+							  StringBuffer strBuff = new StringBuffer();
+							  int size1 = rSeq.size();
+							  for (int idx = 0; idx < size1; idx++) {
+								  XObject xObj = rSeq.item(idx);
+								  String str1 = XslTransformEvaluationHelper.getStrVal(xObj);
+								  if (idx < (size1 + 1)) {
+									  strBuff.append(str1 + ","); 
+								  }
+								  else {
+									  strBuff.append(str1);
+								  }
+							  }
+
+							  String str1 = strBuff.toString();            	  
+							  exprResult = new XString(str1);
+						  }
+						  else {
+							  boolean isXsDateTimeType = false;              
+							  if ((xuse instanceof XSDateTime) || (xuse instanceof XSDate) || (xuse instanceof XSTime)) {
+								  isXsDateTimeType = true; 
+							  }
+
+							  if (!isXsDateTimeType) {
+								  String str1 = XslTransformEvaluationHelper.getStrVal(xuse);
+								  exprResult = new XString(str1); 
+							  }              
+							  else if (xuse instanceof XSDateTime) {
+								  XSDateTime xsDateTime = (XSDateTime)xuse;
+
+								  FuncAdjustDateTimeToTimezone funcAdjustDateTimeToTimezone = new FuncAdjustDateTimeToTimezone();
+								  funcAdjustDateTimeToTimezone.setArg0(xsDateTime);
+								  XPath xpathObj = new XPath(Constants.XS_DAYTIME_DURATION_UTC, null, xctxt.getNamespaceContext(), XPath.SELECT, null);
+								  XObject xObjTz = xpathObj.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());
+								  try {
+									  funcAdjustDateTimeToTimezone.setArg(xObjTz, 1);
+								  } 
+								  catch (WrongNumberArgsException ex) {
+									  // No op
+								  }
+
+								  xuse = funcAdjustDateTimeToTimezone.execute(xctxt);
+								  String str1 = XslTransformEvaluationHelper.getStrVal(xuse);
+								  exprResult = new XString(str1);
+							  }
+							  else if (xuse instanceof XSDate) {
+								  XSDate xsDate = (XSDate)xuse;
+
+								  FuncAdjustDateToTimezone funcAdjustDateToTimezone = new FuncAdjustDateToTimezone();
+								  funcAdjustDateToTimezone.setArg0(xsDate);
+								  XPath xpathObj = new XPath(Constants.XS_DAYTIME_DURATION_UTC, null, xctxt.getNamespaceContext(), XPath.SELECT, null);
+								  XObject xObjTz = xpathObj.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());
+								  try {
+									  funcAdjustDateToTimezone.setArg(xObjTz, 1);
+								  } 
+								  catch (WrongNumberArgsException ex) {
+									  // No op
+								  }
+
+								  xuse = funcAdjustDateToTimezone.execute(xctxt);
+								  String str1 = XslTransformEvaluationHelper.getStrVal(xuse);
+								  exprResult = new XString(str1);
+							  }
+							  else if (xuse instanceof XSTime) {
+								  XSTime xsTime = (XSTime)xuse;
+
+								  FuncAdjustTimeToTimezone funcAdjustTimeToTimezone = new FuncAdjustTimeToTimezone();
+								  funcAdjustTimeToTimezone.setArg0(xsTime);
+								  XPath xpathObj = new XPath(Constants.XS_DAYTIME_DURATION_UTC, null, xctxt.getNamespaceContext(), XPath.SELECT, null);
+								  XObject xObjTz = xpathObj.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());
+								  try {
+									  funcAdjustTimeToTimezone.setArg(xObjTz, 1);
+								  } 
+								  catch (WrongNumberArgsException ex) {
+									  // No op
+								  }
+
+								  xuse = funcAdjustTimeToTimezone.execute(xctxt);
+								  String str1 = XslTransformEvaluationHelper.getStrVal(xuse);
+								  exprResult = new XString(str1);
+							  }              
+						  }
+						  
+						  if (xNum != null) {
+							 ((XString)exprResult).setNumber(xNum); 
+						  }
+
+						  addValueInRefsTable(xctxt, exprResult, nextNode);
+					  } 
+					  else {
+						  DTMCursorIterator iter1 = ((XMLNodeCursorImpl)xuse).iterRaw();
+						  int currentNodeInUseClause;
+
+						  while (DTM.NULL != (currentNodeInUseClause = iter1.nextNode())) {
+							  DTM dtm = xctxt.getDTM(currentNodeInUseClause);
+							  XMLString exprResult = dtm.getStringValue(currentNodeInUseClause);
+							  
+							  if (xNum != null) {
+								 ((XString)exprResult).setNumber(xNum); 
+							  }
+							  
+							  addValueInRefsTable(xctxt, exprResult, nextNode);
+						  }
+					  }
+				  }
+			  } 
+			  catch (TransformerException te) {
+				  throw new WrappedRuntimeException(te);
+			  }
+		  }
+	  }
+
+	  return m_refsTable;
   }
 
   /**
@@ -238,23 +377,24 @@ public class KeyTable
    */
   private void addValueInRefsTable(XPathContext xctxt, XMLString ref, int node) {
     
-    XMLNodeCursorImpl nodes = (XMLNodeCursorImpl) m_refsTable.get(ref);
-    if (nodes == null)
-    {
-      nodes = new XMLNodeCursorImpl(node, xctxt.getDTMManager());
-      nodes.nextNode();
-      m_refsTable.put(ref, nodes);
-    }
-    else
-    {
-      // Nodes are passed to this method in document order.  Since we need to
-      // suppress duplicates, we only need to check against the last entry
-      // in each nodeset.  We use nodes.nextNode after each entry so we can
-      // easily compare node against the current node.
-      if (nodes.getCurrentNode() != node) {
-          nodes.mutableNodeset().addNode(node);
-          nodes.nextNode();
-      }    
-    }
+	  XMLNodeCursorImpl nodes = (XMLNodeCursorImpl)(m_refsTable.get(ref));
+	  
+	  if (nodes == null)
+	  {
+		  nodes = new XMLNodeCursorImpl(node, xctxt.getDTMManager());
+		  nodes.nextNode();
+		  m_refsTable.put(ref, nodes);
+	  }
+	  else
+	  {
+		  // Nodes are passed to this method in document order.  Since we need to
+		  // suppress duplicates, we only need to check against the last entry
+		  // in each nodeset.  We use nodes.nextNode after each entry so we can
+		  // easily compare node against the current node.
+		  if (nodes.getCurrentNode() != node) {
+			  nodes.mutableNodeset().addNode(node);
+			  nodes.nextNode();
+		  }    
+	  }
   }
 }

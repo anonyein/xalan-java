@@ -54,19 +54,26 @@ public class XPathLetExpr extends Expression {
 
     private static final long serialVersionUID = 3063682088023616108L;
 
+    /**
+     * Class field, used to represent XPath 3.1 'let' expression's 
+     * variable bindings.
+     */
     private List<XPathLetExprVarBinding> m_letExprVarBindingList = 
                                                    new ArrayList<XPathLetExprVarBinding>();
     
+    /**
+     * Class field, used to represent XPath 3.1 'let' 
+     * expression's return clause XPath expression string.
+     */
     private String m_returnExprXPathStr = null;
     
+    // Class field, used to resolve variable references
+    // within an XPath expression.
     private Vector m_vars;
     
+    // Class field, used to resolve variable references
+    // within an XPath expression.
     private int m_globals_size;
-
-    @Override
-    public void callVisitors(ExpressionOwner owner, XPathVisitor visitor) {
-       // no op
-    }
     
     @Override
     public XObject execute(XPathContext xctxt) throws TransformerException {
@@ -75,7 +82,7 @@ public class XPathLetExpr extends Expression {
         
        SourceLocator srcLocator = xctxt.getSAXLocator();
         
-       int contextNode = xctxt.getContextNode();
+       final int sourceNode = xctxt.getContextNode();
        
        List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
        
@@ -83,8 +90,10 @@ public class XPathLetExpr extends Expression {
        
        List<QName> qNameVarList = new ArrayList<QName>();
        
-       try {    	       	   
-    	   for (int idx = 0; idx < m_letExprVarBindingList.size(); idx++) {          
+       try {
+    	   int size1 = m_letExprVarBindingList.size();
+    	   
+    	   for (int idx = 0; idx < size1; idx++) {          
     		   XPathLetExprVarBinding letExprVarBinding = m_letExprVarBindingList.get(idx);
     		   String varName = letExprVarBinding.getVarName();
     		   String varResultXPathExprStr = letExprVarBinding.getXPathExprStr();
@@ -139,25 +148,24 @@ public class XPathLetExpr extends Expression {
     			   }
     			   else {
     				   funcArity = xpathNamedFuncRef.getArity();
-    			   }
-
-    			   String funcQualifiedName = "{" + funcNamespace + "}" + funcLocalName; 
+    			   } 
 
     			   FunctionTable funcTable = xctxt.getFunctionTable();
 
-    			   Object funcIdObj = null;
-    			   if (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace)) {
-    				   funcIdObj = funcTable.getFunctionId(funcLocalName);
+    			   Object funcIdObj = null;    			   
+    			   
+    			   if ((funcNamespace == null) || ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace))) { 
+    				   funcIdObj = funcTable.getFunctionIdForXSLBuiltinFuncs(funcLocalName);
     			   }
-    			   else if (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI.equals(funcNamespace)) {
+    			   else if ((XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(funcNamespace)) {    	       	   
     				   funcIdObj = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcLocalName);
     			   }
-    			   else if (XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI.equals(funcNamespace)) {
+    			   else if ((XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(funcNamespace)) {    	       	   
     				   funcIdObj = funcTable.getFunctionIdForXPathBuiltinMapFuncs(funcLocalName);
     			   }
-    			   else if (XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI.equals(funcNamespace)) {
+    			   else if ((XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(funcNamespace)) {     	   
     				   funcIdObj = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcLocalName);
-    			   }
+    			   }    			   
 
     			   if (funcIdObj != null) {
     				   String funcIdStr = funcIdObj.toString();
@@ -166,10 +174,10 @@ public class XPathLetExpr extends Expression {
     				   function.setNamespace(funcNamespace);        		  
     				   if (function instanceof FuncConcat) {        		     
     					   FuncConcat funcConcat = (FuncConcat)function;
-    					   funcConcat.setActualArity(concatArity);
+    					   funcConcat.setRuntimeArgCount(concatArity);
     				   }
     				   else {
-    					   function.setDefinedArity(new Short[] { funcArity });
+    					   function.setArity(new Short[] { funcArity });
     				   }
 
     				   varBindingEvalResult = new XObject(function);
@@ -181,16 +189,18 @@ public class XPathLetExpr extends Expression {
     			   }
     			   else if (XMLConstants.W3C_XML_SCHEMA_NS_URI.equals(funcNamespace)) {
     				   XSL3ConstructorOrExtensionFunction funcObj = new XSL3ConstructorOrExtensionFunction(funcNamespace, funcLocalName, null);
-    				   funcObj.setDefinedArity(new Short[] { funcArity });
+    				   funcObj.setArity(new Short[] { funcArity });
     				   varBindingEvalResult = new XObject(funcObj);        		  
     			   }
     			   else {
+    				   String funcQualifiedName = "{" + funcNamespace + "}" + funcLocalName;
+    				   
     				   throw new TransformerException("FODC0005 : Function definition for named function reference " + 
     						   																					     funcQualifiedName + " doesn't exist.", srcLocator);
     			   }
     		   }
     		   else if (varBindingEvalResult == null) {
-    			   varBindingEvalResult = letExprVarBindingXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+    			   varBindingEvalResult = letExprVarBindingXPath.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
     		   }
 
     		   if (varBindingEvalResult == null) {
@@ -216,7 +226,7 @@ public class XPathLetExpr extends Expression {
     		   returnExprXpath.fixupVariables(m_vars, m_globals_size);
     	   }
 
-    	   evalResult = returnExprXpath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+    	   evalResult = returnExprXpath.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
 
     	   if (evalResult == null) {
     		   // Return an empty sequence
@@ -240,9 +250,15 @@ public class XPathLetExpr extends Expression {
        m_vars = (Vector)(vars.clone());
        m_globals_size = globalsSize; 
     }
+    
+    @Override
+    public void callVisitors(ExpressionOwner owner, XPathVisitor visitor) {
+       // no op
+    }
 
     @Override
-    public boolean deepEquals(Expression expr) {        
+    public boolean deepEquals(Expression expr) {
+       // no op    	
        return false;
     }
 

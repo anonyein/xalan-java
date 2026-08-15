@@ -44,7 +44,7 @@ public class FuncAdjustTimeToTimezone extends FunctionMultiArgs {
 	 * Class constructor.
 	 */
 	public FuncAdjustTimeToTimezone() {
-		m_defined_arity = new Short[] {1, 2}; 
+		m_arity = new Short[] {1, 2}; 
 	}
 	
 	/**
@@ -70,7 +70,7 @@ public class FuncAdjustTimeToTimezone extends FunctionMultiArgs {
 		   return result;
 		}
 		else {
-			XObject xObj0 = m_arg0.execute(xctxt);
+			XObject xObj0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
 
 			if (xObj0 instanceof XSTime) {
 				arg0XsTime = (XSTime)xObj0; 
@@ -93,7 +93,7 @@ public class FuncAdjustTimeToTimezone extends FunctionMultiArgs {
 			arg1Timezone = xctxt.getTimezone();
 		}
 		else {
-			XObject xObj1 = m_arg1.execute(xctxt);
+			XObject xObj1 = getFunctionArgEffectiveValue(m_arg1, xctxt);
 
 			if (xObj1 instanceof XSDuration) {
 				arg1Timezone = (XSDuration)xObj1; 
@@ -111,14 +111,16 @@ public class FuncAdjustTimeToTimezone extends FunctionMultiArgs {
 		if (arg1Timezone != null) {
 		   int tzHrs = arg1Timezone.hours();
 		   int tzMins = arg1Timezone.minutes();
-		   int totalTzHrs = (tzHrs + (tzMins / 60));
+		   double totalTzHrs = (tzHrs + ((double)tzMins / 60)); 
+		   
 		   totalTzHrs = (arg1Timezone.negative() ? (-1 * totalTzHrs) : totalTzHrs);
+		   
 		   if ((totalTzHrs < -14) || (totalTzHrs > 14)) {
 			   throw new javax.xml.transform.TransformerException("FODT0003 : An XPath function adjust-time-to-timezone's "
 							  		                                                                         + "second argument doesn't represent a timezone "
 							  		                                                                         + "value within valid duration range. Timezone value "
 							  		                                                                         + "can be within the range -PT14H and PT14H.", srcLocator);
-		   } 
+		   }
 		}
 				
 		XSDuration arg0XsTimezone = arg0XsTime.getTimezone();
@@ -133,7 +135,7 @@ public class FuncAdjustTimeToTimezone extends FunctionMultiArgs {
 			
 			String timeZoneStrValue = null;
 			if ((timeZoneHours == 0) && (timeZoneMins == 0)) {
-			   timeZoneStrValue = "00:00";
+			   timeZoneStrValue = "Z";
 			}
 			else {
 			   String hrs1 = (timeZoneHours < 10) ? ("0" + timeZoneHours) : (timeZoneHours + "");
@@ -174,7 +176,7 @@ public class FuncAdjustTimeToTimezone extends FunctionMultiArgs {
 			
 			String timeZoneStrValue = null;
 			if ((timeZoneHours == 0) && (timeZoneMins == 0)) {
-			   timeZoneStrValue = "00:00";			   			     
+			   timeZoneStrValue = "Z";			   			     
 			}
 			else {
 			   String hrs1 = (timeZoneHours < 10) ? ("0" + timeZoneHours) : (timeZoneHours + "");

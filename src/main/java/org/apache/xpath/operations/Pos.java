@@ -18,10 +18,7 @@
 package org.apache.xpath.operations;
 
 import org.apache.xpath.XPathContext;
-import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
-
-import xml.xpath31.processor.types.XSNumericType;
 
 /**
  * An XPath 3.1 unary plus operator expression evaluator.
@@ -30,7 +27,7 @@ import xml.xpath31.processor.types.XSNumericType;
  * 
  * @xsl.usage advanced
  */
-public class Pos extends XPath3UnaryOperation
+public class Pos extends XPath3UnaryOperator
 {
 
   private static final long serialVersionUID = 7884742480397069969L;
@@ -45,17 +42,8 @@ public class Pos extends XPath3UnaryOperation
    * @throws javax.xml.transform.TransformerException
    */
   public XObject operate(XObject right) throws javax.xml.transform.TransformerException
-  {
-	  XObject result = null;
-
-	  if (right instanceof XSNumericType) {
-		  java.lang.String strValue = ((XSNumericType)right).stringValue();
-
-		  result = new XNumber(Double.valueOf(strValue)); 
-	  }
-	  else {
-		  result = new XNumber(right.num());  
-	  }
+  {	  
+	  XObject result = right;
 
 	  return result;
   }
@@ -72,7 +60,7 @@ public class Pos extends XPath3UnaryOperation
   public double num(XPathContext xctxt)
           throws javax.xml.transform.TransformerException
   {
-     return m_right.num(xctxt);
+	  return m_right.num(xctxt);
   }
 
 }

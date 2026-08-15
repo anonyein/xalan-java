@@ -30,19 +30,20 @@ import org.apache.xpath.objects.XString;
 import org.apache.xpath.res.XPATHErrorResources;
 
 /**
- * Execute the SystemProperty() function.
+ * Evaluate the SystemProperty() function.
+ * 
  * @xsl.usage advanced
  */
 public class FuncSystemProperty extends FunctionOneArg
 {
-    static final long serialVersionUID = 3694874980992204867L;
-    
-    /**
-     * Class constructor.
-     */
-    public FuncSystemProperty() {
-  	   m_defined_arity = new Short[] { 1 };  
-    }
+	static final long serialVersionUID = 3694874980992204867L;
+
+	/**
+	 * Class constructor.
+	 */
+	public FuncSystemProperty() {
+		m_arity = new Short[] { 1 };  
+	}
     
   /**
    * The path/filename of the property file: XSLTInfo.properties
@@ -53,17 +54,18 @@ public class FuncSystemProperty extends FunctionOneArg
             "org/apache/xalan/res/XSLTInfo.properties";
 
   /**
-   * Evaluate the function. The function must return
-   * a valid object.
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
+   * Evaluate the function. The function must return a valid object.
+   * 
+   * @param xctxt                        An XPath context object
+   * @return                             A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
   public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
   {
 
-    String fullName = m_arg0.execute(xctxt).str();
+    String fullName = (getFunctionArgEffectiveValue(m_arg0, xctxt)).str();
+    
     int indexOfNSSep = fullName.indexOf(':');
     String result = null;
     String propName = "";

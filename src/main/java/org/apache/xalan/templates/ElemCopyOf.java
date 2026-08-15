@@ -46,6 +46,8 @@ import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.composite.XPathSequenceTypeSupport;
+import org.apache.xpath.functions.Function;
+import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
@@ -72,7 +74,7 @@ import xml.xpath31.processor.types.XSUntyped;
 import xml.xpath31.processor.types.XSUntypedAtomic;
 
 /**
- * Implementation of XSLT xsl:copy-of instruction.
+ * Implementation of an XSLT instruction xsl:copy-of.
  * 
  * @author Scott Boag <scott_boag@us.ibm.com>
  * @author Morris Kwan <mkwan@apache.org>
@@ -343,8 +345,17 @@ public class ElemCopyOf extends ElemTemplateElement
       }
       
       Expression expr1 = m_selectExpression.getExpression();
+      
+      Function func = null;
+      
+      XPathDynamicFunctionCall dfc = null;
+      
       if (expr1 instanceof LocPathIterator) {
-    	  LocPathIterator locPathIterator = (LocPathIterator)expr1;    	      	  
+    	  LocPathIterator locPathIterator = (LocPathIterator)expr1; 
+    	  
+    	  func = locPathIterator.getFuncExpr();
+    	  
+    	  dfc = locPathIterator.getDynamicFuncCallExpr();
     	  
     	  int nextNode = DTM.NULL;
     	  if (sourceNode != DTM.NULL) {
@@ -484,10 +495,44 @@ public class ElemCopyOf extends ElemTemplateElement
                 	 copyOfNodeSetStripNsNodes(nodeSet, transformer, xctxt, type, validationStr, rhandler);                	                 	 
                   }
                   else {
-                	 nodeSet.setTypeAttrForValidation(type);                                                      
-                	 nodeSet.setValidationAttrForValidation(validationStr);
-              		
-                	 copyOfActionOnNodeSet(nodeSet, transformer, rhandler, xctxt); 
+                	  nodeSet.setTypeAttrForValidation(type);                                                      
+                	  nodeSet.setValidationAttrForValidation(validationStr);
+
+                	  if (func != null) {
+                		  try {
+                			  DTMCursorIterator iter1 = nodeSet.iter();
+                			  int nextNode = DTM.NULL;
+                			  while ((nextNode = iter1.nextNode()) != DTM.NULL) {
+                				  xctxt.pushCurrentNode(nextNode);
+                				  XObject evalResult = evaluateXPathSuffixFunction(xctxt, srcLocator, func, nodeSet);
+                				  ResultSequence rSeq = new ResultSequence();
+                				  rSeq.add(evalResult);
+                				  copyOfActionOnResultSequence(rSeq, transformer, rhandler, xctxt, false, this);
+                			  }
+                		  }
+                		  finally {
+                			  xctxt.popCurrentNode();
+                		  }
+                	  }
+                	  else if (dfc != null) {
+                		  try {
+                			  DTMCursorIterator iter1 = nodeSet.iter();
+                			  int nextNode = DTM.NULL;
+                			  while ((nextNode = iter1.nextNode()) != DTM.NULL) {
+                				  xctxt.pushCurrentNode(nextNode);
+                				  XObject evalResult = evaluateXPathSuffixDfc(xctxt, dfc, nodeSet);
+                				  ResultSequence rSeq = new ResultSequence();
+                				  rSeq.add(evalResult);
+                				  copyOfActionOnResultSequence(rSeq, transformer, rhandler, xctxt, false, this);
+                			  }
+                		  }
+                		  finally {
+                			  xctxt.popCurrentNode();
+                		  }
+                	  }
+                	  else {
+                		  copyOfActionOnNodeSet(nodeSet, transformer, rhandler, xctxt);
+                	  }
                   }
                   
                   break;

@@ -33,7 +33,7 @@ import org.apache.xpath.operations.Variable;
 import org.apache.xpath.res.XPATHErrorResources;
 
 /**
- * Implementation of XPath 3.1 function fn:starts-with.
+ * Implementation of an XPath 3.1 function fn:starts-with.
  * 
  * @xsl.usage advanced
  */
@@ -46,7 +46,7 @@ public class FuncStartsWith extends XSL3StringCollationAwareFunction
    * Class constructor.
    */
   public FuncStartsWith() {
-	 m_defined_arity = new Short[] { 2, 3 };
+	 m_arity = new Short[] { 2, 3 };
   }
   
   /**
@@ -58,8 +58,8 @@ public class FuncStartsWith extends XSL3StringCollationAwareFunction
   /**
    * Evaluate the function. The function must return a valid object.
    * 
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
+   * @param xctxt                        An XPath context object
+   * @return                             A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
@@ -81,7 +81,8 @@ public class FuncStartsWith extends XSL3StringCollationAwareFunction
 	  String arg0StrValue = null;	        
 	  if ((m_arg0 != null) && !(m_arg0 instanceof FuncArgPlaceholder)) {
 		  if (m_arg0 instanceof Variable) {
-			  XObject obj1 = m_arg0.execute(xctxt);
+			  XObject obj1 = getFunctionArgEffectiveValue(m_arg0, xctxt);
+			  
 			  arg0StrValue = XslTransformEvaluationHelper.getStrVal(obj1);
 		  }
 		  else {
@@ -92,7 +93,8 @@ public class FuncStartsWith extends XSL3StringCollationAwareFunction
 	  String arg1StrValue = null;	        
 	  if ((m_arg1 != null) && !(m_arg1 instanceof FuncArgPlaceholder)) {
 		  if (m_arg1 instanceof Variable) {
-			  XObject obj1 = m_arg1.execute(xctxt);
+			  XObject obj1 = getFunctionArgEffectiveValue(m_arg1, xctxt);
+			  
 			  Object object1 = obj1.object();
 			  if (!(object1 instanceof FuncArgPlaceholder)) {
 				  arg1StrValue = XslTransformEvaluationHelper.getStrVal(obj1);
@@ -106,7 +108,8 @@ public class FuncStartsWith extends XSL3StringCollationAwareFunction
 	  String collationUri = null;	        
 	  if ((m_arg2 != null) && !(m_arg2 instanceof FuncArgPlaceholder)) {
 		  if (m_arg2 instanceof Variable) {
-			  XObject obj1 = m_arg2.execute(xctxt);
+			  XObject obj1 = getFunctionArgEffectiveValue(m_arg2, xctxt);
+			  
 			  Object object1 = obj1.object();
 			  if (!(object1 instanceof FuncArgPlaceholder)) {
 				  collationUri = XslTransformEvaluationHelper.getStrVal(obj1);
@@ -125,6 +128,15 @@ public class FuncStartsWith extends XSL3StringCollationAwareFunction
 		  }
 		  else if (collationUri != null) {
 			  result = XBoolean.S_FALSE;
+			  
+			  if ("".equals(arg1StrValue)) {
+				  int comparisonResult = xPathCollationSupport.compareStringsUsingCollation("", arg1StrValue, collationUri);
+				  if (comparisonResult == 0) {
+					  result = XBoolean.S_TRUE;					  
+				  }
+				  
+				  return result;
+			  }
 
 			  int arg0StrLength = arg0StrValue.length();
 			  for (int idx = 0; idx < arg0StrLength; idx++) {
@@ -227,12 +239,14 @@ public class FuncStartsWith extends XSL3StringCollationAwareFunction
    */
   public void checkNumberArgs(int argNum) throws WrongNumberArgsException
   {
-	  if (!(argNum > 1 && argNum <= 3)) {
+	  /*if (!(argNum > 1 && argNum <= 3)) {
 		  reportWrongNumberArgs();
 	  }
 	  else {
 		  numOfArgs = argNum;   
-	  }
+	  }*/
+	  
+	  numOfArgs = argNum;
   }
   
   /**

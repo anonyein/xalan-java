@@ -41,9 +41,10 @@ import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.operations.Variable;
 import org.apache.xpath.res.XPATHErrorResources;
+import org.apache.xpath.util.XPath3ExpressionUtil;
 
 /**
- * Implementation of the array:sort() function.
+ * Implementation of an XPath 3.1 function array:sort.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -58,7 +59,7 @@ public class FuncArraySort extends FunctionMultiArgs
 	 * Class constructor.
 	 */
 	public FuncArraySort() {
-		m_defined_arity = new Short[] { 1, 2, 3 };
+		m_arity = new Short[] { 1, 2, 3 };
 	}
 	
 	/**
@@ -68,10 +69,10 @@ public class FuncArraySort extends FunctionMultiArgs
     private int numOfArgs = 0;
 
     /**
-     * Evaluate array:sort function call. The function must return a valid object.
+     * Evaluate the function. The function must return a valid object.
      * 
-     * @param xctxt The current execution context.
-     * @return A valid XObject.
+     * @param xctxt                        An XPath context object
+     * @return                             A valid XObject
      *
      * @throws javax.xml.transform.TransformerException
      */
@@ -140,6 +141,9 @@ public class FuncArraySort extends FunctionMultiArgs
                  
                  XPath sortKeyXPathExpr = new XPath(sortKeyXPathStr, srcLocator, xctxt.getNamespaceContext(), 
                                                                                                      XPath.SELECT, null);
+                 
+                 XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(sortKeyXPathExpr.getExpression(), sortKeyXPathStr, srcLocator);
+                 
                  XObject sortKeyVal = sortKeyXPathExpr.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
                  
                  // Reset the function item argument reference value
@@ -183,12 +187,14 @@ public class FuncArraySort extends FunctionMultiArgs
      */
     public void checkNumberArgs(int argNum) throws WrongNumberArgsException
     {
-       if (!(argNum > 0 && argNum <= 3)) {
+       /*if (!(argNum > 0 && argNum <= 3)) {
           reportWrongNumberArgs();
        }
        else {
           numOfArgs = argNum;   
-       }
+       }*/
+       
+       numOfArgs = argNum;
     }
 
     /**

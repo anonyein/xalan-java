@@ -16,18 +16,14 @@
  */
 package org.apache.xpath.functions.array;
 
-import java.util.List;
-
-import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.FunctionOneArg;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
-import org.apache.xpath.operations.Variable;
 
 /**
- * Implementation of the array:flatten function.
+ * Implementation of an XPath 3.1 function array:flatten.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -41,23 +37,23 @@ public class FuncArrayFlatten extends FunctionOneArg {
 	 * Class constructor.
 	 */
 	public FuncArrayFlatten() {
-		m_defined_arity = new Short[] { 1 };
+		m_arity = new Short[] { 1 };
 	}
 
+	/**
+	 * Evaluate the function. The function must return a valid object.
+	 * 
+	 * @param xctxt                        An XPath context object
+	 * @return                             A valid XObject
+	 *
+	 * @throws javax.xml.transform.TransformerException
+	 */
 	public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException
 	{
-	    ResultSequence result = null;	    
-	       
-	    Expression arg0 = getArg0();
 	    
-	    XObject xObject = null;
+		ResultSequence result = null;	    
 	    
-	    if (arg0 instanceof Variable) {
-	       xObject = ((Variable)arg0).execute(xctxt);
-	    }
-	    else {
-	       xObject = arg0.execute(xctxt);
-	    }	    
+	    XObject xObject = getFunctionArgEffectiveValue(m_arg0, xctxt);    
 	    
 	    if (xObject instanceof ResultSequence) {
 	    	result = flatten((ResultSequence)xObject);
@@ -73,22 +69,27 @@ public class FuncArrayFlatten extends FunctionOneArg {
 	}
 
 	/**
-     * Flatten the contents of an input sequence recursively, 
-     * and return the result.
+     * Method definition, to flatten the contents of the 
+     * supplied xdm sequence recursively, and return 
+     * the result.
 	 */
 	private ResultSequence flatten(ResultSequence rSeq) {
+		
 		ResultSequence result = new ResultSequence();
 		
-		for (int idx = 0; idx < rSeq.size(); idx++) {
-		   XObject item = rSeq.item(idx);
-		   if (item instanceof XPathArray) {
-			  ResultSequence seq = flatten((XPathArray)item);
-			  for (int idx1 = 0; idx1 < seq.size(); idx1++) {
-			     result.add(seq.item(idx1)); 
+		int size1 = rSeq.size();		
+		for (int idx = 0; idx < size1; idx++) {
+		   XObject xdmItem = rSeq.item(idx);
+		   
+		   if (xdmItem instanceof XPathArray) {
+			  ResultSequence seq1 = flatten((XPathArray)xdmItem);
+			  int size2 = seq1.size();
+			  for (int idx1 = 0; idx1 < size2; idx1++) {
+			     result.add(seq1.item(idx1)); 
 			  }  
 		   }
 		   else {
-			  result.add(item); 
+			  result.add(xdmItem); 
 		   }
 		}
 		
@@ -96,24 +97,27 @@ public class FuncArrayFlatten extends FunctionOneArg {
 	}
 
 	/**
-     * Flatten the contents of an input array recursively, 
-     * and return the result.
+     * Method definition, to flatten the contents of the 
+     * supplied xdm array recursively, and return 
+     * the result.
 	 */
-	private ResultSequence flatten(XPathArray arr) {
+	private ResultSequence flatten(XPathArray xpathArr) {
+		
 		ResultSequence result = new ResultSequence();
 		
-		List<XObject> nativeArr = arr.getNativeArray();
-		
-		for (int idx = 0; idx < nativeArr.size(); idx++) {
-		   XObject arrItem = nativeArr.get(idx);
-		   if (arrItem instanceof XPathArray) {
-			  ResultSequence rSeq = flatten((XPathArray)arrItem);
-			  for (int idx1 = 0; idx1 < rSeq.size(); idx1++) {
+		int size1 = xpathArr.size();		
+		for (int idx = 0; idx < size1; idx++) {
+		   XObject xdmItem = xpathArr.get(idx);
+		   
+		   if (xdmItem instanceof XPathArray) {
+			  ResultSequence rSeq = flatten((XPathArray)xdmItem);
+			  int size2 = rSeq.size();
+			  for (int idx1 = 0; idx1 < size2; idx1++) {
 				 result.add(rSeq.item(idx1)); 
 			  }
 		   }
 		   else {
-			  result.add(arrItem);  
+			  result.add(xdmItem);  
 		   }
 		}
 		

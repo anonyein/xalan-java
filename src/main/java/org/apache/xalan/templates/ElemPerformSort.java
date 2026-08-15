@@ -43,7 +43,7 @@ import org.xml.sax.SAXException;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * Implementation of the XSLT 3.0 xsl:perform-sort instruction.
+ * Implementation of an XSLT 3.0 instruction xsl:perform-sort.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -296,7 +296,7 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 	}
 	
 	/**
-	 * Evaluation of the xsl:perform-sort XSL transformation.
+	 * Evaluate an XSL instruction xsl:perform-sort.
 	 *
 	 * @param transformer non-null reference to the the current transform-time state.
 	 *

@@ -41,7 +41,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Implementation of the XSLT 3.0 xsl:next-iteration instruction.
+ * Implementation of an XSLT 3.0 instruction xsl:next-iteration.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -173,7 +173,7 @@ public class ElemIterateNextIteration extends ElemTemplateElement implements Exp
 	}
 
 	/**
-	 * Execute the xsl:next-iteration transformation.
+	 * Evaluate the xsl:next-iteration transformation.
 	 *
 	 * @param transformer non-null reference to the the current transform-time state.
 	 *

@@ -139,7 +139,7 @@ import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.compiler.SharedLexerState;
-import org.apache.xpath.composite.XPathSequenceTypeData;
+import org.apache.xpath.composite.XPathSequenceType;
 import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
 import org.apache.xpath.objects.ResultSequence;
@@ -148,7 +148,7 @@ import org.apache.xpath.objects.XNodeSetForDOM;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XRTreeFrag;
 import org.apache.xpath.objects.XString;
-import org.apache.xpath.operations.Operation;
+import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.patterns.StepPattern;
 import org.apache.xpath.patterns.UnionPattern;
 import org.w3c.dom.Node;
@@ -847,6 +847,8 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
       
       if (source != null) {
          base = source.getSystemId();
+         
+         XslTransformData.m_xmlSystemId = base; 
       }
       
       // If no systemID of the source, use the base of the stylesheet.
@@ -2845,12 +2847,12 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
     	  
     	  if (m_debug)
     		  getTraceManager().emitTraceEvent(template);
-    	  // And execute the child templates.
+    	  // And evaluate the child templates.
     	  // 9/11/00: If template has been compiled, hand off to it
     	  // since much (most? all?) of the processing has been inlined.
     	  // (It would be nice if there was a single entry point that
     	  // worked for both... but the interpretive system works by
-    	  // having the Tranformer execute the children, while the
+    	  // having the Tranformer evaluate the children, while the
     	  // compiled obviously has to run its own code. It's
     	  // also unclear that "execute" is really the right name for
     	  // that entry point.)
@@ -3072,7 +3074,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
     			String sequenceTypeXPathExprStr = elemWithParam.getAs();    			 
     			XPath seqTypeXPath = new XPath(sequenceTypeXPathExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);
   			    XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());
-  			    XPathSequenceTypeData seqExpectedTypeData = (XPathSequenceTypeData)seqTypeExpressionEvalResult;
+  			    XPathSequenceType seqExpectedTypeData = (XPathSequenceType)seqTypeExpressionEvalResult;
     			XObject convertedObjValue = XPathSequenceTypeSupport.castXdmValueToAnotherType(withParamValue, sequenceTypeXPathExprStr, seqExpectedTypeData, xctxt);
     			if (convertedObjValue == null) {
     			   throw new TransformerException("An XSL template parameter argument " + (elemWithParam.getName()).toString() + " "
@@ -4475,7 +4477,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
   }
 
   /**
-   * This will execute the following XSLT instructions
+   * This will evaluate the following XSLT instructions
    * from the snapshot point, after the stylesheet execution
    * context has been reset from the snapshot point. 
    *
@@ -4864,8 +4866,8 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 				}
 			}
 		} 
-		else if (xpathExpr instanceof Operation) {
-			Operation opnExpr = (Operation)xpathExpr;
+		else if (xpathExpr instanceof XPathOperator) {
+			XPathOperator opnExpr = (XPathOperator)xpathExpr;
 			Expression leftOperand = opnExpr.getLeftOperand();
 			Expression rightOperand = opnExpr.getRightOperand();			
 			checkXslFunctionDeclaration(leftOperand, templList);

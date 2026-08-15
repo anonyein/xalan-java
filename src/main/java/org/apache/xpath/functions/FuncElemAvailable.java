@@ -29,7 +29,7 @@ import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XObject;
 
 /**
- * Implementation of XSLT 3.0 function fn:element-available.
+ * Implementation of an XSLT 3.0 function fn:element-available.
  * 
  * An fn:element-available function can check for, both
  * stylesheet elements in XSLT namespace or in other extension 
@@ -39,14 +39,20 @@ import org.apache.xpath.objects.XObject;
  */
 public class FuncElemAvailable extends FunctionOneArg
 {
-   static final long serialVersionUID = -472533699257968546L;
+  static final long serialVersionUID = -472533699257968546L;
+  
+  /**
+   * Class constructor.
+   */
+  public FuncElemAvailable() {
+	  m_arity = new Short[] { 1 };  
+  }
 
   /**
-   * Evaluate the function. The function must return
-   * a valid object.
+   * Evaluate the function. The function must return a valid object.
    * 
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
+   * @param xctxt                        An XPath context object
+   * @return                             A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
@@ -56,7 +62,7 @@ public class FuncElemAvailable extends FunctionOneArg
     String namespace = null;
     String methName = null;
 
-    String fullName = m_arg0.execute(xctxt).str();
+    String fullName = (getFunctionArgEffectiveValue(m_arg0, xctxt)).str();
     
     if (fullName.startsWith("Q{")) {
     	 // Support for XPath 3.1 URI qualified names 

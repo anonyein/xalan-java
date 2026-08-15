@@ -19,7 +19,6 @@ package org.apache.xalan.templates;
 
 import java.util.Map;
 
-import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionNode;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.FunctionOneArg;
@@ -31,7 +30,7 @@ import org.apache.xpath.objects.XString;
 import org.apache.xpath.regex.Matcher;
 
 /**
- * Implementation of XSLT 3.0 function fn:regex-group.
+ * Implementation of an XSLT 3.0 function fn:regex-group.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -40,15 +39,22 @@ import org.apache.xpath.regex.Matcher;
 public class FuncRegexGroup extends FunctionOneArg
 {
     private static final long serialVersionUID = 2690898828342290061L;
+    
+    /**
+     * Class constructor.
+     */
+    public FuncRegexGroup() {
+ 	   m_arity = new Short[] { 1 };
+    }
 
     /**
-      * Evaluate the function. The function must return a valid object.
-      * 
-      * @param xctxt The current execution context.
-      * @return a valid XObject.
-      *
-      * @throws javax.xml.transform.TransformerException
-    */
+     * Evaluate the function. The function must return a valid object.
+     * 
+     * @param xctxt The current execution context.
+     * @return a valid XObject.
+     *
+     * @throws javax.xml.transform.TransformerException
+     */
     public XObject execute(XPathContext xctxt) throws javax.xml.transform.TransformerException {
         
         XObject result = null;
@@ -72,12 +78,11 @@ public class FuncRegexGroup extends FunctionOneArg
            }
         }
         
-        Expression arg0Expr = this.getArg0();
-        
         int regExGrpNumber;
         
-        if (arg0Expr != null) {
-            XObject arg0 = arg0Expr.execute(xctxt);
+        if (m_arg0 != null) {
+            XObject arg0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
+            
             if (arg0 instanceof XNumber) {
                XNumber argNum = (XNumber)arg0;
                double argValue = argNum.num();
@@ -106,7 +111,7 @@ public class FuncRegexGroup extends FunctionOneArg
         String regex = customDataMap.get(ElemMatchingSubstring.REGEX);
         String regexFlags = customDataMap.get(ElemMatchingSubstring.REGEX_FLAGS);
         
-        Matcher regexMatcher = RegexEvaluationSupport.compileAndExecute(RegexEvaluationSupport.transformRegexStrForSubtractionOp(
+        Matcher regexMatcher = RegexEvaluationSupport.compileAndExecute(RegexEvaluationSupport.transformRegexStrForSubtrOp(
                                                                                    regex), regexFlags, strValue);
         String regexGrpStr = null;
         if (regexMatcher.matches()) {

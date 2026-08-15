@@ -19,7 +19,6 @@ package org.apache.xpath.functions.datetime;
 
 import javax.xml.transform.SourceLocator;
 
-import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.FunctionOneArg;
 import org.apache.xpath.objects.XObject;
@@ -43,14 +42,14 @@ public class FuncHoursFromDateTime extends FunctionOneArg
    * Class constructor.
    */
   public FuncHoursFromDateTime() {
-  	 m_defined_arity = new Short[] { 1 };	
+  	 m_arity = new Short[] { 1 };	
   }
 
   /**
-   * Evaluate the function. The function must return
-   * a valid object.
-   * @param xctxt The current execution context.
-   * @return A valid XObject.
+   * Evaluate the function. The function must return a valid object.
+   * 
+   * @param xctxt                        An XPath context object
+   * @return                             A valid XObject
    *
    * @throws javax.xml.transform.TransformerException
    */
@@ -60,14 +59,12 @@ public class FuncHoursFromDateTime extends FunctionOneArg
 	  
 	  SourceLocator srcLocator = xctxt.getSAXLocator();
 	  
-	  Expression arg0 = getArg0();
-	  
-	  XObject arg0Val = arg0.execute(xctxt);
+	  XObject arg0Val = getFunctionArgEffectiveValue(m_arg0, xctxt);
 	  
 	  if (!(arg0Val instanceof XSDateTime)) {
 		 throw new javax.xml.transform.TransformerException("XPTY0004 : The required item type of the first argument of "
-		 		                                                   + "fn:hours-from-dateTime() is xs:dateTime, whereas the supplied "
-		 		                                                   + "argument is not conformant.", srcLocator);   
+										 		                                                   + "fn:hours-from-dateTime() is xs:dateTime, whereas the supplied "
+										 		                                                   + "argument is not conformant.", srcLocator);   
 	  }
 	  else {
 		 XSDateTime xsDateTimeVal = (XSDateTime)arg0Val;

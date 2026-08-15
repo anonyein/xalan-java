@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.res;
 
 import java.util.ListResourceBundle;
@@ -89,7 +86,8 @@ public class XSLTErrorResources extends ListResourceBundle
   public static final String ER_FUNCTION_NOT_SUPPORTED = "ER_FUNCTION_NOT_SUPPORTED";
   public static final String ER_ILLEGAL_ATTRIBUTE = "ER_ILLEGAL_ATTRIBUTE";
   public static final String ER_NULL_SOURCENODE_APPLYIMPORTS = "ER_NULL_SOURCENODE_APPLYIMPORTS";
-  public static final String ER_CANNOT_ADD = "ER_CANNOT_ADD"; 
+  public static final String ER_CANNOT_ADD = "ER_CANNOT_ADD";
+  public static final String ER_KEY_CANNOT_ADD = "ER_KEY_CANNOT_ADD";
   public static final String ER_NULL_SOURCENODE_HANDLEAPPLYTEMPLATES="ER_NULL_SOURCENODE_HANDLEAPPLYTEMPLATES";
   public static final String ER_NO_NAME_ATTRIB = "ER_NO_NAME_ATTRIB";
   public static final String ER_TEMPLATE_NOT_FOUND = "ER_TEMPLATE_NOT_FOUND";
@@ -378,6 +376,7 @@ public class XSLTErrorResources extends ListResourceBundle
 	 "ER_ASSERT_REDUNDENT_EXPR_ELIMINATOR";
   public static final String ER_NOT_ALLOWED_IN_POSITION = 
 	 "ER_NOT_ALLOWED_IN_POSITION";
+  public static final String ER_XSL_FORK = "ER_XSL_FORK";
   public static final String ER_NONWHITESPACE_NOT_ALLOWED_IN_POSITION = 
 	 "ER_NONWHITESPACE_NOT_ALLOWED_IN_POSITION";
   public static final String ER_NAMESPACE_CONTEXT_NULL_NAMESPACE =
@@ -494,11 +493,16 @@ public class XSLTErrorResources extends ListResourceBundle
     { ER_ILLEGAL_ATTRIBUTE , 
      "{0} has an illegal attribute: {1}"},
 
-  {ER_NULL_SOURCENODE_APPLYIMPORTS ,
-      "sourceNode is null in xsl:apply-imports!"},
+  { ER_NULL_SOURCENODE_APPLYIMPORTS ,
+      "sourceNode is null in xsl:apply-imports."},
 
-  {ER_CANNOT_ADD,
-      "{2},{3} : An XSL transformation processing could not add ''{0}'' to ''{1}''."},
+  { ER_CANNOT_ADD,
+      "XTSE1205 : [{2}, {3}] An XSL transformation processing could not add ''{0}'' to ''{1}''."},
+  
+  { ER_KEY_CANNOT_ADD,
+      "XTSE0010 : [{2}, {3}] An XSL transformation processing could not add ''{0}'' to ''{1}''. An "
+				                                                             + "XSL key declaration cannot have both "
+				                                                             + "''use'' attrbute and non-empty content."},
 
     { ER_NULL_SOURCENODE_HANDLEAPPLYTEMPLATES, 
       "sourceNode is null in handleApplyTemplatesInstruction!"},
@@ -506,13 +510,13 @@ public class XSLTErrorResources extends ListResourceBundle
     { ER_NO_NAME_ATTRIB, 
      "{0} must have a name attribute."},
 
-    {ER_TEMPLATE_NOT_FOUND,
+    { ER_TEMPLATE_NOT_FOUND,
      "Could not find template named: {0}"},
 
-    {ER_CANT_RESOLVE_NAME_AVT,
+    { ER_CANT_RESOLVE_NAME_AVT,
       "Could not resolve name AVT in xsl:call-template."},
 
-    {ER_REQUIRES_ATTRIB,
+    { ER_REQUIRES_ATTRIB,
      "XTSE0010 : {0} requires attribute: {1}"},
 
     { ER_MUST_HAVE_TEST_ATTRIB, 
@@ -663,7 +667,7 @@ public class XSLTErrorResources extends ListResourceBundle
       "xml:space in the source XML has an illegal value: {0}"},
 
     { ER_NO_XSLKEY_DECLARATION,
-      "There is no xsl:key declaration for {0}!"},
+      "XTDE1260 : There is no xsl:key declaration for {0}."},
 
     { ER_CANT_CREATE_URL, 
      "Error! Cannot create url for: {0}"},
@@ -1082,10 +1086,13 @@ public class XSLTErrorResources extends ListResourceBundle
      "Programmer''s assertion in RedundentExprEliminator: {0}"},
 
     { ER_NOT_ALLOWED_IN_POSITION,
-     "XTSE0010 : {0} is not allowed in this position in the stylesheet"},
+     "XTSE0010 : An XML element {0} is not allowed in this position in the stylesheet."},
+    
+    { ER_XSL_FORK,
+      "XTSE0010 : [{1}, {2}] An XML element {0} is not allowed in this position in the stylesheet."},
 
     { ER_NONWHITESPACE_NOT_ALLOWED_IN_POSITION,
-     "Non-whitespace text is not allowed in this position in the stylesheet!"},
+     "XTSE0010 : Non-whitespace text is not allowed in this position in the stylesheet."},
 
   // This code is shared with warning codes.
   // SystemId Unknown

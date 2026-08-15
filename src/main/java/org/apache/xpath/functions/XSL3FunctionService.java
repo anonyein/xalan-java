@@ -76,13 +76,14 @@ import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.compiler.Keywords;
-import org.apache.xpath.composite.XPathSequenceTypeData;
-import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.composite.XPathExprFuncCallExtendedArg;
 import org.apache.xpath.composite.XPathNamedFunctionReference;
+import org.apache.xpath.composite.XPathSequenceType;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.functions.string.FuncConcat;
 import org.apache.xpath.objects.InlineFunctionParameter;
 import org.apache.xpath.objects.ResultSequence;
+import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.types.XSBase64Binary;
@@ -108,6 +109,7 @@ import org.apache.xpath.types.XSUnsignedByte;
 import org.apache.xpath.types.XSUnsignedInt;
 import org.apache.xpath.types.XSUnsignedLong;
 import org.apache.xpath.types.XSUnsignedShort;
+import org.apache.xpath.util.XPath3ExpressionUtil;
 import org.w3c.dom.DOMConfiguration;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -140,9 +142,10 @@ import xml.xpath31.processor.types.XSUntypedAtomic;
 import xml.xpath31.processor.types.XSYearMonthDuration;
 
 /**
- * This class definition, provides support to evaluate XPath schema 
- * constructor function calls, evaluating XPath named function references, 
- * and evaluating XSL stylesheet xsl:function calls.
+ * Class definition, that provides implementation support to evaluate 
+ * XPath 3.1 built-in schema type constructor function calls, evaluating 
+ * XPath 3.1 named function references, and evaluating XSL stylesheet 
+ * xsl:function call.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -188,6 +191,38 @@ public class XSL3FunctionService {
     		
     		String funcName = funcObj.getFunctionName();
     		String funcNamespace = funcObj.getNamespace();
+    		
+    		Vector argVector2 = funcObj.getArgVector();    		
+    		int size1 = argVector2.size();
+    		
+    		boolean argVectorModified = false;
+    		
+    		for (int idx = 0; idx < size1; idx++) {
+    			Object argObj1 = argVector2.elementAt(idx); 
+    			
+    			if (argObj1 instanceof XNumber) {
+    				XNumber xNumber = (XNumber)argObj1;
+    				if (xNumber.getXsDecimal() != null) {
+    					argVector2.setElementAt(xNumber.getXsDecimal(), idx);
+    					
+    					argVectorModified = true;
+    				}
+    				else if (xNumber.getXsDouble() != null) {
+    					argVector2.setElementAt(xNumber.getXsDouble(), idx);
+    					
+    					argVectorModified = true;
+    				}
+    				else if (xNumber.getXsInteger() != null) {
+    					argVector2.setElementAt(xNumber.getXsInteger(), idx);
+    					
+    					argVectorModified = true;
+    				}
+    			}
+    		}
+    		
+    		if (argVectorModified) {
+    			funcObj.setArgVector(argVector2);
+    		}
     		
     		if (!((Constants.S_EXTENSIONS_JAVA_URL).equals(funcNamespace) || (Constants.S_EXTENSIONS_XALANLIB_URL).equals(funcNamespace))) {
     			/**
@@ -277,48 +312,62 @@ public class XSL3FunctionService {
     					if ((evalResult instanceof XPathNamedFunctionReference) && (funcExtArgStrList != null)) {
     						XPathNamedFunctionReference xpathNamedFunctionReference = (XPathNamedFunctionReference)evalResult;    					   
     						String localName = xpathNamedFunctionReference.getFuncName();
-    						String namespace = xpathNamedFunctionReference.getFuncNamespace();
-    						Short arity = xpathNamedFunctionReference.getArity();    					   
-    						if ((int)arity == funcExtArgStrList.size()) {
-    							if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(namespace) || (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(namespace) ||
-    									                                                                   (XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(namespace) || 
-    									                                                                   (XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(namespace)) {
-    								FunctionTable funcTable = xctxt.getFunctionTable();
-    								Object funcId = funcTable.getFunctionId(localName);
-    								if (funcId != null) {
-    									Function function = funcTable.getFunction(Integer.valueOf(funcId.toString()));
-    									List<Short> funcDefinedArity = Arrays.asList(function.getDefinedArity());
-    									if (funcDefinedArity.contains(arity)) {
-    										int argCount2 = funcExtArgStrList.size();
-    										for (int idx = 0; idx < argCount2; idx++) {
-    											String xpathExprStr = funcExtArgStrList.get(idx);
-    											XPath argXPath = new XPath(xpathExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);    									   
-    											try {
-    												function.setArg(argXPath.getExpression(), idx);
-    											} 
-    											catch (WrongNumberArgsException ex) {
-    												// no op
-    											}    									
-    										}
+    						String fNamespace = xpathNamedFunctionReference.getFuncNamespace();
+    						Short arity = xpathNamedFunctionReference.getArity(); 
+    						int argCount2 = funcExtArgStrList.size();
+    						if ((int)arity == argCount2) {    							
+    							FunctionTable funcTable = xctxt.getFunctionTable();
 
-    										evalResult = function.execute(xctxt);
+    							Object funcId = null;
+
+    							if ((fNamespace == null) || ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(fNamespace))) { 
+    								funcId = funcTable.getFunctionIdForXSLBuiltinFuncs(localName);
+    							}
+    							else if ((XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(fNamespace)) {    	       	   
+    								funcId = funcTable.getFunctionIdForXPathBuiltinMathFuncs(localName);
+    							}
+    							else if ((XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(fNamespace)) {    	       	   
+    								funcId = funcTable.getFunctionIdForXPathBuiltinMapFuncs(localName);
+    							}
+    							else if ((XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(fNamespace)) {     	   
+    								funcId = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(localName);
+    							}    				    			 
+
+    							if (funcId != null) {
+    								Function function = funcTable.getFunction(Integer.valueOf(funcId.toString()));
+    								List<Short> funcDefinedArity = Arrays.asList(function.getArity());
+    								if (funcDefinedArity.contains(arity)) {
+    									for (int idx = 0; idx < argCount2; idx++) {
+    										String xpathExprStr = funcExtArgStrList.get(idx);
+    										XPath argXPath = new XPath(xpathExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);    									   
+    										try {
+    											function.setArg(argXPath.getExpression(), idx);
+    										} 
+    										catch (WrongNumberArgsException ex) {
+    											// no op
+    										}    									
     									}
-    									else {
-    										throw new TransformerException("XPTY0004 : The function arity value specified in an XPath named "
-									    												+ "function reference is " + arity + ", but the corresponding "
-									    												+ "XPath function {" + namespace + "}" + localName + " doesn't allow this arity.", srcLocator);  
-    									}
+
+    									evalResult = function.execute(xctxt);
     								}
     								else {
-    									throw new TransformerException("XPTY0004 : The function {" + namespace + "}" + localName + " referred "
-    																					+ "within an XPath expression is not found.", srcLocator); 
+    									throw new TransformerException("XPTY0004 : The function arity value specified with an XPath named "
+																	    											+ "function reference is " + arity + ", but the corresponding "
+																	    											+ "XPath function {" + fNamespace + "}" + localName + " "
+																	    											+ "doesn't allow this arity.", srcLocator);  
     								}
+    							}
+    							else {
+    								throw new TransformerException("XPTY0004 : The function {" + fNamespace + "}" + localName + " referred "
+    																												+ "within an XPath expression is not "
+    																												+ "found.", srcLocator); 
     							}
     						}
     						else {
-    							throw new TransformerException("XPTY0004 : The number of arguments provided during an XPath function call {" + namespace + "}" + localName 
-												    									+ " is " + funcExtArgStrList.size() + ", but the corresponding XPath named function "
-												    									+ "reference specifies the function arity value as " + arity + ".", srcLocator); 
+    							throw new TransformerException("XPTY0004 : The number of arguments provided during an XPath function call {" + fNamespace + "}" + localName 
+																			    									+ " is " + funcExtArgStrList.size() + ", but the corresponding "
+																			    									+ "XPath named function reference specifies the function arity "
+																			    									+ "value as " + arity + ".", srcLocator); 
     						}
     					}
     					else if ((evalResult instanceof XPathInlineFunction) && (funcExtArgStrList != null)) {
@@ -662,9 +711,9 @@ public class XSL3FunctionService {
 
     					String errMesgStrTrailingSuffix = ((exceptionMesgStr != null) && (exceptionMesgStr.length() > 0)) ? " "+ exceptionMesgStr : ""; 
 
-    					throw new TransformerException("FODC0005 : An XPath dynamic error has occured, evaluating "
-																	    							+ "constructor function call for xs:" + funcName + "." + 
-																	    							errMesgStrTrailingSuffix, srcLocator);
+    					throw new TransformerException("FODT0001 : An XPath dynamic error has occured, evaluating "
+																	    							  + "constructor function call for xs:" + funcName + "." + 
+																	    							    errMesgStrTrailingSuffix, srcLocator);
     				}
     			}
     			else {
@@ -853,7 +902,7 @@ public class XSL3FunctionService {
     }
     
     /**
-     * Method definition to evaluate an XPath named function reference.
+     * Method definition, to evaluate an XPath named function reference.
      * 
      * @param xpathNamedFuncRef                 An XPath compiled named function reference object
      * @param argList                           List of argument XPath expressions for the function call
@@ -872,7 +921,7 @@ public class XSL3FunctionService {
     		                                           Vector varVecor, int varGlobalsSize, ExpressionNode expressionNode, 
     		                                           XPathContext xctxt) throws TransformerException {
     	
-    	XObject evalResult = null;
+    	XObject result = null;
 
     	SourceLocator srcLocator = xctxt.getSAXLocator();
 
@@ -887,15 +936,14 @@ public class XSL3FunctionService {
     	}
     	else {
     		funcArity = xpathNamedFuncRef.getArity(); 
-    	}
-
-    	String funcQualifiedName = "{" + funcNamespace + "}" + funcLocalName; 
+    	}    	    	
 
     	FunctionTable funcTable = xctxt.getFunctionTable();
 
     	Object funcIdObj = null;
-    	if (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace)) {
-    		funcIdObj = funcTable.getFunctionId(funcLocalName);
+    	
+    	if ((funcNamespace == null) || (XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI.equals(funcNamespace))) {
+    		funcIdObj = funcTable.getFunctionIdForXSLBuiltinFuncs(funcLocalName);
     	}
     	else if (XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI.equals(funcNamespace)) {
     		funcIdObj = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcLocalName);
@@ -914,10 +962,10 @@ public class XSL3FunctionService {
     		function.setLocalName(funcLocalName);
     		function.setNamespace(funcNamespace);
     		if (function instanceof FuncConcat) {
-    		    ((FuncConcat)function).setActualArity(funcArity);
+    		    ((FuncConcat)function).setRuntimeArgCount(funcArity);
     		}
     		else {
-    			function.setDefinedArity(new Short[] { (short)funcArity });
+    			function.setArity(new Short[] { (short)funcArity });
     		}
 
     		int argCount = 0;
@@ -945,6 +993,7 @@ public class XSL3FunctionService {
     				}
     				else {
     					XObject arg1 = argSeq.item(idx);
+    					
     					function.setArg(arg1, idx);
     				}
     			}
@@ -954,7 +1003,7 @@ public class XSL3FunctionService {
     			}
     		}
 
-    		evalResult = function.execute(xctxt);
+    		result = function.execute(xctxt);
     	}
     	else if (xpathNamedFuncRef.getXslStylesheetFunction() != null) {
     		// Evaluate an XSL stylesheet function reference    		
@@ -993,16 +1042,16 @@ public class XSL3FunctionService {
     		if (stylesheetRoot != null) {
     			TransformerImpl transformerImpl = stylesheetRoot.getTransformerImpl();
 
-    			evalResult = elemFunction.evaluateXslFunction(transformerImpl, argSequence);
+    			result = elemFunction.evaluateXslFunction(transformerImpl, argSequence);
     		}
     		else {
-    			evalResult = new ResultSequence();  
+    			result = new ResultSequence();  
     		}
     	}
     	else if (XMLConstants.W3C_XML_SCHEMA_NS_URI.equals(funcNamespace)) {
     		// Evaluate an XPath schema type constructor function call reference    		
     		XSL3ConstructorOrExtensionFunction funcObj = new XSL3ConstructorOrExtensionFunction(funcNamespace, funcLocalName, null);
-    		funcObj.setDefinedArity(new Short[] { (short)funcArity });
+    		funcObj.setArity(new Short[] { (short)funcArity });
 
     		int argCount = argList.size();
     		for (int idx = 0; idx < argCount; idx++) {
@@ -1025,14 +1074,22 @@ public class XSL3FunctionService {
     			}
     		}
 
-    		evalResult = funcObj.execute(xctxt);        		  
+    		result = funcObj.execute(xctxt);        		  
     	}
     	else {
+    		String funcQualifiedName = null;    		
+        	if (funcNamespace != null) {
+        		funcQualifiedName = "{" + funcNamespace + "}" + funcLocalName;	
+        	}
+        	else {
+        		funcQualifiedName = funcLocalName; 
+        	}
+        	
     		throw new TransformerException("FODC0005 : An XSL function definition for named function reference " + funcQualifiedName + 
-    				                                                                                 " doesn't exist.", srcLocator);
+    				                                                                                              " doesn't exist.", srcLocator);
     	}
     	
-    	return evalResult;
+    	return result;
 	}
     
     /**
@@ -1050,14 +1107,16 @@ public class XSL3FunctionService {
         
         FunctionTable funcTable = xctxt.getFunctionTable();
         
-        if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace)) {
-           Object funcId = funcTable.getFunctionIdForXPathBuiltinFuncs(funcName);
+        if ((funcNamespace == null) || ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(funcNamespace))) {
+           Object funcId = funcTable.getFunctionIdForXSLBuiltinFuncs(funcName);
            int funcIdValue = (int)Integer.valueOf(funcId.toString());
+           
            result = funcTable.getFunction(funcIdValue);
         }
         else if ((XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(funcNamespace)) {
            Object funcId = funcTable.getFunctionIdForXPathBuiltinMathFuncs(funcName);
            int funcIdValue = (int)Integer.valueOf(funcId.toString());
+           
            result = funcTable.getFunction(funcIdValue);
         }
         else if ((XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(funcNamespace)) {
@@ -1068,6 +1127,7 @@ public class XSL3FunctionService {
         else if ((XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(funcNamespace)) {
            Object funcId = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(funcName);
            int funcIdValue = (int)Integer.valueOf(funcId.toString());
+           
            result = funcTable.getFunction(funcIdValue);
         }  
         
@@ -1250,6 +1310,14 @@ public class XSL3FunctionService {
 
     	String inlineFnXPathStr = xpathInlineFunction.getFuncBodyXPathExprStr();
     	
+    	if (prefixTable != null) {
+    	   inlineFnXPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(inlineFnXPathStr, prefixTable);
+ 	    }
+    	
+    	XPath xpathObj = new XPath(inlineFnXPathStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    	
+    	XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(xpathObj.getExpression(), inlineFnXPathStr, srcLocator);
+    	
     	if (Constants.FN_XALAN_RNG_PERMUTE.equals(inlineFnXPathStr)) {
     		String arg1XPathStr = argList.get(0);
     		if (prefixTable != null) {
@@ -1323,31 +1391,31 @@ public class XSL3FunctionService {
     		}
 
     		String funcParamName = funcParam.getParamName();
-    		XPathSequenceTypeData paramType = funcParam.getParamType();
+    		XPathSequenceType paramType = funcParam.getParamType();
 
     		if (paramType != null) {
     			try {
     				argValue = XPathSequenceTypeSupport.castXdmValueToAnotherType(argValue, null, paramType, null);                     
     				if (argValue == null) {
     					if (xslDynFuncCallVarName != null) {
-    					    throw new TransformerException("XTTE0505 : An item type of argument at position " + (idx + 1) + " of XPath dynamic "
+    					    throw new TransformerException("XPTY0004 : An item type of argument at position " + (idx + 1) + " of XPath dynamic "
 			    							                                              + "function call $" + xslDynFuncCallVarName + ", "
 			    							                                              + "doesn't match an expected type.", srcLocator);
     					}
     					else {
-    						throw new TransformerException("XTTE0505 : An item type of argument at position " + (idx + 1) + " of an XPath "
+    						throw new TransformerException("XPTY0004 : An item type of argument at position " + (idx + 1) + " of an XPath "
                                                                                           + "function call, doesn't match an expected type.", srcLocator);
     					}
     				}
     			}
     			catch (TransformerException ex) {
     				if (xslDynFuncCallVarName != null) {
-					    throw new TransformerException("XTTE0505 : An item type of argument at position " + (idx + 1) + " of XPath dynamic "
+					    throw new TransformerException("XPTY0004 : An item type of argument at position " + (idx + 1) + " of XPath dynamic "
 		    							                                              + "function call $" + xslDynFuncCallVarName + ", "
 		    							                                              + "doesn't match an expected type.", srcLocator);
 					}
 					else {
-						throw new TransformerException("XTTE0505 : An item type of argument at position " + (idx + 1) + " of an XPath "
+						throw new TransformerException("XPTY0004 : An item type of argument at position " + (idx + 1) + " of an XPath "
                                                                                       + "function call, doesn't match an expected type.", srcLocator);
 					} 
     			}
@@ -1371,28 +1439,28 @@ public class XSL3FunctionService {
 
     	evalResult = inlineFnXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
 
-    	XPathSequenceTypeData funcReturnType = xpathInlineFunction.getReturnType();
+    	XPathSequenceType funcReturnType = xpathInlineFunction.getReturnType();
     	if (funcReturnType != null) {
     		try {
     			evalResult = XPathSequenceTypeSupport.castXdmValueToAnotherType(evalResult, null, funcReturnType, null);
     			if (evalResult == null) {
     				if (xslDynFuncCallVarName != null) {
-    				    throw new TransformerException("XTTE0505 : An item type of result of dynamic function call $"+ xslDynFuncCallVarName + ", "
+    				    throw new TransformerException("XPTY0004 : An item type of result of dynamic function call $"+ xslDynFuncCallVarName + ", "
     						                                                                         + "doesn't match an expected type.", srcLocator);
     				}
     				else {
-    					throw new TransformerException("XTTE0505 : An item type of result of an XPath function call, doesn't match "
+    					throw new TransformerException("XPTY0004 : An item type of result of an XPath function call, doesn't match "
     							                                                                     + "an expected type.", srcLocator);
     				}
     			}
     		}
     		catch (TransformerException ex) {
     			if (xslDynFuncCallVarName != null) {
-				    throw new TransformerException("XTTE0505 : An item type of result of dynamic function call $"+ xslDynFuncCallVarName + ", "
+				    throw new TransformerException("XPTY0004 : An item type of result of dynamic function call $"+ xslDynFuncCallVarName + ", "
 						                                                                             + "doesn't match an expected type.", srcLocator);
 				}
 				else {
-					throw new TransformerException("XTTE0505 : An item type of result of an XPath function call, doesn't match "
+					throw new TransformerException("XPTY0004 : An item type of result of an XPath function call, doesn't match "
 							                                                                         + "an expected type.", srcLocator);
 				}  
     		}
@@ -1425,15 +1493,15 @@ public class XSL3FunctionService {
     	for (int idx = 0; idx < funcArgCount; idx++) {
 			Expression funcArg = funcObj.getArg(idx);    						
 			String argStr = getXPathBuiltInConstructorFunctionArgStr(funcArg, xctxt);
-			Constructor cons = dataType.getConstructor(new Class[] {String.class});
-			Object obj = cons.newInstance(new Object[] {argStr});
+			Constructor cons = dataType.getConstructor(new Class[] { String.class });
+			Object obj = cons.newInstance(new Object[] { argStr });
 			argSequence.add((XObject)obj);
 		}
     	
     	Object obj = dataType.newInstance();
     	
-    	Method method = dataType.getMethod("constructor", new Class[] {ResultSequence.class});
-    	evalResultSequence = (ResultSequence)(method.invoke(obj, new Object[] {argSequence}));
+    	Method method = dataType.getMethod("constructor", new Class[] { ResultSequence.class });
+    	evalResultSequence = (ResultSequence)(method.invoke(obj, new Object[] { argSequence }));
 
 		evalResult = evalResultSequence.item(0);
     	
