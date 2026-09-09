@@ -50,6 +50,7 @@ import org.apache.xpath.compiler.XPathParser.XPathArrayConsFuncArgs;
 import org.apache.xpath.compiler.XPathParser.XPathSequenceConsFuncArgs;
 import org.apache.xpath.composite.XPathArrayConstructor;
 import org.apache.xpath.composite.XPathForExpr;
+import org.apache.xpath.composite.XPathLetExpr;
 import org.apache.xpath.composite.XPathSequenceConstructor;
 import org.apache.xpath.functions.FuncArgPlaceholder;
 import org.apache.xpath.functions.FuncExtFunctionAvailable;
@@ -62,6 +63,7 @@ import org.apache.xpath.objects.XBoolean;
 import org.apache.xpath.objects.XBooleanStatic;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
+import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.And;
 import org.apache.xpath.operations.CastAs;
@@ -88,7 +90,6 @@ import org.apache.xpath.operations.Or;
 import org.apache.xpath.operations.Plus;
 import org.apache.xpath.operations.Pos;
 import org.apache.xpath.operations.Range;
-import org.apache.xpath.operations.XPathSimpleMapOperator;
 import org.apache.xpath.operations.StrConcat;
 import org.apache.xpath.operations.TreatAs;
 import org.apache.xpath.operations.Variable;
@@ -102,6 +103,7 @@ import org.apache.xpath.operations.XPathArrowOp;
 import org.apache.xpath.operations.XPathExcept;
 import org.apache.xpath.operations.XPathIntersect;
 import org.apache.xpath.operations.XPathOperator;
+import org.apache.xpath.operations.XPathSimpleMapOperator;
 import org.apache.xpath.operations.XPathUnaryOperator;
 import org.apache.xpath.operations.XPathUnion;
 import org.apache.xpath.patterns.FunctionPattern;
@@ -2086,8 +2088,10 @@ private static final boolean DEBUG = false;
    * @throws TransformerException if a error occurs creating the Expression.
    */
   Expression compileInlineFunctionDefinition(int opPos) throws TransformerException
-  {
-      return XPathParser.m_xpath_inlineFunction;
+  {	  
+      XPathInlineFunction xpathInlineFunc = (XPathParser.m_xpath_inlineFuncStack).pop();
+      
+	  return xpathInlineFunc;
   }
   
   /**
@@ -2123,8 +2127,10 @@ private static final boolean DEBUG = false;
   Expression forExpr(int opPos) throws TransformerException
   {
 	  XPathForExpr forExpr = (XPathParser.m_forExprList).get(0);
+	  
 	  (XPathParser.m_forExprList).remove(0);
-      return forExpr;	  
+      
+	  return forExpr;	  
   }
   
   /**
@@ -2138,8 +2144,10 @@ private static final boolean DEBUG = false;
    * @throws TransformerException if a error occurs creating the Expression.
    */
   Expression letExpr(int opPos) throws TransformerException
-  {
-      return XPathParser.m_letExpr;
+  {	  
+      XPathLetExpr letExpr = (XPathParser.m_letExprStack).pop();
+      
+	  return letExpr;
   }
   
   /**

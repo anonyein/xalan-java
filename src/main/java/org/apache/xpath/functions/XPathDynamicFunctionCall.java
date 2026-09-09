@@ -150,12 +150,15 @@ public class XPathDynamicFunctionCall extends Expression {
            catch (TransformerException ex) {
               // Trying to get an XPath inline function reference, from within 
               // stylesheet's global variable scope. 
-              ExpressionNode expressionNode = getExpressionOwner();
+              
+        	  ExpressionNode expressionNode = getExpressionOwner();
               ExpressionNode stylesheetRootNode = null;
+              
               while (expressionNode != null) {
                  stylesheetRootNode = expressionNode;
                  expressionNode = expressionNode.exprGetParent();                     
               }
+              
               StylesheetRoot stylesheetRoot = (StylesheetRoot)stylesheetRootNode;
               Map<QName, XPathInlineFunction> globalInlineFunctionVarMap = stylesheetRoot.
                                                                             getInlineFunctionVarMap();

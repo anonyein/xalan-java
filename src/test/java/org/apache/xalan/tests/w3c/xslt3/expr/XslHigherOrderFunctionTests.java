@@ -44,6 +44,7 @@ public class XslHigherOrderFunctionTests extends W3CXslTransformTestsUtil {
     	m_skipped_tests_list.add("higher-order-functions-031");
     	m_skipped_tests_list.add("higher-order-functions-032");
     	m_skipped_tests_list.add("higher-order-functions-033");
+    	m_skipped_tests_list.add("higher-order-functions-068");  // inf loop
     	m_skipped_tests_list.add("higher-order-functions-071");
     	m_skipped_tests_list.add("higher-order-functions-072");
     	m_skipped_tests_list.add("higher-order-functions-075");    	

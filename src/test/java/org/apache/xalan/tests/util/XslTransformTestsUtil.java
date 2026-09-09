@@ -960,12 +960,14 @@ public class XslTransformTestsUtil extends FileComparisonUtil {
 		int idx1 = xpathExprStr.indexOf("\"");
 		int idx2 = -1;
 		int strLength = xpathExprStr.length();
+		
 		if (strLength > 1) {
 			while (idx1 != -1) {
 				String str1 = xpathExprStr.substring(0, idx1); 
 				String str2 = xpathExprStr.substring(idx1 + 1);    									 
 				idx2 = str2.indexOf("\"");
 				String xpathExprStrNew = null;
+				
 				if (idx2 != -1) {
 					String x1 = str2.substring(0, idx2);
 					str2 = "'" + x1 + "'";

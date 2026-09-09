@@ -80,7 +80,7 @@ public class XslFnJsonToXmlTests extends W3CXslTransformTestsUtil {
 
     @Test
     public void runXslFnJsonToXmlTests() {    	
-    	runXslJsonToXmlTestSet();
+    	runXslTestSet();
     }
 
 }

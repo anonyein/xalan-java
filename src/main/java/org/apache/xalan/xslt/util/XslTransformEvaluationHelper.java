@@ -1008,6 +1008,7 @@ public class XslTransformEvaluationHelper {
 
     		ExpressionNode expressionNode = nodeTest.getExpressionOwner();
     		ExpressionNode stylesheetRootNode = null;
+    		
     		while (expressionNode != null) {
     			stylesheetRootNode = expressionNode;
     			expressionNode = expressionNode.exprGetParent();                     
@@ -1018,16 +1019,19 @@ public class XslTransformEvaluationHelper {
     		if (stylesheetRoot != null) {
     			TemplateList templateList = stylesheetRoot.getTemplateListComposed();  		  
     			XSL3FunctionService xslFunctionService = XSLFunctionBuilder.getXSLFunctionService();  		  
+    			
     			if (xslFunctionService.isFuncArityWellFormed(funcNameRef)) {        	   
     				int hashCharIdx = funcNameRef.indexOf('#');
     				String funcNameRef2 = funcNameRef.substring(0, hashCharIdx);
     				int funcArity = Integer.valueOf(funcNameRef.substring(hashCharIdx + 1));        		   
     				ElemTemplate elemTemplate = templateList.getXslFunction(new QName(funcNamespace, funcNameRef2), funcArity);        		   
+    				
     				if (elemTemplate != null) {
     					ElemFunction elemFunction = (ElemFunction)elemTemplate;
     					int xslFuncDefnParamCount = elemFunction.getArity();                      
     					String str = funcNameRef.substring(hashCharIdx + 1);
     					int funcRefParamCount = (Integer.valueOf(str)).intValue();
+    					
     					if (funcRefParamCount == xslFuncDefnParamCount) {
     						result = true; 
     					}

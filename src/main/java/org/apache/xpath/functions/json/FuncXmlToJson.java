@@ -74,52 +74,25 @@ public class FuncXmlToJson extends JsonFunction
         
         SourceLocator srcLocator = xctxt.getSAXLocator();
         
-        Expression arg0 = m_arg0;        
-        Expression arg1 = m_arg1;
-        
-        if ((arg0 == null) && (arg1 == null)) {
-        	throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'xml-to-json' may "
-                                                                                                              + "have either one or two arguments.", srcLocator);
-        }
-        else if (m_arg2 != null) {
-           throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'xml-to-json' may "
-           		                                                                                             + "have either one or two arguments.", srcLocator);
+        if ((m_arg0 == null) && (m_arg1 == null)) {
+           throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'xml-to-json' needs to have at least one argument.", srcLocator);
         }
         
         XMLNodeCursorImpl arg0NodeSet = null;
         
-        if (arg0 instanceof Variable) {
-           XObject arg0Obj = ((Variable)arg0).execute(xctxt);
-           
-           if (arg0Obj instanceof XMLNodeCursorImpl) {
-        	  arg0NodeSet = (XMLNodeCursorImpl)arg0Obj;  
-           }
-           else {
-        	  throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'xml-to-json' first argument needs to be an xdm node.", srcLocator); 
-           }
+        XObject arg0Obj = getFunctionArgEffectiveValue(m_arg0, xctxt);
+        
+        if (arg0Obj instanceof XMLNodeCursorImpl) {
+        	arg0NodeSet = (XMLNodeCursorImpl)arg0Obj;        	  
         }
         else {
-           XObject arg0Obj = arg0.execute(xctxt);
-           
-           if (arg0Obj instanceof XMLNodeCursorImpl) {
-        	  arg0NodeSet = (XMLNodeCursorImpl)arg0Obj;        	  
-           }
-           else {
-        	  throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'xml-to-json' first argument needs to be an xdm node.", srcLocator); 
-           }
+        	throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'xml-to-json' first argument needs to be an xdm node.", srcLocator); 
         }
         
         XPathMap optionsMap = null;        
         
-        if (arg1 != null) {
-           XObject arg1Obj = null;
-           
-           if (arg1 instanceof Variable) {
-        	  arg1Obj = ((Variable)arg1).execute(xctxt);               
-           }
-           else {
-        	  arg1Obj = arg1.execute(xctxt);                
-           }
+        if (m_arg1 != null) {
+           XObject arg1Obj = getFunctionArgEffectiveValue(m_arg1, xctxt);
            
            if (!(arg1Obj instanceof XPathMap)) {
         	  throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'xml-to-json' optional second "

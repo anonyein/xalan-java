@@ -181,12 +181,8 @@ public class FunctionOneArg extends Function implements ExpressionOwner
   }
   
   /**
-   * Get the effective value of function argument.
-   */
-  
-  /**
-   * Method definition, to get function call effective
-   * argument value.
+   * Method definition, to get function call argument 
+   * effective value.
    *  
    * @param argExpr                          An XPath compiled expression
    *                                         object.
@@ -200,6 +196,7 @@ public class FunctionOneArg extends Function implements ExpressionOwner
 
 	  if (argExpr instanceof SelfIteratorNoPredicate) {
 		  XObject contextItem = xctxt.getXPath3ContextItem();
+		  
 		  if (contextItem != null) {
 			  result = contextItem;  
 		  }

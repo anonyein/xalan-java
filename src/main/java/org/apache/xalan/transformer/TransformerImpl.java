@@ -817,9 +817,11 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 	try {
 		TemplateList templList = m_stylesheetRoot.getTemplateListComposed();
 		TemplateSubPatternAssociation templatePatternAssoc = templList.getWildCardPatterns();
+		
 		while (templatePatternAssoc != null) {
 			StepPattern stepPattern = templatePatternAssoc.getStepPattern();
 			Expression[] predicateArr = stepPattern.getPredicates();
+			
 			if (predicateArr != null) {
 				for (int idx = 0; idx < predicateArr.length; idx++) {
 					Expression xpathExpr = predicateArr[idx];
@@ -944,7 +946,8 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 
     	  if (source != null) {
     		  // Validate an XML input document, if validation parameter is set 
-    		  // on the transformer.    	
+    		  // on the transformer.
+    		  
     		  if (m_enabledPropertyList.contains(XML_VALIDATION_PROPERTY)) { 
     			  m_stylesheetRoot.validateXmlInputDoc(base);
     		  }    		      		      		  
@@ -956,6 +959,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
     		   * An XSL stylesheet 'initial template', 'mode' name or 'initial function' is 
     		   * available, but XSL transformation initial context node is not available.
     		   */
+    		  
     		  this.transformNode(DTM.NULL);
     	  }
 
@@ -1700,7 +1704,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
             included.runtimeInit(this);
 
             for (ElemTemplateElement child = included.getFirstChildElem();
-                    child != null; child = child.getNextSiblingElem())
+                                                                        child != null; child = child.getNextSiblingElem())
             {
               child.runtimeInit(this);
             }
@@ -1708,8 +1712,10 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
         }
 
         DTMCursorIterator dtmIter = new org.apache.xpath.axes.SelfIteratorNoPredicate();
+        
         dtmIter.setRoot(node, xctxt);
         xctxt.pushContextNodeList(dtmIter);
+        
         try
         {
           this.applyTemplateToNode(null, null, node);
