@@ -2742,7 +2742,11 @@ public class XObject extends Expression implements Serializable, Cloneable
    */
   public void callVisitors(ExpressionOwner owner, XPathVisitor visitor)
   {
-  	assertion(false, "callVisitors should not be called for this object!!!");
+	Expression expr = owner.getExpression();
+	
+	if (!(expr instanceof XPathInlineFunction)) {
+	   assertion(false, "callVisitors should not be called for this object instance");	
+	}	    	
   }
   /**
    * @see Expression#deepEquals(Expression)

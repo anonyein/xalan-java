@@ -107,6 +107,10 @@ public class XPATHErrorResources extends ListResourceBundle
 	 "ER_STRING_HAS_TOO_MANY_ARGS";
   public static final String ER_XPATH_INLINE_FUNCTION = 
 	 "ER_XPATH_INLINE_FUNCTION";
+  public static final String ER_XPATH_INLINE_FUNCTION2 = 
+	 "ER_XPATH_INLINE_FUNCTION2";
+  public static final String ER_XPATH_INLINE_FUNCTION3 = 
+	 "ER_XPATH_INLINE_FUNCTION3";
   public static final String ER_STRINGLENGTH_HAS_TOO_MANY_ARGS = 
 	 "ER_STRINGLENGTH_HAS_TOO_MANY_ARGS";
   public static final String ER_TRANSLATE_TAKES_3_ARGS = 
@@ -455,6 +459,12 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   
   { ER_XPATH_INLINE_FUNCTION,
       "XPST0003 : An XPath 3.1 inline function expression has syntax error."},
+  
+  { ER_XPATH_INLINE_FUNCTION2,
+      "XPST0003 : An XPath 3.1 inline function expression, predicate suffix is not well-formed."},
+  
+  { ER_XPATH_INLINE_FUNCTION3,
+      "XPST0003 : An XPath 3.1 inline function expression, argument suffix is not well-formed."},
 
   { ER_STRINGLENGTH_HAS_TOO_MANY_ARGS,
       "string-length() has too many arguments."},

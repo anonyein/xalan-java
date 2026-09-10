@@ -1306,19 +1306,19 @@ public class XSL3FunctionService {
 
     	SourceLocator srcLocator = xctxt.getSAXLocator();
 
-    	final int contextNode = xctxt.getCurrentNode(); 
+    	final int sourceNode = xctxt.getCurrentNode(); 
 
-    	String inlineFnXPathStr = xpathInlineFunction.getFuncBodyXPathExprStr();
+    	String xpathInlineFnBodyStr = xpathInlineFunction.getFuncBodyXPathExprStr();
     	
     	if (prefixTable != null) {
-    	   inlineFnXPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(inlineFnXPathStr, prefixTable);
+    	   xpathInlineFnBodyStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathInlineFnBodyStr, prefixTable);
  	    }
     	
-    	XPath xpathObj = new XPath(inlineFnXPathStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    	XPath xpathObj = new XPath(xpathInlineFnBodyStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
     	
-    	XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(xpathObj.getExpression(), inlineFnXPathStr, srcLocator);
+    	XPath3ExpressionUtil.verifyXPathInlineFuncContextItemAccess(xpathObj.getExpression(), xpathInlineFnBodyStr, srcLocator);
     	
-    	if (Constants.FN_XALAN_RNG_PERMUTE.equals(inlineFnXPathStr)) {
+    	if (Constants.FN_XALAN_RNG_PERMUTE.equals(xpathInlineFnBodyStr)) {
     		String arg1XPathStr = argList.get(0);
     		if (prefixTable != null) {
     			arg1XPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(arg1XPathStr, prefixTable);
@@ -1329,7 +1329,7 @@ public class XSL3FunctionService {
 				argXPath.fixupVariables(varVector, varGlobalSize);
 			}
     		
-    		XObject argValue = argXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+    		XObject argValue = argXPath.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
     		
     		evalResult = XslTransformEvaluationHelper.permute((ResultSequence)argValue);
     		
@@ -1386,7 +1386,7 @@ public class XSL3FunctionService {
     					argXPath.fixupVariables(varVector, varGlobalSize);
     				}
 
-    				argValue = argXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+    				argValue = argXPath.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
     			} 
     		}
 
@@ -1429,15 +1429,15 @@ public class XSL3FunctionService {
     	inlineFunctionVarMap.putAll(functionParamAndArgMap);
 
     	if (prefixTable != null) {
-    		inlineFnXPathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(inlineFnXPathStr, prefixTable);
+    		xpathInlineFnBodyStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathInlineFnBodyStr, prefixTable);
     	}
 
-    	XPath inlineFnXPath = new XPath(inlineFnXPathStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    	XPath inlineFnXPath = new XPath(xpathInlineFnBodyStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
     	if (varVector != null) {
     		inlineFnXPath.fixupVariables(varVector, varGlobalSize);
     	}
 
-    	evalResult = inlineFnXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+    	evalResult = inlineFnXPath.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
 
     	XPathSequenceType funcReturnType = xpathInlineFunction.getReturnType();
     	if (funcReturnType != null) {

@@ -102,19 +102,16 @@ public class XPathDynamicFunctionCall extends Expression {
     private String[] m_xpathChainedArgListArr;
     
     /**
-     * Function argument run-time value, that is lhs operand of
-     * XPath operator "=>" whose rhs operand is this dfc compiled
+     * Function argument run-time value, that is first operand of
+     * XPath operator "=>" whose right operand is this dfc compiled
      * object.
      */
-    private XObject m_ArrowOpArgObj;
+    private XObject m_ArrowOpArgObj;    
     
-    /**
-     * The class fields m_vars & m_globals_size declared below are used during 
-     * XPath.fixupVariables(..) action as performed within object of this class.
-     */
-    
+    // Class field, used for Xalan-J fixupVariables action
     private Vector m_vars;
     
+    // Class field, used for Xalan-J fixupVariables action
     private int m_globals_size;
     
     private XSL3FunctionService m_xsl3FunctionService = XSLFunctionBuilder.getXSLFunctionService();

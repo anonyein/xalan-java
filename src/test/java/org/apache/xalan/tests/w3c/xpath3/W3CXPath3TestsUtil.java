@@ -61,6 +61,7 @@ import org.apache.xml.utils.Constants;
 import org.apache.xml.utils.PrefixResolver;
 import org.apache.xml.utils.PrefixResolverDefault;
 import org.apache.xml.utils.QName;
+import org.apache.xpath.Expression;
 import org.apache.xpath.XPath;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathStaticContext;
@@ -719,7 +720,10 @@ public class W3CXPath3TestsUtil extends XslTransformTestsUtil {
 										}
 
 										if (xpathObj != null) {									   
-											xpathResultObj = xpathObj.execute(xctxt, sourceNode, xmlNsPrefixResolver);											
+											xpathResultObj = xpathObj.execute(xctxt, sourceNode, xmlNsPrefixResolver);	
+											
+											Expression expr1 = xpathObj.getExpression();
+											expr1.resetXPathVarList();
 										}
 									}
 									catch (TransformerException ex) {

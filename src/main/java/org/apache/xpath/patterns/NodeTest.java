@@ -681,7 +681,7 @@ public class NodeTest extends Expression
    */
   public void callVisitors(ExpressionOwner owner, XPathVisitor visitor)
   {
-  	assertion(false, "callVisitors should not be called for this object!!!");  	
+  	assertion(false, "callVisitors should not be called for this object instance");  	
   }
 
 }

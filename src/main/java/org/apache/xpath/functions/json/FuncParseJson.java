@@ -33,7 +33,6 @@ import org.apache.xpath.functions.WrongNumberArgsException;
 import org.apache.xpath.objects.XBooleanStatic;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathMap;
-import org.apache.xpath.operations.Variable;
 import org.apache.xpath.res.XPATHErrorResources;
 import org.json.JSONException;
 
@@ -52,9 +51,6 @@ public class FuncParseJson extends JsonFunction {
 	
 	private static final List<String> OPTION_SUPPORTED_LIST = new ArrayList<String>();
 	
-	/**
-     * The number of arguments passed to the fn:json-doc function call.
-     */
     private int fNumOfArgs = 0;
     
     /**
@@ -81,10 +77,7 @@ public class FuncParseJson extends JsonFunction {
         
         SourceLocator srcLocator = xctxt.getSAXLocator();
         
-        Expression arg0 = m_arg0;        
-        Expression arg1 = m_arg1;
-        
-        if ((arg0 == null) && (arg1 == null)) {
+        if ((m_arg0 == null) && (m_arg1 == null)) {
            throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'parse-json' may have either one or two arguments.", srcLocator);
         }
         else if (m_arg2 != null) {
@@ -96,22 +89,16 @@ public class FuncParseJson extends JsonFunction {
         String optionDuplicatesValStr = XSLJsonConstants.DUPLICATES_USE_FIRST;  
         
         if (fNumOfArgs == 1) {
-           result = getJsonXdmValue(arg0, xctxt, optionIsLiberalVal, optionDuplicatesValStr);           
+           result = getJsonXdmValue(m_arg0, xctxt, optionIsLiberalVal, optionDuplicatesValStr);           
         }
         else {
-           // fn:parse-json function was called, with two arguments
+           // An XPath 3.1 function fn:parse-json has been called, 
+           // with two arguments.
         	
-           XObject arg1Value = null;
+           XObject xObj1 = m_arg1.execute(xctxt);
            
-           if (arg1 instanceof Variable) {
-        	  arg1Value = ((Variable)arg1).execute(xctxt);
-           }
-           else {
-        	  arg1Value = arg1.execute(xctxt); 
-           }
-           
-           if (arg1Value instanceof XPathMap) {
-        	  XPathMap optionsMap = (XPathMap)arg1Value;        	          	   
+           if (xObj1 instanceof XPathMap) {
+        	  XPathMap optionsMap = (XPathMap)xObj1;        	          	   
         	  
         	  Map<XObject, XObject> optionsNativeMap = optionsMap.getNativeMap();
         	  Set<Entry<XObject,XObject>> optionEntries = optionsNativeMap.entrySet();
@@ -148,7 +135,7 @@ public class FuncParseJson extends JsonFunction {
         		 }
         	  }
         	  
-        	  result = getJsonXdmValue(arg0, xctxt, optionIsLiberalVal, optionDuplicatesValStr);
+        	  result = getJsonXdmValue(m_arg0, xctxt, optionIsLiberalVal, optionDuplicatesValStr);
            }
            else {
         	  throw new javax.xml.transform.TransformerException("FOUT1190 : An XPath 3.1 function call 'parse-json' second argument representing 'options' is not an xdm map.", srcLocator);  
@@ -182,33 +169,34 @@ public class FuncParseJson extends JsonFunction {
     }
 
     /**
-     * Method definition, to json parse the supplied input string, and 
+     * Method definition, to json parse the supplied string value, and 
      * return a corresponding xdm value.
      * 
-     * @param xpath                              Represents first argument provided to function fn:parse-json.
-     * @param xctxt                              XPath context object
+     * @param xpathExpr                          The first argument provided to function fn:parse-json.
+     * @param xctxt                              An XPath context object
      * @param optionIsLiberal                    Function call fn:parse-json option liberal's value.
      * @param optionDuplicatesValStr             Function call fn:parse-json option duplicates's value.
      * 
-     * @return                                   An xdm value of type XPathMap, XPathArray, XSDouble,
+     * @return                                   An xdm value with type XPathMap, XPathArray, XSDouble,
      *                                           XSBoolean, ResultSequence, XSString (these are the possible
-     *                                           XPath values to which a JSON value can translate to). 
+     *                                           xdm values to which a json value can transform to). 
      *  
      * @throws javax.xml.transform.TransformerException
      */
-	private XObject getJsonXdmValue(Expression xpath, XPathContext xctxt, boolean optionIsLiberal, 
-			                                                              String optionDuplicatesValStr) 
-			                                                            		      throws javax.xml.transform.TransformerException {
+	private XObject getJsonXdmValue(Expression xpathExpr, XPathContext xctxt, boolean optionIsLiberal, 
+			                                                                  String optionDuplicatesValStr) 
+			                                                            		                          throws javax.xml.transform.TransformerException {
 		
 		XObject result = null;
 		
 		SourceLocator srcLocator = xctxt.getSAXLocator();
 		
-		XObject arg0Value = xpath.execute(xctxt);
-		String arg0StrValue = XslTransformEvaluationHelper.getStrVal(arg0Value);
+		XObject xObj0 = getFunctionArgEffectiveValue(xpathExpr, xctxt);
+		
+		String str1 = XslTransformEvaluationHelper.getStrVal(xObj0);
 		
 		try {			
-			result = getJsonXdmValueFromStr(arg0StrValue, optionIsLiberal, optionDuplicatesValStr);
+			result = parseJsonStringToXdmValue(str1, optionIsLiberal, optionDuplicatesValStr);
 		}
 		catch (JSONException ex) {			
 		    throw new javax.xml.transform.TransformerException("FOUT1190 : An XPath 3.1 function call 'parse-json' first argument is not a "

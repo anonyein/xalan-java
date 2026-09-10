@@ -6220,6 +6220,74 @@ public class XPathParser
       
       if (isXPathExprOk) {
     	  xpathInlineFunction.setFuncBodyXPathExprStr(str1);
+    	  
+    	  if (tokenIs('[')) {    		  
+    		 strBuff = new StringBuffer();
+    		 str1 = null;
+    		 
+    		 consumeExpected('[');    		     		     		     		 
+    		 strBuff.append('[');
+    		 
+    		 boolean isXPathPredicateOk = false;
+    		 
+    		 while (m_token != null) {
+    			 strBuff.append(m_token + " ");
+    			 str1 = (strBuff.toString()).trim();
+
+    			 if (tokenIs(']') && StringUtil.isStrHasBalancedParentheses(str1, '[', ']')) {
+    				 isXPathPredicateOk = true;
+    				 
+    				 str1 = (str1.substring(1, str1.length() - 1)).trim();    				 
+    				 consumeExpected(']');
+
+    				 break;
+    			 }
+
+    			 nextToken();
+    		 }
+    		 
+    		 if (isXPathPredicateOk) {
+    			 xpathInlineFunction.setXpathExprPredicateStr(str1);    			 
+    		 }
+    		 else {
+    			 error(XPATHErrorResources.ER_XPATH_INLINE_FUNCTION2, new Object[]{}); 
+    		 }
+    	  }
+    	  
+    	  if (tokenIs('(')) {
+    		 strBuff = new StringBuffer();
+     		 str1 = null;
+     		 
+     		 consumeExpected('(');    		     		     		     		 
+     		 strBuff.append('(');
+     		 
+     		 boolean isFuncArgStrOk = false;
+     		 
+     		 while (m_token != null) {
+     			strBuff.append(m_token + " ");
+     			str1 = (strBuff.toString()).trim();
+     			
+     			if (tokenIs(')') && StringUtil.isStrHasBalancedParentheses(str1, '(', ')')) {
+     			   isFuncArgStrOk = true;
+     			   
+     			   str1 = (str1.substring(1, str1.length() - 1)).trim();
+     			   str1 = "(" + str1 + ")"; 
+     			  
+     			   consumeExpected(')');
+     			   
+     			   break;
+     			}
+     			
+     			nextToken();
+     		 }
+     		 
+     		 if (isFuncArgStrOk) {
+   			    xpathInlineFunction.setFuncArgString(str1);    			 
+   		     }
+   		     else {
+   		    	error(XPATHErrorResources.ER_XPATH_INLINE_FUNCTION3, new Object[]{}); 
+   		     }     		 
+    	  }
       }      
       else {        
     	  error(XPATHErrorResources.ER_XPATH_INLINE_FUNCTION, new Object[]{});

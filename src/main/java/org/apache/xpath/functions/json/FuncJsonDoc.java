@@ -228,7 +228,7 @@ public class FuncJsonDoc extends JsonFunction {
 
 			String urlStrContents = StringUtil.getStringContentFromUrl(resolvedArg0Url);
 			
-			result = getJsonXdmValueFromStr(urlStrContents, optionIsLiberal, optionDuplicatesValStr);
+			result = parseJsonStringToXdmValue(urlStrContents, optionIsLiberal, optionDuplicatesValStr);
 
 		}
 		catch (URISyntaxException ex) {
