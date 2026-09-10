@@ -58,7 +58,7 @@ import org.apache.xpath.objects.XRTreeFrag;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.operations.Range;
-import org.apache.xpath.operations.SimpleMapOperator;
+import org.apache.xpath.operations.XPathSimpleMapOperator;
 import org.apache.xpath.patterns.NodeTest;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -618,7 +618,7 @@ public class ElemSequence extends ElemTemplateElement
 	  Expression selectExpression = null;
 	  
 	  if (m_xpath_default_namespace != null) {
-		  m_selectPattern = new XPath(m_selectPattern.getPatternString(), xctxt.getSAXLocator(), xctxt.getNamespaceContext(), XPath.SELECT, null);
+		  m_selectPattern = new XPath(m_selectPattern.getPatternString(), xctxt.getSAXLocator(), xctxt.getNamespaceContext(), XPath.SELECT, null, false, m_xpath_default_namespace);
 	  }
 
 	  try {        
@@ -745,7 +745,7 @@ public class ElemSequence extends ElemTemplateElement
 					  result = m_selectPattern.execute(xctxt, sourceNode, this);    
 				  }            
 			  }
-			  else if ((selectExpression instanceof Function) || (selectExpression instanceof SimpleMapOperator) || 
+			  else if ((selectExpression instanceof Function) || (selectExpression instanceof XPathSimpleMapOperator) || 
 					                                             (selectExpression instanceof Range) ||
 					                                             (selectExpression instanceof XPathDynamicFunctionCall)) {
 				  result = m_selectPattern.execute(xctxt, sourceNode, this);

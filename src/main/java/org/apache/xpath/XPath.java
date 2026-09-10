@@ -48,6 +48,7 @@ import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xml.utils.PrefixResolver;
 import org.apache.xml.utils.SAXSourceLocator;
 import org.apache.xpath.axes.LocPathIterator;
+import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.Compiler;
 import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.compiler.XPathParser;
@@ -63,6 +64,7 @@ import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XString;
+import org.apache.xpath.operations.Variable;
 import org.apache.xpath.operations.XPathArrowOp;
 import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.res.XPATHErrorResources;
@@ -242,24 +244,79 @@ public class XPath implements Serializable, ExpressionOwner
 
 	  XPathParser parser = new XPathParser(errorListener, locator);
 	  Compiler compiler = new Compiler(errorListener, locator, m_funcTable);
+	  
+	  Expression expr = null;
 
 	  if (SELECT == type) {
 		  parser.initXPath(compiler, exprString, prefixResolver, false);
 		  m_arrowop_remaining_xpath_expr_str = parser.getArrowOpRemainingXPathExprStr();
+		  
+		  XPathExprFunctionSuffix xpathExprFunctionSuffix = parser.getXPathExprFunctionSuffix();
+		  if (xpathExprFunctionSuffix != null) {
+			  parser = new XPathParser(errorListener, locator);
+			  compiler = new Compiler(errorListener, locator, m_funcTable);
+			  String xpathOneExprStr = xpathExprFunctionSuffix.getXPathOneStr();    	     	 
+			  parser.initXPath(compiler, xpathOneExprStr, prefixResolver, false);
+			  Expression expr1 = compiler.compile(0);
+
+			  parser = new XPathParser(errorListener, locator);
+			  compiler = new Compiler(errorListener, locator, m_funcTable);
+			  String xpathTwoExprStr = xpathExprFunctionSuffix.getXPathTwoStr();    	 
+			  if (xpathTwoExprStr.contains(":")) {  		 
+				  StylesheetHandler stylesheetHandler = (StylesheetHandler)prefixResolver;    		 
+				  Hashtable nsUriTable = stylesheetHandler.getNamespaceUriTable();
+				  Enumeration nsUriTableKeys = nsUriTable.keys();
+				  while (nsUriTableKeys.hasMoreElements()) {
+					  String key = (nsUriTableKeys.nextElement()).toString();
+					  String value = (nsUriTable.get(key)).toString();
+					  xpathTwoExprStr = xpathTwoExprStr.replace(key, value);
+				  }
+			  }
+			  parser.initXPath(compiler, xpathTwoExprStr, prefixResolver, false);
+			  Expression expr2 = compiler.compile(0);
+
+			  parser.setXPathExprFunctionSuffix(null);
+
+			  expr = expr1;
+
+			  if ((expr instanceof LocPathIterator) && (expr2 instanceof Function)) {
+				  LocPathIterator locPathIter = (LocPathIterator)expr;
+				  expr2.exprSetParent((ExpressionNode)locator);
+				  locPathIter.setFuncExpr((Function)expr2);
+			  }
+			  else if ((expr instanceof LocPathIterator) && (expr2 instanceof XPathDynamicFunctionCall)) {
+				  LocPathIterator locPathIter = (LocPathIterator)expr;
+				  expr2.exprSetParent((ExpressionNode)locator);
+				  locPathIter.setDynamicFuncCallExpr((XPathDynamicFunctionCall)expr2);
+			  }
+			  else if ((expr instanceof Variable) && (expr2 instanceof Function)) {
+				  Variable variable = (Variable)expr;
+				  expr2.exprSetParent((ExpressionNode)locator);
+				  variable.setFuncExpr((Function)expr2);
+			  }
+			  else if ((expr instanceof Variable) && (expr2 instanceof XPathDynamicFunctionCall)) {
+				  Variable variable = (Variable)expr;
+				  expr2.exprSetParent((ExpressionNode)locator);
+				  variable.setDynamicFuncCallExpr((XPathDynamicFunctionCall)expr2);
+			  }
+		  }
 	  }
 	  else if (MATCH == type)
 		  parser.initMatchPattern(compiler, exprString, prefixResolver);
 	  else
 		  throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_CANNOT_DEAL_XPATH_TYPE, new Object[]{Integer.toString(type)})); //"Can not deal with XPath type: " + type);
 
-	  Expression expr = compiler.compile(0);
+	  if (expr == null) {
+		  expr = compiler.compile(0);
+	  }
+
 	  if (expr instanceof XPathArrowOp) {
 		  ((XPathArrowOp)expr).setArrowOpRemainingXPathExprStr(m_arrowop_remaining_xpath_expr_str);
 	  }
 
 	  this.setExpression(expr);
 
-	  if ((locator != null) && (locator instanceof ExpressionNode))
+	  if ((locator != null) && locator instanceof ExpressionNode)
 	  {
 		  expr.exprSetParent((ExpressionNode)locator);
 	  }
@@ -280,13 +337,13 @@ public class XPath implements Serializable, ExpressionOwner
    * @param type                                    One of {@link #SELECT} or {@link #MATCH}.
    * @param errorListener                           The error listener, or null if default 
    *                                                should be used.
-   * @param xpathDefaultNamespace                   Non-null value of XSL transformation 
+   * @param xpathDefaultNs                          Non-null value of XSL transformation 
    *                                                xpath-default-namespace.
    *
    * @throws javax.xml.transform.TransformerException if syntax or other error.
    */
   public XPath(String exprString, SourceLocator locator, PrefixResolver prefixResolver, int type,
-                                                             ErrorListener errorListener, String xpathDefaultNamespace)
+                                                             ErrorListener errorListener, String xpathDefaultNs)
                                                                                   throws javax.xml.transform.TransformerException
   { 
     
@@ -305,11 +362,11 @@ public class XPath implements Serializable, ExpressionOwner
 	  Compiler compiler = new Compiler(errorListener, locator, m_funcTable);    
 
 	  if (SELECT == type) {
-		  parser.initXPath(compiler, exprString, prefixResolver, false);
+		  parser.initXPath(compiler, exprString, prefixResolver, false, xpathDefaultNs);
 		  m_arrowop_remaining_xpath_expr_str = parser.getArrowOpRemainingXPathExprStr();
 	  }
 	  else if (MATCH == type)
-		  parser.initMatchPattern(compiler, exprString, prefixResolver, xpathDefaultNamespace);
+		  parser.initMatchPattern(compiler, exprString, prefixResolver, xpathDefaultNs);
 	  else
 		  throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_CANNOT_DEAL_XPATH_TYPE, new Object[]{Integer.toString(type)})); //"Can not deal with XPath type: " + type);
 
@@ -495,6 +552,60 @@ public class XPath implements Serializable, ExpressionOwner
 	  } 
   }
 
+  /**
+   * Construct an XPath object. This method has an additional parameter
+   * 'xpathDefaultNs'. 
+   *
+   * @throws javax.xml.transform.TransformerException if syntax or other error.
+   */
+  public XPath(
+          String exprString, SourceLocator locator, PrefixResolver prefixResolver, int type,
+          ErrorListener errorListener, boolean isSequenceTypeXPathExpr, String xpathDefaultNs)
+            throws javax.xml.transform.TransformerException {
+	  
+	  initFunctionTable();
+
+	  if (errorListener == null)
+		  errorListener = new org.apache.xml.utils.DefaultErrorHandler();
+
+	  if (exprString.contains("||") || exprString.contains("//element(")) {
+		  exprString = getXPathTransformedExprStr(exprString);
+	  }
+
+	  m_patternString = exprString;
+
+	  XPathParser parser = new XPathParser(errorListener, locator);
+	  Compiler compiler = new Compiler(errorListener, locator, m_funcTable);
+
+	  if (SELECT == type) {
+		  if (xpathDefaultNs != null) {
+			  parser.initXPath(compiler, exprString, prefixResolver, isSequenceTypeXPathExpr, xpathDefaultNs);
+		  }
+		  else {
+			  parser.initXPath(compiler, exprString, prefixResolver, isSequenceTypeXPathExpr);  
+		  }
+	  }
+	  else if (MATCH == type) {
+		  if (xpathDefaultNs != null) {
+			  parser.initMatchPattern(compiler, exprString, prefixResolver, xpathDefaultNs);
+		  }
+		  else {
+			  parser.initMatchPattern(compiler, exprString, prefixResolver);
+		  }
+	  }
+	  else
+		  throw new RuntimeException(XSLMessages.createXPATHMessage(XPATHErrorResources.ER_CANNOT_DEAL_XPATH_TYPE, new Object[]{Integer.toString(type)}));
+
+	  Expression expr = compiler.compile(0);
+
+	  this.setExpression(expr);
+
+	  if ((locator != null) && locator instanceof ExpressionNode)
+	  {
+		  expr.exprSetParent((ExpressionNode)locator);
+	  } 
+  }
+  
   /**
    * Construct an XPath object.
    *
@@ -875,8 +986,18 @@ public class XPath implements Serializable, ExpressionOwner
 		                                                              throws TransformerException {
 
 	  XObject result = null;
+	  
+	  SourceLocator srcLocator = xctxt.getSAXLocator();
 
 	  boolean isProcessAsNodeset = true;
+	  
+	  if (m_mainExp instanceof SelfIteratorNoPredicate) {
+		  if (xctxt.getXPath3ContextItem() != null) {
+			 result = xctxt.getXPath3ContextItem();
+			 
+			 return result;
+		  }
+	  }
 
 	  if (m_mainExp instanceof LocPathIterator) {
 		  LocPathIterator locPathIterator = (LocPathIterator)m_mainExp;
@@ -886,6 +1007,7 @@ public class XPath implements Serializable, ExpressionOwner
 		  
 		  try {			  
 			  ExpressionNode exprNode = m_mainExp.getExpressionOwner();
+			  
 			  if (exprNode instanceof ElemCopyOf) {
 				  ElemCopyOf elemCopyOf = (ElemCopyOf)exprNode;
 				  boolean isXmlSourceAbsent = elemCopyOf.getXMLSourceAbsent();
@@ -900,7 +1022,7 @@ public class XPath implements Serializable, ExpressionOwner
 				  }
 			  }
 			  else {
-			     // REVISIT : Other XSL template elements needs to be handled
+			      // REVISIT : Other XSL template elements needs to be handled
 			  }
 			  
 			  dtmIter = locPathIterator.asIterator(xctxt, contextNode);
@@ -917,14 +1039,69 @@ public class XPath implements Serializable, ExpressionOwner
 		  if (isProcessAsNodeset) {
 			  if (m_mainExp instanceof NodeTest) {
 				 // Check for the possibility of XPath named function reference				  
+				 
 				 result = evaluateXPathNamedFunctionReference((NodeTest)m_mainExp, xctxt);				 
 			  }
-			  else {
-			     result = m_mainExp.execute(xctxt);
+			  else {			     
+			     if (m_mainExp instanceof Variable) {
+			    	Variable variable = (Variable)m_mainExp;			    				    	
+		        	
+		        	XObject xObj = m_mainExp.execute(xctxt);
+		        	
+		        	if (xObj instanceof XMLNodeCursorImpl) {
+		        		Function func = variable.getFuncExpr();
+			        	XPathDynamicFunctionCall dfc = variable.getDynamicFuncCallExpr();
+			        	
+		        		if (func != null) {
+		        			XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xObj;
+		        			DTMCursorIterator dtmIter = xmlNodeCursorImpl.iter();
+		        			
+		        			ResultSequence rSeq = new ResultSequence();
+		        			int nextNode;
+
+		        			while ((nextNode = dtmIter.nextNode()) != DTM.NULL)
+		        			{
+		        				XMLNodeCursorImpl xdmNodeObj = new XMLNodeCursorImpl(nextNode, xctxt);
+
+		        				XObject evalResult = evaluateXPathSuffixFunction(xctxt, srcLocator, func, xdmNodeObj);
+
+		        				rSeq.add(evalResult);
+		        			}
+		        			
+		        			result = rSeq; 
+		        		}
+		        		else if (dfc != null) {
+		        			XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xObj;
+		        			DTMCursorIterator dtmIter = xmlNodeCursorImpl.iter();
+		        			
+		        			ResultSequence rSeq = new ResultSequence();
+		            		int nextNode;
+		            		
+		            		while ((nextNode = dtmIter.nextNode()) != DTM.NULL)
+		            		{
+		            			XMLNodeCursorImpl xdmNodeObj = new XMLNodeCursorImpl(nextNode, xctxt);
+        			
+		            			XObject evalResult = evaluateXPathSuffixDfc(xctxt, dfc, xdmNodeObj);
+		            			
+		            			rSeq.add(evalResult);
+		            		}
+		        		}
+		        		else {
+		        		    result = xObj;
+		        		}
+		        	}
+		        	else {
+		        		result = xObj;
+		        	}
+			     }
+			     else {
+			    	result = m_mainExp.execute(xctxt);
+			     }
 			  }
 		  }
 		  else {
 			  String xpathPatternStr = getPatternString();
+			  
 			  if (xpathPatternStr.contains("[") && xpathPatternStr.endsWith("]")) {
 				  result = evaluateXPathExprWithPredicate(xpathPatternStr, xctxt);          
 			  }  
@@ -938,6 +1115,7 @@ public class XPath implements Serializable, ExpressionOwner
 		  
 		  te.setLocator(this.getLocator());
 		  ErrorListener errListener = xctxt.getErrorListener();
+		  
 		  if ((errListener != null) && !m_is_concreteException_processing)
 		  {
 			  errListener.error(te);
@@ -964,8 +1142,10 @@ public class XPath implements Serializable, ExpressionOwner
 			  msg = XSLMessages.createXPATHMessage(XPATHErrorResources.ER_XPATH_ERROR, null);
 
 		  }  
+		  
 		  TransformerException te = new TransformerException(msg, getLocator(), ex);
 		  ErrorListener el = xctxt.getErrorListener();
+		  
 		  if (null != el)
 		  {
 			  el.fatalError(te);
@@ -1352,6 +1532,42 @@ public class XPath implements Serializable, ExpressionOwner
         }
 
     	return result;
+    }
+    
+    private XObject evaluateXPathSuffixFunction(XPathContext xctxt, SourceLocator srcLocator, Function func, XMLNodeCursorImpl 
+			    																					        xdmNodeObj) throws TransformerException {
+    	XObject evalResult = null;
+
+    	xctxt.setXPath3ContextItem(xdmNodeObj);
+
+    	Expression arg0 = func.getArg0();
+    	
+    	if (arg0 == null) {
+    		XPath argXPath = new XPath(".", srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    		arg0 = argXPath.getExpression();
+    		func.setArg0(arg0);
+    	}
+
+    	evalResult = func.execute(xctxt);
+
+    	return evalResult;
+     }
+    
+    private XObject evaluateXPathSuffixDfc(XPathContext xctxt, XPathDynamicFunctionCall dfc, XMLNodeCursorImpl xdmNodeObj)
+			  																							      throws TransformerException {
+    	XObject evalResult = null;
+
+    	xctxt.setXPath3ContextItem(xdmNodeObj);
+
+    	List<String> argList = dfc.getArgList();
+    	if (argList.size() == 0) {
+    		argList.add(".");
+    		dfc.setArgList(argList);
+    	}
+
+    	evalResult = dfc.execute(xctxt);
+
+    	return evalResult;
     }
 
 }

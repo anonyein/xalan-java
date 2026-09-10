@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
+import javax.xml.XMLConstants;
 import javax.xml.transform.SourceLocator;
 import javax.xml.transform.TransformerException;
 
@@ -33,11 +34,16 @@ import org.apache.xml.serializer.SerializationHandler;
 import org.apache.xpath.Expression;
 import org.apache.xpath.ExpressionOwner;
 import org.apache.xpath.XPath;
+import org.apache.xpath.XPathCollationSupport;
 import org.apache.xpath.XPathContext;
+import org.apache.xpath.compiler.Keywords;
+import org.apache.xpath.functions.FuncNumber;
+import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XdmAttributeItem;
+import org.apache.xpath.types.XSLanguage;
 import org.xml.sax.SAXException;
 
 import xml.xpath31.processor.types.XSString;
@@ -153,11 +159,6 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 	private Vector m_vars;
 	  
 	private int m_globals_size;
-	
-	/**
-	 * An xdm sequence with items as, namespace node string values.
-	 */
-	public static ResultSequence m_namespace_result_seq = new ResultSequence();
 	
 	/**
 	 * An XPath expression for XSL attribute "use-when". 
@@ -313,93 +314,221 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 		
 		XPathContext xctxt = transformer.getXPathContext();
 		
-		final int contextNode = xctxt.getCurrentNode();
+		final int sourceNode = xctxt.getCurrentNode();
 		
-		SourceLocator srcLocator = xctxt.getSAXLocator();
-		
-		SerializationHandler handler = transformer.getSerializationHandler();
+		SourceLocator srcLocator = xctxt.getSAXLocator();				
 		
 		if (m_xpath_default_namespace != null) {    		
-	    	m_xpath = new XPath(m_xpath.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+	    	m_xpath = new XPath(m_xpath.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, false, m_xpath_default_namespace);
+	    	
 	    	m_selectExpression = m_xpath.getExpression();
 	  	}
-
-		try
-		{									
-			// Doing static validation of XSL stylesheet contents, within 
-			// xsl:perform-sort instruction.
-			ElemTemplateElement elemTemplateElement = getFirstChildElem();
-			boolean isXslSortDeclared = false;
-
-			while (elemTemplateElement != null) {					
-				int type = elemTemplateElement.getXSLToken();
-
-				if (Constants.ELEMNAME_SORT == type) {											
-					isXslSortDeclared = true;
-				}
-				else if (!isXslSortDeclared) {
-					throw new TransformerException("XTSE0010 : An XSL perform-sort instruction, must have "
-							                                                     + "one or more XSL sort instructions at "
-							                                                     + "start of perform-sort's sequence constructor.", srcLocator);
-				}
-
-				elemTemplateElement = elemTemplateElement.getNextSiblingElem();
+		
+		ElemTemplateElement elemTemplateElement = getFirstChildElem();
+		
+		boolean isXslSort = false;
+		while (elemTemplateElement != null) {
+			if (elemTemplateElement instanceof ElemSort) {
+				isXslSort = true;
+				
+				break;
 			}
+			
+			elemTemplateElement = elemTemplateElement.getNextSiblingElem();
+		}
+		
+		if (!isXslSort) {
+			throw new TransformerException("XTSE0010 : An XSL perform-sort instruction must have one or more, XSL sort "
+					                                                                            + "instructions at begining of perform-sort "
+					                                                                            + "instruction.", srcLocator);
+		}
+		
+		int sortElemCount = m_sortElems.size();
+		
+		for (int idx = 0; idx < sortElemCount; idx++) {
+    	    ElemSort elemSort = (ElemSort)m_sortElems.get(idx);
+    	    
+    	    if (idx > 0) {
+    	       if (elemSort.isStableDeclared()) {
+    	    	  throw new TransformerException("XTSE1017 : Only the first XSL 'sort' element within a sequence of "
+					    	    	  		                                                                            + "'sort' elements can have an attribute named "
+					    	    	  		                                                                            + "'stable'.", elemSort);	
+    	       }
+    	    }
+    	    
+    	    XPath xslSortSelect = elemSort.getSelect();
+    	    
+    	    if (xslSortSelect != null) {
+    	    	Expression xpathExpr = xslSortSelect.getExpression();
+    	    	
+    	    	if (xpathExpr instanceof XSL3ConstructorOrExtensionFunction) {
+    	    		XSL3ConstructorOrExtensionFunction xsl3ConstructorOrExtFunc = (XSL3ConstructorOrExtensionFunction)xpathExpr;
+    	    		String funcName = xsl3ConstructorOrExtFunc.getFunctionName();
+    	    		String namespace = xsl3ConstructorOrExtFunc.getNamespace();
+    	    		
+    	    		if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace) && (Keywords.XS_DURATION).equals(funcName)) {
+    	    			throw new TransformerException("XTDE1030 : An XSL instruction perform-sort's sort key cannot be with XML Schema type 'duration'.", elemSort);
+    	    		}
+    	    	}
+    	    }
+    	    else if (elemSort.getFirstChildElem() == null) {
+    	    	xslSortSelect = new XPath(".", srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    	    	
+    	    	elemSort.setSelect(xslSortSelect);    	    	    	    	    	    	
+    	    }
+    	    
+            AVT langAvt = elemSort.getLang();
+    	    
+    	    if (langAvt != null) {
+    	       String langStr = langAvt.evaluate(xctxt, sourceNode, elemSort);
+    	       
+    	       if (!"".equals(langStr)) {
+    	    	   // Construction XSLanguage object instance, does 
+    	    	   // xs:language value space type check.
+    	    	   
+    	    	   XSLanguage xsLanguage = new XSLanguage(langStr); 
+    	       }
+    	       else {
+    	    	  elemSort.setLang(null); 
+    	       }
+    	    }
+	    	
+    	    if (elemSort.getLang() != null) {
+    	    	AVT dataTypeAvt = elemSort.getDataType();
+    	    	String dataTypeStr = dataTypeAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext());
+    	    	    	    	
+    	    	if ((Constants.ELEMNAME_NUMBER_STRING).equals(dataTypeStr) || (xslSortSelect.getExpression() instanceof FuncNumber)) {
+    	    	   // xsl:sort lang has no effect on numeric data
+    	    		
+    	    	   elemSort.setLang(null);
+    	    	}
+    	    }
+    	    
+    	    AVT collationAvt = elemSort.getCollation();
+    	    
+    	    if (collationAvt != null) {
+    	    	String collationUri = collationAvt.evaluate(xctxt, sourceNode, elemSort);
 
-			if (!isXslSortDeclared) {
-				throw new TransformerException("XTSE0010 : An XSL perform-sort instruction must have at-least one XSL sort instruction.", srcLocator); 
-			}
+    	    	if (!XPathCollationSupport.isCollationSupported(collationUri)) {
+    	    		throw new TransformerException("XTDE1035 : An XSL sort, collation '" + collationUri + "' is not supported.", elemSort);
+    	    	}
+    	    }
+    	}
 
+		try {												
+			SerializationHandler handler = transformer.getSerializationHandler();
+			
 			if (m_selectExpression != null) {			   			   
 				XObject xObj = m_selectExpression.execute(xctxt);
 				
+				ElemTemplateElement xslPerformSortParentElem = getParentElem();
+				
+				boolean isXslNamedTemplateChild = false;
+				
+				if ((xslPerformSortParentElem instanceof ElemTemplate) && !(xslPerformSortParentElem instanceof ElemFunction)) {
+				   ElemTemplate elemTemplate = (ElemTemplate)xslPerformSortParentElem;
+				   
+				   if ((elemTemplate.getMatch() == null) && (elemTemplate.getName() != null)) {
+					   isXslNamedTemplateChild = true;
+				   }
+				}
+				
 				if (xObj instanceof XMLNodeCursorImpl) {
-					XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xObj;										
-					DTMCursorIterator dtmCursorIterator = xmlNodeCursorImpl.asIterator(xctxt, contextNode);
-
+					XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)xObj;
+					
+					DTMCursorIterator xdmNodeSetIter = xmlNodeCursorImpl.asIterator(xctxt, sourceNode);
+										 																																		
 					ElemForEach elemForEach = new ElemForEach();
 
-					final Vector sortKeys = (m_sortElems == null) ? null 
-							                                          : transformer.processSortKeys(this, contextNode);
-
-					dtmCursorIterator = elemForEach.sortNodes(xctxt, sortKeys, dtmCursorIterator);										
+					final Vector sortKeys = transformer.processSortKeys(this, sourceNode);
+										
+					xdmNodeSetIter = elemForEach.sortNodes(xctxt, sortKeys, xdmNodeSetIter);
 					
-					int nextNode = dtmCursorIterator.nextNode();
-					while (nextNode != DTM.NULL) {
-					   DTM dtm = xctxt.getDTM(nextNode);
-					   if (dtm.getNodeType(nextNode) == DTM.NAMESPACE_NODE) {
-						  String nodeValue = dtm.getNodeValue(nextNode);
-						  m_namespace_result_seq.add(new XSString(nodeValue));
-					   }
-					   else {
-						  XMLNodeCursorImpl node1 = new XMLNodeCursorImpl(nextNode, xctxt);
-						  ElemCopyOf.copyOfActionOnNodeSet(node1, transformer, handler, xctxt);
-					   }
-					   
-					   nextNode = dtmCursorIterator.nextNode(); 
+					int nextNode = DTM.NULL;
+					boolean isXdmNsNode = false; 
+					
+					if ((xslPerformSortParentElem instanceof ElemVariable) || isXslNamedTemplateChild 
+							                                               || (xslPerformSortParentElem instanceof ElemFunction)) {
+						ResultSequence rSeq = new ResultSequence();
+
+						int count = 0;
+
+						while ((nextNode = xdmNodeSetIter.nextNode()) != DTM.NULL) {
+							count++;
+
+							if (count == 1) {
+								/**
+								 * If the first node within an xdm sequence is an 
+								 * XML namespace node, then other XML sibling nodes 
+								 * are also assumed to be XML namespace nodes.
+								 */
+								
+								DTM dtm = xctxt.getDTM(nextNode); 
+								if (dtm.getNodeType(nextNode) == DTM.NAMESPACE_NODE) {
+									isXdmNsNode = true;
+								}
+							}
+							
+							XMLNodeCursorImpl xmlNodeCursorImpl2 = new XMLNodeCursorImpl(nextNode, xctxt);
+
+							if (!isXdmNsNode) {								
+								rSeq.add(xmlNodeCursorImpl2);
+							}
+							else {
+								String str1 = xmlNodeCursorImpl2.str();
+								rSeq.add(new XSString(str1));
+							}
+						}
+
+						XslTransformData.m_xsl_perform_sort_rSeq = rSeq;
+					}
+					else {						
+						int count = 0;
+						
+						while ((nextNode = xdmNodeSetIter.nextNode()) != DTM.NULL) {
+							count++;
+
+							if (count == 1) {
+								/**
+								 * If the first node within an xdm sequence is an 
+								 * XML namespace node, then other XML sibling nodes 
+								 * are also assumed to be XML namespace nodes.
+								 */
+								
+								DTM dtm = xctxt.getDTM(nextNode); 
+								if (dtm.getNodeType(nextNode) == DTM.NAMESPACE_NODE) {
+									isXdmNsNode = true;
+								}
+							}
+							
+							XMLNodeCursorImpl xmlNodeCursorImpl2 = new XMLNodeCursorImpl(nextNode, xctxt);
+							
+							if (!isXdmNsNode) {	
+							   ElemCopyOf.copyOfActionOnNodeSet(xmlNodeCursorImpl2, transformer, handler, xctxt);
+							}
+							else {
+							   String str1 = xmlNodeCursorImpl2.str();
+							   XSString xsString = new XSString(str1);
+							   
+							   ResultSequence rSeq = new ResultSequence();
+							   rSeq.add(xsString);
+							   
+							   ElemCopyOf.copyOfActionOnResultSequence(rSeq, transformer, handler, xctxt, false, this);
+							}
+						}
 					}
 				}
 				else if (xObj instanceof ResultSequence) {
 					ElemForEach elemForEach = new ElemForEach();
 					
-					final Vector sortKeys = (m_sortElems == null) ? null 
-                                                                      : transformer.processSortKeys(this, contextNode);
+					final Vector sortKeys = transformer.processSortKeys(this, sourceNode);
 					ResultSequence rSeq = (ResultSequence)xObj;
-					rSeq = elemForEach.sortXdmSequence(xctxt, sortKeys, rSeq);
 					
-					ElemTemplateElement elemTemplateParent = getParentElem();
-					boolean isXslNamedTemplateChild = false;
-					if ((elemTemplateParent instanceof ElemTemplate) && !(elemTemplateParent instanceof ElemFunction)) {
-					   ElemTemplate elemTemplate = (ElemTemplate)elemTemplateParent;
-					   if ((elemTemplate.getMatch() == null) && (elemTemplate.getName() != null)) {
-						   isXslNamedTemplateChild = true;
-					   }
-					}
+					rSeq = elemForEach.sortXdmSequence(xctxt, sortKeys, rSeq);										
 					
-					if (((elemTemplateParent instanceof ElemVariable) || isXslNamedTemplateChild 
-							                                          || (elemTemplateParent instanceof ElemFunction)) 
-							                                                                                      && !(rSeq.item(0) instanceof XdmAttributeItem)) {												
-						XslTransformData.m_xsl_perform_sort_resultSeq = rSeq;
+					if (((xslPerformSortParentElem instanceof ElemVariable) || (xslPerformSortParentElem instanceof ElemFunction) 
+							                                                || isXslNamedTemplateChild) && !(rSeq.item(0) instanceof XdmAttributeItem)) {												
+						XslTransformData.m_xsl_perform_sort_rSeq = rSeq;
 					}
 					else {
 					    ElemCopyOf.copyOfActionOnResultSequence(rSeq, transformer, handler, xctxt, false, this);
@@ -407,29 +536,29 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 				}
 			}
 			else {
-				int rootNodeHandleOfRtf = transformer.transformToRTF(this);
+				int rootNodeHandleRtf = transformer.transformToRTF(this);
 				
-				DTM dtm = xctxt.getDTM(rootNodeHandleOfRtf);
+				DTM dtm = xctxt.getDTM(rootNodeHandleRtf);
 				
-				int childNode = dtm.getFirstChild(rootNodeHandleOfRtf);
+				int nextNode = dtm.getFirstChild(rootNodeHandleRtf);
 				List<Integer> nodeHandleList = new ArrayList<Integer>();
 				
-				while (childNode != DTM.NULL) {
-					nodeHandleList.add(Integer.valueOf(childNode)); 
-					childNode = dtm.getNextSibling(childNode); 
+				while (nextNode != DTM.NULL) {
+					nodeHandleList.add(Integer.valueOf(nextNode));
+					
+					nextNode = dtm.getNextSibling(nextNode); 
 				}
 
 				XMLNodeCursorImpl xmlNodeCursorImpl = new XMLNodeCursorImpl(nodeHandleList, xctxt);
-				DTMCursorIterator dtmCursorIterator = xmlNodeCursorImpl.asIterator(xctxt, contextNode);
+				DTMCursorIterator xdmNodeSetIter = xmlNodeCursorImpl.asIterator(xctxt, sourceNode);
 
 				ElemForEach elemForEach = new ElemForEach();
 
-				final Vector sortKeys = (m_sortElems == null) ? null 
-						                                            : transformer.processSortKeys(this, contextNode);
+				final Vector sortKeys = transformer.processSortKeys(this, sourceNode);
 
-				dtmCursorIterator = elemForEach.sortNodes(xctxt, sortKeys, dtmCursorIterator);
+				xdmNodeSetIter = elemForEach.sortNodes(xctxt, sortKeys, xdmNodeSetIter);
 				
-				ElemCopyOf.copyOfActionOnNodeSet((XMLNodeCursorImpl)dtmCursorIterator, transformer, handler, xctxt);
+				ElemCopyOf.copyOfActionOnNodeSet((XMLNodeCursorImpl)xdmNodeSetIter, transformer, handler, xctxt);
 			}
 		}
 		catch (SAXException ex) {
@@ -462,8 +591,9 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 		
 		switch (type)
 	    {
-	    case Constants.ELEMNAME_SORT :
+	    case Constants.ELEMNAME_SORT :	    	
 	    	setSortElem((ElemSort)newChild);
+	    	
 	    	break;
 	    case Constants.ELEMNAME_FALLBACK :
 	    	break;
@@ -472,10 +602,10 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 	    		String lineNo = String.valueOf(newChild.getLineNumber());
 	    		String columnNo = String.valueOf(newChild.getColumnNumber());
 
-	    		error(XSLTErrorResources.ER_CANNOT_ADD,
+	    		error(XSLTErrorResources.ER_PERFORM_SORT_CANNOT_ADD,
 								    				  new Object[]{ newChild.getNodeName(),
 								    						   this.getNodeName(), lineNo, columnNo });
-	    	}
+	    	}	    	
 	    }
 		
 		return super.appendChild(newChild);
@@ -511,6 +641,6 @@ public class ElemPerformSort extends ElemTemplateElement implements ExpressionOw
 	public void setExpression(Expression exp) {
 		exp.exprSetParent(this);
 	  	m_selectExpression = exp;
-	}
+	}		
 
 }

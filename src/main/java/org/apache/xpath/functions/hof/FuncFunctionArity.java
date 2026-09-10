@@ -32,6 +32,7 @@ import org.apache.xml.utils.QName;
 import org.apache.xpath.Expression;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.XPathStaticContext;
+import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.composite.XPathNamedFunctionReference;
 import org.apache.xpath.functions.FuncPeriod;
@@ -82,12 +83,13 @@ public class FuncFunctionArity extends FunctionDef1Arg
 	{
 		XObject result = null;
 		
-		SourceLocator srcLocator = xctxt.getSAXLocator();		
-		
+		SourceLocator srcLocator = xctxt.getSAXLocator();
+				
 		if (m_arg0 instanceof Variable) {
 		   Variable var1 = (Variable)m_arg0;
 		   Expression selectExpr = null;
 		   ElemVariable elemVariable = var1.getElemVariable();
+		   
 		   if (elemVariable != null) {
 			  org.apache.xpath.XPath xpathSelectExpr = elemVariable.getSelect();
 			  selectExpr = xpathSelectExpr.getExpression();
@@ -96,10 +98,13 @@ public class FuncFunctionArity extends FunctionDef1Arg
 			   Map<QName,XObject> xpathVarMap = xctxt.getXPathVarMap();
 			   QName varQName = var1.getQName();
 			   XObject varValue = xpathVarMap.get(varQName);
+			   
 			   if (varValue != null) {
 				   Object obj1 = varValue.object();
+				   
 				   if (obj1 instanceof Function) {
 					   Function func1 = (Function)obj1;					   
+					   
 					   if ((func1 instanceof FuncConcat) || (func1 instanceof FuncPeriod)) {
 						  result = new XSInteger(func1.getRuntimeArgCount() + ""); 
 					   }
@@ -148,8 +153,24 @@ public class FuncFunctionArity extends FunctionDef1Arg
 		   XPathNamedFunctionReference xpathNamedFunctionReference = (XPathNamedFunctionReference)m_arg0;
 		   
 		   result = getFunctionArityXPathNamedFuncReference(xpathNamedFunctionReference, xctxt);
+		}		
+		
+		if(m_arg0 instanceof SelfIteratorNoPredicate) {
+		   XObject xctxtItem = xctxt.getXPath3ContextItem();
+		   
+		   if (xctxtItem != null) {
+			  if (xctxtItem instanceof XPathInlineFunction) {
+				 XPathInlineFunction xpathInlineFunction = (XPathInlineFunction)xctxtItem;				 
+				 int arity = (xpathInlineFunction.getFuncParamList()).size();
+				 
+				 result = new XSInteger(arity + "");
+				 
+				 return result;
+			  }
+		   }
 		}
-		else if (m_arg0 instanceof NodeTest) {		
+		
+		if (m_arg0 instanceof NodeTest) {		
 			ElemFunction elemFunction = XslTransformEvaluationHelper.getElemFunctionFromNodeTestExpression((NodeTest)m_arg0, 
 					                                                                                                       srcLocator);			
 			if (elemFunction != null) {

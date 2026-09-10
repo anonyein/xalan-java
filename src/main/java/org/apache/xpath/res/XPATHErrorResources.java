@@ -105,6 +105,12 @@ public class XPATHErrorResources extends ListResourceBundle
 	 "ER_NAME_HAS_TOO_MANY_ARGS";
   public static final String ER_STRING_HAS_TOO_MANY_ARGS = 
 	 "ER_STRING_HAS_TOO_MANY_ARGS";
+  public static final String ER_XPATH_INLINE_FUNCTION = 
+	 "ER_XPATH_INLINE_FUNCTION";
+  public static final String ER_XPATH_INLINE_FUNCTION2 = 
+	 "ER_XPATH_INLINE_FUNCTION2";
+  public static final String ER_XPATH_INLINE_FUNCTION3 = 
+	 "ER_XPATH_INLINE_FUNCTION3";
   public static final String ER_STRINGLENGTH_HAS_TOO_MANY_ARGS = 
 	 "ER_STRINGLENGTH_HAS_TOO_MANY_ARGS";
   public static final String ER_TRANSLATE_TAKES_3_ARGS = 
@@ -145,18 +151,23 @@ public class XPATHErrorResources extends ListResourceBundle
 	 "ER_EXPECTED_SINGLE_QUOTE";
   public static final String ER_EMPTY_EXPRESSION = "ER_EMPTY_EXPRESSION";
   public static final String ER_EXPECTED_BUT_FOUND = "ER_EXPECTED_BUT_FOUND";
+  
   public static final String ER_FOR_EXPR_1 = "ER_FOR_EXPR_IN";
   public static final String ER_FOR_EXPR_2 = "ER_FOR_EXPR_2";
   public static final String ER_FOR_EXPR_3 = "ER_FOR_EXPR_3";
   public static final String ER_FOR_EXPR_4 = "ER_FOR_EXPR_4";
   public static final String ER_FOR_EXPR_5 = "ER_FOR_EXPR_5";
-  public static final String ER_FOR_EXPR_6 = "ER_FOR_EXPR_6";  
+  public static final String ER_FOR_EXPR_6 = "ER_FOR_EXPR_6";
+  public static final String ER_FOR_EXPR_7 = "ER_FOR_EXPR_7";
+  
   public static final String ER_IS_EXPR_1 = "ER_IS_EXPR_1";  
   public static final String ER_XPATH_NUMERIC_EXPR_SUFFIX = "ER_XPATH_NUMERIC_EXPR_SUFFIX";
   
   public static final String ER_UNEXPECTED_TOKEN = "ER_UNEXPECTED_TOKEN";
   
   public static final String ER_UNEXPECTED_TOKEN_1 = "ER_UNEXPECTED_TOKEN_1";
+  
+  public static final String ER_FN_RANDOM_NUMBER_GENERATOR = "ER_FN_RANDOM_NUMBER_GENERATOR";
   
   public static final String ER_INCORRECT_PROGRAMMER_ASSERTION = 
 	 "ER_INCORRECT_PROGRAMMER_ASSERTION";
@@ -367,7 +378,7 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   public static final String WG_FUNCTION_TOKEN_NOT_FOUND = 
 	 "WG_FUNCTION_TOKEN_NOT_FOUND";
   public static final String WG_COULDNOT_FIND_FUNCTION = 
-	 "WG_COULDNOT_FIND_FUNCTION";
+	 "WG_COULDNOT_FIND_FUNCTION";  
   public static final String WG_CANNOT_MAKE_URL_FROM ="WG_CANNOT_MAKE_URL_FROM";
   public static final String WG_EXPAND_ENTITIES_NOT_SUPPORTED = 
 	 "WG_EXPAND_ENTITIES_NOT_SUPPORTED";
@@ -445,6 +456,15 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
 
   { ER_STRING_HAS_TOO_MANY_ARGS,
       "string() has too many arguments."},
+  
+  { ER_XPATH_INLINE_FUNCTION,
+      "XPST0003 : An XPath 3.1 inline function expression has syntax error."},
+  
+  { ER_XPATH_INLINE_FUNCTION2,
+      "XPST0003 : An XPath 3.1 inline function expression, predicate suffix is not well-formed."},
+  
+  { ER_XPATH_INLINE_FUNCTION3,
+      "XPST0003 : An XPath 3.1 inline function expression, argument suffix is not well-formed."},
 
   { ER_STRINGLENGTH_HAS_TOO_MANY_ARGS,
       "string-length() has too many arguments."},
@@ -525,22 +545,27 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
      "XPST0003 : Expected {0}, but found: {1}"},  
   
   { ER_FOR_EXPR_1,
-     "XPST0003 : An XPath ''for'' expression has multiple ''in'' statements for single variable binding."},
+     "XPST0003 : An XPath 3.1 ''for'' expression has multiple ''in'' statements for single variable binding."},
   
   { ER_FOR_EXPR_2,
      "XPST0003 : An illegal token ''for'' is there after a token ''for''."},
   
   { ER_FOR_EXPR_3,
-     "XPST0003 : An XPath ''for'' expression after variable bindings has a trailing ','."},
+     "XPST0003 : An XPath 3.1 ''for'' expression after variable bindings has a trailing ','."},
   
   { ER_FOR_EXPR_4,
-     "XPST0003 : An XPath ''for'' expression has no variable bindings, within ''for'' expression."},
+     "XPST0003 : An XPath 3.1 ''for'' expression has no variable bindings, within ''for'' expression."},
   
   { ER_FOR_EXPR_5,
-     "XPST0003 : An XPath ''for'' expression contains multiple ''return'' statements."},
+     "XPST0003 : An XPath 3.1 ''for'' expression contains multiple ''return'' statements."},
   
   { ER_FOR_EXPR_6,
-     "XPST0003 : An XPath ''for'' expression within function argument, has syntax error."},
+     "XPST0003 : An XPath 3.1 ''for'' expression within function argument, has syntax error."},
+  
+  { ER_FOR_EXPR_7,
+    "XPST0003 : An XPath 3.1 ''for'' expression has incorrect syntax for nested loop. "
+                                                                               + "There are multiple ''return'' statements "
+                                                                               + "at the same level."},
   
   { ER_IS_EXPR_1,
      "XPST0003 : Unexpected token ''{0}'' after ''is''."},
@@ -553,6 +578,9 @@ public static final String ER_IGNORABLE_WHITESPACE_NOT_HANDLED =
   
   { ER_UNEXPECTED_TOKEN_1,
      "XPST0003 : Unexpected token ''{0}''."},
+  
+  { ER_FN_RANDOM_NUMBER_GENERATOR,
+     "XPST0003 : XPath 3.1 function call ''random-number-generator'' parse error."},
 
   { ER_INCORRECT_PROGRAMMER_ASSERTION,
       "Programmer assertion is incorrect, {0}"},

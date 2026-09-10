@@ -38,6 +38,7 @@ import org.apache.xalan.templates.ElemTemplate;
 import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.ElemVariable;
 import org.apache.xalan.xslt.util.StringUtil;
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xml.utils.NamespaceSupport2;
 import org.apache.xml.utils.QName;
 import org.apache.xml.utils.StringToIntTable;
@@ -841,7 +842,12 @@ public class XSLTAttributeDef
 
 		  value = processUriQualifiedName(handler, value);
 
-		  expr = handler.createXPath(value, owner);  
+		  expr = handler.createXPath(value, owner);
+		  
+		  NamespaceSupport2 nsSupport = (NamespaceSupport2)(handler.getNamespaceSupport());
+		  
+		  // Save the modified NamespaceSupport2 object instance for later use 
+		  XslTransformData.m_ns_hashtable = nsSupport.getUriTable(); 
 
 		  return expr;
 	  }
@@ -1951,35 +1957,42 @@ public class XSLTAttributeDef
 	  String result = strValue;
 	  
 	  NamespaceSupport2 nsSupport = (NamespaceSupport2)(handler.getNamespaceSupport());
+	  
 	  /**
-	   * The following code, replaces each occurrence of substring like Q{uri}abc 
-	   * within the supplied string with replacement text prefix:abc (the prefix value 
-	   * is a random string), and registers the prefix & uri mapping within Xalan-J 
-	   * NamespaceSupport2 object if the relevant namespace binding is not already 
-	   * available within NamespaceSupport2 object.  
+	   * Replace each occurrence of substring like Q{uri}abc within the supplied 
+	   * string value argument, with replacement text prefix:abc (the prefix is, 
+	   * string value computed randomly), and register the prefix & uri mapping 
+	   * within Xalan-J NamespaceSupport2 object instance.
 	   */
-	  int i = result.indexOf("Q{");      
-	  while (i > -1) {
-		  int j = result.indexOf('}');
-		  if (i < j) {
-			  String nsUri = result.substring(i + 2, j);
+	  
+	  int idx1 = result.indexOf("Q{");
+	  
+	  while (idx1 > -1) {
+		  int idx2 = result.indexOf('}');
+		  
+		  if (idx1 < idx2) {
+			  String nsUri = result.substring(idx1 + 2, idx2);
 			  String str1 = String.valueOf(Math.random());
 			  int idx = str1.indexOf('.');
 			  String nsPrefix = "a1_" + str1.substring(idx + 1, idx + 5);
+			  
 			  if (nsSupport.getPrefix(nsUri) == null) {    		    
 				  nsSupport.declarePrefix(nsPrefix, nsUri);
 			  }
 			  else {
 				  nsPrefix = nsSupport.getPrefix(nsUri);  
 			  }
+			  
 			  String strPrefix1 = "";
-			  if (i > 0) {
-				  strPrefix1 = result.substring(0, i);
+			  
+			  if (idx1 > 0) {
+				  strPrefix1 = result.substring(0, idx1);
 			  }
+			  
 			  String substStr1 = nsPrefix + ":";
-			  result = strPrefix1 + substStr1 + result.substring(j + 1);
+			  result = strPrefix1 + substStr1 + result.substring(idx2 + 1);
 
-			  i = result.indexOf("Q{");
+			  idx1 = result.indexOf("Q{");
 		  }
 	  }
 	  

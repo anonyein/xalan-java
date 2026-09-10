@@ -69,8 +69,8 @@ import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XRTreeFrag;
 import org.apache.xpath.objects.XString;
-import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.operations.Variable;
+import org.apache.xpath.operations.XPathOperator;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -125,7 +125,7 @@ public class ElemTemplateElement extends UnImplNode
     * current group stack. Having stack for keeping fn:current-group
     * values, helps solve issue of nested xsl:for-each-group instructions.
     */
-   static Stack<List<Integer>> m_groupNodesDtmHandlesStack = new Stack<List<Integer>>();
+   static Stack<List<Integer>> m_groupNodeDtmHandleStack = new Stack<List<Integer>>();
    
    /**
     * This class field refers to xsl:merge evaluation's merge key
@@ -154,7 +154,12 @@ public class ElemTemplateElement extends UnImplNode
     */
    public static XPathMap m_xpath_map = null;
    
-
+   /**
+    * Class field, which may have xsl:for-each-group function 
+    * fn:current-group() result.
+    */
+   private ResultSequence m_current_group = null;
+   
   /**
    * Construct a template element instance.
    */
@@ -1131,7 +1136,7 @@ public class ElemTemplateElement extends UnImplNode
     return m_prefixTable;
   }
   
-  void setPrefixTable(List list) {
+  public void setPrefixTable(List list) {
       m_prefixTable = list;
   }
   
@@ -1829,7 +1834,7 @@ public class ElemTemplateElement extends UnImplNode
 	  List<Integer> result = null;
 	  
 	  try {
-		 result = m_groupNodesDtmHandlesStack.peek();
+		 result = m_groupNodeDtmHandleStack.peek();
 	  }
 	  catch (EmptyStackException ex) {
 		 // no op 
@@ -1839,12 +1844,12 @@ public class ElemTemplateElement extends UnImplNode
   }
 
   public void setGroupNodesDtmHandles(List<Integer> groupNodesDtmHandles) {	  
-	  m_groupNodesDtmHandlesStack.push(groupNodesDtmHandles);
+	  m_groupNodeDtmHandleStack.push(groupNodesDtmHandles);
   }
   
   public void popGroupNodesDtmHandles() {	  
 	  try {
-		  m_groupNodesDtmHandlesStack.pop(); 
+		  m_groupNodeDtmHandleStack.pop(); 
 	  }
 	  catch (EmptyStackException ex) {
 		  // no op  
@@ -2386,6 +2391,9 @@ public class ElemTemplateElement extends UnImplNode
   	}
   	else if (elemTemplateElem instanceof ElemMapEntry) {
   		result = ((ElemMapEntry)elemTemplateElem).getExpandText();  		
+  	}
+  	else if (elemTemplateElem instanceof ElemWithParam) {
+  		result = ((ElemWithParam)elemTemplateElem).getExpandText();  		
   	}
 
   	return result;
@@ -3089,6 +3097,14 @@ public class ElemTemplateElement extends UnImplNode
 	   }
 	   
 	   return result;
+  }
+  
+  public ResultSequence getCurrentGroup() {
+	  return m_current_group;
+  }
+
+  public void setCurrentGroup(ResultSequence rSeq) {
+	 m_current_group = rSeq;	
   }
 
 }

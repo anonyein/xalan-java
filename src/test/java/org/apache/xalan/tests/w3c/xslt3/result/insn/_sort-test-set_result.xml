@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-14T15:17:07Z" fail="25" name="sort" pass="56" run="81" skipped="0" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-25T16:46:43Z" fail="10" name="sort" pass="71" run="81" skipped="0" statusUnknown="0">
    <testResult status="pass" testName="sort-003"/>
    <testResult status="pass" testName="sort-001"/>
    <testResult status="pass" testName="sort-002"/>
@@ -11,39 +11,24 @@
    <testResult status="pass" testName="sort-009"/>
    <testResult status="pass" testName="sort-010"/>
    <testResult status="pass" testName="sort-011"/>
-   <testResult status="fail" testName="sort-012"/>
-   <testResult status="fail" testName="sort-013"/>
-   <testResult status="fail" testName="sort-014"/>
-   <testResult status="fail" testName="sort-015"/>
-   <testResult status="fail" testName="sort-016"/>
-   <testResult status="fail" testName="sort-017"/>
-   <testResult status="fail" testName="sort-018"/>
-   <testResult status="fail" testName="sort-019"/>
-   <testResult status="fail" testName="sort-020"/>
+   <testResult status="pass" testName="sort-012"/>
+   <testResult status="pass" testName="sort-013"/>
+   <testResult status="pass" testName="sort-014"/>
+   <testResult status="pass" testName="sort-015"/>
+   <testResult status="pass" testName="sort-016"/>
+   <testResult status="pass" testName="sort-017"/>
+   <testResult status="pass" testName="sort-018"/>
+   <testResult status="pass" testName="sort-019"/>
+   <testResult status="pass" testName="sort-020"/>
    <testResult status="pass" testName="sort-021"/>
    <testResult status="pass" testName="sort-022"/>
    <testResult status="pass" testName="sort-023"/>
    <testResult status="pass" testName="sort-024"/>
    <testResult status="pass" testName="sort-025"/>
    <testResult status="pass" testName="sort-026"/>
-   <testResult status="fail" testName="sort-027">
-      <outResult>&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;&lt;out lang="default-order"/&gt;&#13;
-&#13;
-</outResult>
-   </testResult>
-   <testResult status="fail" testName="sort-028">
-      <outResult>&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;&lt;out lang="default-order"/&gt;&#13;
-&#13;
-</outResult>
-      <outResult>&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;&lt;out lang="default-order"/&gt;&#13;
-&#13;
-</outResult>
-   </testResult>
-   <testResult status="fail" testName="sort-029">
-      <outResult>&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;&lt;out lang="default-order"/&gt;&#13;
-&#13;
-</outResult>
-   </testResult>
+   <testResult status="pass" testName="sort-027"/>
+   <testResult status="pass" testName="sort-028"/>
+   <testResult status="pass" testName="sort-029"/>
    <testResult status="pass" testName="sort-030"/>
    <testResult status="pass" testName="sort-031"/>
    <testResult status="pass" testName="sort-032"/>
@@ -57,7 +42,7 @@
    <testResult status="pass" testName="sort-040"/>
    <testResult status="pass" testName="sort-041"/>
    <testResult status="pass" testName="sort-042"/>
-   <testResult status="fail" testName="sort-043"/>
+   <testResult status="pass" testName="sort-043"/>
    <testResult status="pass" testName="sort-044"/>
    <testResult status="pass" testName="sort-045"/>
    <testResult status="fail" testName="sort-046"/>
@@ -65,7 +50,7 @@
    <testResult status="pass" testName="sort-048"/>
    <testResult status="pass" testName="sort-049"/>
    <testResult status="pass" testName="sort-050"/>
-   <testResult status="fail" testName="sort-051"/>
+   <testResult status="pass" testName="sort-051"/>
    <testResult status="pass" testName="sort-052"/>
    <testResult status="fail" testName="sort-053"/>
    <testResult status="pass" testName="sort-054"/>
@@ -75,7 +60,7 @@
    <testResult status="pass" testName="sort-058"/>
    <testResult status="pass" testName="sort-059"/>
    <testResult status="pass" testName="sort-060"/>
-   <testResult status="fail" testName="sort-061"/>
+   <testResult status="pass" testName="sort-061"/>
    <testResult status="fail" testName="sort-062"/>
    <testResult status="fail" testName="sort-063"/>
    <testResult status="pass" testName="sort-064"/>

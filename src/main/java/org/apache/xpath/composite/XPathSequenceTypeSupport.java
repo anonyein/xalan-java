@@ -289,9 +289,7 @@ public class XPathSequenceTypeSupport {
     
     public static String PLUS = "+";
     
-    public static String INLINE_FUNCTION_PARAM_TYPECHECK_COUNT_ERROR = "INLINE_FUNCTION_PARAM_TYPECHECK_COUNT_ERROR";
-    
-    private static List<XMLNSDecl> m_PrefixTable;
+    public static String INLINE_FUNCTION_PARAM_TYPECHECK_COUNT_ERROR = "INLINE_FUNCTION_PARAM_TYPECHECK_COUNT_ERROR";            
     
     /**
      * This class specifies min and max value ranges for XML Schema 
@@ -366,6 +364,14 @@ public class XPathSequenceTypeSupport {
             public static double MAX_INCLUSIVE = 1.7976931348623157E308;
         }
     }
+    
+    public static final String DOUBLE = "double";
+    
+    public static final String FLOAT = "float";
+    
+    public static final String DECIMAL = "decimal";
+    
+    private static List<XMLNSDecl> m_PrefixTable;
     
     /**
      * This method casts an XPath 3.1 xdm source value represented by an
@@ -456,12 +462,11 @@ public class XPathSequenceTypeSupport {
         
         try {        	
             if ((srcValue instanceof XMLNodeCursorImpl) && (expectedSeqTypeData != null)) {
-                if (expectedSeqTypeData.getBuiltInSequenceType() > 0) {
-                	// When XPath "cast as" operator's lhs is a node and rhs is a built-in 
-                	// simple type, we check "cast as" on string value of node.
-                	srcValue = srcValue.getFresh();
-                	String strValue = XslTransformEvaluationHelper.getStrVal(srcValue);
-                	srcValue = new XSString(strValue);
+                if (expectedSeqTypeData.getBuiltInSequenceType() > 0) {                	                	
+                	srcValue = srcValue.getFresh();                	                	
+                	XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)srcValue;                	                	
+        
+                	srcValue = new XSString(xmlNodeCursorImpl.str());
                 }
             }
             else if ((srcValue instanceof ResultSequence) && (expectedSeqTypeData != null)) {
@@ -687,7 +692,7 @@ public class XPathSequenceTypeSupport {
 	            		   Object obj1 = xNodeSetForDOM.object();
 	            		   if (obj1 instanceof DTMNodeList) {	            			   
 	            			   String dataTypeExpectedLocalName = sequenceTypeKindTest.getDataTypeLocalName();
-	            			   String dataTypeExpectedNsUri = sequenceTypeKindTest.getDataTypeUri();
+	            			   String dataTypeExpectedNsUri = sequenceTypeKindTest.getDataTypeNsUri();
 	            			   if ((dataTypeExpectedLocalName == null) || (Keywords.XS_UNTYPED.equals(dataTypeExpectedLocalName) && 
 	            					                                       XMLConstants.W3C_XML_SCHEMA_NS_URI.equals(dataTypeExpectedNsUri))) {
 	            				   /**
@@ -1906,7 +1911,7 @@ public class XPathSequenceTypeSupport {
             }
             else {
                String effectiveTypeDefnStr = (sequenceTypeXPathExprStr != null) ? sequenceTypeXPathExprStr : getDataTypeNameFromIntValue(expectedType);  	               
-               throw new TransformerException("XTTE0570 : The supplied value cannot be cast to type " + effectiveTypeDefnStr + "."); 
+               throw new TransformerException("XTTE0780 : The supplied value cannot be cast to type " + effectiveTypeDefnStr + "."); 
             }
         }
         catch (TransformerException ex) {
@@ -1914,7 +1919,7 @@ public class XPathSequenceTypeSupport {
         }
         catch (Exception ex) {
         	String effectiveTypeDefnStr = (sequenceTypeXPathExprStr != null) ? sequenceTypeXPathExprStr : getDataTypeNameFromIntValue(expectedType);        	
-        	throw new TransformerException("XTTE0570 : The supplied value cannot be cast to type " + effectiveTypeDefnStr + ".");
+        	throw new TransformerException("XTTE0780 : The supplied value cannot be cast to type " + effectiveTypeDefnStr + ".");
         }
         
         return result;

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-14T15:16:52Z" fail="26" name="higher-order-functions" pass="43" run="69" skipped="7" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-09-09T11:41:52Z" fail="26" name="higher-order-functions" pass="42" run="68" skipped="8" statusUnknown="0">
    <testResult status="pass" testName="higher-order-functions-001"/>
    <testResult status="pass" testName="higher-order-functions-002"/>
    <testResult status="pass" testName="higher-order-functions-003"/>
@@ -56,10 +56,14 @@ java.lang.Exception: Line# : 12, Column# : 68 XPST0003: Expected ,, but found: '
       </outResult>
    </testResult>
    <testResult status="fail" testName="higher-order-functions-048">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"/&gt;</outResult>
+      <outResult>
+         <errTrace>javax.xml.transform.TransformerException: XPTY0004 : Variable 'f' used to invoke an XPath dynamic function call, refers to neither a function, map or array.</errTrace>
+      </outResult>
    </testResult>
    <testResult status="fail" testName="higher-order-functions-049">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"/&gt;</outResult>
+      <outResult>
+         <errTrace>javax.xml.transform.TransformerException: XPTY0004 : Variable 'f' used to invoke an XPath dynamic function call, refers to neither a function, map or array.</errTrace>
+      </outResult>
    </testResult>
    <testResult status="fail" testName="higher-order-functions-050">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns:local="http://local/"&gt;2008-10-02&lt;/out&gt;</outResult>
@@ -105,7 +109,7 @@ java.lang.Exception: Line# : 12, Column# : 68 XPST0003: Expected ,, but found: '
       </outResult>
    </testResult>
    <testResult status="fail" testName="higher-order-functions-067"/>
-   <testResult status="pass" testName="higher-order-functions-068"/>
+   <testResult reason="Xalan configured" status="skipped" testName="higher-order-functions-068"/>
    <testResult status="fail" testName="higher-order-functions-069"/>
    <testResult status="pass" testName="higher-order-functions-070"/>
    <testResult reason="Xalan configured" status="skipped" testName="higher-order-functions-071"/>

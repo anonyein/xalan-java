@@ -277,10 +277,10 @@ public class ElemMapEntry extends ElemTemplateElement {
 	    final int sourceNode = xctxt.getCurrentNode();	    	    
 	    
 	    if (m_xpath_default_namespace != null) {    		
-	    	m_keyExpression = new XPath(m_keyExpression.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+	    	m_keyExpression = new XPath(m_keyExpression.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, false, m_xpath_default_namespace);
 	    	
 	    	if (m_selectExpression != null) {    		
-		    	m_selectExpression = new XPath(m_selectExpression.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+		    	m_selectExpression = new XPath(m_selectExpression.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, false, m_xpath_default_namespace);
 		    }
 	    }
 	    
@@ -349,8 +349,8 @@ public class ElemMapEntry extends ElemTemplateElement {
 	    			valueObj1 = XslTransformData.m_xpathNamedFunctionRefSequence;
 	    		}
 	    	}
-	    	else if (XslTransformData.m_xsl_perform_sort_resultSeq != null) {
-	    		valueObj1 = XslTransformData.m_xsl_perform_sort_resultSeq; 
+	    	else if (XslTransformData.m_xsl_perform_sort_rSeq != null) {
+	    		valueObj1 = XslTransformData.m_xsl_perform_sort_rSeq; 
 	    	}
 	    	else {
 	    		NodeList nodeList = (new XRTreeFrag(rootNodeHandleOfRtf, xctxt, this)).convertToNodeset();    	  

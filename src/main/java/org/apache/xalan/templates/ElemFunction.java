@@ -48,8 +48,8 @@ import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.compiler.Keywords;
 import org.apache.xpath.composite.XPathNamedFunctionReference;
-import org.apache.xpath.composite.XPathSequenceTypeArrayTest;
 import org.apache.xpath.composite.XPathSequenceType;
+import org.apache.xpath.composite.XPathSequenceTypeArrayTest;
 import org.apache.xpath.composite.XPathSequenceTypeFunctionTest;
 import org.apache.xpath.composite.XPathSequenceTypeKindTest;
 import org.apache.xpath.composite.XPathSequenceTypeMapTest;
@@ -416,13 +416,15 @@ public class ElemFunction extends ElemTemplate
     	  String funcLocalName = m_name.getLocalName();
     	  String funcNameSpaceUri = m_name.getNamespaceURI();
 
-    	  // Validate few of the information of xsl:function's xsl:param declarations      
+    	  // Validate few of the information of xsl:function's xsl:param declarations 
+    	  
     	  Map<QName, Integer> xslParamMap = new HashMap<QName, Integer>();
     	  int idx = 0;
 
     	  PrefixResolver prefixResolver = xctxt.getNamespaceContext();
     	  boolean isOnlyElemTextLiteral = false;
     	  boolean isOtherElem = false;
+    	  
     	  for (ElemTemplateElement elem = getFirstChildElem(); elem != null; elem = elem.getNextSiblingElem()) {
     		  if ((elem instanceof ElemTextLiteral) && !isOtherElem) {
     			  isOnlyElemTextLiteral = true; 
@@ -471,36 +473,37 @@ public class ElemFunction extends ElemTemplate
 
     		  idx++;
     	  }
-
-    	  if (xslParamMap.size() != argSequence.size()) {
-    		  throw new TransformerException("XPST0017 : An XSL function " + "{" + funcNameSpaceUri + "}" + funcLocalName + 
-															    				  " call's argument count is not equal "
-															    				  + "to number of function's param declarations.", srcLocator);  
-    	  }
-
+    	  
     	  Collection<Integer> xslParamIdxs = xslParamMap.values();
     	  Object[] idxArr = xslParamIdxs.toArray();
+    	  
     	  if (idxArr.length > 0) {
     		  Arrays.sort(idxArr);
     		  int currVal = ((Integer)idxArr[0]).intValue();
     		  if (currVal != 0) {
-    			  throw new TransformerException("XPST0017 : An XSL function " + "{" + funcNameSpaceUri + "}" + funcLocalName + 
-															    					  " declaration has a non 'param' declaration as first child "
-															    					  + "element of 'function'.", srcLocator); 
+    			  throw new TransformerException("XTSE0010 : An XSL function " + "{" + funcNameSpaceUri + "}" + funcLocalName + 
+															    					                        " declaration has a non 'param' declaration as first child "
+															    					                    + "element of 'function'.", srcLocator); 
     		  }
 
     		  for (int idx1 = 1; idx1 < idxArr.length; idx1++) {
     			  int nextVal = ((Integer)idxArr[idx1]).intValue();
     			  if (nextVal != (currVal + 1)) {
-    				  throw new TransformerException("XPST0017 : An XSL function " + "{" + funcNameSpaceUri + "}" + funcLocalName + 
-																    						  " declaration has a non 'param' declaration between two "
-																    						  + "'param' declarations.", srcLocator); 
+    				  throw new TransformerException("XTSE0010 : An XSL function " + "{" + funcNameSpaceUri + "}" + funcLocalName + 
+																    						                " declaration has a non 'param' declaration between two "
+																    						                + "'param' declarations.", srcLocator); 
     			  }
     			  else {
     				  currVal = nextVal;  
     			  }
     		  }
     	  }
+
+    	  if (xslParamMap.size() != argSequence.size()) {
+    		  throw new TransformerException("XPST0017 : An XSL function " + "{" + funcNameSpaceUri + "}" + funcLocalName + 
+															    				  " call's argument count is not equal "
+															    				  + "to number of function's param declarations.", srcLocator);  
+    	  }    	  
 
     	  if (m_newEachTime != null) {
     		  String xslFuncNewEachTimeNormalizedValue = m_newEachTime.trim();
@@ -817,10 +820,12 @@ public class ElemFunction extends ElemTemplate
     				  }
     			  }
 
-    			  if (ElemPerformSort.m_namespace_result_seq.size() > 0) {
-    				  result = ElemPerformSort.m_namespace_result_seq;            	 
+    			  if (XslTransformData.m_xsl_perform_sort_rSeq != null) {
+    				  result = XslTransformData.m_xsl_perform_sort_rSeq;            	 
+    				  
     				  funcResultConvertedVal = preprocessXslFunctionOrAVariableResult(result, funcAsAttrStrVal, xctxt, null);            	 
-    				  (ElemPerformSort.m_namespace_result_seq).clear();
+    				  
+    				  XslTransformData.m_xsl_perform_sort_rSeq = null;
     			  }
     			  else if (result instanceof XSString) {
     				  funcResultConvertedVal = XPathSequenceTypeSupport.castXdmValueToAnotherType(result, funcAsAttrStrVal, null, xctxt);
@@ -1404,7 +1409,7 @@ public class ElemFunction extends ElemTemplate
     			 String typeNodeLocalName = seqTypeKindTest.getNodeLocalName();
     			 String typeNodeNsUri = seqTypeKindTest.getNodeNsUri();
     			 String typeDataTypeLocalName = seqTypeKindTest.getDataTypeLocalName();
-    			 String typeDataTypeUri = seqTypeKindTest.getDataTypeUri();
+    			 String typeDataTypeUri = seqTypeKindTest.getDataTypeNsUri();
 
     			 String nodeLocalName = node.getLocalName();
     			 String nodeNsUri = node.getNamespaceURI();

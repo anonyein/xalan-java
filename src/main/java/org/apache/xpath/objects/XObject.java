@@ -123,11 +123,11 @@ public class XObject extends Expression implements Serializable, Cloneable
   
   /**
    * This class field, stores the fact that whether source of data
-   * within this object instance is a sequence and gets its data
-   * via a literal sequence constructor, comprising of node constructors
-   * and for clauses.
+   * within this object instance is a sequence, that gets the data
+   * via literal sequence constructor evaluation, comprising of xdm 
+   * node constructors and XPath 'for' clauses.
    */
-  private boolean m_homogeneous_source = false;
+  private boolean m_is_data_homogeneous_source = false;
   
   /**
    * An XPath 3.1 sequence type information, telling the
@@ -139,6 +139,11 @@ public class XObject extends Expression implements Serializable, Cloneable
    * within XPath 3.1 expressions like "instance of".
    */
   private XPathSequenceType m_cast_as_type = null;
+  
+  /**
+   * An integer sequence number for sorting purpose.
+   */
+  private int m_seqNo;
 
   /**
    * Create an XObject.
@@ -2737,7 +2742,11 @@ public class XObject extends Expression implements Serializable, Cloneable
    */
   public void callVisitors(ExpressionOwner owner, XPathVisitor visitor)
   {
-  	assertion(false, "callVisitors should not be called for this object!!!");
+	Expression expr = owner.getExpression();
+	
+	if (!(expr instanceof XPathInlineFunction)) {
+	   assertion(false, "callVisitors should not be called for this object instance");	
+	}	    	
   }
   /**
    * @see Expression#deepEquals(Expression)
@@ -2754,6 +2763,30 @@ public class XObject extends Expression implements Serializable, Cloneable
 		  return false;
 
 	  return true;
+  }
+  
+  /**
+   * Method definition, to compare this XObject instance 
+   * with another one. 
+   * 
+   * @param xObj2                         An XObject instance to compare 
+   *                                      with.
+   * @return                              An integer value, denoting result of
+   *                                      XObject value comparison.
+   * @throws TransformerException
+   */
+  public int compare(XObject xObj2) throws TransformerException {
+	 
+	  int result = 0;
+
+	  if (getSeqNo() < xObj2.getSeqNo()) {
+		  result = -1; 
+	  }
+	  else if (getSeqNo() > xObj2.getSeqNo()) {
+		  result = 1; 
+	  }
+
+	  return result;
   }
 
   public void setTunnel(String tunnelStrVal) {
@@ -2812,12 +2845,12 @@ public class XObject extends Expression implements Serializable, Cloneable
 	  this.m_useStrict_value = useStrictValue;
   }
 
-  public boolean isHomogeneousSource() {
-	  return m_homogeneous_source;
+  public boolean isDataHomogeneousSource() {
+	  return m_is_data_homogeneous_source;
   }
 
-  public void setHomogeneousSource(boolean homogeneousSource) {
-	  this.m_homogeneous_source = homogeneousSource;
+  public void setDataHomogeneousSource(boolean dataHomogeneousSource) {
+	  this.m_is_data_homogeneous_source = dataHomogeneousSource;
   }
   
   public XPathSequenceType getCastAsType() {
@@ -2826,6 +2859,14 @@ public class XObject extends Expression implements Serializable, Cloneable
 
   public void setCastAsType(XPathSequenceType seqTypedData) {
 	  this.m_cast_as_type = seqTypedData;	
+  }
+
+  public int getSeqNo() {
+	  return m_seqNo;
+  }
+
+  public void setSeqNo(int seqNo) {
+	  this.m_seqNo = seqNo;
   }
 
 }

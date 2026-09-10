@@ -15,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * $Id$
- */
 package org.apache.xalan.transformer;
 
 import java.text.Collator;
@@ -52,12 +49,16 @@ public class NodeSortKey
 
   /** Locale we're in          */
   Locale m_locale;
+  
+  String m_langValue;
 
   /** Prefix resolver to use          */
   org.apache.xml.utils.PrefixResolver m_namespaceContext;
 
   /** Transformer instance          */
-  TransformerImpl m_processor;  // needed for error reporting.
+  TransformerImpl m_processor;  // needed for error reporting
+  
+  String m_collation_uri = null;
 
   /**
    * Constructor NodeSortKey
@@ -75,7 +76,7 @@ public class NodeSortKey
   NodeSortKey(
           TransformerImpl transformer, XPath selectPat, boolean treatAsNumbers, 
           boolean descending, String langValue, boolean caseOrderUpper, 
-          org.apache.xml.utils.PrefixResolver namespaceContext)
+          org.apache.xml.utils.PrefixResolver namespaceContext, String collationUri)
             throws javax.xml.transform.TransformerException
   {
 
@@ -85,6 +86,7 @@ public class NodeSortKey
     m_treatAsNumbers = treatAsNumbers;
     m_descending = descending;
     m_caseOrderUpper = caseOrderUpper;
+    m_collation_uri = collationUri; 
 
     if (null != langValue && m_treatAsNumbers == false)
     {
@@ -118,6 +120,8 @@ public class NodeSortKey
     }
 
     m_col = Collator.getInstance(m_locale);
+    
+    m_langValue = langValue;
 
     if (null == m_col)
     {
@@ -135,5 +139,21 @@ public class NodeSortKey
    */
   public XPath getSelectPattern() {
 	 return m_selectPat; 
+  }
+  
+  public String getLangValue() {
+	 return m_langValue;
+  }
+  
+  public void setLangValue(String langValue) {
+	 m_langValue = langValue;  
+  }
+  
+  public String getCollationUri() {
+	 return m_collation_uri; 
+  }
+  
+  public void setCollationUri(String collationUri) {
+	 m_collation_uri = collationUri;  
   }
 }

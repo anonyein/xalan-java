@@ -26,6 +26,7 @@ import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
 import org.apache.xpath.Expression;
+import org.apache.xpath.XPathCollationSupport;
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.compiler.Keywords;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
@@ -45,6 +46,7 @@ import xml.xpath31.processor.types.XSTime;
  * @author Joseph Kesselman <keshlam@alum.mit.edu>
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
+ *         (XSLT 3.0 specific changes, to this class)
  * 
  * @xsl.usage internal
  */
@@ -172,7 +174,7 @@ public class NodeSorter
 	  int result = 0;
 	  
 	  NodeSortKey k = (NodeSortKey) m_keys.elementAt(kIndex);
-
+	  	  
 	  if (k.m_treatAsNumbers)
 	  {
 		  double n1Num, n2Num;
@@ -227,12 +229,14 @@ public class NodeSorter
 		  }
 	  }  // end treat as numbers 
 	  else
-	  {
+	  {		  		  
 		  CollationKey n1String = null;
 		  CollationKey n2String = null;
 
 		  // Use collation keys for faster compare, but note that whitespaces 
 		  // etc... are treated differently from if we were comparing Strings.
+		  
+		  String langValue = k.getLangValue();
 		  
 		  if ((n1.m_key1Value instanceof XSAnyAtomicType) && (n2.m_key1Value instanceof XSAnyAtomicType)) {
 			 XObject xObj1 = (XSAnyAtomicType)(n1.m_key1Value);
@@ -271,16 +275,35 @@ public class NodeSorter
 				  
 				  n1String = k.m_col.getCollationKey(str1);
 				  n2String = k.m_col.getCollationKey(str2);
-			  } 
-		     
-			  result = n1String.compareTo(n2String);
+			  }
+			  
+			  String collationUri = k.getCollationUri();			  			  
+			  
+			  if (collationUri != null) {
+				 XPathCollationSupport xpathCollationSupport = m_xctxt.getXPathCollationSupport();
+				 
+				 String str1 = n1String.getSourceString();
+				 String str2 = n2String.getSourceString();
+				 
+				 result = xpathCollationSupport.compareStringsUsingCollation(str1, str2, collationUri); 
+			  }
+			  else if (langValue != null) {
+				  result = n1String.compareTo(n2String);
+			  }
+			  else {
+				  String str1 = n1String.getSourceString();
+				  String str2 = n2String.getSourceString();
+				  
+				  result = str1.compareTo(str2);
+			  }
 		  }
 
-		  //Process caseOrder parameter
+		  // Process xsl:sort, 'case-order' parameter
+		  
 		  if (k.m_caseOrderUpper)
 		  {
-			  String tempN1 = n1String.getSourceString().toLowerCase();
-			  String tempN2 = n2String.getSourceString().toLowerCase();
+			  String tempN1 = (n1String.getSourceString()).toLowerCase();
+			  String tempN2 = (n2String.getSourceString()).toLowerCase();
 
 			  if (tempN1.equals(tempN2))
 			  {
@@ -289,11 +312,13 @@ public class NodeSorter
 			  }
 		  }
 
-		  //Process order parameter
+		  // Process xsl:sort, 'order' parameter
+		  
 		  if (k.m_descending)
 		  {
 			  result = -result;
 		  }
+		  
 	  }  //end else
 
 	  if (result == 0)
@@ -308,6 +333,7 @@ public class NodeSorter
 	  {      
 		  if (n1.m_xobj == null) {
 		     DTM dtm = xctxt.getDTM(n1.m_node);		  
+		     
 		     result = dtm.isNodeAfter(n1.m_node, n2.m_node) ? -1 : 1;
 		  }
 		  else {

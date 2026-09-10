@@ -70,11 +70,11 @@ public class FunctionDef1Arg extends FunctionOneArg
   }
 
   /**
-   * Evaluate the first argument expression that is expected to return a
-   * string. If the argument is null, then get the string value from the
-   * current context node.
+   * Method definition, to evaluate the first argument expression that 
+   * is expected to return a string value. If the argument is null, then 
+   * get the string value from the current context node.
    *
-   * @param xctxt                    An XPath context object
+   * @param xctxt                                 An XPath context object
    *
    * @return The string value of the first argument, or the string value of the
    *         current context node if the first argument is null.
@@ -82,14 +82,14 @@ public class FunctionDef1Arg extends FunctionOneArg
    * @throws javax.xml.transform.TransformerException if an error occurs while
    *                                   executing the argument expression.
    */
-  protected XMLString getArg0AsString(XPathContext xctxt)
-          throws javax.xml.transform.TransformerException
+  protected XMLString getArg0AsString(XPathContext xctxt) throws javax.xml.transform.TransformerException
   {
 	  XMLString result = null;
 
 	  if (m_arg0 == null)
 	  {
 		  XObject xObj0 = xctxt.getXPath3ContextItem();
+		  
 		  if (xObj0 != null) {
               FuncString funcString = new FuncString();
               funcString.setArg0(xObj0);
@@ -99,18 +99,21 @@ public class FunctionDef1Arg extends FunctionOneArg
 		  }
 		  else {
 			  int currentNode = xctxt.getCurrentNode();
-			  if (DTM.NULL == currentNode) {
+			  
+			  if (currentNode == DTM.NULL) {
 				  result = XString.EMPTYSTRING;
 			  }
 			  else
 			  {
 				  DTM dtm = xctxt.getDTM(currentNode);
+				  
 				  result = dtm.getStringValue(currentNode);
 			  }
 		  }
 	  }
 	  else if (m_arg0 instanceof SelfIteratorNoPredicate) {
 		  XObject xpath3ContextItem = xctxt.getXPath3ContextItem();
+		  
 		  if (xpath3ContextItem != null) {
 			  result = new XString(XslTransformEvaluationHelper.getStrVal(xpath3ContextItem));
 		  }
@@ -122,6 +125,7 @@ public class FunctionDef1Arg extends FunctionOneArg
 	  }
 	  else if (m_arg0 instanceof XSString) {
 		  String strVal = ((XSString)m_arg0).stringValue();
+		  
 		  result = new XString(strVal);
 	  }
 	  else {

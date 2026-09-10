@@ -49,6 +49,7 @@ import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.Keywords;
 import org.apache.xpath.composite.XPathArrayConstructor;
+import org.apache.xpath.composite.XPathBuiltInNodeKindExpr;
 import org.apache.xpath.composite.XPathForExpr;
 import org.apache.xpath.composite.XPathIfExpr;
 import org.apache.xpath.composite.XPathMapConstructor;
@@ -59,7 +60,6 @@ import org.apache.xpath.composite.XPathSequenceTypeFunctionTest;
 import org.apache.xpath.composite.XPathSequenceTypeKindTest;
 import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.composite.XPathSequenceTypeSupport.OccurrenceIndicator;
-import org.apache.xpath.composite.XPathBuiltInNodeKindExpr;
 import org.apache.xpath.functions.Function;
 import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
@@ -83,12 +83,12 @@ import org.apache.xpath.objects.XdmAttributeItem;
 import org.apache.xpath.objects.XdmCommentItem;
 import org.apache.xpath.objects.XdmNamespaceItem;
 import org.apache.xpath.objects.XdmProcessingInstructionItem;
+import org.apache.xpath.operations.Range;
+import org.apache.xpath.operations.Variable;
 import org.apache.xpath.operations.XPathArrowOp;
 import org.apache.xpath.operations.XPathOperator;
-import org.apache.xpath.operations.Range;
-import org.apache.xpath.operations.SimpleMapOperator;
-import org.apache.xpath.operations.Variable;
-import org.apache.xpath.operations.XPath3UnaryOperator;
+import org.apache.xpath.operations.XPathSimpleMapOperator;
+import org.apache.xpath.operations.XPathUnaryOperator;
 import org.apache.xpath.patterns.NodeTest;
 import org.apache.xpath.util.XPath3ExpressionUtil;
 import org.w3c.dom.NodeList;
@@ -542,23 +542,31 @@ public class ElemVariable extends ElemTemplateElement
     Expression selectExpression = null;
     
     if (m_isTopLevel) {
-		var = getXslToplevelVariableValue(transformer, sourceNode, xctxt, srcLocator);
+		Expression expr1 = getXslToplevelVariableValue(transformer, sourceNode, xctxt, srcLocator);
 		
-		if (var != null) {			
+		if (expr1 instanceof XObject) {
+			var = (XObject)expr1;
+						
 			if (m_asAttr != null) {
-			   XPathSequenceType seqExpectedTypeData = XPathSequenceTypeSupport.getSequenceTypeDataFromSeqTypeStr(m_asAttr, xctxt, srcLocator);
-			   var = XPathSequenceTypeSupport.castXdmValueToAnotherType(var, seqExpectedTypeData, false);
-			   if (var != null) {
-				  return var; 
-			   }
-			   else {
-				  throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation result, doesn't "
-                                                                                                    + "conform to xdm sequence type " + m_asAttr + ".", srcLocator); 
-			   }
+				XPathSequenceType seqExpectedTypeData = XPathSequenceTypeSupport.getSequenceTypeDataFromSeqTypeStr(m_asAttr, xctxt, srcLocator);
+				var = XPathSequenceTypeSupport.castXdmValueToAnotherType(var, seqExpectedTypeData, false);
+
+				if (var != null) {
+					return var; 
+				}
+				else {
+					throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation result, doesn't "
+							                                                                          + "conform to xdm sequence type " + m_asAttr + ".", srcLocator); 
+				}
 			}
-			
+
 			return var;
 		}
+		/*else if (expr1 instanceof XSL3ConstructorOrExtensionFunction) {
+			XSL3ConstructorOrExtensionFunction func1 = (XSL3ConstructorOrExtensionFunction)expr1;
+			
+			
+		}*/
     }
     else if (m_static) {
     	throw new TransformerException("XPST0008 : An XSL stylesheet's local variables and parameters cannot be "
@@ -568,14 +576,14 @@ public class ElemVariable extends ElemTemplateElement
     }
     
     if ((m_selectPattern != null) && (m_xpath_default_namespace != null)) {    		
-       m_selectPattern = new XPath(m_selectPattern.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+       m_selectPattern = new XPath(m_selectPattern.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, false, m_xpath_default_namespace);
  	}
  
     try {        
-      if (m_selectPattern != null) {          
-        selectExpression = m_selectPattern.getExpression();
+       if (m_selectPattern != null) {          
+         selectExpression = m_selectPattern.getExpression();
                 
-        if (selectExpression instanceof XSL3ConstructorOrExtensionFunction) {        	
+         if (selectExpression instanceof XSL3ConstructorOrExtensionFunction) {        	
         	XSL3ConstructorOrExtensionFunction xpathFunc = (XSL3ConstructorOrExtensionFunction)selectExpression;
         	XSL3FunctionService xslFunctionService = xctxt.getXSLFunctionService();
             XObject evalResult = xslFunctionService.callFunction(xpathFunc, transformer, xctxt);
@@ -653,7 +661,7 @@ public class ElemVariable extends ElemTemplateElement
                 return evalResult; 
             }
         }
-        else if (selectExpression instanceof SimpleMapOperator) {
+        else if (selectExpression instanceof XPathSimpleMapOperator) {
             XObject evalResult = selectExpression.execute(xctxt);
             
             if (m_asAttr != null) {
@@ -726,11 +734,12 @@ public class ElemVariable extends ElemTemplateElement
             XPathDynamicFunctionCall dfc = locPathIterator.getDynamicFuncCallExpr();
             
             DTMCursorIterator dtmIter = null;                     
+            
             try {
                 dtmIter = locPathIterator.asIterator(xctxt, contextNode);
             }
             catch (ClassCastException ex) {
-                // no op
+            	// No op
             }
             
             if (dtmIter != null) {
@@ -908,7 +917,7 @@ public class ElemVariable extends ElemTemplateElement
     			}
     		}
     		catch (Exception ex) {
-    			// no op
+    			// No op
     		}
         }
         else if (selectExpression instanceof XPathArrayConstructor) {
@@ -916,6 +925,7 @@ public class ElemVariable extends ElemTemplateElement
         }
         else if (selectExpression instanceof XRTreeFragSelectWrapper) {
         	var = m_selectPattern.execute(xctxt, sourceNode, this);
+        	
         	if (var instanceof XString) {
         	   ((XString)var).setXrTreeFragSelectWrapperResult(true);
         	}
@@ -1355,8 +1365,9 @@ public class ElemVariable extends ElemTemplateElement
     			  }
     		  }
     	  }
-    	  else if (XslTransformData.m_xsl_perform_sort_resultSeq != null) {
-    		  var = XslTransformData.m_xsl_perform_sort_resultSeq; 
+    	  else if (XslTransformData.m_xsl_perform_sort_rSeq != null) {
+    		  var = XslTransformData.m_xsl_perform_sort_rSeq; 
+    		  XslTransformData.m_xsl_perform_sort_rSeq = null;
     	  }
     	  else if (ElemMap.m_xpath_map_seq != null) {
     		  var = ElemMap.m_xpath_map_seq;
@@ -1380,7 +1391,7 @@ public class ElemVariable extends ElemTemplateElement
     }
     
     if (m_asAttr != null) {    	
-    	var = getXslVariableResultWithAsAttribute(var, xctxt, srcLocator, selectExpression, m_asAttr);
+    	var = getXslVariableResultWithAsAttribute(var, xctxt, srcLocator, selectExpression, m_asAttr, m_xpath_default_namespace);
     }
         
     return var;
@@ -1651,17 +1662,19 @@ public class ElemVariable extends ElemTemplateElement
    * @param selectExpression                        xsl:variable "select" attribute's compiled
    *                                                XPath expression. This value may be null.
    * @param asAttrString                            xsl:variable "as" attribute's non-null string
-   *                                                value.                                                 
+   *                                                value.
+   * @param xpathDefaultNamespace                   An XPath default namespace if available                                                                                                  
    * @return
    * @throws TransformerException
    */
   private XObject getXslVariableResultWithAsAttribute(XObject var, XPathContext xctxt, SourceLocator srcLocator,
 			                                                                                     Expression selectExpression,
-			                                                                                     String asAttrString) throws TransformerException {
+			                                                                                     String asAttrString,
+			                                                                                     String xpathDefaultNamespace) throws TransformerException {
 		
 		XObject result = null;
 		
-		XPath seqTypeXPath = new XPath(asAttrString, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true);    	    	
+		XPath seqTypeXPath = new XPath(asAttrString, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, true, xpathDefaultNamespace);
 		
 		XObject seqTypeExpressionEvalResult = seqTypeXPath.execute(xctxt, xctxt.getContextNode(), xctxt.getNamespaceContext());    	
 		
@@ -2273,7 +2286,8 @@ public class ElemVariable extends ElemTemplateElement
 				result = variableConvertedVal;    
 			}
 			else {    			    			
-				result = XPathSequenceTypeSupport.castXdmValueToAnotherType(var, asAttrString, null, xctxt); 				
+				result = XPathSequenceTypeSupport.castXdmValueToAnotherType(var, asAttrString, null, xctxt); 
+				
 				if (result == null) {
 					throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
 																		                             + "result doesn't match the specified "
@@ -2346,7 +2360,12 @@ public class ElemVariable extends ElemTemplateElement
 		}    	    	    	    	    	    	
 		else {
 			try {
-				result = XPathSequenceTypeSupport.castXdmValueToAnotherType(var, asAttrString, null, xctxt);
+				if (asAttrString.contains(":") || asAttrString.contains("(") || asAttrString.contains("{")) {
+				   result = XPathSequenceTypeSupport.castXdmValueToAnotherType(var, asAttrString, null, xctxt);
+				}
+				else {
+				   result = XPathSequenceTypeSupport.castXdmValueToAnotherType(var, null, seqExpectedTypeData, xctxt);
+				}
 				
 				if (result == null) {
 					throw new TransformerException("XTTE0570 : An XSL variable " + m_qname.toString() + "'s evaluation "
@@ -2408,15 +2427,18 @@ public class ElemVariable extends ElemTemplateElement
     		List <QName> qNameList = new ArrayList<QName>();
     		List<QName> list1 = XslTransformData.m_xsl_variable_qname_list;
     		int size1 = list1.size();
+    		
     		for (int idx = 0; idx < size1; idx++) {
     			qNameList.add(list1.get(idx));
     		}
     								
     		String xpathPatternStr1 = m_selectPattern.getPatternString();
+    		
     		if (xpathPatternStr1 != null) {    			
     			List<XMLNSDecl> prefixTable = null;
 
                 PrefixResolver prefixResolver = xctxt.getNamespaceContext();
+                
                 if (prefixResolver instanceof ElemTemplateElement) {
              	   ElemTemplateElement elemTemplateElement = (ElemTemplateElement)prefixResolver; 
              	   prefixTable = (List<XMLNSDecl>)(elemTemplateElement.getPrefixTable());
@@ -2600,6 +2622,7 @@ public class ElemVariable extends ElemTemplateElement
     					List <QName> qNameList2 = new ArrayList<QName>();
     					List<QName> list3 = XslTransformData.m_xsl_variable_qname_list;
     					int size3 = list3.size();
+    					
     					for (int idx = 0; idx < size3; idx++) {
     						qNameList2.add(list3.get(idx));
     					}
@@ -2619,25 +2642,28 @@ public class ElemVariable extends ElemTemplateElement
     			else if (expr1 instanceof XPathNamedFunctionReference) {
     				return (XObject)expr1;
     			}
-    			else if ((expr1 instanceof Function) || (expr1 instanceof XPath3UnaryOperator)) {
-    				// no op
+    			else if (expr1 instanceof XSL3ConstructorOrExtensionFunction) {    				
+    				// No op    				
+    			}
+    			else if ((expr1 instanceof Function) || (expr1 instanceof XPathUnaryOperator)) {
+    				// No op
     			}
     			else if ((expr1 instanceof XString) || (expr1 instanceof XBoolean) || (expr1 instanceof XBooleanStatic) 
     					                                                           || (expr1 instanceof XNumber) || (expr1 instanceof XSAnyAtomicType)) {
-    				// no op
+    				// No op
     			}
     			else if ((expr1 instanceof Variable) || (expr1 instanceof XPathMapConstructor)) {
-    				// no op
+    				// No op
     			}
     			else if ((expr1 instanceof LocPathIterator) || (expr1 instanceof XPathSequenceConstructor) 
     					                                                           || (expr1 instanceof ResultSequence) || (expr1 instanceof Range)) {
-    				// no op
+    				// No op
     			}
     			else if (expr1 instanceof XPathOperator) {
-    				// no op
+    				// No op
     			}
     			else if (expr1 instanceof XPathForExpr) {
-    				// no op
+    				// No op
     			}
     			else if (qNameList.contains(m_qname)) {
     				throw new TransformerException("XPST0008 : An XSL stylesheet top level variable '" + m_qname.toString() 

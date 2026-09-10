@@ -97,6 +97,9 @@ public class XPathLetExpr extends Expression {
     		   XPathLetExprVarBinding letExprVarBinding = m_letExprVarBindingList.get(idx);
     		   String varName = letExprVarBinding.getVarName();
     		   String varResultXPathExprStr = letExprVarBinding.getXPathExprStr();
+    		   
+    		   varResultXPathExprStr = varResultXPathExprStr.replace(" : ", ":");
+    		   varResultXPathExprStr = varResultXPathExprStr.replace(": =", ":=");
 
     		   if (prefixTable != null) {
     			   varResultXPathExprStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(varResultXPathExprStr, prefixTable);
@@ -229,9 +232,11 @@ public class XPathLetExpr extends Expression {
     	   evalResult = returnExprXpath.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
 
     	   if (evalResult == null) {
-    		   // Return an empty sequence
     		   evalResult = new ResultSequence();   
     	   }
+       }
+       catch (TransformerException ex) {
+    	   throw ex;
        }
        finally {
     	   int qNameListSize = qNameVarList.size();

@@ -45,11 +45,12 @@ import org.apache.xpath.XPathContext;
 import org.apache.xpath.axes.LocPathIterator;
 import org.apache.xpath.axes.SelfIteratorNoPredicate;
 import org.apache.xpath.compiler.Keywords;
-import org.apache.xpath.composite.XPathSequenceType;
-import org.apache.xpath.composite.XPathSequenceTypeSupport;
 import org.apache.xpath.composite.XPathForExpr;
 import org.apache.xpath.composite.XPathNamedFunctionReference;
 import org.apache.xpath.composite.XPathSequenceConstructor;
+import org.apache.xpath.composite.XPathSequenceType;
+import org.apache.xpath.composite.XPathSequenceTypeSupport;
+import org.apache.xpath.functions.FuncNumber;
 import org.apache.xpath.functions.Function;
 import org.apache.xpath.functions.XPathDynamicFunctionCall;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
@@ -59,17 +60,23 @@ import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
+import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.InstanceOf;
-import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.operations.Variable;
+import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.types.DateTimeUtil;
+import org.apache.xpath.types.XSLanguage;
 import org.xml.sax.SAXException;
 
 import xml.xpath31.processor.types.XSAnyAtomicType;
 import xml.xpath31.processor.types.XSBoolean;
 import xml.xpath31.processor.types.XSDate;
 import xml.xpath31.processor.types.XSDateTime;
+import xml.xpath31.processor.types.XSDecimal;
+import xml.xpath31.processor.types.XSDouble;
+import xml.xpath31.processor.types.XSFloat;
+import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSString;
 
 /**
@@ -362,10 +369,6 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
   {
 
     transformer.pushCurrentTemplateRuleIsNull(true);
-    
-    if (transformer.getDebug()) {
-        transformer.getTraceManager().emitTraceEvent(this);   // invoke xsl:for-each element event
-    }
 
     try
     {
@@ -377,8 +380,10 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     	
     	if (m_useWhen != null) {
     		boolean result1 = isXPathExpressionStatic(m_useWhen.getExpression());
+    		
     		if (result1) {
     			XObject useWhenResult = m_useWhen.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
+    			
     			if (useWhenResult.bool()) {
     				transformXdmItems(transformer);
     			}
@@ -393,11 +398,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     	}
     }
     finally
-    {
-        if (transformer.getDebug()) {
-	       transformer.getTraceManager().emitTraceEndEvent(this);
-        }
-        
+    {        
         transformer.popCurrentTemplateRuleIsNull();
     }
     
@@ -487,32 +488,79 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     xctxt.setLast(0);
     
     if (m_xpath_default_namespace != null) {    		
-    	m_xpath = new XPath(m_xpath.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    	m_xpath = new XPath(m_xpath.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, false, m_xpath_default_namespace);
+    	
     	m_selectExpression = m_xpath.getExpression();
   	}
     
     if (m_sortElems != null) {
     	int sortElemCount = m_sortElems.size();
+    	
     	for (int idx = 0; idx < sortElemCount; idx++) {
     	    ElemSort elemSort = (ElemSort)m_sortElems.get(idx);
+    	    
     	    if (idx > 0) {
     	       if (elemSort.isStableDeclared()) {
-    	    	  throw new javax.xml.transform.TransformerException("XTSE1017 : Only the first XSL 'sort' element within a sequence of "
-					    	    	  		                                                                            + "'sort' elements can have an attribute named "
-					    	    	  		                                                                            + "'stable'.", elemSort);	
+    	    	  throw new TransformerException("XTSE1017 : Only the first XSL 'sort' element within a sequence of 'sort' elements can have an attribute named "
+					    	    	  		                                                                              + "'stable'.", elemSort);	
     	       }
     	    }
     	    
     	    XPath xslSortSelect = elemSort.getSelect();
+    	    
     	    if (xslSortSelect != null) {
     	    	Expression xpathExpr = xslSortSelect.getExpression();
+    	    	
     	    	if (xpathExpr instanceof XSL3ConstructorOrExtensionFunction) {
     	    		XSL3ConstructorOrExtensionFunction xsl3ConstructorOrExtFunc = (XSL3ConstructorOrExtensionFunction)xpathExpr;
     	    		String funcName = xsl3ConstructorOrExtFunc.getFunctionName();
     	    		String namespace = xsl3ConstructorOrExtFunc.getNamespace();
+    	    		
     	    		if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace) && (Keywords.XS_DURATION).equals(funcName)) {
-    	    			throw new javax.xml.transform.TransformerException("XTDE1030 : An XSL instruction for-each's sort key cannot be of XML Schema type 'duration'.", elemSort);
+    	    			throw new TransformerException("XTDE1030 : An XSL instruction for-each's sort key cannot be with XML Schema type 'duration'.", elemSort);
     	    		}
+    	    	}
+    	    }
+    	    else if (elemSort.getFirstChildElem() == null) {
+    	    	xslSortSelect = new XPath(".", srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    	    	
+    	    	elemSort.setSelect(xslSortSelect);    	    	    	    	    	    	
+    	    }
+    	    
+    	    AVT langAvt = elemSort.getLang();
+    	    
+    	    if (langAvt != null) {
+    	       String langStr = langAvt.evaluate(xctxt, contextNode, elemSort);
+    	       
+    	       if (!"".equals(langStr)) {
+    	    	   // Construction XSLanguage object instance, does 
+    	    	   // xs:language value space type check.
+    	    	   
+    	    	   new XSLanguage(langStr); 
+    	       }
+    	       else {
+    	    	  elemSort.setLang(null); 
+    	       }
+    	    }
+	    	
+    	    if (elemSort.getLang() != null) {
+    	    	AVT dataTypeAvt = elemSort.getDataType();
+    	    	String dataTypeStr = dataTypeAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
+    	    	    	    	
+    	    	if ((Constants.ELEMNAME_NUMBER_STRING).equals(dataTypeStr) || (xslSortSelect.getExpression() instanceof FuncNumber)) {
+    	    	   // xsl:sort lang has no effect on numeric data
+    	    		
+    	    	   elemSort.setLang(null);
+    	    	}
+    	    }
+    	    
+    	    AVT collationAvt = elemSort.getCollation();
+    	    
+    	    if (collationAvt != null) {
+    	    	String collationUri = collationAvt.evaluate(xctxt, contextNode, elemSort);
+
+    	    	if (!XPathCollationSupport.isCollationSupported(collationUri)) {
+    	    		throw new TransformerException("XTDE1035 : An XSL sort, collation '" + collationUri + "' is not supported.", elemSort);
     	    	}
     	    }
     	}
@@ -563,6 +611,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
         	List<XObject> list1 = xpathArr.getNativeArray();
         	ResultSequence rSeq = new ResultSequence();
         	int size = list1.size();
+        	
         	for (int idx = 0; idx < size; idx++) {
         	   rSeq.add(list1.get(idx));
         	}
@@ -610,6 +659,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
         
         boolean isProcessAsNodeset = true;
         DTMCursorIterator dtmIter = null;                     
+        
         try {
            dtmIter = locPathIterator.asIterator(xctxt, contextNode);
         }
@@ -626,12 +676,15 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
         	if (func != null) {        		
         		resultSeq = new ResultSequence();
         		int nextNode;
+        		
         		while ((nextNode = dtmIter.nextNode()) != DTM.NULL)
         		{
         			XMLNodeCursorImpl xdmNodeObj = new XMLNodeCursorImpl(nextNode, xctxt);
+        			
         			// Evaluate an XPath expression like /a/b/funcCall(..).
 					// Find one result item for a sequence of items.
         			XObject evalResult = evaluateXPathSuffixFunction(xctxt, srcLocator, func, xdmNodeObj);
+        			
         			resultSeq.add(evalResult);
         		}
         		
@@ -642,6 +695,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
         	else if (dfc != null) {        		
         		resultSeq = new ResultSequence();
         		int nextNode;
+        		
         		while ((nextNode = dtmIter.nextNode()) != DTM.NULL)
         		{
         			XMLNodeCursorImpl xdmNodeObj = new XMLNodeCursorImpl(nextNode, xctxt);
@@ -702,11 +756,12 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
                   ResultSequence inpResultSeq = (ResultSequence)varEvalResult;
                        
                   Integer indexVal = null;
+                  
                   try {
                      indexVal = Integer.valueOf(xpathIndexExprStr);
                   }
                   catch (NumberFormatException ex) {
-                	 // no op
+                	 // No op
                   }
                   
                   ResultSequence rSeq = new ResultSequence();
@@ -723,15 +778,18 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
                     	
                     	xpathObj = new XPath(xpathIndexExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);                                                      
                         XObject xObj = xpathObj.execute(xctxt, xctxt.getCurrentNode(), xctxt.getNamespaceContext());
+                        
                         if (xObj != null) {
 	                        if (xObj instanceof XSBoolean) {
 	                        	XSBoolean xsBoolean = (XSBoolean)xObj;
+	                        	
 	                        	if (xsBoolean.bool()) {
 	                        	   rSeq.add(seqItem);
 	                        	}
 	                        }
 	                        else if (xObj instanceof XBooleanStatic) {
 	                        	XBooleanStatic xBool = (XBooleanStatic)xObj;
+	                        	
 	                        	if (xBool.bool()) {
 	                        	   rSeq.add(seqItem);
 	                        	}
@@ -749,77 +807,14 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
              }
          }
     }
+       
+    boolean isXslSortXalanLegacy = true;
     
-    boolean bool1 = false;
-    
-    int sortElemCount = 0;
     if (m_sortElems != null) {
-    	sortElemCount = m_sortElems.size();
-    	for (int idx = 0; idx < sortElemCount; idx++) {
-    	    ElemSort elemSort = (ElemSort)m_sortElems.get(idx);    	    
-    	    AVT langAvt = elemSort.getLang();
-    	    
-    	    String collationValueStr = null;
-    	    AVT collationAvt = elemSort.getCollation();
-    	    
-    	    if ((collationAvt != null) && (langAvt != null)) {    	    	
-    	       String langStr = langAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());    	    	
-    	       collationValueStr = collationAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
-    	       
-    	       if (XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI.equals(collationValueStr) && "en".equals(langStr)) {
-    	          langAvt = null;
-    	       }
-    	       
-    	       collationValueStr = collationAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());    	           	       
-    	    }
-    	    
-    	    if (langAvt != null) {    	    	    	           	       
-    	       String langStr = langAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
-    	       if (!"en".equals(langStr)) {
-    	    	  bool1 = true;
-    	       }
-    	       else if ((collationValueStr != null) && XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI.equals(collationValueStr)) {
-    	    	  bool1 = true; 
-    	       }
-    	    }
-    	    
-    	    if (!bool1 && (collationValueStr != null)) {
-    	       bool1 = true;
-    	    }
-    	}
+    	isXslSortXalanLegacy = isXslSortXalanLegacy(xctxt, srcLocator);
     }
     
-    boolean bool2 = false;
-    if (!bool1 && (sortElemCount > 0)) {
-    	for (int i = 0; i < sortElemCount; i++) {
-    		ElemSort elemSort = (ElemSort) m_sortElems.get(i);
-    		if (elemSort.getFirstChildElem() == null) {
-    			XPath selectPatternXPath = elemSort.getSelect();
-    			if (selectPatternXPath == null) {
-    				selectPatternXPath = new XPath(".", srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);  
-    			}
-    			Expression expression = selectPatternXPath.getExpression();
-    			if (expression instanceof XSL3ConstructorOrExtensionFunction) {
-    				XSL3ConstructorOrExtensionFunction func1 = (XSL3ConstructorOrExtensionFunction)expression;
-    				String namespace = func1.getNamespace();
-    				if (!((Constants.S_EXTENSIONS_JAVA_URL).equals(namespace) || (XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace))) {
-    					bool2 = true;
-    					
-    					break;
-    				}
-    			}
-    		}
-    		else {
-    			bool2 = true;
-    			
-    			break;  
-    		}
-    	}
-    }
-    
-    if (!(bool1 || bool2)) {
-    	// We use Xalan-J's XSLT 1.0 processor sort algorithm here
-    	
+    if (isXslSortXalanLegacy) {    	
     	DTMCursorIterator sourceNodes = m_selectExpression.asIterator(xctxt, contextNode);
 
     	try
@@ -827,17 +822,21 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     		final Vector sortKeys = (m_sortElems == null) ? null 
                                                           : transformer.processSortKeys(this, contextNode);
     		
-    		// Sort if we need to
+    		// Sort if we need to    		
     		if (sortKeys != null) {
     		   int sortKeyCount = sortKeys.size();
+    		   
     		   boolean isSortNew = false;
+    		   
     		   for (int idx = 0; idx < sortKeyCount; idx++) {
     			   NodeSortKey nodeSortKey = (NodeSortKey)(sortKeys.get(idx));
     			   XPath xpathObj1 = nodeSortKey.getSelectPattern();
     			   Expression xpathExpr = xpathObj1.getExpression();
+    			   
     			   if (xpathExpr instanceof XSL3ConstructorOrExtensionFunction) {
      				  XSL3ConstructorOrExtensionFunction xsl3ConstructorOrExtFunc = (XSL3ConstructorOrExtensionFunction)xpathExpr;
      				  String namespace = xsl3ConstructorOrExtFunc.getNamespace();
+     				  
      				  if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace)) {
      					 isSortNew = true; 
      				  }
@@ -858,6 +857,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     			   int nextNode;
     			   ResultSequence rSeq = new ResultSequence();
     			   int seqLength = 0;
+    			   
     			   while ((nextNode = sourceNodes.nextNode()) != DTM.NULL) {
     				   XMLNodeCursorImpl xmlNodeCursorImpl = new XMLNodeCursorImpl(nextNode, xctxt);
     				   rSeq.add(xmlNodeCursorImpl);    						
@@ -867,6 +867,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     			   ResultSequence rSeq1 = sortXdmSequence(xctxt, sortKeys, rSeq);
 
     			   List<Integer> nodeHandleList = new ArrayList<Integer>();
+    			   
     			   for (int idx = 0; idx < seqLength; idx++) {
     				   XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)(rSeq1.item(idx));
     				   int nodeHandle = xmlNodeCursorImpl.asNode(xctxt);
@@ -880,15 +881,6 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     		   else {
     			   sourceNodes = sortNodes(xctxt, sortKeys, sourceNodes);
     		   }
-    		}
-
-    		if (transformer.getDebug())
-    		{                
-    			Expression expr = m_xpath.getExpression();
-    			org.apache.xpath.objects.XObject xObject = expr.execute(xctxt);
-    			int current = xctxt.getCurrentNode();
-    			transformer.getTraceManager().emitSelectedEvent(current, this, "select", 
-    					                                                              m_xpath, xObject);
     		}
 
     		xctxt.pushCurrentNode(DTM.NULL);
@@ -918,12 +910,6 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     				docID = child & DTMManager.IDENT_DTM_DEFAULT;
     			} 
 
-    			// Emit a trace event for the template
-    			if (transformer.getDebug())
-    			{
-    				transformer.getTraceManager().emitTraceEvent(this);
-    			}
-
     			// And evaluate the child templates.
     			// Loop through the children of the template, calling execute on 
     			// each of them.
@@ -934,15 +920,6 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     				transformer.setCurrentElement(t);
     				t.execute(transformer);
     			}
-
-    			if (transformer.getDebug())
-    			{
-    				// We need to make sure an old current element is not 
-    				// on the stack. See TransformerImpl#getElementCallstack.
-    				transformer.setCurrentElement(null);
-    				transformer.getTraceManager().emitTraceEndEvent(this);
-    			}
-
     			
     			if (m_doc_cache_off)
     			{    				
@@ -959,12 +936,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     		return;
     	}
     	finally
-    	{
-    		if (transformer.getDebug())
-    			transformer.getTraceManager().emitSelectedEndEvent(contextNode, this,
-													    					"select", new XPath(m_selectExpression),
-													    					new org.apache.xpath.objects.XMLNodeCursorImpl(sourceNodes));
-
+    	{    		
     		xctxt.popSAXLocator();
     		xctxt.popContextNodeList();
     		transformer.popElemTemplateElement();
@@ -978,7 +950,8 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 
     	ResultSequence rSeq = new ResultSequence();
 
-    	int nextNode;
+    	int nextNode = DTM.NULL;
+    	
     	while (DTM.NULL != (nextNode = sourceNodes.nextNode()))
     	{    		
     		XMLNodeCursorImpl xdmNode = new XMLNodeCursorImpl(nextNode, xctxt);
@@ -986,8 +959,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     		rSeq.add(xdmNode);
     	}
     	
-    	processSequenceOrArray(transformer, xctxt, rSeq);
-    	    
+    	processSequenceOrArray(transformer, xctxt, rSeq);    	    
     }
     
   }
@@ -1055,9 +1027,8 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     * Method definition, to process an xdm sequence or an array, to be 
     * used by xsl:for-each's contained sequence constructor.
     */
-   private void processSequenceOrArray(TransformerImpl transformer,
-                                                              XPathContext xctxt, XObject evalResult) 
-                                                              throws TransformerException {       
+   private void processSequenceOrArray(TransformerImpl transformer, XPathContext xctxt, 
+		                                                            XObject evalResult) throws TransformerException {       
 	   
 	   List<XObject> xdmItemList = null;
 	   
@@ -1065,7 +1036,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 	   
 	   final int sourceNode = xctxt.getCurrentNode();
 	   
-	   boolean isHomogeneousSource = evalResult.isHomogeneousSource();
+	   boolean isXslHomogeneousInpSource = evalResult.isDataHomogeneousSource();
 	   
 	   if (evalResult instanceof ResultSequence) {
 		   ResultSequence resultSeq = (ResultSequence)evalResult;
@@ -1085,8 +1056,10 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 		   return; 
 	   }
 	   else if (itemCount == 1) {
-		   // An input sequence or array is of size one		   
+		   // An xdm input sequence, or array with size one
+		   
 		   xObj0 = xdmItemList.get(0);		   
+		   
 		   if (xObj0 instanceof XMLNodeCursorImpl) {
 			  xObj0 = ((XMLNodeCursorImpl)xObj0).getFresh(); 
 		   }
@@ -1107,60 +1080,341 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 	   else {		   		   		   		   		   		   
 		   int xslSortElemCount = getSortElemCount();
 		   
+		   if (xslSortElemCount == 1) {			   
+			  /**
+			   * Within xsl:for-each instruction given one xsl:sort specification, 
+			   * sorting a sequence of numeric values with various types, that 
+			   * may include float NaNs and double NaNs.
+			   */
+			   
+			  ElemSort elemSort = getSortElem(0);
+			  
+			  AVT dataTypeAvt = elemSort.getDataType();
+			  String dataTypeStr = null;
+			  
+			  if (dataTypeAvt != null) {
+			     dataTypeStr = dataTypeAvt.evaluate(xctxt, sourceNode, elemSort);
+			  }
+			  else {
+				 dataTypeStr = Constants.ATTRVAL_DATATYPE_TEXT; 
+			  }
+			  			  
+			  AVT sortOrderAvt = elemSort.getOrder();
+			  String sortOrderStr = null;
+
+			  if (sortOrderAvt != null) {
+				  sortOrderStr = sortOrderAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext());
+			  }
+			  else {
+				  sortOrderStr = Constants.ATTRVAL_ORDER_ASCENDING;
+			  }
+			  
+			  XPath xslSortSelect = elemSort.getSelect();
+			  
+			  boolean xslSortSeqConsKey = false;
+			  
+			  if ((xslSortSelect == null) && (elemSort.getFirstChildElem() == null)) {
+				 xslSortSelect = new XPath(".", srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+			  }
+			  else if (elemSort.getFirstChildElem() != null) {
+				 xslSortSeqConsKey = true; 
+			  }
+			  			  			  
+			  if ((Constants.ATTRVAL_DATATYPE_NUMBER).equals(dataTypeStr)) {				 				  
+				 
+				  int inpSeqSize = xdmItemList.size();
+				 
+				 /**
+				  * List object instance 'listNan', to contain float & double NaN
+				  * string values present within an xdm input sequence. These xdm 
+				  * items are excluded from the sorting, and appear at trailing 
+				  * (sort order, 'descending') or prefix (sort order, 'ascending') 
+				  * positions within the sorted result.
+				  */
+				 
+				 List<String> listNan = new ArrayList<String>();
+				 
+				 List<SortableXdmItem> sortableItemList = new ArrayList<SortableXdmItem>();
+				 List<SortKey> sortKeyList = null;
+				 SortKey sortKey = null;
+				 
+				 SortableXdmItem sortableItem = null;
+				 
+				 boolean isXdmInputSeqOk = true;
+				 				 
+				 for (int idx = 0; idx < inpSeqSize; idx++) {
+					XObject xdmSeqItem = xdmItemList.get(idx);
+					
+					XObject prevCtxtItem = xctxt.getXPath3ContextItem();					
+					xctxt.setXPath3ContextItem(xdmSeqItem);
+					
+					XObject sorkKeyXdmItem = null;
+					
+					try {
+						if (!xslSortSeqConsKey) {
+							sorkKeyXdmItem = xslSortSelect.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());
+						}
+						else {
+							String sortKeyStr = transformer.transformToString(elemSort);
+							
+							sorkKeyXdmItem = new XSDecimal(sortKeyStr);
+						}
+					}
+					catch (Exception ex) {
+						isXdmInputSeqOk = false;
+						
+						break;
+					}
+					finally {
+						xctxt.setXPath3ContextItem(prevCtxtItem);
+					}
+					   
+					if (xdmSeqItem instanceof XSDouble) {
+					   XSDouble xsDouble = (XSDouble)xdmSeqItem;					   
+					   
+					   if (!xsDouble.nan()) {
+						  sortKeyList = new ArrayList<SortKey>();
+						  sortKey = new SortKey(sorkKeyXdmItem, sortOrderStr, null, null, null);
+						  sortKeyList.add(sortKey);
+						  
+						  sortableItem = new SortableXdmItem(xsDouble, sortKeyList);
+						  sortableItemList.add(sortableItem);
+					   }
+					   else {
+						  listNan.add(Constants.ATTRVAL_NAN); 
+					   }
+					}
+					else if (xdmSeqItem instanceof XSFloat) {
+					   XSFloat xsFloat = (XSFloat)xdmSeqItem;
+					   
+					   if (!xsFloat.nan()) {
+						   sortKeyList = new ArrayList<SortKey>();
+						   sortKey = new SortKey(sorkKeyXdmItem, sortOrderStr, null, null, null);
+						   sortKeyList.add(sortKey);
+
+						   sortableItem = new SortableXdmItem(xsFloat, sortKeyList);
+						   sortableItemList.add(sortableItem); 
+					   }
+					   else {
+						   listNan.add(Constants.ATTRVAL_NAN); 
+					   }
+					}
+					else if (xdmSeqItem instanceof XSInteger) {
+						XSInteger xsInteger = (XSInteger)xdmSeqItem;
+						
+						sortKeyList = new ArrayList<SortKey>();
+						sortKey = new SortKey(sorkKeyXdmItem, sortOrderStr, null, null, null);
+						sortKeyList.add(sortKey);
+
+						sortableItem = new SortableXdmItem(xsInteger, sortKeyList);
+						sortableItemList.add(sortableItem);
+					}
+					else if (xdmSeqItem instanceof XSDecimal) {
+						XSDecimal xsDecimal = (XSDecimal)xdmSeqItem;
+						
+						sortKeyList = new ArrayList<SortKey>();
+						sortKey = new SortKey(sorkKeyXdmItem, sortOrderStr, null, null, null);
+						sortKeyList.add(sortKey);
+
+						sortableItem = new SortableXdmItem(xsDecimal, sortKeyList);
+						sortableItemList.add(sortableItem);
+					}
+					else if (xdmSeqItem instanceof XNumber) {
+					   XNumber xNumber = (XNumber)xdmSeqItem;
+					   Double dbl = Double.valueOf(xNumber.num());
+					   
+					   if (!dbl.isNaN()) {
+						   XSDouble xsDouble = new XSDouble(dbl);
+						   sortKeyList = new ArrayList<SortKey>();
+						   sortKey = new SortKey(sorkKeyXdmItem, sortOrderStr, null, null, null);
+						   sortKeyList.add(sortKey);
+
+						   sortableItem = new SortableXdmItem(xsDouble, sortKeyList);
+						   sortableItemList.add(sortableItem);
+					   }
+					   else {
+						  listNan.add(Constants.ATTRVAL_NAN);  
+					   }
+					}
+					else if ((xdmSeqItem instanceof XSString) || (xdmSeqItem instanceof XString)) {
+					   String str1 = XslTransformEvaluationHelper.getStrVal(xdmSeqItem);
+					   
+					   try {
+						  Double dbl = Double.valueOf(str1);
+						  
+						  if (!dbl.isNaN()) {
+							  XSDouble xsDouble = new XSDouble(dbl);
+							  sortKeyList = new ArrayList<SortKey>();
+							  sortKey = new SortKey(xsDouble, sortOrderStr, null, null, null);							  
+							  sortKeyList.add(sortKey);
+
+							  sortableItem = new SortableXdmItem(xsDouble, sortKeyList);
+							  sortableItemList.add(sortableItem);
+						  }
+						  else {
+							  listNan.add(Constants.ATTRVAL_NAN);  
+						  }
+					   }
+					   catch (NumberFormatException ex) {
+						  isXdmInputSeqOk = false;
+						  
+						  break; 
+					   }
+					}
+					else {
+						isXdmInputSeqOk = false;
+						
+						break;
+					}
+				 }
+				 
+				 if (isXdmInputSeqOk) {
+					 
+					 sortableItemList.sort(null);
+
+					 int sizeNanList = listNan.size();
+
+					 if ((Constants.ATTRVAL_ORDER_DESCENDING).equals(sortOrderStr)) {
+						 for (int idx = 0; idx < sizeNanList; idx++) {
+							 String str1 = listNan.get(idx);
+							 XSString xsString = new XSString(str1);
+
+							 sortKeyList = new ArrayList<SortKey>();
+							 sortKey = new SortKey(xsString, sortOrderStr, null, null, null);
+							 sortKeyList.add(sortKey);
+
+							 sortableItem = new SortableXdmItem(xsString, sortKeyList);
+							 sortableItemList.add(sortableItem);
+						 }
+
+						 int sortableItemCount = sortableItemList.size();
+
+						 for (int idx = 0; idx < sortableItemCount; idx++) {
+							 sortableItem = sortableItemList.get(idx);				   
+							 XObject resultSeqItem = sortableItem.getInputItem(); 
+
+							 setXPathContextForXslSequenceProcessing(sortableItemCount, idx, resultSeqItem, xctxt);
+
+							 for (ElemTemplateElement elemTemplateElem = this.m_firstChild; elemTemplateElem != null; 
+									                                                       elemTemplateElem = elemTemplateElem.m_nextSibling) {
+								 xctxt.setSAXLocator(elemTemplateElem);
+								 transformer.setCurrentElement(elemTemplateElem);
+								 elemTemplateElem.execute(transformer);              
+							 }
+
+							 resetXPathContextForXslSequenceProcessing(resultSeqItem, xctxt);
+						 }
+					 }
+					 else {
+						 for (int idx = 0; idx < sizeNanList; idx++) {
+							 String str1 = listNan.get(idx);
+							 XSString xsString = new XSString(str1);
+
+							 setXPathContextForXslSequenceProcessing(sizeNanList, idx, xsString, xctxt);
+
+							 for (ElemTemplateElement elemTemplateElem = this.m_firstChild; elemTemplateElem != null; 
+									                                                       elemTemplateElem = elemTemplateElem.m_nextSibling) {
+								 xctxt.setSAXLocator(elemTemplateElem);
+								 transformer.setCurrentElement(elemTemplateElem);
+								 elemTemplateElem.execute(transformer);              
+							 }
+
+							 resetXPathContextForXslSequenceProcessing(xsString, xctxt);
+						 }
+
+						 int sortableItemCount = sortableItemList.size();
+
+						 for (int idx = 0; idx < sortableItemCount; idx++) {
+							 sortableItem = sortableItemList.get(idx);				   
+							 XObject resultSeqItem = sortableItem.getInputItem(); 
+
+							 setXPathContextForXslSequenceProcessing(sortableItemCount, idx, resultSeqItem, xctxt);
+
+							 for (ElemTemplateElement elemTemplateElem = this.m_firstChild; elemTemplateElem != null; 
+									                                                       elemTemplateElem = elemTemplateElem.m_nextSibling) {
+								 xctxt.setSAXLocator(elemTemplateElem);
+								 transformer.setCurrentElement(elemTemplateElem);
+								 elemTemplateElem.execute(transformer);              
+							 }
+
+							 resetXPathContextForXslSequenceProcessing(resultSeqItem, xctxt);
+						 }
+					 }
+
+					 return;
+				 }
+			  }
+		   }
+		   
 		   if (xslSortElemCount > 0) {			   
 			   xObj0 = xdmItemList.get(0);
 			   String clazz0NameStr = (xObj0.getClass()).getName();
 
 			   boolean compatibleDateTypes1 = true;
-			   List<SortableItem> sortableItemList = new ArrayList<SortableItem>();					   
+			   
+			   List<SortableXdmItem> sortableItemList = new ArrayList<SortableXdmItem>();					   
 			   int inpSeqSize = xdmItemList.size();
+			   
 			   // Check whether, all xdm input items are of same type
+			   
 			   for (int idx = 1; idx < inpSeqSize; idx++) {
-				   XObject resultSeqItem = xdmItemList.get(idx);
-				   Class clazz = resultSeqItem.getClass();
+				   XObject xdmSeqItem = xdmItemList.get(idx);
+				   
+				   Class clazz = xdmSeqItem.getClass();
 				   String clazzNameStr = clazz.getName();
+				   
 				   if (!clazzNameStr.equals(clazz0NameStr)) {
 					   compatibleDateTypes1 = false;
 					   
 					   break;
 				   }
 			   }
+			   
+			   boolean isXdmNodeSetNumeric = isXdmNodesetNumeric(xdmItemList);
 
 			   for (int idx = 0; idx < inpSeqSize; idx++) {
 				   XObject resultSeqItem = xdmItemList.get(idx);
 				   XObject resultSeqItemCopy = resultSeqItem;
-				   SortableItem sortableItem = null;
+				   SortableXdmItem sortableItem = null;
 				   List<SortKey> sortKeyList = new ArrayList<SortKey>();
+				   
 				   for (int idx1 = 0; idx1 < xslSortElemCount; idx1++) {				   
 					   ElemSort elemSort = getSortElem(idx1);
 					   XPath selectXPath = elemSort.getSelect();
 
 					   // This can be absent (which will be default "ascending"), or 
 					   // specified as "ascending" | "descending".
+					   
 					   String sortOrderStr = null;
 					   AVT sortOrderAvt = elemSort.getOrder();
+					   
 					   if (sortOrderAvt != null) {
 						   sortOrderStr = sortOrderAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext());
 					   }
 
 					   // This can be absent, or specified as "upper-first" | "lower-first".
 					   // This is used for string content sorting.
+					   
 					   String caseOrderStr = null;		  
 					   AVT caseOrderAvt = elemSort.getCaseOrder();
+					   
 					   if (caseOrderAvt != null) {
 						   caseOrderStr = caseOrderAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext()); 
 					   }			   			   			   
 
 					   // This can be absent (which will be default "text"), or specified as 
-					   // "text" | "number" | eqname.  
+					   // "text" | "number" | eqname. 
+					   
 					   String dataTypeStr = null;          
 					   AVT dataTypeAvt = elemSort.getDataType();
+					   
 					   if (dataTypeAvt != null) {
 						   dataTypeStr = dataTypeAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext()); 
 					   }
 
 					   String langStr = null;
 					   AVT langAvt = elemSort.getLang();
+					   
 					   if (langAvt != null) {
 						   langStr = langAvt.evaluate(xctxt, sourceNode, xctxt.getNamespaceContext());  
 					   }					   
@@ -1171,8 +1425,9 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 						   XPathSequenceType seqExpectedTypeData = (XPathSequenceType)seqTypeObj;
 						   InstanceOf instanceOf = new InstanceOf();
 						   XObject xObj = instanceOf.operate(resultSeqItem, seqExpectedTypeData);
+						   
 						   if (!xObj.bool()) {
-							   throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm input sequence processed by XSL for-each's "
+							   throw new TransformerException("XPTY0004 : An xdm input sequence processed by XSL for-each's "
 																													   + "'sort' instruction has an item that is not of "
 																													   + "the type '" + dataTypeStr + "', specified by XSL sort's "
 																													   + "data-type attribute.", srcLocator);  
@@ -1184,13 +1439,11 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   }						  
 
 					   boolean compatibleDateTypes = false;
-					   if (!compatibleDateTypes1) {
-						   /**
-						    * xs:date and xs:dateTime values are relatively sortable. W3C XSLT 3.0 
-						    * test case date-032 has an example for this use case.
-						    */
+					   
+					   if (!compatibleDateTypes1) {						   
 						   if (idx == 0) {
 							   XObject xObj1 = xdmItemList.get(1);
+							   
 							   if ((xObj0 instanceof XSDateTime) && ((xObj1 instanceof XSDate) || 
 									                                                       (xObj1 instanceof XSDateTime))) {
 								   compatibleDateTypes = true;								   
@@ -1209,6 +1462,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   if (!compatibleDateTypes) {
 						   if (idx == 0) {
 							   XObject xObj1 = xdmItemList.get(1); 
+							   
 							   if ((xObj0 instanceof XSDate || xObj0 instanceof XSDateTime) && 
 									                                                       (xObj1 instanceof XSDate || xObj1 instanceof XSDateTime)) {
 								   compatibleDateTypes = true; 
@@ -1221,6 +1475,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 
 						   if (!compatibleDateTypes) {
 							   String clazz1NameStr = null;
+							   
 							   if (idx == 0) {									   
 								   clazz1NameStr = ((xdmItemList.get(1)).getClass()).getName(); 
 							   }
@@ -1230,7 +1485,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 
 							   if (!clazz1NameStr.equals(clazz0NameStr)) {
 								   // The sequence items are not of compatible types								 
-								   throw new javax.xml.transform.TransformerException("XTDE1030 : An xdm input sequence processed by XSL for-each's "
+								   throw new TransformerException("XTDE1030 : An xdm input sequence processed by XSL for-each's "
 																															   + "'sort' instruction, dosn't have items with "
 																															   + "compatible types.", srcLocator); 
 							   }
@@ -1238,18 +1493,28 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   }						   
 
 					   XObject sorkKeyObj = null;
+					   
 					   if (selectXPath != null) {
 						   if (selectXPath.getExpression() instanceof SelfIteratorNoPredicate) {
 							   sorkKeyObj = resultSeqItem; 
 						   }
 						   else if (resultSeqItem instanceof XMLNodeCursorImpl) {
 							   XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)resultSeqItem;
+
 							   int contextNode = xmlNodeCursorImpl.asNode(xctxt);
-							   sorkKeyObj = selectXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+							   xctxt.pushCurrentNode(contextNode);
+
+							   try {
+								   sorkKeyObj = selectXPath.execute(xctxt, contextNode, xctxt.getNamespaceContext());
+							   }
+							   finally {
+								   xctxt.popCurrentNode();
+							   }
 						   }
 						   else {
 							   XObject prevContextItem = xctxt.getXPath3ContextItem();						  
 							   xctxt.setXPath3ContextItem(resultSeqItem);
+							   
 							   try {
 								   sorkKeyObj = selectXPath.execute(xctxt, DTM.NULL, xctxt.getNamespaceContext());
 							   }
@@ -1261,18 +1526,35 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   else if (elemSort.getFirstChildElem() != null) {					   					   
 						   if (resultSeqItem instanceof XMLNodeCursorImpl) {
 							   XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)resultSeqItem;
-							   int contextNode = xmlNodeCursorImpl.asNode(xctxt);
+							   
+							   int contextNode = xmlNodeCursorImpl.asNode(xctxt);							   
 							   xctxt.pushCurrentNode(contextNode);
-							   String str1 = transformer.transformToString(elemSort);
-							   sorkKeyObj = new XSString(str1);
-							   xctxt.popCurrentNode();
+							   
+							   try {
+								   String str1 = transformer.transformToString(elemSort);
+
+								   if (!isXdmNodeSetNumeric) {
+									   sorkKeyObj = new XSString(str1);
+								   }
+								   else {
+									   sorkKeyObj = new XSDouble(str1); 
+								   }
+							   }
+							   finally {
+								   xctxt.popCurrentNode();
+							   }
 						   }
 						   else {
 							   XObject xpath3PrevCtxtItem = xctxt.getXPath3ContextItem();
-							   xctxt.setXPath3ContextItem(resultSeqItem);
-							   String str1 = transformer.transformToString(elemSort);
-							   xctxt.setXPath3ContextItem(xpath3PrevCtxtItem);
-							   sorkKeyObj = new XSString(str1);   
+							   
+							   try {
+								   xctxt.setXPath3ContextItem(resultSeqItem);
+								   String str1 = transformer.transformToString(elemSort);
+								   sorkKeyObj = new XSString(str1);
+							   }
+							   finally {
+								   xctxt.setXPath3ContextItem(xpath3PrevCtxtItem);
+							   }
 						   }
 					   }
 					   else {
@@ -1296,7 +1578,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 							   sorkKeyObj = new XNumber(dbl);
 						   }
 						   catch (NumberFormatException ex) {
-							   throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm input sequence processed by XSL for-each's "
+							   throw new TransformerException("XPTY0004 : An xdm input sequence processed by XSL for-each's "
 																														   + "'sort' instruction has an item that is not of "
 																														   + "the type '" + dataTypeStr + "', specified by XSL sort's "
 																														   + "data-type attribute.", srcLocator); 
@@ -1307,11 +1589,13 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 
 					   String collation = null;
 					   AVT collationAvt = elemSort.getCollation();
+					   
 					   if (collationAvt != null) {
 					      collation = collationAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
 					   }
 
 					   SortKey sortKey = new SortKey(sorkKeyObj, sortOrderStr, collation, caseOrderStr, langStr);
+					   
 					   if (collation != null) {
 						   sortKey.setCollationDeclared(true); 
 					   }
@@ -1319,7 +1603,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   sortKeyList.add(sortKey);
 				   }
 
-				   sortableItem = new SortableItem(resultSeqItemCopy, sortKeyList);
+				   sortableItem = new SortableXdmItem(resultSeqItemCopy, sortKeyList);
 
 				   sortableItemList.add(sortableItem);
 			   }
@@ -1327,9 +1611,11 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 			   sortableItemList.sort(null);
 
 			   int sortableItemCount = sortableItemList.size();
+			   
 			   for (int idx = 0; idx < sortableItemCount; idx++) {
-				   SortableItem sortableItem = sortableItemList.get(idx);				   
+				   SortableXdmItem sortableItem = sortableItemList.get(idx);				   
 				   XObject resultSeqItem = sortableItem.getInputItem(); 
+				   
 				   if (resultSeqItem instanceof XMLNodeCursorImpl) {
 					   resultSeqItem = ((XMLNodeCursorImpl)resultSeqItem).getFresh(); 
 				   }
@@ -1337,7 +1623,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 				   setXPathContextForXslSequenceProcessing(sortableItemCount, idx, resultSeqItem, xctxt);
 
 				   for (ElemTemplateElement elemTemplateElem = this.m_firstChild; elemTemplateElem != null; 
-						   elemTemplateElem = elemTemplateElem.m_nextSibling) {
+						   																		   elemTemplateElem = elemTemplateElem.m_nextSibling) {
 					   xctxt.setSAXLocator(elemTemplateElem);
 					   transformer.setCurrentElement(elemTemplateElem);
 					   elemTemplateElem.execute(transformer);              
@@ -1348,13 +1634,15 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 		   }
 		   else {
 			   int inpSeqSize = xdmItemList.size();
+			   
 			   for (int idx = 0; idx < inpSeqSize; idx++) {
 				   XObject resultSeqItem = xdmItemList.get(idx);
+				   
 				   if (resultSeqItem instanceof XMLNodeCursorImpl) {
 					  resultSeqItem = resultSeqItem.getFresh();
 				   }
 				   
-				   if (isHomogeneousSource) {
+				   if (isXslHomogeneousInpSource) {
 					  xctxt.setXPath3ContextSize(xdmItemList.size());
 				      xctxt.setXPath3ContextItem(resultSeqItem);
 				      xctxt.setXPath3ContextPosition(idx + 1); 
@@ -1364,37 +1652,63 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 				   }
 
 				   int count = 0;
+				   
+				   boolean spaceCharSerCheck = false;
+				   
 				   for (ElemTemplateElement elemTemplateElem = this.m_firstChild; elemTemplateElem != null; 
-						                                                                        elemTemplateElem = elemTemplateElem.m_nextSibling) {
-					   count++;					   
+						                                                                             elemTemplateElem = elemTemplateElem.m_nextSibling) {
+					   count++;	
+					   
+					   if ((elemTemplateElem instanceof ElemSequence) && (resultSeqItem instanceof XPathMap)) {
+						  ElemSequence elemSequence = (ElemSequence)elemTemplateElem;
+						  
+						  if (elemSequence.getFirstChildElem() == null) {
+							 ElemCopyOf elemCopyOf = new ElemCopyOf();							 
+							 
+							 elemCopyOf.setSelect(elemSequence.getSelect());
+							 elemCopyOf.setXpathDefaultNamespace(elemSequence.getXpathDefaultNamespace());
+							 elemCopyOf.setExpandText(elemSequence.getExpandText());
+							 elemCopyOf.setUseWhen(elemSequence.getUseWhen());
+							 
+							 elemTemplateElem = elemCopyOf;
+							 
+							 if (count == 1) {
+							    spaceCharSerCheck = true;
+							 }
+						  }
+					   }
+					   
 					   xctxt.setSAXLocator(elemTemplateElem);
 					   transformer.setCurrentElement(elemTemplateElem);
 					   elemTemplateElem.execute(transformer);              
 				   }
 				   
-				   boolean isSpaceToEmit = false;
+				   boolean emitSpaceChar = false;
+				   
 				   ElemTemplateElement parentElem = getParentElem();
-				   if (((count == 1) && (this.m_firstChild instanceof ElemSequence)) && 
-						                                            !((parentElem instanceof ElemFunction) || 
-						                                              (parentElem instanceof ElemVariable))) {
-					   isSpaceToEmit = true; 
+				   
+				   if (((count == 1) && !spaceCharSerCheck && (this.m_firstChild instanceof ElemSequence)) && 
+										                                                                  !((parentElem instanceof ElemFunction) || 
+										                                                                    (parentElem instanceof ElemVariable))) {
+					   emitSpaceChar = true; 
 				   }
 				   
-				   if (isSpaceToEmit && (idx < (inpSeqSize - 1)) && !(resultSeqItem instanceof XMLNodeCursorImpl)) {
+				   if (emitSpaceChar && (idx < (inpSeqSize - 1)) && !(resultSeqItem instanceof XMLNodeCursorImpl)) {
 					  // Emit " " separator character, after processing an xdm non-node item
 					  SerializationHandler handler = transformer.getSerializationHandler();
 					  String strVal = " ";
+					  
 					  try {
 					     handler.characters(strVal.toCharArray(), 0, strVal.length());
 					  }
 					  catch (SAXException ex) {
-						  throw new javax.xml.transform.TransformerException("XTDE1030 : An XSL tranformation error has occured, while "
-						  		                                                                           + "processing XSL for-each's "
-						  		                                                                           + "contained sequence constructor.", srcLocator); 
+						  throw new TransformerException("XTDE1030 : An XSL tranformation error has occured, while "
+						  		                                                                            + "processing XSL for-each's "
+						  		                                                                            + "contained sequence constructor.", srcLocator); 
 					  }
 				   }
 
-				   if (isHomogeneousSource) {
+				   if (isXslHomogeneousInpSource) {
 					  xctxt.setXPath3ContextSize(-1);
 				      xctxt.setXPath3ContextItem(null);
 				      xctxt.setXPath3ContextPosition(-1); 
@@ -1412,7 +1726,8 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     * within one xsl:sort element, along with an xdm sort key value.
     */
    class SortKey {
-   	   /**
+   	   
+	   /**
    	    * A sort key object value associated with an xdm 
    	    * input item.
    	    */
@@ -1511,7 +1826,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
     * A class definition, representing an xdm sortable object,
     * to be used by xsl:for-each's one or more xsl:sort instructions.
     */
-   class SortableItem implements Comparable<SortableItem> {
+   class SortableXdmItem implements Comparable<SortableXdmItem> {
 	   
 	   /**
 	    * An input sequence item that needs to be sorted.
@@ -1526,41 +1841,43 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 	   /**
 	    * Class constructor.
 	    */
-	   public SortableItem(XObject inpItem, List<SortKey> sortKeyList) {
+	   public SortableXdmItem(XObject inpItem, List<SortKey> sortKeyList) {
 		   this.m_inputItem = inpItem;
 		   this.m_sortKeyList = sortKeyList;
 	   }
 
 	   @Override
-	   public int compareTo(SortableItem obj2) {		   		   
+	   public int compareTo(SortableXdmItem obj2) {		   		   
 		   
 		   int result = 0;
 		   
 		   try {
 			   int sortKeyCount = m_sortKeyList.size();
+			   
 			   for (int idx = 0; idx < sortKeyCount; idx++) {
 				   SortKey sortKey = m_sortKeyList.get(idx);				  
 				   List<SortKey> sortKeyList2 = obj2.getSortKeyList();
 				   int size2 = sortKeyList2.size();
+				   
 				   if (size2 > 1) {
 					   for (int idx2 = 0; idx2 < size2; idx2++) {
 						   if (idx == idx2) {
 							   SortKey sortKey2 = sortKeyList2.get(idx2);
 
-							   boolean m_collation_declared = sortKey.isCollationDeclared();
-							   String m_collation = sortKey.getCollation();
-							   String m_sortOrderStr = sortKey.getSortOrderStr();
-							   String m_caseOrderStr = sortKey.getCaseOrder();
-							   String m_langStr = sortKey.getLangStr();
+							   boolean collationDeclared = sortKey.isCollationDeclared();
+							   String collationUri = sortKey.getCollation();
+							   String sortOrderStr = sortKey.getSortOrderStr();
+							   String caseOrderStr = sortKey.getCaseOrder();
+							   String langStr = sortKey.getLangStr();
 
 							   XObject sortKeyObj = sortKey.getSortKeyObj();
 							   XObject sortKeyObj2 = sortKey2.getSortKeyObj();
 
-							   boolean isSortKeyEqual = sortKeyEqual(m_collation_declared, m_collation, m_langStr, sortKeyObj, sortKeyObj2);                       
+							   boolean isSortKeyEqual = sortKeyEqual(collationDeclared, collationUri, langStr, sortKeyObj, sortKeyObj2);                       
 
 							   if (!isSortKeyEqual) {
-								   boolean lessThan = sortKeyLessThan(m_collation_declared, m_collation, m_sortOrderStr, m_caseOrderStr, 
-										                              m_langStr, sortKeyObj, sortKeyObj2);								   
+								   boolean lessThan = sortKeyLessThan(collationDeclared, collationUri, sortOrderStr, caseOrderStr, 
+										                              langStr, sortKeyObj, sortKeyObj2);								   
 								   result = (lessThan ? -1 : 1);  
 							   }
 							   else {
@@ -1572,20 +1889,20 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   }
 				   }
 				   else {
-					   boolean m_collation_declared = sortKey.isCollationDeclared();
-					   String m_collation = sortKey.getCollation();
-					   String m_sortOrderStr = sortKey.getSortOrderStr();
-					   String m_caseOrderStr = sortKey.getCaseOrder();
-					   String m_langStr = sortKey.getLangStr();
+					   boolean collationDeclared = sortKey.isCollationDeclared();
+					   String collationUri = sortKey.getCollation();
+					   String sortOrderStr = sortKey.getSortOrderStr();
+					   String caseOrderStr = sortKey.getCaseOrder();
+					   String langStr = sortKey.getLangStr();
 
 					   XObject sortKeyObj = sortKey.getSortKeyObj();
 					   XObject sortKeyObj2 = (sortKeyList2.get(0)).getSortKeyObj();
 					   
-					   boolean isSortKeyEqual = sortKeyEqual(m_collation_declared, m_collation, m_langStr, sortKeyObj, sortKeyObj2);                       
+					   boolean isSortKeyEqual = sortKeyEqual(collationDeclared, collationUri, langStr, sortKeyObj, sortKeyObj2);                       
 
 					   if (!isSortKeyEqual) {
-						   boolean lessThan = sortKeyLessThan(m_collation_declared, m_collation, m_sortOrderStr, m_caseOrderStr, 
-								                              m_langStr, sortKeyObj, sortKeyObj2);
+						   boolean lessThan = sortKeyLessThan(collationDeclared, collationUri, sortOrderStr, caseOrderStr, 
+								                              langStr, sortKeyObj, sortKeyObj2);
 						   result = (lessThan ? -1 : 1);
 					   }
 
@@ -1594,7 +1911,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 			   }			   			   
 		   }
 		   catch (TransformerException ex) {
-			   // no op			  
+			   // No op			  
 		   }
 		   
 		   return result;
@@ -1608,35 +1925,44 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 	    * using a lexicographic comparison which is equivalent to using a unicode codepoint 
 	    * collation.
 	    * 
-	    * @param m_collation_declared						Boolean value true, if xsl:sort instruction 
-	    *                                                   has declared a 'collation' attribute.
-	    * @param m_collation                                An optional collation URI, specified on xsl:sort
-	    *                                                   instruction.
-	    * @param m_sortOrderStr                             xsl:sort instruction's 'order' attribute value,
-	    *                                                   which has default value 'ascending'.
-	    * @param m_caseOrderStr                             xsl:sort instructon's 'case-order' attribute value. 
-	    * @param m_langStr                                  xsl:sort instructon's 'lang' attribute value.
-	    * @param sortKeyObj                                 One of the sort key value
-	    * @param sortKeyObj2                                The second sort key value
-	    * @return                                           Boolean value true, if the first sort key value
-	    *                                                   precedes another, otherwise false.
+	    * @param collationDeclared						  Boolean value true, if xsl:sort instruction 
+	    *                                                 has declared a 'collation' attribute.
+	    *                                                 
+	    * @param collationUri                             An optional collation uri, specified on xsl:sort
+	    *                                                 instruction.
+	    *                                                 
+	    * @param sortOrderStr                             xsl:sort instruction's 'order' attribute value,
+	    *                                                 which has default value 'ascending'.
+	    *                                                 
+	    * @param caseOrderStr                             xsl:sort instructon's 'case-order' attribute value.
+	    *  
+	    * @param langStr                                  xsl:sort instructon's 'lang' attribute value.
+	    * 
+	    * @param sortKeyObj                               The first sort key value
+	    * 
+	    * @param sortKeyObj2                              The second sort key value
+	    * 
+	    * @return                                         Boolean value true, if the first sort key value
+	    *                                                 precedes another, otherwise false.
 	    * @throws TransformerException
 	    */
-	   private boolean sortKeyLessThan(boolean m_collation_declared, String m_collation, String m_sortOrderStr,
-			                           String m_caseOrderStr, String m_langStr, XObject sortKeyObj, XObject sortKeyObj2)
+	   private boolean sortKeyLessThan(boolean collationDeclared, String collationUri, String sortOrderStr,
+			                           String caseOrderStr, String langStr, XObject sortKeyObj, XObject sortKeyObj2)
 					                                                                                                 throws TransformerException {
 
 		   boolean result = false;
 
-		   if ((Constants.ATTRVAL_ORDER_ASCENDING).equals(m_sortOrderStr)) {
-			   if (m_collation_declared) {
-				   result = sortKeyObj.vcLessThan(sortKeyObj2, null, m_collation, true);				  
+		   if ((Constants.ATTRVAL_ORDER_ASCENDING).equals(sortOrderStr)) {
+			   if (collationDeclared) {
+				   result = sortKeyObj.vcLessThan(sortKeyObj2, null, collationUri, true);				  
 			   }
-			   else if ((Constants.ATTRVAL_CASEORDER_UPPER).equals(m_caseOrderStr)) {
+			   else if ((Constants.ATTRVAL_CASEORDER_UPPER).equals(caseOrderStr)) {
 				   String str1 = XslTransformEvaluationHelper.getStrVal(sortKeyObj);
 				   String str2 = XslTransformEvaluationHelper.getStrVal(sortKeyObj2);
-				   if (m_langStr == null) {
+				   
+				   if (langStr == null) {
 					   int i = str1.compareToIgnoreCase(str2);
+					   
 					   if (i == 0) {
 						   i = str1.compareTo(str2);
 					   }
@@ -1644,10 +1970,11 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   result = (i < 0) ? true : false;
 				   }
 				   else {
-					   Locale locale = new Locale(m_langStr);
+					   Locale locale = new Locale(langStr);
 					   Collator collator = Collator.getInstance(locale);
 					   collator.setStrength(Collator.PRIMARY);
 					   int i = collator.compare(str1, str2);
+					   
 					   if (i == 0) {
 						   collator.setStrength(Collator.TERTIARY);
 						   i = collator.compare(str1, str2);
@@ -1656,11 +1983,13 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   result = (i < 0) ? true : false;
 				   }
 			   }
-			   else if ((Constants.ATTRVAL_CASEORDER_LOWER).equals(m_caseOrderStr)) {
+			   else if ((Constants.ATTRVAL_CASEORDER_LOWER).equals(caseOrderStr)) {
 				   String str1 = XslTransformEvaluationHelper.getStrVal(sortKeyObj);
 				   String str2 = XslTransformEvaluationHelper.getStrVal(sortKeyObj2);
-				   if (m_langStr == null) {
+				   
+				   if (langStr == null) {
 					   int i = str1.compareToIgnoreCase(str2);
+					   
 					   if (i == 0) {
 						   i = -1 * str1.compareTo(str2);
 					   }
@@ -1668,10 +1997,11 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   result = (i < 0) ? true : false;
 				   }
 				   else {
-					   Locale locale = new Locale(m_langStr);
+					   Locale locale = new Locale(langStr);
 					   Collator collator = Collator.getInstance(locale);
 					   collator.setStrength(Collator.PRIMARY);
 					   int i = collator.compare(str1, str2);
+					   
 					   if (i == 0) {
 						   collator.setStrength(Collator.TERTIARY);
 						   i = -1 * collator.compare(str1, str2);
@@ -1680,11 +2010,11 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   result = (i < 0) ? true : false;
 				   }
 			   }
-			   else if (m_langStr != null) {
+			   else if (langStr != null) {
 				   String str1 = XslTransformEvaluationHelper.getStrVal(sortKeyObj);
 				   String str2 = XslTransformEvaluationHelper.getStrVal(sortKeyObj2);
 
-				   Locale locale = new Locale(m_langStr);
+				   Locale locale = new Locale(langStr);
 				   Collator collator = Collator.getInstance(locale);
 				   collator.setStrength(Collator.TERTIARY);
 
@@ -1693,20 +2023,22 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 				   result = (i < 0) ? true : false;
 			   }
 			   else {
-				   int i = sortKeyObj.vcLessThan(sortKeyObj2, null, m_collation, true) ? -1 : 1;
+				   int i = sortKeyObj.vcLessThan(sortKeyObj2, null, collationUri, true) ? -1 : 1;
 
 				   result = (i < 0) ? true : false;
 			   }
 		   }
-		   else if ((Constants.ATTRVAL_ORDER_DESCENDING).equals(m_sortOrderStr)) {
-			   if (m_collation_declared) {
-				   result = !sortKeyObj.vcLessThan(sortKeyObj2, null, m_collation, true);
+		   else if ((Constants.ATTRVAL_ORDER_DESCENDING).equals(sortOrderStr)) {
+			   if (collationDeclared) {
+				   result = !sortKeyObj.vcLessThan(sortKeyObj2, null, collationUri, true);
 			   }							  
-			   else if ((Constants.ATTRVAL_CASEORDER_UPPER).equals(m_caseOrderStr)) {
+			   else if ((Constants.ATTRVAL_CASEORDER_UPPER).equals(caseOrderStr)) {
 				   String str1 = XslTransformEvaluationHelper.getStrVal(sortKeyObj);
 				   String str2 = XslTransformEvaluationHelper.getStrVal(sortKeyObj2);					  
-				   if (m_langStr == null) {
+				   
+				   if (langStr == null) {
 					   int i = str1.compareToIgnoreCase(str2);
+					   
 					   if (i == 0) {
 						   i = -1 * str1.compareTo(str2);
 					   }
@@ -1717,10 +2049,11 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   result = (i < 0) ? true : false;
 				   }
 				   else {
-					   Locale locale = new Locale(m_langStr);
+					   Locale locale = new Locale(langStr);
 					   Collator collator = Collator.getInstance(locale);
 					   collator.setStrength(Collator.PRIMARY);
 					   int i = collator.compare(str1, str2);
+					   
 					   if (i == 0) {
 						   collator.setStrength(Collator.TERTIARY);
 						   i = -1 * collator.compare(str1, str2);
@@ -1732,11 +2065,13 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   result = (i < 0) ? true : false;
 				   }					   
 			   }
-			   else if ((Constants.ATTRVAL_CASEORDER_LOWER).equals(m_caseOrderStr)) {
+			   else if ((Constants.ATTRVAL_CASEORDER_LOWER).equals(caseOrderStr)) {
 				   String str1 = XslTransformEvaluationHelper.getStrVal(sortKeyObj);
 				   String str2 = XslTransformEvaluationHelper.getStrVal(sortKeyObj2);					   
-				   if (m_langStr == null) {
+				   
+				   if (langStr == null) {
 					   int i = str1.compareToIgnoreCase(str2);
+					   
 					   if (i == 0) {
 						   i = str1.compareTo(str2);
 					   }
@@ -1747,10 +2082,11 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   result = (i < 0) ? true : false;
 				   }
 				   else {
-					   Locale locale = new Locale(m_langStr);
+					   Locale locale = new Locale(langStr);
 					   Collator collator = Collator.getInstance(locale);
 					   collator.setStrength(Collator.PRIMARY);
 					   int i = collator.compare(str1, str2);
+					   
 					   if (i == 0) {
 						   collator.setStrength(Collator.TERTIARY);
 						   i = collator.compare(str1, str2);
@@ -1762,11 +2098,11 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 					   result = (i < 0) ? true : false;
 				   }
 			   }
-			   else if (m_langStr != null) {
+			   else if (langStr != null) {
 				   String str1 = XslTransformEvaluationHelper.getStrVal(sortKeyObj);
 				   String str2 = XslTransformEvaluationHelper.getStrVal(sortKeyObj2);
 
-				   Locale locale = new Locale(m_langStr);
+				   Locale locale = new Locale(langStr);
 				   Collator collator = Collator.getInstance(locale);
 				   collator.setStrength(Collator.TERTIARY);
 
@@ -1775,9 +2111,9 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 				   result = (i < 0) ? false : true;
 			   }
 			   else {
-				   int i = sortKeyObj.vcLessThan(sortKeyObj2, null, m_collation, true) ? 1 : -1;
-
-				   result = (i < 0) ? true : false;
+				   int i = sortKeyObj.vcLessThan(sortKeyObj2, null, collationUri, true) ? -1 : 1;
+				   
+				   result = (i < 0) ? false : true;				   
 			   }
 		   }
 
@@ -1785,46 +2121,52 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 	   }
 
 	   /**
-	    * A method definition, to check whether two sort key values are equal. If a xsl:sort 
+	    * Method definition, to check whether two sort key values are equal. If a xsl:sort 
 	    * instruction specifies a collation URI, xsl:sort instruction's 'lang' attribute is
 	    * ignored. When xsl:sort instruction doesn't specify both collation URI and 'lang' 
 	    * attributes, the sort keys are compared using lexicographic comparison (which is
 	    * equivalent to using a unicode codepoint collation).
 	    * 
-	    * @param m_collation_declared				   Boolean value true, if xsl:sort instruction has 
-	    *                                              specified a 'collation' attribute.
-	    * @param m_collation                           An optional collation URI specified on xsl:sort 
-	    *                                              instruction, used to compare two sort key values.
-	    * @param m_langStr                             Value of xsl:sort instruction's optional 'lang' 
-	    *                                              attribute.
-	    * @param sortKeyObj                            One of the sort key value
-	    * @param sortKeyObj2                           The second sort key value
-	    * @return                                      Boolean value true, if the two supplied sort key
-	    *                                              values are equal, otherwise false.
+	    * @param collationDeclared				      Boolean value true, if xsl:sort instruction has 
+	    *                                             specified a 'collation' attribute.
+	    *                                              
+	    * @param collationUri                         An optional collation uri specified on xsl:sort 
+	    *                                             instruction, used to compare two sort key values.
+	    *                                              
+	    * @param langStr                              Value of xsl:sort instruction's optional 'lang' 
+	    *                                             attribute.
+	    *                                              
+	    * @param sortKeyObj                           The first sort key value
+	    * 
+	    * @param sortKeyObj2                          The second sort key value
+	    * 
+	    * @return                                     Boolean value true, if the two supplied sort key
+	    *                                             values are equal, otherwise false.
 	    * @throws TransformerException
 	    */
-	   private boolean sortKeyEqual(boolean m_collation_declared, String m_collation, String m_langStr,
+	   private boolean sortKeyEqual(boolean collationDeclared, String collationUri, String langStr,
 			                        XObject sortKeyObj, XObject sortKeyObj2) throws TransformerException {
 
 		   boolean result = false;
 
-		   if (m_collation_declared && sortKeyObj.vcEquals(sortKeyObj2, null, m_collation, true)) {							  
+		   if (collationDeclared && sortKeyObj.vcEquals(sortKeyObj2, null, collationUri, true)) {							  
 			   result = true;
 		   }
-		   else if (m_langStr != null) {
+		   else if (langStr != null) {
 			   String str1 = XslTransformEvaluationHelper.getStrVal(sortKeyObj);
 			   String str2 = XslTransformEvaluationHelper.getStrVal(sortKeyObj2);
 
-			   Locale locale = new Locale(m_langStr);
+			   Locale locale = new Locale(langStr);
 			   Collator collator = Collator.getInstance(locale);
 			   collator.setStrength(Collator.TERTIARY);
 
 			   int result2 = collator.compare(str1, str2);
+			   
 			   if (result2 == 0) {
 				   result = true;
 			   }
 		   }
-		   else if (sortKeyObj.vcEquals(sortKeyObj2, null, m_collation, true)) {
+		   else if (sortKeyObj.vcEquals(sortKeyObj2, null, collationUri, true)) {
 			   result = true;;
 		   }
 
@@ -1847,5 +2189,128 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 		   this.m_sortKeyList = sortKeyList;  
 	   }
    }
+   
+   /**
+    * Method definition, to check whether Xalan-J XSLT 1.0 sort 
+    * legacy algorithm needs to be used.
+    * 
+    * @param xctxt                               An XPath context object
+    * @param srcLocator                          An XSL transformation source locator
+    *                                            object instance.
+    * @return                                    Boolean value true or false
+    * @throws TransformerException
+    */
+   private boolean isXslSortXalanLegacy(XPathContext xctxt, SourceLocator srcLocator) throws TransformerException {
+		
+		boolean result = true;
+		
+		int contextNode = xctxt.getCurrentNode();
+		
+		int sortElemCount = m_sortElems.size();
+		
+		for (int idx = 0; idx < sortElemCount; idx++) {
+		    ElemSort elemSort = (ElemSort)m_sortElems.get(idx);    	    
+		    
+		    AVT langAvt = elemSort.getLang();
+		    String langStr = null;
+		        	    
+		    AVT collationAvt = elemSort.getCollation();
+		    String collationUri = null;
+		    
+		    if ((langAvt != null) && (collationAvt != null)) {    	    	
+		       langStr = langAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());    	    	
+		       collationUri = collationAvt.evaluate(xctxt, contextNode, xctxt.getNamespaceContext());
+		       
+		       if ((XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI).equals(collationUri) && langStr.contains("en")) {
+		    	  langStr = null;
+		    	  
+		          elemSort.setLang(null);
+		       }    	           	           	       
+		    }
+		    
+		    if (langStr != null) {    	    	    	           	           	       
+		       if (!langStr.contains("en")) {
+		    	  result = false;
+		       }
+		       else if ((collationUri != null) && (XPathCollationSupport.UNICODE_CODEPOINT_COLLATION_URI).equals(collationUri)) {
+		    	  result = false; 
+		       }
+		    }
+		    
+		    if (!result && (collationUri != null)) {
+		       result = false;
+		    }
+		    
+		    if (result) {
+		    	if (elemSort.getFirstChildElem() == null) {
+		    		XPath xpathSelect = elemSort.getSelect();
+
+		    		if (xpathSelect == null) {
+		    			xpathSelect = new XPath(".", srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);  
+		    		}
+
+		    		Expression expression = xpathSelect.getExpression();
+
+		    		if (expression instanceof XSL3ConstructorOrExtensionFunction) {
+		    			XSL3ConstructorOrExtensionFunction func1 = (XSL3ConstructorOrExtensionFunction)expression;
+		    			String namespace = func1.getNamespace();
+
+		    			if (!((Constants.S_EXTENSIONS_JAVA_URL).equals(namespace) || (XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(namespace))) {
+		    				result = false;
+
+		    				break;
+		    			}
+		    		}
+		    	}
+		    	else {
+		    		result = false;
+		    		
+		    		break;
+		    	}
+			}
+		}
+		
+		return result;
+	}
+   
+   /**
+    * Method definition, to check whether the supplied list
+    * contains all xdm items with type XMLNodeCursorImpl whose string
+    * values are castable as numeric. 
+    * 
+    * @param xdmItemList                    The supplied list of object
+    *                                       instances.
+    * @return                               Boolean value true or false
+    */
+   private boolean isXdmNodesetNumeric(List<XObject> xdmItemList) {
+		
+	   boolean result = true;
+
+	   int inpSeqSize = xdmItemList.size();
+
+	   for (int idx = 0; idx < inpSeqSize; idx++) {
+		   XObject resultSeqItem = xdmItemList.get(idx);
+
+		   if (resultSeqItem instanceof XMLNodeCursorImpl) {
+			   String str1 = ((XMLNodeCursorImpl)resultSeqItem).str();
+
+			   try {
+				   Double.valueOf(str1);
+			   }
+			   catch (NumberFormatException ex) {
+				   result = false;
+
+				   break;
+			   }
+		   }
+		   else {
+			   result = false;
+
+			   break;
+		   }
+	   }
+
+	   return result;	   
+	}
    
 }

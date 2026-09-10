@@ -110,15 +110,15 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
         if (m_arg2 != null) {
            // Get 'string value' for flags argument of fn:analyze-string 
            // function call.
+        	
            XObject arg2XObj = getFunctionArgEffectiveValue(m_arg2, xctxt);
 
            flagsStr = XslTransformEvaluationHelper.getStrVal(arg2XObj);           
            
            if (!RegexEvaluationSupport.isRegexFlagStrValid(flagsStr)) {              
-              throw new javax.xml.transform.TransformerException("XTDE1145 : An XPath 3.1 function 'analyze-string' has been "
-              		                                                                                            + "called with incorrect regex flags "
-              		                                                                                            + "argument. XPath regex valid flag charcaters "
-              		                                                                                            + "are : s, m, i, x, q.", srcLocator);
+              throw new TransformerException("FORX0001 : An XPath 3.1 function 'analyze-string' has been called with incorrect regex flags "
+              		                                                                                                                + "argument. XPath regex valid flag charcaters "
+              		                                                                                                                + "are : s, m, i, x, q.", srcLocator);
            }
         }
         
@@ -140,7 +140,7 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
         		String mesg1 = ex.getMessage();
         		errMesg = (mesg1 != null) ? (errMesg + " " + mesg1) : errMesg;  
         		
-        		throw new javax.xml.transform.TransformerException(errMesg, srcLocator);
+        		throw new TransformerException(errMesg, srcLocator);
         	}
 
         	List<RegexMatchInfo> regexMatchInfoList = new ArrayList<RegexMatchInfo>();
@@ -148,6 +148,11 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
         	while (regexMatcher.find()) {
         		int idx1 = regexMatcher.start();
         		int idx2 = regexMatcher.end();
+        		
+        		if (idx1 == idx2) {
+        		   throw new TransformerException("FORX0003 : An XPath 3.1 function 'analyze-string' cannot have a "
+        		   		                                                                                          + "regex that matches a zero length string.");
+        		}
         		
         		RegexMatchInfo regexMatchInfo = new RegexMatchInfo();
         		regexMatchInfo.setStartIdx(idx1);
@@ -476,9 +481,8 @@ public class FuncAnalyzeString extends FunctionMultiArgs {
 		   dBuilder = dbf.newDocumentBuilder();
 		} 
         catch (ParserConfigurationException ex) {
-		   throw new javax.xml.transform.TransformerException("FOJS0001 : An XPath 3.1 function call 'analyze-string', has encountered "
-		   		                                                                                                + "an internal error within an XML "
-		   		                                                                                                + "parser library invocation.", srcLocator);
+		   throw new TransformerException("FOJS0001 : An XPath 3.1 function call 'analyze-string', has encountered an internal error within an XML "
+		   		                                                                                                                           + "parser library invocation.", srcLocator);
 		}
 		
         result = dBuilder.newDocument();

@@ -80,19 +80,19 @@ public class FuncString extends FunctionDef1Arg
 		   else if (m_arg0 instanceof NodeTest) {
 				if (XslTransformEvaluationHelper.isNodeTestExpressionFuntionType((NodeTest)m_arg0)) {
 					throw new javax.xml.transform.TransformerException("FOTY0014 : An XPath 3.1 function 'string' has argument as "
-																												+ "function item, whose string value "
-																												+ "is not defined.", srcLocator);  
-				} 
+																												 + "function item, whose string value "
+																												 + "is not defined.", srcLocator);  
+				}				
 		   }
 		   else if (m_arg0 instanceof XPathInlineFunction) {
 				throw new javax.xml.transform.TransformerException("FOTY0014 : An XPath 3.1 function 'string' has argument as "
-																												+ "function item, whose string value "
-																												+ "is not defined.", srcLocator);
+																												 + "function item, whose string value "
+																												 + "is not defined.", srcLocator);
 		   }
 		   else if (m_arg0 instanceof XPathNamedFunctionReference) {
 				throw new javax.xml.transform.TransformerException("FOTY0014 : An XPath 3.1 function 'string' has argument as "
-																												+ "function item, whose string value "
-																												+ "is not defined.", srcLocator);
+																												 + "function item, whose string value "
+																												 + "is not defined.", srcLocator);
 		   }
 		   else {	
 		        xObj0 = getFunctionArgEffectiveValue(m_arg0, xctxt);
@@ -130,9 +130,11 @@ public class FuncString extends FunctionDef1Arg
                                                                                             + "greater than one.", srcLocator);
 		}
 
-		XMLString xmlStr = getArg0AsString(xctxt);
+		XMLString xmlStr1 = getArg0AsString(xctxt);
 
-		result = new XSString(xmlStr.toString()); 
+		String str1 = xmlStr1.toString(); 
+
+		result = new XSString(str1);
 
 		return result;
 	}

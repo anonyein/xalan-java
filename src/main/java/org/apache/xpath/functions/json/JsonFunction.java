@@ -47,8 +47,9 @@ import xml.xpath31.processor.types.XSDouble;
 import xml.xpath31.processor.types.XSString;
 
 /**
- * A class providing common implementation code, that is used by Xalan-J's
- * implementation of XPath 3.1 functions fn:parse-json & fn:json-doc.
+ * A class definition, providing common implementation code, 
+ * that is used by Xalan-J implementation of XPath 3.1 functions 
+ * fn:parse-json & fn:json-doc.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -59,20 +60,21 @@ public class JsonFunction extends FunctionMultiArgs {
 	private static final long serialVersionUID = 1094611901554413886L;
 	
 	/**
-	 * Given a supplied string value as an argument to this function, the function 
-	 * does JSON parse of the string, and returns an equivalent xdm value.
+	 * Method definition, to do json parse for the, supplied json string value
+	 * and return a corresponding xdm value.  
 	 * 
-	 * @param jsonStrVal                       Supplied JSON document string value
-	 * @param optionIsLiberal                  Function call JSON option liberal's value
-	 * @param optionDuplicatesValStr           Function call JSON option duplicates's value
+	 * @param jsonStrVal                       The supplied json document string value
+	 * @param optionIsLiberal                  The json parse option liberal's value
+	 * @param optionDuplicatesValStr           The json parse option duplicates's value
 	 *  
-	 * @return                                 An xdm value of type XPathMap, XPathArray, XSDouble, XSBoolean, 
+	 * @return                                 An xdm value with type XPathMap, XPathArray, XSDouble, XSBoolean, 
      *                                         ResultSequence (representing json null values), XSString. These 
-     *                                         are the possible xdm values to which a JSON value can translate 
+     *                                         are the possible xdm types to which a json value can transform 
      *                                         to. 
 	 * @throws JSONException
 	 */
-	protected XObject getJsonXdmValueFromStr(String jsonStrVal, boolean optionIsLiberal, String optionDuplicatesValStr) throws JSONException {
+	protected XObject parseJsonStringToXdmValue(String jsonStrVal, boolean optionIsLiberal, String optionDuplicatesValStr) 
+																														throws JSONException {
 				
 		XObject result = null;
 		
@@ -80,32 +82,33 @@ public class JsonFunction extends FunctionMultiArgs {
 		
 		if ((jsonStrVal.trim()).charAt(0) == '{') {
 			JSONObject jsonObj = new JSONObject(jsonStrVal, jsonParserConf);
+			
 			result = getXdmMapFromJSONObject(jsonObj);
 		}
 		else if ((jsonStrVal.trim()).charAt(0) == '[') {
 			JSONArray jsonArr = new JSONArray(jsonStrVal, jsonParserConf);
+			
 			result = getXdmArrayFromJSONArray(jsonArr);
 		}
 		else {
 			try {
 				Double dbl = Double.valueOf(jsonStrVal);
+				
 				result = new XSDouble(dbl);
 			}
 			catch (NumberFormatException ex) {
-				// no op	
+				// No op	
 			}
 
 			if (result == null) {
-				if ("false".equals(jsonStrVal) || "0".equals(jsonStrVal) 
-						                                         || "true".equals(jsonStrVal) 
-						                                         || "1".equals(jsonStrVal)) {
+				if ("false".equals(jsonStrVal) || "0".equals(jsonStrVal) || "true".equals(jsonStrVal) 
+						                                                 || "1".equals(jsonStrVal)) {
 					result = new XSBoolean(Boolean.valueOf(jsonStrVal));
 				}
 			}
 
 			if (result == null) {
 				if ("null".equals(jsonStrVal)) {
-					// Return an, empty sequence
 					result = new ResultSequence();
 				}
 			}
@@ -113,22 +116,27 @@ public class JsonFunction extends FunctionMultiArgs {
 			if (result == null) {
 				if (jsonStrVal.startsWith("\"") && jsonStrVal.endsWith("\"")) {
 					jsonStrVal = jsonStrVal.substring(1, jsonStrVal.length()-1);
+					
 					if (jsonStrVal.length() == 0) {
 						jsonStrVal = ""; 
 					}
+					
 					result = new XSString(jsonStrVal);
 				}
 				else if (jsonStrVal.startsWith("'") && jsonStrVal.endsWith("'")) {
 					jsonStrVal = jsonStrVal.substring(1, jsonStrVal.length()-1);
+					
 					if (jsonStrVal.length() == 0) {
 						jsonStrVal = ""; 
 					}
+					
 					result = new XSString(jsonStrVal); 
 				}
 				else {
 					if (jsonStrVal.length() == 0) {
 						jsonStrVal = ""; 
 					}
+					
 					result = new XSString(jsonStrVal);
 				}
 			}
@@ -138,11 +146,11 @@ public class JsonFunction extends FunctionMultiArgs {
 	}
 
 	/**
-	 * Given a JSONObject object instance as argument to this function, the 
-	 * function returns an xdm map object. 
+	 * Method definition, to get an xdm map object instance, corresponding 
+	 * to the supplied org.json.JSONObject object instance.
 	 * 
-	 * @param jsonObj                 A JSONObject object instance
-	 * @return                        An xdm map object
+	 * @param jsonArr                The supplied JSONObject object instance
+	 * @return                       An xdm map object instance
 	 */
 	private XPathMap getXdmMapFromJSONObject(JSONObject jsonObj) {
     	
@@ -158,15 +166,17 @@ public class JsonFunction extends FunctionMultiArgs {
 				xpathMapResult.put(new XSString(key), new XSString(String.valueOf(value)));  
 			}
 			else if (value instanceof Number) {
-				double doubleVal = ((Number)value).doubleValue();
-				xpathMapResult.put(new XSString(key), new XSDecimal(String.valueOf(doubleVal)));
+				double dbl = ((Number)value).doubleValue();
+				
+				xpathMapResult.put(new XSString(key), new XSDecimal(String.valueOf(dbl)));
 			}
 			else if (value instanceof Boolean) {
 				xpathMapResult.put(new XSString(key), new XSBoolean(new Boolean(value.toString()))); 
 			}	      	   
 			else if (value instanceof JSONObject) {
-				XObject value1 = getXdmMapFromJSONObject((JSONObject)value);
-				xpathMapResult.put(new XSString(key), value1);
+				XObject xObj = getXdmMapFromJSONObject((JSONObject)value);
+				
+				xpathMapResult.put(new XSString(key), xObj);
 			}
 			else if (value instanceof JSONArray) {
 				XPathArray xpathArr = new XPathArray();
@@ -176,13 +186,16 @@ public class JsonFunction extends FunctionMultiArgs {
 				
 				for (int idx = 0; idx < arrLen; idx++) {
 					Object arrItem = jsonArr.get(idx);
+					
 					XObject xObj = null;
+					
 					if (arrItem instanceof String) {
 						xObj = new XSString(arrItem.toString());	 
 					}
 					else if (arrItem instanceof Number) {
-						double doubleVal = ((Number)arrItem).doubleValue();
-						xObj = new XSDecimal(String.valueOf(doubleVal)); 
+						double dbl = ((Number)arrItem).doubleValue();
+						
+						xObj = new XSDecimal(String.valueOf(dbl)); 
 					}
 					else if (arrItem instanceof Boolean) {
 						xObj = new XSBoolean(new Boolean(arrItem.toString())); 
@@ -205,11 +218,11 @@ public class JsonFunction extends FunctionMultiArgs {
     }
     
 	/**
-	 * Given a JSONArray object instance as argument to this function, the 
-	 * function returns an xdm array object. 
+	 * Method definition, to get an xdm array object instance, corresponding 
+	 * to the supplied org.json.JSONArray object instance.
 	 * 
-	 * @param jsonArr                A JSONArray object instance
-	 * @return                       An xdm array object
+	 * @param jsonArr                The supplied JSONArray object instance
+	 * @return                       An xdm array object instance
 	 */
     private XPathArray getXdmArrayFromJSONArray(JSONArray jsonArr) {
     	
@@ -219,14 +232,16 @@ public class JsonFunction extends FunctionMultiArgs {
     	
     	for (int idx = 0; idx < arrLen; idx++) {
     		Object arrItem = jsonArr.get(idx);
+    		
     		XObject xObj = null;
 
     		if (arrItem instanceof String) {
     			xObj = new XSString(arrItem.toString());	 
     		}
     		else if (arrItem instanceof Number) {
-    			double doubleVal = ((Number)arrItem).doubleValue();
-    			xObj = new XSDecimal(String.valueOf(doubleVal)); 
+    			double dbl = ((Number)arrItem).doubleValue();
+    			
+    			xObj = new XSDecimal(String.valueOf(dbl)); 
     		}
     		else if (arrItem instanceof Boolean) {
     			xObj = new XSBoolean(new Boolean(arrItem.toString())); 
@@ -246,10 +261,10 @@ public class JsonFunction extends FunctionMultiArgs {
     
     /**
 	 * Method definition, to get org.json library's JSONParserConfiguration object for
-	 * the supplied XPath 3.1 JSON parse options 'liberal' and 'duplicates'.
+	 * the supplied XPath 3.1 json parse options 'liberal', 'duplicates'.
 	 * 
-	 * @param optionIsLiberal                        Value of JSON parse 'liberal' option
-	 * @param optionDuplicatesValStr                 Value of JSON parse 'duplicates' option
+	 * @param optionIsLiberal                        The supplied value for json parse option 'liberal'.
+	 * @param optionDuplicatesValStr                 The supplied value for json parse option 'duplicates'.
 	 * @return                                       org.json.JSONParserConfiguration object
 	 */
 	public JSONParserConfiguration getJsonParserConfiguration(boolean optionIsLiberal, String optionDuplicatesValStr) {
@@ -286,8 +301,8 @@ public class JsonFunction extends FunctionMultiArgs {
 	
 	/**
      * Method definition, to check whether the supplied XML document string is valid 
-     * according JSON's XML serialization schema document schema-for-json.xsd provided
-     * by XPath 3.1 F&O spec. 
+     * as per json XML serialization schema document schema-for-json.xsd provided
+     * within XPath 3.1 F&O spec. 
      * 
      * @param xmlDocumentStr              The supplied XML document string that needs 
      *                                    to be validated with an XML Schema document.
@@ -296,23 +311,26 @@ public class JsonFunction extends FunctionMultiArgs {
      *                                    document is valid.
      * @throws javax.xml.transform.TransformerException
      */
-    protected boolean isXmlStrValidWithJsonSchema(String xmlDocumentStr) throws 
-                                                                       javax.xml.transform.TransformerException {
-        boolean isXmlStrValid = false;
+    protected boolean isXmlStrValidWithJsonSchema(String xmlDocumentStr) throws javax.xml.transform.TransformerException {
+    	
+        boolean result = false;
         
         System.setProperty(Constants.XML_SCHEMA_FACTORY_KEY, Constants.XML_SCHEMA_FACTORY_VALUE);
          
         SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         
         try {
-        	String xmlSchemaFileName = XSLJsonConstants.XML_JSON_SCHEMA_FILE_NAME;
+        	String xmlSchemaFile = XSLJsonConstants.XML_JSON_SCHEMA_FILE_NAME;
         	
-        	BufferedReader buffReader = new BufferedReader(new InputStreamReader(
-        			                                                          getClass().getResourceAsStream(xmlSchemaFileName)));
-        	final int CHAR_BUFF_SIZE = 512;   // char buffer size in bytes
+        	BufferedReader buffReader = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(xmlSchemaFile)));
+        	
+        	final int CHAR_BUFF_SIZE = 512;                // char buffer size in bytes
         	char[] charBuff = new char[CHAR_BUFF_SIZE];
+        	
         	int bytesRead = 0;
+        	
         	StringBuffer strBuff = new StringBuffer();
+        	
         	while ((bytesRead = buffReader.read(charBuff)) != -1) {
         		String str = new String(charBuff, 0, bytesRead);
         		strBuff.append(str);
@@ -323,22 +341,25 @@ public class JsonFunction extends FunctionMultiArgs {
         	Schema schema = schemaFactory.newSchema(xmlSchemaSource);
         				
 			Validator validator = schema.newValidator();
+			
 			StringReader xmlInputStrReader = new StringReader(xmlDocumentStr);
+			
 			validator.validate(new StreamSource(xmlInputStrReader));
-			isXmlStrValid = true;
+			
+			result = true;
 		} 
         catch (SAXException ex) {
-			throw new javax.xml.transform.TransformerException("FOAP0001 : An XML Schema validation of function fn:xml-to-json's "
-					                                                  + "1st argument which is an XML node, failed with following XML Schema "
-					                                                  + "validation result details : " + ex.getMessage()); 
+        	throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'xml-to-json' first argument, failed the "
+        			                                                                                                          + "validation with following XML schema "
+        			                                                                                                          + "validation result details : " + ex.getMessage());
 		}
         catch (IOException ex) {
-        	throw new javax.xml.transform.TransformerException("FOAP0001 : An XML Schema validation of function fn:xml-to-json's "
-        			                                                  + "1st argument which is an XML node, failed with following XML Schema "
-        			                                                  + "validation result details : " + ex.getMessage());
+        	throw new javax.xml.transform.TransformerException("FOAP0001 : An XPath 3.1 function 'xml-to-json' first argument, failed the "
+																											                  + "validation with following XML schema "
+																											                  + "validation result details : " + ex.getMessage());
         }        
         
-        return isXmlStrValid; 
+        return result; 
     }
 
 }

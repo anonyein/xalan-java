@@ -17,6 +17,7 @@
 package org.apache.xalan.xslt.util;
 
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import org.apache.xalan.templates.StylesheetRoot;
@@ -125,7 +126,7 @@ public class XslTransformData {
      * Class field, to refer to XSL stylesheet transformation result from 
      * xsl:perform-sort instruction.
      */
-    public static ResultSequence m_xsl_perform_sort_resultSeq = null;
+    public static ResultSequence m_xsl_perform_sort_rSeq = null;
     
     /**
      * Class field, to refer to xsl:variable name list, for cyclic 
@@ -138,6 +139,12 @@ public class XslTransformData {
      * attribute "use-when".
      */
     public static boolean m_use_when = false;
+    
+    /**
+     * An XML namespace mapping hashtable, used for XPath expression
+     * evaluation.
+     */
+    public static Hashtable m_ns_hashtable = null;
     
     /**
 	 * Method definition, to reset the class field values specified 
@@ -156,8 +163,9 @@ public class XslTransformData {
 		m_xpathNamedFunctionRefSequence.clear();
 		m_xslResultDocumentUriStrList.clear();
 		m_is_xsl_test_invocation = false;
-		m_xsl_perform_sort_resultSeq = null;
+		m_xsl_perform_sort_rSeq = null;
 		m_xsl_variable_qname_list.clear();
+		m_ns_hashtable = null;
 	}		
 
 }

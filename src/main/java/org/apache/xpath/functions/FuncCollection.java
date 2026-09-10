@@ -249,7 +249,7 @@ public class FuncCollection extends JsonFunction
 						File fileObj = new File(fileSystemDirPathStr + SLASH_CHAR_STR + fileNameStr);
 						byte[] byteArr = Files.readAllBytes(Paths.get(fileObj.toURI()));
 						String strValue = new String(byteArr);							
-						XObject xObj = getJsonXdmValueFromStr(strValue, false, XSLJsonConstants.DUPLICATES_USE_FIRST);							
+						XObject xObj = parseJsonStringToXdmValue(strValue, false, XSLJsonConstants.DUPLICATES_USE_FIRST);							
 						result.add(xObj);
 					}
 					catch (Exception ex) {

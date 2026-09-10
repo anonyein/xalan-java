@@ -341,7 +341,7 @@ public class ElemCopyOf extends ElemTemplateElement
       XObject value = null;
       
       if ((m_selectExpression != null) && (m_xpath_default_namespace != null)) {    		
-    	  m_selectExpression = new XPath(m_selectExpression.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    	  m_selectExpression = new XPath(m_selectExpression.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, false, m_xpath_default_namespace);
       }
       
       Expression expr1 = m_selectExpression.getExpression();
@@ -395,7 +395,7 @@ public class ElemCopyOf extends ElemTemplateElement
     	  }
       }
       
-      String xpathPatternStr = m_selectExpression.getPatternString();
+      String xpathPatternStr = m_selectExpression.getPatternString();      
       if (xpathPatternStr.startsWith("/") && !xpathPatternStr.startsWith("//")) {
     	  DTM dtm = xctxt.getDTM(sourceNode);
     	  int documentNodeHandle = dtm.getDocument();

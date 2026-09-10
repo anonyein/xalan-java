@@ -53,8 +53,8 @@ import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.operations.Div;
-import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.operations.Variable;
+import org.apache.xpath.operations.XPathOperator;
 import org.apache.xpath.types.DateTimeUtil;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
@@ -404,7 +404,7 @@ public class ElemValueOf extends ElemTemplateElement {
     try
     {     
     	if ((m_selectExpression != null) && (m_xpath_default_namespace != null)) {    		
-    	   m_selectExpression = new XPath(m_selectExpression.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
+    	   m_selectExpression = new XPath(m_selectExpression.getPatternString(), srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null, false, m_xpath_default_namespace);
     	}
     	
         xctxt.pushNamespaceContext(this);
@@ -489,8 +489,20 @@ public class ElemValueOf extends ElemTemplateElement {
                   if (expr instanceof XSL3ConstructorOrExtensionFunction) {
                 	  XSL3ConstructorOrExtensionFunction xpathFunc = (XSL3ConstructorOrExtensionFunction)expr;
                 	  XSL3FunctionService xslFunctionService = xctxt.getXSLFunctionService();
-                      
-                	  XObject evalResult = xslFunctionService.callFunction(xpathFunc, transformer, xctxt);
+                	  
+                	  XObject evalResult = null;
+                	  
+                	  boolean xslPerformSortResultPrev = (XslTransformData.m_xsl_perform_sort_rSeq != null);
+                	  
+                	  evalResult = xslFunctionService.callFunction(xpathFunc, transformer, xctxt);
+                	  
+                	  boolean xslPerformSortResultAfter = (XslTransformData.m_xsl_perform_sort_rSeq != null);
+                	  
+                	  if (!xslPerformSortResultPrev && xslPerformSortResultAfter) {
+                		 evalResult = XslTransformData.m_xsl_perform_sort_rSeq;
+                		 
+                		 XslTransformData.m_xsl_perform_sort_rSeq = null;
+                	  }
                 	  
                 	  if (evalResult instanceof XPathMap) {
                 		 throw new TransformerException("FOTY0013 : An XSL value-of instruction evaluation cannot atomize an xdm map.", this);
@@ -536,7 +548,7 @@ public class ElemValueOf extends ElemTemplateElement {
                     		  String strValue = strBuff.toString(); 
                     		  
                     		  (new XString(strValue)).dispatchCharactersEvents(rth);
-                    	  }
+                    	  }                    	  
                     	  else {
                     		  String strValue = XslTransformEvaluationHelper.getStrVal(evalResult);                                                       
                     		  strValue = preProcessStrBeforeXslSerialization(strValue);                    		  
@@ -607,9 +619,9 @@ public class ElemValueOf extends ElemTemplateElement {
                       }
                       else if (evalResult instanceof XPathMap) {                    	                      	  
                     	  String xpathPatternStr = m_selectExpression.getPatternString();
+                    	  
                     	  if (xpathPatternStr.startsWith(Keywords.FUNC_RANDOM_NUMBER_GENERATOR + "(") 
-                    			                                                && xpathPatternStr.endsWith("?" + 
-                    	                                                                                   Constants.ATTRVAL_DATATYPE_NUMBER)) {
+                    			                                                                && xpathPatternStr.endsWith("?" + Constants.ATTRVAL_DATATYPE_NUMBER)) {
                     		  XPathMap xpathMap = (XPathMap)evalResult;
                     		  Map<XObject,XObject> nativeMap = xpathMap.getNativeMap();
                     		  XObject xObj = nativeMap.get(new XSString(Constants.ATTRVAL_DATATYPE_NUMBER));
@@ -618,8 +630,7 @@ public class ElemValueOf extends ElemTemplateElement {
                     		  xString.dispatchCharactersEvents(rth);
                     	  }
                     	  else {
-                    		  throw new TransformerException("FOTY0013 : Cannot do an XPath atomization of a map "
-                                                                                                       + "(ref, https://www.w3.org/TR/xpath-31/#id-atomization).", srcLocator);
+                    		  throw new TransformerException("FOTY0013 : An xdm map cannot be atomized.", srcLocator);
                     	  }
                       }
                       else {                    	  
@@ -667,8 +678,9 @@ public class ElemValueOf extends ElemTemplateElement {
                       }
                       else if (evalResult instanceof XPathMap) {                    	 
                     	  String xpathPatternStr = m_selectExpression.getPatternString();
+                    	  
                     	  if (xpathPatternStr.startsWith(Keywords.FUNC_RANDOM_NUMBER_GENERATOR + "(") 
-                    			                                                   && xpathPatternStr.endsWith("?" + Constants.ATTRVAL_DATATYPE_NUMBER)) {
+                    			                                                                 && xpathPatternStr.endsWith("?" + Constants.ATTRVAL_DATATYPE_NUMBER)) {
                     		  XPathMap xpathMap = (XPathMap)evalResult;
                     		  Map<XObject,XObject> nativeMap = xpathMap.getNativeMap();
                     		  XObject xObj = nativeMap.get(new XSString(Constants.ATTRVAL_DATATYPE_NUMBER));
@@ -677,8 +689,7 @@ public class ElemValueOf extends ElemTemplateElement {
                     		  xString.dispatchCharactersEvents(rth);
                     	  }
                     	  else {
-                    		  throw new TransformerException("FOTY0013 : Cannot do an XPath atomization of a map "
-                    				                                                                        + "(ref, https://www.w3.org/TR/xpath-31/#id-atomization).", srcLocator);
+                    		  throw new TransformerException("FOTY0013 : An xdm map cannot be atomized.", srcLocator);
                     	  }
                       }
                       else if (evalResult instanceof XNumber) {

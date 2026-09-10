@@ -141,6 +141,7 @@ import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.compiler.SharedLexerState;
 import org.apache.xpath.composite.XPathSequenceType;
 import org.apache.xpath.composite.XPathSequenceTypeSupport;
+import org.apache.xpath.functions.FuncNumber;
 import org.apache.xpath.functions.XSL3ConstructorOrExtensionFunction;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XMLNodeCursorImpl;
@@ -452,6 +453,12 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
   private boolean m_isXslIterateOnCompletionActive = false;
   
   /**
+   * A class field, to indicate that an XSL transformation's 
+   * initial context item is present, or absent. 
+   */
+  private boolean m_init_ctxt_item_available = false;
+  
+  /**
    * This Xalan-J transformation property is used, to determine whether 
    * XML Schema validation of XML input document is enabled or not for an
    * XSL transformation instance.
@@ -615,7 +622,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
   public Object extFunction(String ns, String funcName, 
                             Vector argVec, Object methodKey)
             throws javax.xml.transform.TransformerException
-  {//System.out.println("TransImpl.extFunction() " + ns + " " + funcName +" " + getExtensionsTable());
+  {
     return getExtensionsTable().extFunction(ns, funcName, 
                                         argVec, methodKey,
                                         getXPathContext().getExpressionContext());   
@@ -810,9 +817,11 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 	try {
 		TemplateList templList = m_stylesheetRoot.getTemplateListComposed();
 		TemplateSubPatternAssociation templatePatternAssoc = templList.getWildCardPatterns();
+		
 		while (templatePatternAssoc != null) {
 			StepPattern stepPattern = templatePatternAssoc.getStepPattern();
 			Expression[] predicateArr = stepPattern.getPredicates();
+			
 			if (predicateArr != null) {
 				for (int idx = 0; idx < predicateArr.length; idx++) {
 					Expression xpathExpr = predicateArr[idx];
@@ -937,7 +946,8 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 
     	  if (source != null) {
     		  // Validate an XML input document, if validation parameter is set 
-    		  // on the transformer.    	
+    		  // on the transformer.
+    		  
     		  if (m_enabledPropertyList.contains(XML_VALIDATION_PROPERTY)) { 
     			  m_stylesheetRoot.validateXmlInputDoc(base);
     		  }    		      		      		  
@@ -949,6 +959,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
     		   * An XSL stylesheet 'initial template', 'mode' name or 'initial function' is 
     		   * available, but XSL transformation initial context node is not available.
     		   */
+    		  
     		  this.transformNode(DTM.NULL);
     	  }
 
@@ -1693,7 +1704,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
             included.runtimeInit(this);
 
             for (ElemTemplateElement child = included.getFirstChildElem();
-                    child != null; child = child.getNextSiblingElem())
+                                                                        child != null; child = child.getNextSiblingElem())
             {
               child.runtimeInit(this);
             }
@@ -1701,8 +1712,10 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
         }
 
         DTMCursorIterator dtmIter = new org.apache.xpath.axes.SelfIteratorNoPredicate();
+        
         dtmIter.setRoot(node, xctxt);
         xctxt.pushContextNodeList(dtmIter);
+        
         try
         {
           this.applyTemplateToNode(null, null, node);
@@ -3380,21 +3393,34 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
       }
       
       XPath xpathSelect = sort.getSelect();
-      if (xpathSelect == null) {
+      if ((xpathSelect == null) && (sort.getFirstChildElem() == null)) {
     	 SourceLocator srcLocator = xctxt.getSAXLocator();
+    	 
     	 xpathSelect = new XPath(".", srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null); 
       }
       
+      String collationUri = null;
+      AVT collatonAvt = sort.getCollation();
+      
+      if (collatonAvt != null) {
+         collationUri = collatonAvt.evaluate(xctxt, sourceNodeContext, sort);
+      }
+      
       NodeSortKey nodeSortKey = null;
+      
+      if (!treatAsNumbers && (xpathSelect.getExpression() instanceof FuncNumber)) {
+ 		 treatAsNumbers = true; 
+ 	  }
+      
       if (foreachOrPerformSort instanceof ElemForEach) {
     	  nodeSortKey = new NodeSortKey(this, xpathSelect, treatAsNumbers,
     			                        descending, langString, caseOrderUpper, 
-    			                        (ElemForEach)foreachOrPerformSort);
+    			                        (ElemForEach)foreachOrPerformSort, collationUri);
       }
-      else {
+      else {    	      	  
     	  nodeSortKey = new NodeSortKey(this, xpathSelect, treatAsNumbers,
     			                        descending, langString, caseOrderUpper, 
-    			                        (ElemPerformSort)foreachOrPerformSort);
+    			                        (ElemPerformSort)foreachOrPerformSort, collationUri);
       }
       
       keys.addElement(nodeSortKey);    	  	  
@@ -3500,7 +3526,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
         
               sortKeys.addElement(new NodeSortKey(this, sortElem.getSelect(), treatAsNumbers,
                                                            descending, langString, caseOrderUpper,
-                                                           forEachGroup));
+                                                           forEachGroup, null));
               if (m_debug) {
                  getTraceManager().emitTraceEndEvent(sortElem);
               }          
@@ -4888,7 +4914,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 	 *                                              of the supplied node. 
 	 */
 	private void updateXPathDefaultNamespace(ElemTemplateElement elemTemplateElem, String xpathDefaultNamespace) 
-			                                                                    throws javax.xml.transform.TransformerException {
+			                                                                                                   throws javax.xml.transform.TransformerException {
 		
 		  if ("".equals(xpathDefaultNamespace)) {
 			 xpathDefaultNamespace = null;  
@@ -4897,7 +4923,15 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 		  if (elemTemplateElem != null) {		  
 			  ElemTemplateElement xslElem = elemTemplateElem; 
 			  while (xslElem != null) {
-				  if (xslElem instanceof ElemVariable) {
+				  if (xslElem instanceof ElemLiteralResult) {
+					  if (((ElemLiteralResult)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemLiteralResult)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemLiteralResult)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
+				  else if (xslElem instanceof ElemVariable) {
 					  if (((ElemVariable)xslElem).getXpathDefaultNamespace() == null) {
 						  ((ElemVariable)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
 					  }
@@ -5060,15 +5094,7 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 					  else {
 						  xpathDefaultNamespace = ((ElemCopy)xslElem).getXpathDefaultNamespace();  
 					  }
-				  }	
-				  else if (xslElem instanceof ElemLiteralResult) {
-					  if (((ElemLiteralResult)xslElem).getXpathDefaultNamespace() == null) {
-						  ((ElemLiteralResult)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
-					  }
-					  else {
-						  xpathDefaultNamespace = ((ElemLiteralResult)xslElem).getXpathDefaultNamespace();  
-					  }
-				  }
+				  }					  
 				  else if (xslElem instanceof ElemChoose) {
 					  if (((ElemChoose)xslElem).getXpathDefaultNamespace() == null) {
 						  ((ElemChoose)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
@@ -5260,10 +5286,18 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 						  xpathDefaultNamespace = ((ElemMapEntry)xslElem).getXpathDefaultNamespace();  
 					  }
 				  }
+				  else if (xslElem instanceof ElemWithParam) {
+					  if (((ElemWithParam)xslElem).getXpathDefaultNamespace() == null) {
+						  ((ElemWithParam)xslElem).setXpathDefaultNamespace(xpathDefaultNamespace);
+					  }
+					  else {
+						  xpathDefaultNamespace = ((ElemWithParam)xslElem).getXpathDefaultNamespace();  
+					  }
+				  }
 				  
 				  ElemTemplateElement elemTemplateChild = xslElem.getFirstChildElem();
 				  updateXPathDefaultNamespace(elemTemplateChild, xpathDefaultNamespace);
-
+				  
 				  xslElem = xslElem.getNextSiblingElem();
 			  }		 
 		  }
@@ -5555,6 +5589,14 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 						  expandText = ((ElemMapEntry)xslElem).getExpandText();  
 					  }
 				  }
+				  else if (xslElem instanceof ElemParam) {
+					  if (!(((ElemParam)xslElem).getExpandTextDeclared())) {
+						  ((ElemParam)xslElem).setExpandText(expandText);
+					  }
+					  else {
+						  expandText = ((ElemParam)xslElem).getExpandText();  
+					  }
+				  }
 
 				  ElemTemplateElement elemTemplateChild = xslElem.getFirstChildElem();
 				  updateExpandTextAttrValue(elemTemplateChild, expandText);
@@ -5615,6 +5657,14 @@ public class TransformerImpl extends Transformer implements Runnable, DTMWSFilte
 		   }
 	     }
 	  }
+
+      public boolean getInitContextItemAvailable() {
+	     return m_init_ctxt_item_available;
+      }
+
+      public void setInitContextItemAvailable(boolean initCtxtItemAvailable) {
+	     this.m_init_ctxt_item_available = initCtxtItemAvailable;
+      }
 
 }  // end TransformerImpl class
 

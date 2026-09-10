@@ -102,19 +102,16 @@ public class XPathDynamicFunctionCall extends Expression {
     private String[] m_xpathChainedArgListArr;
     
     /**
-     * Function argument run-time value, that is lhs operand of
-     * XPath operator "=>" whose rhs operand is this dfc compiled
+     * Function argument run-time value, that is first operand of
+     * XPath operator "=>" whose right operand is this dfc compiled
      * object.
      */
-    private XObject m_ArrowOpArgObj;
+    private XObject m_ArrowOpArgObj;    
     
-    /**
-     * The class fields m_vars & m_globals_size declared below are used during 
-     * XPath.fixupVariables(..) action as performed within object of this class.
-     */
-    
+    // Class field, used for Xalan-J fixupVariables action
     private Vector m_vars;
     
+    // Class field, used for Xalan-J fixupVariables action
     private int m_globals_size;
     
     private XSL3FunctionService m_xsl3FunctionService = XSLFunctionBuilder.getXSLFunctionService();
@@ -150,12 +147,15 @@ public class XPathDynamicFunctionCall extends Expression {
            catch (TransformerException ex) {
               // Trying to get an XPath inline function reference, from within 
               // stylesheet's global variable scope. 
-              ExpressionNode expressionNode = getExpressionOwner();
+              
+        	  ExpressionNode expressionNode = getExpressionOwner();
               ExpressionNode stylesheetRootNode = null;
+              
               while (expressionNode != null) {
                  stylesheetRootNode = expressionNode;
                  expressionNode = expressionNode.exprGetParent();                     
               }
+              
               StylesheetRoot stylesheetRoot = (StylesheetRoot)stylesheetRootNode;
               Map<QName, XPathInlineFunction> globalInlineFunctionVarMap = stylesheetRoot.
                                                                             getInlineFunctionVarMap();
@@ -181,11 +181,11 @@ public class XPathDynamicFunctionCall extends Expression {
     	    	evalResult = m_xsl3FunctionService.evaluateXPathInlineFunction((XPathInlineFunction)functionRef, m_argList, m_ArrowOpArgObj, 
 																					    	    			xctxt, prefixTable, m_vars, m_globals_size, 
 																					    	    			m_xpathVarList, m_funcRefVarName);               
-	           if ((evalResult instanceof XPathNamedFunctionReference) && (m_trailingArgList != null)) {
-	        	  evalResult = m_xsl3FunctionService.evaluateXPathNamedFunctionReference((XPathNamedFunctionReference)evalResult, m_trailingArgList, 
-	        			                                                                  null, prefixTable, m_vars, m_globals_size, getExpressionOwner(), 
-	        			                                                                  xctxt); 
-	           }
+	            if ((evalResult instanceof XPathNamedFunctionReference) && (m_trailingArgList != null)) {
+	        	   evalResult = m_xsl3FunctionService.evaluateXPathNamedFunctionReference((XPathNamedFunctionReference)evalResult, m_trailingArgList, 
+	        			                                                                      null, prefixTable, m_vars, m_globals_size, getExpressionOwner(), 
+	        			                                                                      xctxt); 
+	            }
 	        }
     	    else if (functionRef instanceof XPathMap) {
      		   evalResult = getDfcResultFromXdmMap((XPathMap)functionRef, xctxt, srcLocator, contextNode, prefixTable);
@@ -211,20 +211,21 @@ public class XPathDynamicFunctionCall extends Expression {
     	    	   evalResult = getDfcResultFromSchemaSimpleTypeRef(functionRef, xctxt, srcLocator, contextNode, prefixTable);
     	       }
     	       else {
-    	    	   evalResult = XObject.create(new XSString("")); 
+    	    	   throw new javax.xml.transform.TransformerException("XPTY0004 : Variable '" + m_funcRefVarName + "' used to invoke an XPath dynamic "
+    	    	   		 																						 + "function call, refers to neither a "
+    	    	   		 																						 + "function, map or array.", srcLocator); 
     	       }
     	    }
       }
       else {
-         throw new javax.xml.transform.TransformerException("XPST0008 : Variable '" + m_funcRefVarName + "' has "
-                                                                                                       + "not been declared, or its declaration is not in scope.", 
-                                                                                                                                              xctxt.getSAXLocator());    
+         throw new javax.xml.transform.TransformerException("XPST0008 : Variable '" + m_funcRefVarName + "' has not been declared, or its declaration "
+         		                                                                                       + "is not in scope.", srcLocator);    
       }
        
       if ((evalResult instanceof XPathInlineFunction) && (m_trailingArgList != null)) {
     	 evalResult = m_xsl3FunctionService.evaluateXPathInlineFunction((XPathInlineFunction)evalResult, m_trailingArgList, null, 
-    			                                                        xctxt, prefixTable, m_vars, m_globals_size, 
-    			                                                        m_xpathVarList, m_funcRefVarName); 
+								    			                                                        xctxt, prefixTable, m_vars, m_globals_size, 
+								    			                                                        m_xpathVarList, m_funcRefVarName); 
       }
                
       return evalResult;
