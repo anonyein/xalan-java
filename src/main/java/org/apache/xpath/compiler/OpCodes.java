@@ -748,7 +748,7 @@ public class OpCodes
 	   * 
 	   * @xsl.usage advanced
 	   */
-	  public static final int OP_SIMPLE_MAP_OPERATOR = 118;
+	  public static final int OP_SIMPLE_MAP = 118;
 
 	  public static final int OP_SEQUENCE_TYPE_EXPR = 119;
 
@@ -805,8 +805,14 @@ public class OpCodes
 	  
 	  public static final int OP_SEQ_INDEX_BINARY_EXPR = 141;
 	  
+	  public static final int OP_FUNC_ARG_FUNC_WITH_PREDICATE = 142;
+	  
+	  public static final int OP_LITERAL_WITH_PREDICATE = 143;
+	  
+	  public static final int OP_XPATH_IDENTITY_EXPR = 144;
+	  
 	  /** XPath op code's next free id. Please keep this up to date. */
-	  private static final int NEXT_FREE_ID = 142;
+	  private static final int NEXT_FREE_ID = 145;
   }
 
   /** XPath op code's next free id. Please keep this up to date. */

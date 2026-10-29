@@ -1,0 +1,48 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.xalan.tests.w3c.xpath3;
+
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnAdjustTimeToTimezoneTests;
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnApplyTests;
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnBaseUriTests;
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnFunction1Tests;
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnFunction2Tests;
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnSubsequenceTests;
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnSumTests;
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnTokenizeTests;
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FunctionStringTests;
+import org.apache.xalan.tests.w3c.xpath3.map.XPath3FnMapGetTests;
+import org.apache.xalan.tests.w3c.xpath3.op.XPath3OpTestsThreePart2;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
+
+/**
+ * Xalan-J XSL 3 test driver entry point, to run W3C 
+ * XPath 3.1 test cases (the third set of XPath 3.1 test cases).
+ *
+ * @author Mukul Gandhi <mukulg@apache.org>
+ * 
+ * @xsl.usage advanced
+ */
+@RunWith(Suite.class)
+@SuiteClasses({ XPath3FnFunction1Tests.class, XPath3OpTestsThreePart2.class, XPath3FnApplyTests.class, XPath3FnAdjustTimeToTimezoneTests.class,
+	            XPath3FunctionStringTests.class, XPath3FnSumTests.class, XPath3FnTokenizeTests.class, XPath3FnFunction2Tests.class, 
+	            XPath3FnSubsequenceTests.class, XPath3FnMapGetTests.class, XPath3FnBaseUriTests.class })
+public class W3CXPath3Tests3 {
+
+}

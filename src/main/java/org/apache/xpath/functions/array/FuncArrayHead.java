@@ -20,6 +20,7 @@ import javax.xml.transform.SourceLocator;
 
 import org.apache.xpath.XPathContext;
 import org.apache.xpath.functions.FunctionOneArg;
+import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
 
@@ -62,12 +63,47 @@ public class FuncArrayHead extends FunctionOneArg {
 	       
 	       xpathArr = getNormalizedXdmArray(xpathArr);
 	       
-	       if (xpathArr.size() > 0) {
-	          result = xpathArr.get(0);
+	       int size1 = xpathArr.size();
+	       
+	       if (size1 > 0) {	    	   
+	    	  for (int idx = 0; idx < size1; idx++) {
+	    		 XObject xObj = xpathArr.get(idx);
+	    		 
+	    		 if ((xObj instanceof ResultSequence) && (((ResultSequence)xObj).size() == 0)) {	    			 
+	    			 if (!xpathArr.getIsCurlyArrayConsSrc()) {
+	    				 result = (ResultSequence)xObj;
+	    				 
+	    				 break;
+	    			 }
+	    			 else {
+	    				 continue;
+	    			 }	    			 
+	    		 }
+	    		 else if (xObj instanceof ResultSequence) {
+	    			if (!xpathArr.getIsCurlyArrayConsSrc()) {
+	    			   result = (ResultSequence)xObj;
+	    			}
+	    			else {	    			   
+	    			   result = ((ResultSequence)xObj).item(0);
+	    			}
+	    			
+	    			break;
+	    		 }
+	    		 else {
+	    			result = xObj;
+	    			
+	    			break;
+	    		 }
+	    	  }
+	    	  
+	    	  if (result == null) {
+	    		 throw new javax.xml.transform.TransformerException("FOAY0001 : An XPath 3.1 function array 'head' argument "
+                                                                                                                            + "cannot be an empty array.", srcLocator); 
+	    	  }
 	       }
 	       else {
 	    	  throw new javax.xml.transform.TransformerException("FOAY0001 : An XPath 3.1 function array 'head' argument "
-	    	  		                                                                                           + "cannot be an empty array.", srcLocator);  
+	    	  		                                                                                                     + "cannot be an empty array.", srcLocator);  
 	       }
 	    }
 	    else {

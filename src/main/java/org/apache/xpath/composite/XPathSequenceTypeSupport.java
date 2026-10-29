@@ -61,6 +61,7 @@ import org.apache.xpath.XPathStaticContext;
 import org.apache.xpath.compiler.FunctionTable;
 import org.apache.xpath.compiler.Keywords;
 import org.apache.xpath.functions.Function;
+import org.apache.xpath.objects.ElemFunctionItem;
 import org.apache.xpath.objects.InlineFunctionParameter;
 import org.apache.xpath.objects.ResultSequence;
 import org.apache.xpath.objects.XBoolean;
@@ -74,6 +75,7 @@ import org.apache.xpath.objects.XPathInlineFunction;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 import org.apache.xpath.objects.XdmAttributeItem;
+import org.apache.xpath.operations.InstanceOf;
 import org.apache.xpath.types.DateTimeUtil;
 import org.apache.xpath.types.XSBase64Binary;
 import org.apache.xpath.types.XSByte;
@@ -125,8 +127,8 @@ import xml.xpath31.processor.types.XSUntypedAtomic;
 import xml.xpath31.processor.types.XSYearMonthDuration;
 
 /**
- * This class provides few utility methods, to support 
- * evaluation of XPath 3.1 sequence type expressions.
+ * Class definition, that provides few utility methods, to support 
+ * the evaluation of XPath 3.1 sequence type expressions.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
  * 
@@ -248,7 +250,7 @@ public class XPathSequenceTypeSupport {
     
     public static int TEXT_KIND = 103;
     
-    public static int NAMESPACE_NODE_KIND = 104;
+    public static int NAMESPACE_KIND = 104;
     
     public static int NODE_KIND = 105;
     
@@ -400,6 +402,7 @@ public class XPathSequenceTypeSupport {
     	XObject result = null;
     	
     	m_PrefixTable = prefixTable;
+    	
     	if (sequenceTypeXPathExprStr != null) {
     	   result = castXdmValueToAnotherType(srcValue, sequenceTypeXPathExprStr, null, xctxt);
     	}
@@ -499,39 +502,51 @@ public class XPathSequenceTypeSupport {
             int itemTypeOccurenceIndicator = seqExpectedTypeData.getItemTypeOccurrenceIndicator();
             XPathSequenceTypeKindTest sequenceTypeKindTest = seqExpectedTypeData.getSequenceTypeKindTest();
             
+            /*if (srcValue instanceof ElemFunctionItem) {
+            	InstanceOf instanceOf = new InstanceOf();            				
+            	XObject xObj = instanceOf.operate(srcValue, seqExpectedTypeData);
+
+            	if (xObj.bool()) {
+            		return srcValue;
+            	}
+            	
+            	// to do
+            }*/            
+            
             if (srcValue instanceof XPathNamedFunctionReference) {
-            	XPathNamedFunctionReference xpathNamedFunctionReference = (XPathNamedFunctionReference)srcValue; 
+            	XPathNamedFunctionReference xpathNamedFuncRef = (XPathNamedFunctionReference)srcValue; 
             	XPathSequenceTypeFunctionTest seqTypeFunctionTest = seqExpectedTypeData.getSequenceTypeFunctionTest();
+            	
             	if (seqTypeFunctionTest != null) {
             		if (seqTypeFunctionTest.isAnyFunctionTest()) {
             			return srcValue;
             		}
             		else {        		     		             			
-            			String localName = xpathNamedFunctionReference.getFuncName();
-            			String fNamespace = xpathNamedFunctionReference.getFuncNamespace(); 
+            			String localName = xpathNamedFuncRef.getFuncName();
+            			String fNamespace = xpathNamedFuncRef.getFuncNamespace(); 
             			
             			FunctionTable funcTable = xctxt.getFunctionTable();
             			
             			Object funcId = null;
 
             			if ((fNamespace == null) || ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(fNamespace))) { 
-            				funcId = funcTable.getFunctionIdForXSLBuiltinFuncs(localName);
+            				funcId = funcTable.getFunctionIdForXSLBuiltinFunc(localName);
             			}
             			else if ((XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(fNamespace)) {    	       	   
-            				funcId = funcTable.getFunctionIdForXPathBuiltinMathFuncs(localName);
+            				funcId = funcTable.getFunctionIdForXPathBuiltinMathFunc(localName);
             			}
             			else if ((XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(fNamespace)) {    	       	   
-            				funcId = funcTable.getFunctionIdForXPathBuiltinMapFuncs(localName);
+            				funcId = funcTable.getFunctionIdForXPathBuiltinMapFunc(localName);
             			}
             			else if ((XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(fNamespace)) {     	   
-            				funcId = funcTable.getFunctionIdForXPathBuiltinArrayFuncs(localName);
+            				funcId = funcTable.getFunctionIdForXPathBuiltinArrayFunc(localName);
             			}            			
             			
-            			Function function = funcTable.getFunction((int)funcId);
+                        Function function = funcTable.getFunction((int)funcId);
             			
             			if (function != null) {
             				return srcValue; 
-            			}
+            			}            			          		
             		}
             	}
             }
@@ -1495,7 +1510,7 @@ public class XPathSequenceTypeSupport {
             		    for (int idx = 0; idx < funcExpectedParamCount; idx++) {
             		       String expectedParamTypeStr = functionExpectedParamTypes.get(idx);
             		       if (m_PrefixTable != null) {
-            		    	  expectedParamTypeStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(
+            		    	  expectedParamTypeStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(
             		    			                                                                 expectedParamTypeStr, m_PrefixTable);  
             		       }
             		       
@@ -1518,7 +1533,7 @@ public class XPathSequenceTypeSupport {
             		 String functionReturnTypeStr = sequenceTypeFunctionTest.getTypedFunctionTestReturnType();
             		 
             		 if (m_PrefixTable != null) {
-            			functionReturnTypeStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(
+            			functionReturnTypeStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(
        		    	    		                                                                     functionReturnTypeStr, m_PrefixTable);  
        		         }
             		 
@@ -1836,8 +1851,8 @@ public class XPathSequenceTypeSupport {
                result = new XSUnsignedByte(srcStrVal);
             }            
             else if (expectedType == XS_FLOAT) {
-            	boolean isStrValueNumeric;
-            	if (!("INF".equals(srcStrVal) || "-INF".equals(srcStrVal))) {
+            	boolean isStrValueNumeric;            	
+            	if (!((Constants.POSITIVE_INF_STR).equals(srcStrVal) || (Constants.NEGATIVE_INF_STR).equals(srcStrVal))) {
             	   isStrValueNumeric = isStrValueNumericFormat(srcStrVal);
             	}
             	else {
@@ -1850,7 +1865,7 @@ public class XPathSequenceTypeSupport {
             }
             else if (expectedType == XS_DOUBLE) {               
             	boolean isStrValueNumeric;
-            	if (!("INF".equals(srcStrVal) || "-INF".equals(srcStrVal))) {
+            	if (!((Constants.POSITIVE_INF_STR).equals(srcStrVal) || (Constants.NEGATIVE_INF_STR).equals(srcStrVal))) {
             	   isStrValueNumeric = isStrValueNumericFormat(srcStrVal);
             	}
             	else {
@@ -2539,7 +2554,7 @@ public class XPathSequenceTypeSupport {
                         }
                      }
                      else if (dtm.getNodeType(nextNodeDtmHandle) == DTM.NAMESPACE_NODE) {
-                         if (sequenceTypeKindTest.getKindVal() == NAMESPACE_NODE_KIND) {
+                         if (sequenceTypeKindTest.getKindVal() == NAMESPACE_KIND) {
                             convertedResultSeq.add(nodeSetItem); 
                          }
                          else {
@@ -2655,7 +2670,7 @@ public class XPathSequenceTypeSupport {
 		
 		result = ((seqTypekindVal == XPathSequenceTypeSupport.ELEMENT_KIND) || 
 										                      (seqTypekindVal == XPathSequenceTypeSupport.ATTRIBUTE_KIND) || 
-										                      (seqTypekindVal == XPathSequenceTypeSupport.NAMESPACE_NODE_KIND) || 
+										                      (seqTypekindVal == XPathSequenceTypeSupport.NAMESPACE_KIND) || 
 										                      (seqTypekindVal == XPathSequenceTypeSupport.NODE_KIND));
 		
 		return result; 

@@ -34,9 +34,11 @@ public class XSTime extends XSCalendarType {
     
     /**
      * The value of this class field, stores the fact that whether this
-     * XSTime object is constructed via XPath function call fn:current-time().
+     * XSTime object is constructed via XPath 3.1 function call fn:current-time.
      */
     private boolean isPopulatedFromFnCurrentTime = false;
+    
+    private double m_secs_fraction = 0.0;
     
     
     /**
@@ -182,6 +184,19 @@ public class XSTime extends XSCalendarType {
     public boolean isTimetimezoned() {
         return _timezoned;
     }
+    
+    /**
+	 * Get the duration of time stored as the number of seconds within it.
+	 * 
+	 * @return number of seconds making up this duration of time
+	 */
+	public double value() {
+		double ret = hour() * 60 * 60;
+		ret += minute() * 60;
+		ret += second();
+		
+		return ret;
+	}
 
     @Override
     public String stringValue() {
@@ -368,17 +383,34 @@ public class XSTime extends XSCalendarType {
          
          if (!(xObject instanceof XSDayTimeDuration)) {
             throw new TransformerException("XPTY0004 : The value of schema type 'dayTimeDuration' is the only "
-            		                                                                             + "one that may be added "
-            		                                                                             + "to schema type 'time' value.");
-         }
+            		                                                                                          + "one that may be added "
+            		                                                                                          + "to schema type 'time' value.");
+         }                  
          
          XSDayTimeDuration xsDayTimeDuration = (XSDayTimeDuration)xObject;
          double secsVal = xsDayTimeDuration.value();
          
-         Calendar cal1 = (Calendar)((getCalendar()).clone());
-         cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)secsVal * 1000))));
+         int xsDayTimeDurationMilliSecs = 0;
          
-         result = new XSTime(cal1, getTimezone());
+         if (Math.abs(secsVal) > Math.abs((int)secsVal)) {
+        	String str1 = (Double.valueOf(secsVal)).toString();
+        	int idx = str1.indexOf('.');
+        	str1 = str1.substring(idx + 1);
+        	
+        	xsDayTimeDurationMilliSecs = Integer.valueOf(str1) * 100;  
+         }
+         
+         Calendar cal1 = (Calendar)((getCalendar()).clone());
+         
+         if (secsVal >= 0) {
+            cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)secsVal * 1000))) + xsDayTimeDurationMilliSecs);
+         }
+         else {
+        	cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)secsVal * 1000))) - xsDayTimeDurationMilliSecs);
+         }
+                           
+         result = new XSTime(cal1, getTimezone());        
+         
          
          return result;
     }
@@ -403,53 +435,79 @@ public class XSTime extends XSCalendarType {
           }
           
           if (xObj instanceof XSTime) {       	          	          	 
-        	 XPathContext xctxt = new XPathContext();
-        	 
-        	 XSDuration tz = null;        	 
-        	 boolean tzEqual = false;
-        	 
-        	 if (_timezoned) {
-        		tz = _tz;
-        		
-        		XSTime xsTime = (XSTime)xObj;
-        		XSDuration tz2 = xsTime.getTimezone();
-        		
-        		if (tz.equals(tz2)) {
-        		   tzEqual = true;
-        		}
-        	 }
-        	 else {
-        		tz = xctxt.getTimezone();  
-        	 }        	         		         		 
+        	  XPathContext xctxt = new XPathContext();
 
-        	 try {
-        		 if (!tzEqual) {
-        			 FuncAdjustTimeToTimezone funcAdjustTimeToTimezone = new FuncAdjustTimeToTimezone();
+        	  XSDuration tz = null;        	 
+        	  boolean tzEqual = false;
 
-        			 funcAdjustTimeToTimezone.setArg(xObj, 0);
-        			 funcAdjustTimeToTimezone.setArg(tz, 1);
+        	  if (_timezoned) {
+        		  tz = _tz;
 
-        			 xObj = funcAdjustTimeToTimezone.execute(xctxt);
-        		 }
+        		  XSTime xsTime = (XSTime)xObj;
+        		  XSDuration tz2 = xsTime.getTimezone();
 
-        		 Calendar cal1 = getCalendar();
-        		 Calendar cal2 = ((XSTime)xObj).getCalendar();
-        		 long diffDurationMilliSecs = cal1.getTimeInMillis() - cal2.getTimeInMillis();
+        		  if (tz.equals(tz2)) {
+        			  tzEqual = true;
+        		  }
+        	  }
+        	  else {
+        		  tz = xctxt.getTimezone();  
+        	  }        	         		         		 
 
-        		 result = new XSDayTimeDuration(diffDurationMilliSecs / 1000);
-        	 }
-        	 catch (WrongNumberArgsException ex) {
-        		 // No op 
-        	 }        	 
+        	  try {
+        		  if (!tzEqual) {
+        			  FuncAdjustTimeToTimezone funcAdjustTimeToTimezone = new FuncAdjustTimeToTimezone();
+
+        			  funcAdjustTimeToTimezone.setArg(xObj, 0);
+        			  funcAdjustTimeToTimezone.setArg(tz, 1);
+
+        			  xObj = funcAdjustTimeToTimezone.execute(xctxt);
+        		  }
+
+        		  double secsVal1 = value();         		 
+        		  double secsVal2 = ((XSTime)xObj).value();
+
+        		  double diff = (secsVal1 - secsVal2);
+
+        		  if (diff == (int)diff) {
+        			  Calendar cal1 = getCalendar();
+        			  Calendar cal2 = ((XSTime)xObj).getCalendar();
+        			  long diffDurationMilliSecs = cal1.getTimeInMillis() - cal2.getTimeInMillis();
+
+        			  result = new XSDayTimeDuration(diffDurationMilliSecs / 1000);
+        		  }
+        		  else {
+        			  result = new XSDayTimeDuration(0, 0, 0, Math.abs(secsVal1 - secsVal2), secsVal1 < secsVal2);
+        		  }
+        	  }
+        	  catch (WrongNumberArgsException ex) {
+        		  // No op 
+        	  }        	 
           }          
-          else if (xObj instanceof XSDayTimeDuration) {
-             XSDayTimeDuration xsDayTimeDuration = (XSDayTimeDuration)xObj;
-             double secsVal = xsDayTimeDuration.value();
-             
-             Calendar cal1 = (Calendar)((getCalendar()).clone());
-             cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)secsVal * 1000)) * -1));
-             
-             result = new XSTime(cal1, getTimezone());
+          else if (xObj instanceof XSDayTimeDuration) {        	  
+        	  XSDayTimeDuration xsDayTimeDuration = (XSDayTimeDuration)xObj;
+        	  double secsVal = xsDayTimeDuration.value();
+
+        	  int xsDayTimeDurationMilliSecs = 0;
+
+        	  if (Math.abs(secsVal) > Math.abs((int)secsVal)) {
+        		  String str1 = (Double.valueOf(secsVal)).toString();
+        		  int idx = str1.indexOf('.');
+        		  str1 = str1.substring(idx + 1);
+
+        		  xsDayTimeDurationMilliSecs = Integer.valueOf(str1) * 100;  
+        	  }
+
+        	  Calendar cal1 = (Calendar)((getCalendar()).clone());
+
+        	  if (secsVal >= 0) {
+        		  cal1.setTimeInMillis(cal1.getTimeInMillis() - ((((long)secsVal * 1000))) - xsDayTimeDurationMilliSecs);
+        	  }
+        	  else {
+        		  cal1.setTimeInMillis(cal1.getTimeInMillis() - ((((long)secsVal * 1000))) + xsDayTimeDurationMilliSecs);
+        	  }
+
+        	  result = new XSTime(cal1, getTimezone()); 
           }
           
           return result;
@@ -492,5 +550,13 @@ public class XSTime extends XSCalendarType {
 	public void setPopulatedFromFnCurrentTime(boolean isPopulatedFromFnCurrentTime) {
 		this.isPopulatedFromFnCurrentTime = isPopulatedFromFnCurrentTime;
 	}
+	
+	public void setSecsFraction(double secsFraction) {
+	    this.m_secs_fraction = secsFraction; 		
+	}
+    
+    public double getSecsFraction() {
+    	return m_secs_fraction;
+    }
 
 }

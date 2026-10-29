@@ -1040,7 +1040,7 @@ public class XSLTAttributeDef
     	  QName qname = null;
     	  value = value.trim();
     	  if (value.startsWith("Q{")) {
-    		 // Support for XPath 3.1 URI qualified names    
+    		 // Support for XPath 3.1 uri qualified names    
     		 int idx = value.indexOf('}');
     		 if (idx > 2) {
     		    String nsUri = value.substring(2, idx);
@@ -1048,8 +1048,7 @@ public class XSLTAttributeDef
     		    qname = new QName(nsUri, localName, true);
     		 }
     		 else if ((idx == 2) && (owner instanceof ElemFunction)) {
-    			String localName = value.substring(idx + 1);
-    			qname = new QName(Constants.XSL_ERROR_NAMESACE, localName, true); 
+    			handleError(handler,XSLTErrorResources.ER_ABSENT_NAMESPACE_URI, new Object[] {owner.getNodeName()}, null);
     		 }
     		 else if ((idx == 2) && ((owner instanceof ElemTemplate) || (owner instanceof ElemVariable))) {
      			String localName = value.substring(idx + 1);
@@ -1479,7 +1478,7 @@ public class XSLTAttributeDef
     
      StringTokenizer tokenizer = new StringTokenizer(value, " \t\n\r\f");
      int nStrings = tokenizer.countTokens();
-     StringVector strings = new StringVector(nStrings);
+     StringVector strings = new StringVector(nStrings);          
      
      for (int i = 0; i < nStrings; i++)
      {
@@ -1535,24 +1534,14 @@ public class XSLTAttributeDef
 	    try
 	    {
 	      AVT avt = new AVT(handler, uri, name, rawName, value, owner);
-	
-		  // If an AVT wasn't used, validate the value
-		 // if (avt.getSimpleString() != null) {
-			   // TODO: syntax check URL value.
-			    // return SystemIDResolver.getAbsoluteURI(value, 
-			    //                                         handler.getBaseIdentifier());
-		  //}	
+		
 	      return avt;
 	    }
 	    catch (TransformerException te)
 	    {
 	      throw new org.xml.sax.SAXException(te);
 	    }  		
-     } else {
-    // TODO: syntax check URL value.
-    // return SystemIDResolver.getAbsoluteURI(value, 
-    //                                         handler.getBaseIdentifier());
-     	
+     } else {       	
 	    return value;
     }
   }

@@ -97,9 +97,9 @@ public class XPathSequenceBinaryOp extends Expression {
 		List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);
 
 		if (prefixTable != null) {
-			m_leftStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(m_leftStr, prefixTable);
+			m_leftStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(m_leftStr, prefixTable);
 			
-			m_rightStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(m_rightStr, prefixTable);
+			m_rightStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(m_rightStr, prefixTable);
 		}
 
 		XPath lXPath = new XPath(m_leftStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
@@ -221,20 +221,20 @@ public class XPathSequenceBinaryOp extends Expression {
 		return false;
 	}
 
-	public String getLeft() {
+	public String getLeftStr() {
 		return m_leftStr;
 	}
 
-	public void setLeft(String left) {
-		this.m_leftStr = left;
+	public void setLeftStr(String leftStr) {
+		this.m_leftStr = leftStr;
 	}
 
-	public String getRight() {
+	public String getRightStr() {
 		return m_rightStr;
 	}
 
-	public void setRight(String right) {
-		this.m_rightStr = right;
+	public void setRightStr(String rightStr) {
+		this.m_rightStr = rightStr;
 	}
 
 	public String getXPathOpStr() {

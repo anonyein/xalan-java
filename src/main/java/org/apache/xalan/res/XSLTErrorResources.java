@@ -340,6 +340,13 @@ public class XSLTErrorResources extends ListResourceBundle
 	 "ER_FAILED_CREATING_ELEMTMPL";
   public static final String ER_CHARS_NOT_ALLOWED = "ER_CHARS_NOT_ALLOWED";
   public static final String ER_ATTR_NOT_ALLOWED = "ER_ATTR_NOT_ALLOWED";
+  
+  public static final String ER_XPATH_COMMENT_SYNTAX1 = "ER_XPATH_COMMENT_SYNTAX1";
+  public static final String ER_XPATH_COMMENT_SYNTAX2 = "ER_XPATH_COMMENT_SYNTAX2";
+  public static final String ER_XPATH_NAME_STR1 = "ER_XPATH_NAME_STR1";
+  public static final String ER_XPATH_NAME_STR2 = "ER_XPATH_NAME_STR2";
+  public static final String ER_XPATH_NAME_STR3 = "ER_XPATH_NAME_STR3";
+  
   public static final String ER_BAD_VALUE = "ER_BAD_VALUE";
   public static final String ER_ATTRIB_VALUE_NOT_FOUND = 
 	 "ER_ATTRIB_VALUE_NOT_FOUND";
@@ -541,7 +548,7 @@ public class XSLTErrorResources extends ListResourceBundle
       "{0} requires either a name or a match attribute."},
 
     {ER_CANT_RESOLVE_NSPREFIX,
-      "Can not resolve namespace prefix: {0}"},
+      "Couldn''t resolve namespace prefix: {0}"},
 
     { ER_ILLEGAL_VALUE,
      "xml:space has an illegal value: {0}"},
@@ -1002,8 +1009,26 @@ public class XSLTErrorResources extends ListResourceBundle
         "Characters are not allowed at this point in the document"},
 
     { ER_ATTR_NOT_ALLOWED,
-        "\"{0}\" attribute is not allowed on the {1} element!"},
-
+        "XTSE0090 : \"{0}\" attribute is not allowed on the {1} element"},
+    
+    { ER_XPATH_COMMENT_SYNTAX1,
+        "XPST0003 : An XPath 3.1 comment syntax error, within XPath expression string ''{0}''. "
+                                                                                            + "An XPath comment, cannot appear between the ncname and the colon."},
+    { ER_XPATH_COMMENT_SYNTAX2, 
+        "XPST0003 : An XPath 3.1 comment syntax error, within XPath expression string ''{0}''. "
+    		                                                                                + "Within an XML name string, an XPath comment, cannot appear between "
+    		                                                                                + "namespace prefix and colon."},
+    { ER_XPATH_NAME_STR1,
+        "XPST0003 : An XPath 3.1 XML name syntax error, within XPath expression string ''{0}''. "
+                                                                                             + "Within an XML name string, whitespace cannot appear between the "
+                                                                                             + "namespace prefix and the colon."},
+    { ER_XPATH_NAME_STR2,
+        "XPST0003 : An XPath 3.1 XML name syntax error, within XPath expression string ''{0}''. "
+                                                                                              + "Within an XML name string, whitespace cannot appear between the "
+                                                                                              + "colon and ncname."},
+    { ER_XPATH_NAME_STR3,
+        "XPST0003 : An XPath 3.1 expression string ''{0}'' has syntax error. An XPath expression contains an unexpected character '':''."},
+    
     { ER_BAD_VALUE,
      "{0} bad value {1} "},
 
@@ -1089,10 +1114,10 @@ public class XSLTErrorResources extends ListResourceBundle
      "Programmer''s assertion in RedundentExprEliminator: {0}"},
 
     { ER_NOT_ALLOWED_IN_POSITION,
-     "XTSE0010 : An XML element {0} is not allowed in this position in the stylesheet."},
+     "XTSE0010 : An XSL stylesheet does not allow, an XML element {0} at this position within the stylesheet."},
     
     { ER_XSL_FORK,
-      "XTSE0010 : [{1}, {2}] An XML element {0} is not allowed in this position in the stylesheet."},
+      "XTSE0010 : [{1}, {2}] An XSL stylesheet does not allow, an XML element {0} at this position within the stylesheet."},
 
     { ER_NONWHITESPACE_NOT_ALLOWED_IN_POSITION,
      "XTSE0010 : Non-whitespace text is not allowed in this position in the stylesheet."},
@@ -1312,7 +1337,7 @@ public class XSLTErrorResources extends ListResourceBundle
       "{0} has an illegal attribute: {1}"},
 
     { WG_COULD_NOT_RESOLVE_PREFIX,
-      "Could not resolve namespace prefix: {0}. The node will be ignored."},
+      "XTDE0860 : Could not resolve namespace prefix: {0}. The node will be ignored."},
 
     { WG_STYLESHEET_REQUIRES_VERSION_ATTRIB,
       "xsl:stylesheet requires a 'version' attribute!"},

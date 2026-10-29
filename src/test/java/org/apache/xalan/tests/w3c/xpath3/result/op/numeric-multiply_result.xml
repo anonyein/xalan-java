@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-17T10:34:01Z" fail="6" name="op-numeric-multiply" pass="67" run="73" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-10-19T10:09:12Z" fail="0" name="op-numeric-multiply" pass="73" run="73" statusUnknown="0">
    <testResult status="pass" testName="op-numeric-multiplydec2args-1"/>
    <testResult status="pass" testName="op-numeric-multiplydec2args-2"/>
    <testResult status="pass" testName="op-numeric-multiplydec2args-3"/>
@@ -36,7 +36,7 @@
    <testResult status="pass" testName="op-numeric-multiplynni2args-3"/>
    <testResult status="pass" testName="op-numeric-multiplynni2args-4"/>
    <testResult status="pass" testName="op-numeric-multiplynni2args-5"/>
-   <testResult status="fail" testName="op-numeric-multiplymix2args-1"/>
+   <testResult status="pass" testName="op-numeric-multiplymix2args-1"/>
    <testResult status="pass" testName="op-numeric-multiplymix2args-2"/>
    <testResult status="pass" testName="op-numeric-multiplymix2args-3"/>
    <testResult status="pass" testName="K-NumericMultiply-1"/>
@@ -63,13 +63,13 @@
    <testResult status="pass" testName="K-NumericMultiply-22"/>
    <testResult status="pass" testName="K-NumericMultiply-23"/>
    <testResult status="pass" testName="K-NumericMultiply-24"/>
-   <testResult status="fail" testName="K-NumericMultiply-25"/>
-   <testResult status="fail" testName="K-NumericMultiply-26"/>
-   <testResult status="fail" testName="K-NumericMultiply-27"/>
+   <testResult status="pass" testName="K-NumericMultiply-25"/>
+   <testResult status="pass" testName="K-NumericMultiply-26"/>
+   <testResult status="pass" testName="K-NumericMultiply-27"/>
    <testResult status="pass" testName="K-NumericMultiply-28"/>
    <testResult status="pass" testName="K-NumericMultiply-29"/>
    <testResult status="pass" testName="K-NumericMultiply-30"/>
    <testResult status="pass" testName="K-NumericMultiply-31"/>
-   <testResult status="fail" testName="K-NumericMultiply-32"/>
-   <testResult status="fail" testName="K-NumericMultiply-33"/>
+   <testResult status="pass" testName="K-NumericMultiply-32"/>
+   <testResult status="pass" testName="K-NumericMultiply-33"/>
 </testrun>

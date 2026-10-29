@@ -626,6 +626,9 @@ public class FunctionTable
   
   /** The 'function-lookup()' id. */
   public static final int FUNC_FUNCTION_LOOKUP = 201;
+  
+  /** The 'type-available()' id. */
+  public static final int FUNC_TYPE_AVAILABLE = 202;
 
   // Proprietary
 
@@ -654,7 +657,7 @@ public class FunctionTable
    * Number of built in functions. Please update this, as
    * built-in functions are added.
    */
-  private static final int NUM_BUILT_IN_FUNCS = 202;
+  private static final int NUM_BUILT_IN_FUNCS = 203;
 
   /**
    * Number of built-in functions that may be added.
@@ -916,6 +919,8 @@ public class FunctionTable
 	   
 	   m_functions[FUNC_DOCUMENT] = org.apache.xalan.templates.FuncDocument.class;
 	   m_functions[FUNC_FORMAT_NUMBER] = org.apache.xpath.functions.FuncFormatNumber.class;
+	   
+	   m_functions[FUNC_TYPE_AVAILABLE] = org.apache.xpath.functions.FuncTypeAvailable.class;
   }
 
   static {
@@ -1163,6 +1168,8 @@ public class FunctionTable
 	  
 	  m_functionId.put(Integer.valueOf(FUNC_DOCUMENT), Keywords.FUNC_DOCUMENT);
 	  m_functionId.put(Integer.valueOf(FUNC_FORMAT_NUMBER), Keywords.FUNC_FORMAT_NUMBER);
+	  
+	  m_functionId.put(Integer.valueOf(FUNC_TYPE_AVAILABLE), Keywords.FUNC_TYPE_AVAILABLE);
   }
   
   /**
@@ -1242,7 +1249,7 @@ public class FunctionTable
    * @return                           Function id, for an XSL built-in
    *                                   function.
    */
-  public Object getFunctionIdForXSLBuiltinFuncs(String localName) {
+  public Object getFunctionIdForXSLBuiltinFunc(String localName) {
 	  
 	    Object id = null;
 		
@@ -1715,6 +1722,9 @@ public class FunctionTable
 		      case "true":
 		    	  id = FUNC_TRUE;
 		    	  break;
+		      case "type-available":
+		    	  id = FUNC_TYPE_AVAILABLE;
+		    	  break;
 		      case "unordered":
 		    	  id = FUNC_UNORDERED;
 		    	  break;
@@ -1774,7 +1784,7 @@ public class FunctionTable
    * @return                           Function id, for an XSL built-in
    *                                   function.
    */
-  public Object getFunctionIdForXPathBuiltinMathFuncs(String localName) {	    
+  public Object getFunctionIdForXPathBuiltinMathFunc(String localName) {	    
 	    
 	    Object id = null;
 		
@@ -1838,7 +1848,7 @@ public class FunctionTable
    * @return                           Function id, for an XSL built-in
    *                                   function.
    */
-  public Object getFunctionIdForXPathBuiltinMapFuncs(String localName) {		
+  public Object getFunctionIdForXPathBuiltinMapFunc(String localName) {		
 		
 	    Object id = null;
 		
@@ -1890,7 +1900,7 @@ public class FunctionTable
    * @return                           Function id, for an XSL built-in
    *                                   function.
    */
-  public Object getFunctionIdForXPathBuiltinArrayFuncs(String localName) {	  
+  public Object getFunctionIdForXPathBuiltinArrayFunc(String localName) {	  
 		
 	    Object id = null;
 		
@@ -1967,7 +1977,7 @@ public class FunctionTable
   {	  
 	  boolean result = false;
 	  
-	  Object funcId = getFunctionIdForXSLBuiltinFuncs(methName);
+	  Object funcId = getFunctionIdForXSLBuiltinFunc(methName);
 	  
 	  if (funcId != null) {
 		 result = true; 

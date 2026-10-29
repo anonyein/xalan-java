@@ -17,6 +17,7 @@
  */
 package org.apache.xpath.operations;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -60,6 +61,7 @@ import xml.xpath31.processor.types.XSFloat;
 import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSString;
+import xml.xpath31.processor.types.XSUntypedAtomic;
 
 /**
  * An implementation of XPath 3.1 operator 'idiv'.
@@ -134,6 +136,28 @@ public class IDiv extends XPathArithmeticUtil
 																												  + "type which cannot be atomized.", this); 
 	  }
 	  
+	  if (left instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)left;
+
+		  if (rSeq.size() > 1) {
+			  throw new TransformerException("XPTY0004 : An XPath operator 'idiv' cannot be applied to operands, that have cardinality greater than one."); 			  
+		  }
+		  else if (rSeq.size() == 1) {
+			  left = rSeq.item(0);   
+		  }
+	  }
+
+	  if (right instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)right;
+
+		  if (rSeq.size() > 1) {
+			  throw new TransformerException("XPTY0004 : An XPath operator 'idiv' cannot be applied to operands, that have cardinality greater than one."); 			  
+		  }
+		  else if (rSeq.size() == 1) {
+			  right = rSeq.item(0);   
+		  }
+	  }
+	  
 	  if ((left instanceof ResultSequence) && (((ResultSequence)left).size() == 0)) {
 		  return new ResultSequence();  
 	  }
@@ -189,6 +213,27 @@ public class IDiv extends XPathArithmeticUtil
 			  catch (NumberFormatException ex) {
 				  left = left.getFresh(); 
 			  }
+		  }
+	  }
+	  
+	  if (left instanceof XSUntypedAtomic) {
+		  java.lang.String str1 = ((XSUntypedAtomic)left).stringValue();
+
+		  try  {
+			  new BigDecimal(str1);  
+		  }
+		  catch (NumberFormatException ex) {
+			  throw new TransformerException("FORG0001 : The string value '" + str1 + "' is not a valid numeric literal."); 
+		  }
+	  } 
+	  else if (right instanceof XSUntypedAtomic) {
+		  java.lang.String str1 = ((XSUntypedAtomic)right).stringValue();
+
+		  try  {
+			  new BigDecimal(str1);
+		  }
+		  catch (NumberFormatException ex) {
+			  throw new TransformerException("FORG0001 : The string value '" + str1 + "' is not a valid numeric literal."); 
 		  }
 	  }
 	  
@@ -375,7 +420,8 @@ public class IDiv extends XPathArithmeticUtil
 		  }
 	  }
 	  
-	  // Validating an XPath 3.1 operator 'idiv' operands compatibility for integer division	  
+	  // Validating an XPath 3.1 operator 'idiv' operands compatibility for integer division
+	  
 	  if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs1) && (XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs2)) {
 		  if ((isXsBuiltInTypeNumeric(typeName1) && !isXsBuiltInTypeNumeric(typeName2)) || 
 				                                                                   (isXsBuiltInTypeNumeric(typeName2) && !isXsBuiltInTypeNumeric(typeName1))) {
@@ -394,7 +440,7 @@ public class IDiv extends XPathArithmeticUtil
 
 		  if (lNodeStr != null) {
 			  java.lang.String xpathStr = (XMLConstants.W3C_XML_SCHEMA_NS_URI + ":" + typeName1 + "('" + lNodeStr + "')");
-			  xpathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, nsPrefixTable);
+			  xpathStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, nsPrefixTable);
 			  XPath xpathObj = null;
 			  try {
 			     xpathObj = new XPath(xpathStr, this, xctxt.getNamespaceContext(), XPath.SELECT, null);
@@ -411,7 +457,7 @@ public class IDiv extends XPathArithmeticUtil
 
 		  if (rNodeStr != null) {
 			  java.lang.String xpathStr = (XMLConstants.W3C_XML_SCHEMA_NS_URI + ":" + typeName2 + "('" + rNodeStr + "')");
-			  xpathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, nsPrefixTable);
+			  xpathStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, nsPrefixTable);
 			  XPath xpathObj = null;
 			  try {
 			     xpathObj = new XPath(xpathStr, this, xctxt.getNamespaceContext(), XPath.SELECT, null);

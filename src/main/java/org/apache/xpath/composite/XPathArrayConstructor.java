@@ -38,6 +38,7 @@ import org.apache.xpath.objects.XMLNodeCursorImpl;
 import org.apache.xpath.objects.XNumber;
 import org.apache.xpath.objects.XObject;
 import org.apache.xpath.objects.XPathArray;
+import org.apache.xpath.operations.Range;
 
 import xml.xpath31.processor.types.XSNumericType;
 
@@ -55,7 +56,9 @@ public class XPathArrayConstructor extends Expression {
 
 	private List<String> m_arrayConstructorXPathParts = new ArrayList<String>();
 	
-	private boolean m_IsEmptyArray = false;
+	private boolean m_isEmptyArray = false;
+	
+	private boolean m_is_xpath_literal_curly_arr = false;
     
 	/**
 	 * This class field is used during, XPath.fixupVariables(..) action 
@@ -72,9 +75,11 @@ public class XPathArrayConstructor extends Expression {
     @Override
     public XObject execute(XPathContext xctxt) throws TransformerException {
         
-        XPathArray result = new XPathArray();
+        XPathArray result = new XPathArray(); 
         
-        if (m_IsEmptyArray) {
+        result.setIsCurlyArrayConsSrc(m_is_xpath_literal_curly_arr);
+        
+        if (m_isEmptyArray) {
            return result;  	
         }
         
@@ -86,11 +91,19 @@ public class XPathArrayConstructor extends Expression {
         
         int size1 = m_arrayConstructorXPathParts.size();
         
+        if (size1 == 1) {
+           String str1 = m_arrayConstructorXPathParts.get(0);
+           
+           if ("[]".equals(str1.trim())) {
+        	  return result;  
+           }
+        }
+        
         for (int idx = 0; idx < size1; idx++) {
            String xpathExprStr = m_arrayConstructorXPathParts.get(idx);
            
            if (prefixTable != null) {
-              xpathExprStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathExprStr, prefixTable);
+              xpathExprStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathExprStr, prefixTable);
            }
            
            XPath xpathObj = new XPath(xpathExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
@@ -127,7 +140,7 @@ public class XPathArrayConstructor extends Expression {
                    String xpathIndexExprStr = xpathExprStr.substring(xpathExprStr.indexOf('[') + 1, xpathExprStr.indexOf(']'));
                    
                    if (prefixTable != null) {
-                      varRefXPathExprStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(varRefXPathExprStr, 
+                      varRefXPathExprStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(varRefXPathExprStr, 
                     		   																								  prefixTable);
                    }
                    
@@ -138,7 +151,7 @@ public class XPathArrayConstructor extends Expression {
                    // Evaluate an, xdm sequence XPath index expression
                    
                    if (prefixTable != null) {
-                      xpathIndexExprStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathIndexExprStr, prefixTable);
+                      xpathIndexExprStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathIndexExprStr, prefixTable);
                    }
                    
                    XPath xpathIndexObj = new XPath(xpathIndexExprStr, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);
@@ -185,6 +198,16 @@ public class XPathArrayConstructor extends Expression {
                        }
                    }
                }
+           }
+           else if (expr instanceof Range) {
+        	   XObject xObj = expr.execute(xctxt);
+        	   ResultSequence rSeq = (ResultSequence)xObj;
+        	   
+        	   int size2 = rSeq.size();
+        	   
+        	   for (int idx2 = 0; idx2 < size2; idx2++) {
+        		  result.add(rSeq.item(idx2)); 
+        	   }
            }
            else {
                XObject xObj = xpathObj.execute(xctxt, sourceNode, xctxt.getNamespaceContext());
@@ -241,11 +264,19 @@ public class XPathArrayConstructor extends Expression {
     }
 
 	public boolean isEmptyArray() {
-		return m_IsEmptyArray;
+		return m_isEmptyArray;
 	}
 
 	public void setIsEmptyArray(boolean isEmptyArray) {
-		this.m_IsEmptyArray = isEmptyArray;
+		this.m_isEmptyArray = isEmptyArray;
+	}
+
+	public void setIsXpathLiteralCurlyArr(boolean xpathLiteralCurlyArr) {
+	    m_is_xpath_literal_curly_arr = xpathLiteralCurlyArr; 		
+	}
+	
+	public boolean getIsXpathLiteralCurlyArr() {
+		return this.m_is_xpath_literal_curly_arr;
 	}
 
 }

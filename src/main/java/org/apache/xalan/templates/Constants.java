@@ -226,6 +226,8 @@ public class Constants extends org.apache.xml.utils.Constants
       ELEMNAME_CONTEXT_ITEM_STRING = "context-item",
       ELEMNAME_DOCUMENT_STRING ="document",
       ELEMNAME_NAMESPACE_STRING = "namespace",
+      ATTRNAME_SCHEMA_LOCATION = "schema-location",
+      ATTRNAME_SCHEMA = "schema",
       ELEMNAME_ASSERT_STRING = "assert",
       ELEMNAME_GLOBAL_CONTEXT_ITEM_STRING = "global-context-item",
       ELEMNAME_MAP_STRING ="map",
@@ -541,6 +543,10 @@ public class Constants extends org.apache.xml.utils.Constants
   public static final String ATTRVAL_OPTIONAL = "optional";
   
   public static final String ATTRVAL_ABSENT = "absent";
+  
+  public static final String POSITIVE_INF_STR = "INF";
+  
+  public static final String NEGATIVE_INF_STR = "-INF";
   
   /**
    * An xsl:fork instruction's xsl:sequence run-time

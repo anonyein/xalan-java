@@ -832,6 +832,9 @@ public class Keywords
   /** format-number function string. */
   public static final String FUNC_FORMAT_NUMBER = "format-number";
   
+  /** type-available function string. */
+  public static final String FUNC_TYPE_AVAILABLE = "type-available";
+  
   // Proprietary, built in functions
 
   /** current function string (Proprietary). */
@@ -839,9 +842,24 @@ public class Keywords
   
   
   /**
-   * XPath 3.1 language keywords. This is a subset of XPath 3.1 language
-   * keywords.
-   */
+   * XPath 3.1 language keywords, 'operator' names, and other 
+   * symbols. This is a subset of XPath 3.1 language all 
+   * such information.
+   */    
+  
+  public static final String LET = "let";
+  
+  public static final String SOME = "some";
+  
+  public static final String EVERY = "every";
+  
+  public static final String FOR = "for";
+  
+  public static final String IF = "if";
+  
+  public static final String NUMBER = "number";
+  
+  public static final String PERMUTE = "permute";
   
   public static final String UNION = "union";
   
@@ -849,15 +867,33 @@ public class Keywords
   
   public static final String EXCEPT = "except";
   
-  public static final String NEXT = "next";
+  public static final String NEXT = "next";        
   
-  public static final String Q_MARK = "?";
+  public static final String IS = "is";
   
-  public static final String NUMBER = "number";
+  public static final String EQUAL = "=";
   
-  public static final String PERMUTE = "permute";
+  public static final String VC_EQ = "eq";
   
+  public static final String VC_NE = "ne";
+  
+  public static final String VC_LT = "lt";
+  
+  public static final String VC_GT = "gt";
+  
+  public static final String VC_LE = "le";
+  
+  public static final String VC_GE = "ge";
+  
+  public static final String COLLATION = "collation";
+  
+  public static final String XPATH_ARROW_OP = "=>";
+  
+  public static final String XPATH_SIMPLE_MAP_OP = "!";
+  
+  public static final String Q_MARK = "?";     
 
+  
   static {	  
 	  m_axisnames.put(FROM_ANCESTORS_STRING, new Integer(OpCodes.FROM_ANCESTORS));
 	  m_axisnames.put(FROM_ANCESTORS_OR_SELF_STRING, new Integer(OpCodes.FROM_ANCESTORS_OR_SELF));

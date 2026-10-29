@@ -120,28 +120,50 @@ public class Minus extends XPathArithmeticUtil
       }
 	  
 	  if (left instanceof XPathMap) {
-		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first operand of '-', but "
-																												  + "the supplied type is a map "
-																												  + "type which cannot be atomized.", this); 
+		  throw new TransformerException("FOTY0013 : An xdm atomic value is required for the first operand of '-', but "
+																												       + "the supplied type is a map "
+																												       + "type which cannot be atomized.", this); 
 	  }
 
 	  if (right instanceof XPathMap) {
-		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the second operand of '-', but "
-																												  + "the supplied type is a map "
-																												  + "type which cannot be atomized.", this); 
+		  throw new TransformerException("FOTY0013 : An xdm atomic value is required for the second operand of '-', but "
+																												        + "the supplied type is a map "
+																												        + "type which cannot be atomized.", this); 
 	  }
 	  
 	  if (isXPathOperandXdmFunctionItem(left)) {
-		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the first operand of '-', but "
-																												  + "the supplied type is a function "
-																												  + "type which cannot be atomized.", this); 
+		  throw new TransformerException("FOTY0013 : An xdm atomic value is required for the first operand of '-', but "
+																												       + "the supplied type is a function "
+																												       + "type which cannot be atomized.", this); 
 	  }
 
 	  if (isXPathOperandXdmFunctionItem(right)) {
-		  throw new javax.xml.transform.TransformerException("FOTY0013 : An xdm atomic value is required for the second operand of '-', but "
-																												  + "the supplied type is a function "
-																												  + "type which cannot be atomized.", this); 
-	  }	  	  	  
+		  throw new TransformerException("FOTY0013 : An xdm atomic value is required for the second operand of '-', but "
+																												        + "the supplied type is a function "
+																												        + "type which cannot be atomized.", this); 
+	  }
+	  
+	  if (left instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)left;
+
+		  if (rSeq.size() > 1) {
+			  throw new TransformerException("XPTY0004 : An XPath operator '-' cannot be applied to operands, that have cardinality greater than one."); 			  
+		  }
+		  else if (rSeq.size() == 1) {
+			  left = rSeq.item(0);   
+		  }
+	  }
+
+	  if (right instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)right;
+
+		  if (rSeq.size() > 1) {
+			  throw new TransformerException("XPTY0004 : An XPath operator '-' cannot be applied to operands, that have cardinality greater than one."); 			  
+		  }
+		  else if (rSeq.size() == 1) {
+			  right = rSeq.item(0);   
+		  }
+	  }
 	  
 	  java.lang.String lNodeStr = null;
 	  java.lang.String rNodeStr = null;
@@ -381,8 +403,7 @@ public class Minus extends XPathArithmeticUtil
 				  XSTypeDefinition typeDefn = elementPsvi.getTypeDefinition();
 				  
 				  if (typeDefn instanceof XSComplexTypeDefinition) {
-					  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath 3.1 operator '-' operand, cannot be a "
-							  																							+ "node validated with schema complex type.");				  
+					  throw new TransformerException("FOTY0013 : An XPath 3.1 operator '-' operand, cannot be a node validated with schema complex type.");				  
 				  }
 				  else {
 					  XSSimpleTypeDecl xsSimpleTypeDecl = (XSSimpleTypeDecl)typeDefn;
@@ -461,8 +482,7 @@ public class Minus extends XPathArithmeticUtil
 				  ElementPSVI elementPsvi = (ElementPSVI)node;
 				  XSTypeDefinition typeDefn = elementPsvi.getTypeDefinition();
 				  if (typeDefn instanceof XSComplexTypeDefinition) {
-					  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath 3.1 operator '-' operand, cannot be a "
-							  																							+ "node validated with schema complex type.");
+					  throw new TransformerException("FOTY0013 : An XPath 3.1 operator '-' operand, cannot be a node validated with schema complex type.");
 				  }
 				  else {
 					  XSSimpleTypeDecl xsSimpleTypeDecl = (XSSimpleTypeDecl)typeDefn;
@@ -526,6 +546,27 @@ public class Minus extends XPathArithmeticUtil
 		  }
 	  }
 	  
+	  if (left instanceof XSUntypedAtomic) {
+		  java.lang.String str1 = ((XSUntypedAtomic)left).stringValue();
+
+		  try  {
+			  new BigDecimal(str1);  
+		  }
+		  catch (NumberFormatException ex) {
+			  throw new TransformerException("FORG0001 : The string value '" + str1 + "' is not a valid numeric literal."); 
+		  }
+	  } 
+	  else if (right instanceof XSUntypedAtomic) {
+		  java.lang.String str1 = ((XSUntypedAtomic)right).stringValue();
+
+		  try  {
+			  new BigDecimal(str1);
+		  }
+		  catch (NumberFormatException ex) {
+			  throw new TransformerException("FORG0001 : The string value '" + str1 + "' is not a valid numeric literal."); 
+		  }
+	  }
+	  
 	  if (left instanceof XSAnyAtomicType) {
 		  typeName1 = ((XSAnyAtomicType)left).typeName();
 		  typeNs1 = XMLConstants.W3C_XML_SCHEMA_NS_URI; 
@@ -543,6 +584,37 @@ public class Minus extends XPathArithmeticUtil
 		  typeName2 = "double";
 		  typeNs2 = XMLConstants.W3C_XML_SCHEMA_NS_URI; 
 	  }
+	  
+	  if ((lNodeStr != null) && (rNodeStr != null)) {
+		  try {
+			  Double dbl1 = Double.valueOf(lNodeStr); 
+			  Double dbl2 = Double.valueOf(rNodeStr);
+
+			  left = new XSDouble(dbl1);
+			  right = new XSDouble(dbl2);
+
+			  typeName1 = "double";
+			  typeNs1 = XMLConstants.W3C_XML_SCHEMA_NS_URI;
+
+			  typeName2 = "double";
+			  typeNs2 = XMLConstants.W3C_XML_SCHEMA_NS_URI;
+		  }
+		  catch (NumberFormatException ex) {
+			  // No op 
+		  }
+	  }
+
+	  if ((left instanceof XMLNodeCursorImpl) && (right instanceof XMLNodeCursorImpl) 
+			                                  && (lNodeStr == null) && (rNodeStr == null)) {
+		  left = new XSDouble(0);
+		  right = new XSDouble(0);
+
+		  typeName1 = "double";
+		  typeNs1 = XMLConstants.W3C_XML_SCHEMA_NS_URI;
+
+		  typeName2 = "double";
+		  typeNs2 = XMLConstants.W3C_XML_SCHEMA_NS_URI; 
+	  }
 
 	  java.lang.String typeName1Actual = typeName1;
 	  java.lang.String typeName2Actual = typeName2;
@@ -557,32 +629,27 @@ public class Minus extends XPathArithmeticUtil
 		  typeNs2 = XMLConstants.W3C_XML_SCHEMA_NS_URI;
 	  }
 	  
-	  // Validating an XPath 3.1 operator '-' operands compatibility for subtraction	  
+	  // Validating an XPath 3.1 operator '-' operands compatibility for subtraction	
+	  
 	  if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs1) && (XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs2)) {
 		  if ((isXsBuiltInTypeNumeric(typeName1) && !isXsBuiltInTypeNumeric(typeName2)) || 
 				                                                                    (isXsBuiltInTypeNumeric(typeName2) && !isXsBuiltInTypeNumeric(typeName1))) {
-			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema "
-					                                                                                               + "type " + typeName2Actual + " value from " + typeName1Actual + ".");
+			  throw new TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema type " + typeName2Actual + " value from " + typeName1Actual + ".");
 		  }
 		  else if ("date".equals(typeName1) && !("date".equals(typeName2) || "yearMonthDuration".equals(typeName2) || "dayTimeDuration".equals(typeName2))) {
-			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema "
-                                                                                                                   + "type " + typeName2Actual + " value from " + typeName1Actual + ".");
+			  throw new TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema type " + typeName2Actual + " value from " + typeName1Actual + ".");
 		  }
 		  else if ("time".equals(typeName1) && !("time".equals(typeName2) || "dayTimeDuration".equals(typeName2))) {
-			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema "
-                                                                                                                   + "type " + typeName2Actual + " value from " + typeName1Actual + ".");
+			  throw new TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema type " + typeName2Actual + " value from " + typeName1Actual + ".");
 		  }
 		  else if ("dateTime".equals(typeName1) && !("dateTime".equals(typeName2) || "yearMonthDuration".equals(typeName2) || "dayTimeDuration".equals(typeName2))) {
-			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema "
-                                                                                                                   + "type " + typeName2Actual + " value from " + typeName1Actual + ".");
+			  throw new TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema type " + typeName2Actual + " value from " + typeName1Actual + ".");
 		  }
 		  else if ("yearMonthDuration".equals(typeName1) && !"yearMonthDuration".equals(typeName2)) {
-			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema "
-                                                                                                                   + "type " + typeName2Actual + " value from " + typeName1Actual + ".");
+			  throw new TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema type " + typeName2Actual + " value from " + typeName1Actual + ".");
 		  }
 		  else if ("dayTimeDuration".equals(typeName1) && !"dayTimeDuration".equals(typeName2)) {
-			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema "
-                      																							   + "type " + typeName2Actual + " value from " + typeName1Actual + ".");
+			  throw new TransformerException("XPTY0004 : An XPath 3.1 operator '-' cannot subtract schema type " + typeName2Actual + " value from " + typeName1Actual + ".");
 		  }
 
 		  List<XMLNSDecl> nsPrefixTable = null;	  
@@ -597,7 +664,7 @@ public class Minus extends XPathArithmeticUtil
 
 		  if (lNodeStr != null) {
 			  java.lang.String xpathStr = (XMLConstants.W3C_XML_SCHEMA_NS_URI + ":" + typeName1 + "('" + lNodeStr + "')");
-			  xpathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, nsPrefixTable);
+			  xpathStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, nsPrefixTable);
 			  XPath xpathObj = null;
 			  
 			  try {
@@ -616,7 +683,7 @@ public class Minus extends XPathArithmeticUtil
 
 		  if (rNodeStr != null) {
 			  java.lang.String xpathStr = (XMLConstants.W3C_XML_SCHEMA_NS_URI + ":" + typeName2 + "('" + rNodeStr + "')");
-			  xpathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, nsPrefixTable);
+			  xpathStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, nsPrefixTable);
 			  XPath xpathObj = null;
 			  
 			  try {

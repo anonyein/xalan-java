@@ -24,6 +24,7 @@ import java.util.List;
 
 import javax.xml.transform.TransformerException;
 
+import org.apache.xalan.xslt.util.XslTransformData;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
@@ -39,11 +40,16 @@ import org.apache.xpath.objects.XPathArray;
 import org.apache.xpath.objects.XPathMap;
 import org.apache.xpath.objects.XString;
 
+import xml.xpath31.processor.types.XSAnyURI;
 import xml.xpath31.processor.types.XSBoolean;
+import xml.xpath31.processor.types.XSDayTimeDuration;
 import xml.xpath31.processor.types.XSDecimal;
+import xml.xpath31.processor.types.XSDuration;
 import xml.xpath31.processor.types.XSInteger;
 import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSString;
+import xml.xpath31.processor.types.XSUntypedAtomic;
+import xml.xpath31.processor.types.XSYearMonthDuration;
 
 /**
  * An XPath 3.1 operator '=' evaluator.
@@ -53,16 +59,25 @@ public class Equals extends XPathOperator
   static final long serialVersionUID = -2658315633903426134L;
   
   /**
-   * Class field, to support evaluate XPath expression of
-   * the form, ... = ... to ...
+   * Class field, having XPath expression string value for
+   * XPath operator = first operand. This string value 
+   * may be null.
    */
-  private java.lang.String m_xpath_op_to_lstr = null;
+  private java.lang.String m_xpath_op_lstr = null;
   
   /**
-   * Class field, to support evaluate XPath expression of
-   * the form, ... = ... to ...
+   * Class field, having XPath expression string value for
+   * XPath operator = second operand. This string value 
+   * may be null.
    */
-  private java.lang.String m_xpath_op_to_rstr = null;
+  private java.lang.String m_xpath_op_rstr = null;
+   
+  /**
+   * This string value may be, "to", "=" etc. This string 
+   * value is used when m_xpath_op_lstr & m_xpath_op_rstr 
+   * are not null.
+   */
+  private java.lang.String m_xpath_op_name_str = null;
   
   /**
    * Default constructor.
@@ -74,9 +89,10 @@ public class Equals extends XPathOperator
   /**
    * Class constructor.
    */
-  public Equals(java.lang.String xpathOpToLstr, java.lang.String xpathOpToRstr) {
-	  this.m_xpath_op_to_lstr = xpathOpToLstr;
-	  this.m_xpath_op_to_rstr = xpathOpToRstr;
+  public Equals(java.lang.String xpathOpLstr, java.lang.String xpathOpRstr, java.lang.String xpathOpNamestr) {
+	  this.m_xpath_op_lstr = xpathOpLstr;
+	  this.m_xpath_op_rstr = xpathOpRstr;
+	  this.m_xpath_op_name_str = xpathOpNamestr; 
   }
 
   /**
@@ -92,11 +108,10 @@ public class Equals extends XPathOperator
    *
    * @throws javax.xml.transform.TransformerException
    */
-  public XObject operate(XObject left, XObject right)
-          throws javax.xml.transform.TransformerException
+  public XObject operate(XObject left, XObject right) throws javax.xml.transform.TransformerException
   {
 	  
-	  XObject result = null;
+	  XObject result = null;	  
 	  
 	  if (left instanceof XPathArray) {
 		 left = ((XPathArray)left).atomize();
@@ -106,19 +121,97 @@ public class Equals extends XPathOperator
 		 right = ((XPathArray)right).atomize(); 
 	  }
 	  
+	  if ((left instanceof ResultSequence) && !((right instanceof ResultSequence) || (right instanceof XMLNodeCursorImpl))) {
+		 ResultSequence rSeq = (ResultSequence)left;		 
+		 int size1 = rSeq.size();
+		 
+		 if (size1 == 1) {
+		    left = rSeq.item(0);  
+		 }
+	  }
+	  
+	  if ((right instanceof ResultSequence) && !((left instanceof ResultSequence) || (left instanceof XMLNodeCursorImpl))) {
+		  ResultSequence rSeq = (ResultSequence)right;		 
+		  int size1 = rSeq.size();
+
+		  if (size1 == 1) {
+			 right = rSeq.item(0);  
+		  }
+	  }
+	  
 	  if ((left instanceof XSString || left instanceof XString) && 
 			                                            (right instanceof XSNumericType || right instanceof XNumber)) {
 		  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(left);
-		  if (str1.startsWith("0")) { 
+		  
+		  if (str1.startsWith("0") && (XslTransformData.m_stylesheetRoot != null)) { 
 		     throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm string value '" + str1 + "' cannot be compared to an integer.");
+		  }
+		  
+		  if (XslTransformData.m_stylesheetRoot == null) {
+			 throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm string value '" + str1 + "' cannot be compared to an integer.");
 		  }
 	  }
 	  
 	  if ((right instanceof XSString || right instanceof XString) && 
 			                                            (left instanceof XSNumericType || left instanceof XNumber)) {
 		  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(right);
-		  if (str1.startsWith("0")) { 
+		  
+		  if (str1.startsWith("0") && (XslTransformData.m_stylesheetRoot != null)) { 
 			 throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm string value '" + str1 + "' cannot be compared to an integer.");
+		  }
+		  
+		  if (XslTransformData.m_stylesheetRoot == null) {
+			 throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm string value '" + str1 + "' cannot be compared to an integer.");
+		  }
+	  }
+	  
+	  if (((left instanceof XSString) || (left instanceof XString)) && 
+                                                                   ((right instanceof XSBoolean) || (right instanceof XBoolean) || (right instanceof XBooleanStatic))) {
+		  throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm string value cannot be compared to a boolean.");
+	  }
+	  
+	  if (((right instanceof XSString) || (right instanceof XString)) && 
+                                                                     ((left instanceof XSBoolean) || (left instanceof XBoolean) || (left instanceof XBooleanStatic))) {
+          throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm string value cannot be compared to a boolean.");
+      }
+	  
+	  if ((left instanceof XSAnyURI) && ((right instanceof XSBoolean) || (right instanceof XBoolean) || (right instanceof XBooleanStatic))) {
+		  throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm 'anyURI' value cannot be compared to a boolean.");
+	  }
+
+	  if ((right instanceof XSAnyURI) && ((left instanceof XSBoolean) || (left instanceof XBoolean) || (left instanceof XBooleanStatic))) {
+		  throw new javax.xml.transform.TransformerException("XPTY0004 : An xdm 'anyURI' value cannot be compared to a boolean.");
+	  }
+	  
+	  if ((left instanceof XSUntypedAtomic) && (right instanceof XSDuration)) {
+		  java.lang.String str1 = ((XSUntypedAtomic)left).stringValue();
+		  
+		  try {
+			  if (right instanceof XSDayTimeDuration) {
+				  XSDayTimeDuration.parseDayTimeDuration(str1);
+			  }
+			  else if (right instanceof XSYearMonthDuration) {
+				  XSYearMonthDuration.parseYearMonthDuration(str1);
+			  }
+		  }
+		  catch (Exception ex) {
+			 throw new javax.xml.transform.TransformerException("FORG0001 : An string value '" + str1 + "' is an invalid XML Schema 'duration' string value."); 
+		  }
+	  }
+	  
+	  if ((right instanceof XSUntypedAtomic) && (left instanceof XSDuration)) {
+		  java.lang.String str1 = ((XSUntypedAtomic)right).stringValue();
+		  
+		  try {
+			  if (left instanceof XSDayTimeDuration) {
+				  XSDayTimeDuration.parseDayTimeDuration(str1);
+			  }
+			  else if (left instanceof XSYearMonthDuration) {
+				  XSYearMonthDuration.parseYearMonthDuration(str1);
+			  }
+		  }
+		  catch (Exception ex) {
+			 throw new javax.xml.transform.TransformerException("FORG0001 : An string value '" + str1 + "' is an invalid XML Schema 'duration' string value."); 
 		  }
 	  }
 	  
@@ -132,6 +225,181 @@ public class Equals extends XPathOperator
 		  result = XBoolean.S_FALSE;
 
 		  return result;
+	  }
+	  
+	  if ((right instanceof XNumber) && (left instanceof XSUntypedAtomic)) {
+		  XObject temp1 = right;
+		  
+		  right = left;
+		  left = temp1; 
+	  }
+	  
+	  if ((left instanceof XNumber) && (right instanceof XSUntypedAtomic)) {
+		  java.lang.String str2 = ((XSUntypedAtomic)right).stringValue();
+		  
+		  try {			 
+			 BigDecimal bigDecimal1 = XPathGeneralCmpEqualityOpUtil.getBigdecimalFromXNumber((XNumber)left);
+			 
+			 BigDecimal bigDecimal2 = new BigDecimal(str2); 
+			 
+			 if (bigDecimal1.compareTo(bigDecimal2) == 0) {
+				result = XBoolean.S_TRUE; 
+			 }
+			 else {
+				result = XBoolean.S_FALSE;
+			 }
+			 
+			 return result;
+		  }
+		  catch (NumberFormatException ex) {
+			 throw new TransformerException("FORG0001 : While evaluating XPath operator =, couldn't transform string '" 
+		                                                                                                             + str2 + "' to a numeric value."); 
+		  }
+	  }
+	  
+	  if ((left instanceof XSUntypedAtomic) && ((right instanceof XString) || (right instanceof XSString))) {
+		  XObject temp1 = left;
+		  
+		  left = right;
+		  right = temp1;
+	  }
+	  
+	  if (((left instanceof XString) || (left instanceof XSString)) && (right instanceof XSUntypedAtomic)) {
+		  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(left);
+		  java.lang.String str2 = ((XSUntypedAtomic)right).stringValue();
+
+		  if (str1.compareTo(str2) == 0) {
+			  result = XBoolean.S_TRUE;   
+		  }
+		  else {
+			  result = XBoolean.S_FALSE;   
+		  }
+		  
+		  return result;
+	  }
+	  
+	  if (((right instanceof XSBoolean) || (right instanceof XBoolean) || (right instanceof XBooleanStatic)) 
+                                                                          && (left instanceof XSUntypedAtomic)) {
+		  XObject temp1 = right;
+		  
+		  right = left;
+		  left = temp1;
+	  }
+	  
+	  if (((left instanceof XSBoolean) || (left instanceof XBoolean) || (left instanceof XBooleanStatic)) 
+			                                                            && (right instanceof XSUntypedAtomic)) {
+		  boolean value1 = left.bool();
+		  boolean value2 = false;
+		  
+		  java.lang.String str2 = ((XSUntypedAtomic)right).stringValue(); 
+		  
+		  if ("true".equals(str2) || "1".equals(str2)) {
+			  value2 = true; 
+		  }
+		  else if ("false".equals(str2) || "0".equals(str2)) {
+			  value2 = false;
+		  }
+		  else {
+			  throw new TransformerException("FORG0001 : While evaluating XPath operator =, the string value '" + str2 
+					                                                                                            + "' couldn't be cast to XML schema type 'boolean'.");
+		  }
+		  
+		  if (value1 == value2) {
+			 result = XBoolean.S_TRUE; 
+		  }
+		  else {
+			 result = XBoolean.S_FALSE;
+		  }
+		  
+		  return result;
+	  }
+	  
+	  // xs:anyURI values are compared as strings
+	  
+	  if (left instanceof XSAnyURI) {
+		  left = new XSString(((XSAnyURI)left).stringValue());  
+	  }
+	  
+	  if (right instanceof XSAnyURI) {
+		  right = new XSString(((XSAnyURI)right).stringValue());  
+	  }
+	  
+	  if (left instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)left;
+
+		  ResultSequence rSeq2 = new ResultSequence(); 
+
+		  int size1 = rSeq.size();
+		  
+		  boolean isSeqContainsXsAnyUri = false;
+
+		  for (int idx = 0; idx < size1; idx++) {
+			  XObject xObj = rSeq.item(idx);
+
+			  if (xObj instanceof XSAnyURI) {
+				  XSString xsString = new XSString(((XSAnyURI)xObj).stringValue());
+				  rSeq2.add(xsString);
+				  
+				  isSeqContainsXsAnyUri = true;
+			  }
+			  else {
+				  rSeq2.add(xObj);
+			  }
+		  }
+
+		  if (isSeqContainsXsAnyUri) {
+			  if (size1 > 1) {
+				  left = rSeq2;
+			  }
+			  else if (size1 == 1) {
+				  left = rSeq2.item(0); 
+			  }
+		  }
+	  }
+	  
+	  if (right instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)right;
+
+		  ResultSequence rSeq2 = new ResultSequence(); 
+
+		  int size1 = rSeq.size();
+		  
+		  boolean isSeqContainsXsAnyUri = false;
+
+		  for (int idx = 0; idx < size1; idx++) {
+			  XObject xObj = rSeq.item(idx);
+
+			  if (xObj instanceof XSAnyURI) {
+				  XSString xsString = new XSString(((XSAnyURI)xObj).stringValue());
+				  rSeq2.add(xsString);
+				  
+				  isSeqContainsXsAnyUri = true;
+			  }
+			  else {
+				  rSeq2.add(xObj);
+			  }
+		  }
+
+		  if (isSeqContainsXsAnyUri) {
+			  if (size1 > 1) {
+				  right = rSeq2;
+			  }
+			  else if (size1 == 1) {
+				  right = rSeq2.item(0); 
+			  }
+		  }
+	  }
+	  
+	  if ((left instanceof XSString) && (right instanceof XSString)) {
+		 java.lang.String str1 = ((XSString)left).stringValue();
+		 java.lang.String str2 = ((XSString)right).stringValue();
+		 
+		 if (str1.compareTo(str2) == 0) {
+			return XBoolean.S_TRUE; 
+		 }
+		 else {
+			return XBoolean.S_FALSE; 
+		 }
 	  }
 	  
 	  BigInteger bigInt1 = null;
@@ -166,6 +434,7 @@ public class Equals extends XPathOperator
 			  DTMCursorIterator dtmCursorIterator = xmlNodeCursorImpl.iter();
 			  
 			  int nextNode = DTM.NULL;
+			  
 			  while ((nextNode = dtmCursorIterator.nextNode()) != DTM.NULL) {
 				 XMLNodeCursorImpl node1 = new XMLNodeCursorImpl(nextNode, m_xctxt); 
 				 java.lang.String str1 = node1.str();
@@ -220,6 +489,7 @@ public class Equals extends XPathOperator
 			  DTMCursorIterator dtmCursorIterator = xmlNodeCursorImpl.iter();
 			  
 			  int nextNode = DTM.NULL;
+			  
 			  while ((nextNode = dtmCursorIterator.nextNode()) != DTM.NULL) {
 				 XMLNodeCursorImpl node1 = new XMLNodeCursorImpl(nextNode, m_xctxt); 
 				 java.lang.String str1 = node1.str();
@@ -293,8 +563,11 @@ public class Equals extends XPathOperator
 		  
 		  XMLNodeCursorImpl nodeRef = (XMLNodeCursorImpl)lObj;		  
 		  DTMManager dtmManager = nodeRef.getDTMManager();
-		  DTMCursorIterator iter = nodeRef.iterRaw();
+		  
+		  DTMCursorIterator iter = nodeRef.iter();
+		  
 		  int nextNode = DTM.NULL;		  
+		  
 		  while ((nextNode = iter.nextNode()) != DTM.NULL) {
 			  XMLNodeCursorImpl nodeRef1 = new XMLNodeCursorImpl(nextNode, dtmManager);
 			  java.lang.String nodeStrValue = nodeRef1.str();
@@ -307,8 +580,11 @@ public class Equals extends XPathOperator
 		  
 		  XMLNodeCursorImpl nodeRef = (XMLNodeCursorImpl)lObj;		  
 		  DTMManager dtmManager = nodeRef.getDTMManager();
-		  DTMCursorIterator iter = nodeRef.iterRaw();
+		  
+		  DTMCursorIterator iter = nodeRef.iter();
+		  
 		  int nextNode = DTM.NULL;
+		  
 		  while ((nextNode = iter.nextNode()) != DTM.NULL) {
 			  XMLNodeCursorImpl nodeRef1 = new XMLNodeCursorImpl(nextNode, dtmManager);
 			  java.lang.String nodeStrValue = nodeRef1.str();
@@ -320,8 +596,11 @@ public class Equals extends XPathOperator
 		  
 		  XMLNodeCursorImpl nodeRef = (XMLNodeCursorImpl)rObj;		  
 		  DTMManager dtmManager = nodeRef.getDTMManager();
-		  DTMCursorIterator iter = nodeRef.iterRaw();
+		  
+		  DTMCursorIterator iter = nodeRef.iter();
+		  
 		  int nextNode = DTM.NULL;
+		  
 		  while ((nextNode = iter.nextNode()) != DTM.NULL) {
 			  XMLNodeCursorImpl nodeRef1 = new XMLNodeCursorImpl(nextNode, dtmManager);
 			  java.lang.String nodeStrValue = nodeRef1.str();
@@ -331,9 +610,11 @@ public class Equals extends XPathOperator
 		  double lDbl1 = Double.valueOf(((XSNumericType)left).stringValue());
 		  
 		  int strListSize = strList.size();
+		  
 		  for (int idx = 0; idx < strListSize; idx++) {
 			 java.lang.String str1 = strList.get(idx);
 			 double rDbl1 = Double.valueOf(str1);
+			 
 			 if (lDbl1 == rDbl1) {
 				return XBoolean.S_TRUE; 
 			 }
@@ -346,8 +627,10 @@ public class Equals extends XPathOperator
 		  if (strList.size() > 0) {			  
 			  java.lang.String strR = ((rObj instanceof XString) ? rObj.str() : ((XSString)rObj).stringValue());
 			  int strListSize = strList.size();
+			  
 			  for (int idx = 0; idx < strListSize; idx++) {
 				  java.lang.String str1 = strList.get(idx);
+				  
 				  if (str1.equals(strR)) {
 					  return XBoolean.S_TRUE;
 				  }
@@ -368,29 +651,35 @@ public class Equals extends XPathOperator
 	  	  
 	  if (right instanceof ResultSequence) {
 		 if (left instanceof XNumber) {
-			 boolean bool = XPathGeneralComparisonEqualityOpSupport.equals((XNumber)left, (ResultSequence)right, false);
+			 boolean bool = XPathGeneralCmpEqualityOpUtil.equals((XNumber)left, (ResultSequence)right, false);
 			 result = (bool ? XBoolean.S_TRUE : XBoolean.S_FALSE); 
 		 }
 		 else if (left instanceof XSNumericType) {
-			 boolean bool = XPathGeneralComparisonEqualityOpSupport.equals((XSNumericType)left, (ResultSequence)right, false);
+			 boolean bool = XPathGeneralCmpEqualityOpUtil.equals((XSNumericType)left, (ResultSequence)right, false);
 			 result = (bool ? XBoolean.S_TRUE : XBoolean.S_FALSE);
 		 }
 		 else if (left instanceof XSString) {
-			 boolean bool = XPathGeneralComparisonEqualityOpSupport.equals((XSString)left, (ResultSequence)right, false);
+			 boolean bool = XPathGeneralCmpEqualityOpUtil.equals((XSString)left, (ResultSequence)right, false);
 			 result = (bool ? XBoolean.S_TRUE : XBoolean.S_FALSE);
 		 }
 		 else if (left instanceof XString) {
-			 boolean bool = XPathGeneralComparisonEqualityOpSupport.equals((XString)left, (ResultSequence)right, false);
+			 boolean bool = XPathGeneralCmpEqualityOpUtil.equals((XString)left, (ResultSequence)right, false);
 			 result = (bool ? XBoolean.S_TRUE : XBoolean.S_FALSE);
 		 }
 		 else if (left instanceof ResultSequence) {
 			 ResultSequence resultSeqLhs = (ResultSequence)left;
 			 ResultSequence resultSeqRhs = (ResultSequence)right;
 			 boolean isEqual = false;
-			 for (int i = 0; i < resultSeqLhs.size(); i++) {
+			 
+			 int size1 = resultSeqLhs.size();			 
+			 int size2 = resultSeqRhs.size();
+			 
+			 for (int i = 0; i < size1; i++) {
 				 XObject xObj1 = resultSeqLhs.item(i); 
-				 for (int j = 0; j < resultSeqRhs.size(); j++) {
+				 
+				 for (int j = 0; j < size2; j++) {
 					XObject xObj2 = resultSeqRhs.item(j);
+					
 					if (xObj2 instanceof ResultSequence) {
 					   XObject r1 = operate(xObj1, xObj2);
 					   isEqual = r1.bool();
@@ -413,7 +702,7 @@ public class Equals extends XPathOperator
 		 }
 		 else {
 			 java.lang.String lStrVal = XslTransformEvaluationHelper.getStrVal(left);			 
-			 boolean bool = XPathGeneralComparisonEqualityOpSupport.equals(new XSString(lStrVal), (ResultSequence)right, false);
+			 boolean bool = XPathGeneralCmpEqualityOpUtil.equals(new XSString(lStrVal), (ResultSequence)right, false);
 			 result = (bool ? XBoolean.S_TRUE : XBoolean.S_FALSE);
 		 }
 	  }
@@ -424,8 +713,11 @@ public class Equals extends XPathOperator
 		  List<java.lang.String> strList1 = new ArrayList<java.lang.String>();
 		  XMLNodeCursorImpl nodeRef = (XMLNodeCursorImpl)lObj;		  
 		  DTMManager dtmManager = nodeRef.getDTMManager();
-		  DTMCursorIterator iter = nodeRef.iterRaw();
+		  
+		  DTMCursorIterator iter = nodeRef.iter();
+		  
 		  int nextNode = DTM.NULL;		  
+		  
 		  while ((nextNode = iter.nextNode()) != DTM.NULL) {
 			  XMLNodeCursorImpl nodeRef1 = new XMLNodeCursorImpl(nextNode, dtmManager);
 			  java.lang.String nodeStrValue = nodeRef1.str();
@@ -435,8 +727,9 @@ public class Equals extends XPathOperator
 		  List<java.lang.String> strList2 = new ArrayList<java.lang.String>();
 		  nodeRef = (XMLNodeCursorImpl)rObj;		  
 		  dtmManager = nodeRef.getDTMManager();
-		  iter = nodeRef.iterRaw();
+		  iter = nodeRef.iter();
 		  nextNode = DTM.NULL;		  
+		  
 		  while ((nextNode = iter.nextNode()) != DTM.NULL) {
 			  XMLNodeCursorImpl nodeRef2 = new XMLNodeCursorImpl(nextNode, dtmManager);
 			  java.lang.String nodeStrValue = nodeRef2.str();
@@ -445,10 +738,13 @@ public class Equals extends XPathOperator
 		  
 		  int size1 = strList1.size();
 		  int size2 = strList2.size();		  
+		  
 		  for (int idx = 0; idx < size1; idx++) {
 			  java.lang.String str1 = strList1.get(idx);
+			  
 			  for (int idx2 = 0; idx2 < size2; idx2++) {
 				 java.lang.String str2 = strList2.get(idx2);
+				 
 				 if (str1.equals(str2)) {
 					return XBoolean.S_TRUE; 
 				 }
@@ -460,12 +756,17 @@ public class Equals extends XPathOperator
 	  else if (left instanceof XMLNodeCursorImpl) {
 		 left = left.getFresh();
 		 XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)left;
-		 DTMCursorIterator iter1 = xmlNodeCursorImpl.iterRaw();
-		 int nextNode;
+		 
+		 DTMCursorIterator iter1 = xmlNodeCursorImpl.iter();
+		 
+		 int nextNode = DTM.NULL;
+		 
 		 DTMManager dtmManager = iter1.getDTMManager();
+		 
 		 while ((nextNode = iter1.nextNode()) != DTM.NULL) {
 			XMLNodeCursorImpl xmlNodeCursorImpl1 = new XMLNodeCursorImpl(nextNode, dtmManager);
 			java.lang.String lStrValue = xmlNodeCursorImpl1.str();
+			
 			try {
 				if (right instanceof XNumber) {
 					if ("".equals(lStrValue)) {
@@ -475,6 +776,7 @@ public class Equals extends XPathOperator
 					double lDbl = Double.valueOf(lStrValue);
 					XNumber rXNumber = (XNumber)right;
 					double rDbl = rXNumber.num();
+					
 					if (lDbl == rDbl) {
 						return XBoolean.S_TRUE;
 					}
@@ -488,12 +790,14 @@ public class Equals extends XPathOperator
 					XSNumericType xsNumericType = (XSNumericType)right;
 					java.lang.String rStrValue = xsNumericType.stringValue();
 					double rDbl = Double.valueOf(rStrValue);
+					
 					if (lDbl == rDbl) {
 					   return XBoolean.S_TRUE;
 					}
 				}
 				else if (right instanceof XSBoolean) {
 					java.lang.String rStrValue = ((XSBoolean)right).stringValue();
+					
 					if (!"".equals(lStrValue) && ("1".equals(rStrValue) || "true".equals(rStrValue))) {
 						return XBoolean.S_TRUE;
 					}
@@ -503,6 +807,7 @@ public class Equals extends XPathOperator
 				}
 				else if ((right instanceof XBoolean) || (right instanceof XBooleanStatic)) {
 					java.lang.String rStrValue = right.str();
+					
 					if (!"".equals(lStrValue) && ("1".equals(rStrValue) || "true".equals(rStrValue))) {
 						return XBoolean.S_TRUE;
 					}
@@ -512,6 +817,7 @@ public class Equals extends XPathOperator
 				}
 				else {
 					java.lang.String rStrValue = XslTransformEvaluationHelper.getStrVal(right);
+					
 					if (lStrValue.equals(rStrValue)) {
 					   return XBoolean.S_TRUE;
 					}
@@ -528,6 +834,7 @@ public class Equals extends XPathOperator
 		  XString lStr = (XString)left;
 		  java.lang.String strVal1 = lStr.str();
 		  double dbl1 = 0;
+		  
 		  try {
 			  dbl1 = (Double.valueOf(strVal1)).doubleValue();
 		  }
@@ -544,6 +851,7 @@ public class Equals extends XPathOperator
 		  XString rStr = (XString)right;		  			  			  
 		  java.lang.String strVal1 = rStr.str();
 		  double dbl1 = 0;
+		  
 		  try {
 			  dbl1 = (Double.valueOf(strVal1)).doubleValue();
 		  }
@@ -649,21 +957,29 @@ public class Equals extends XPathOperator
 
 	  return result;
   }
-
-  public java.lang.String getXPathOpToLstr() {
-	  return m_xpath_op_to_lstr;
+  
+  public java.lang.String getXPathOpNameStr() {
+	  return m_xpath_op_name_str;
   }
 
-  public void setXPathOpToLstr(java.lang.String xpathOpToLstr) {
-	  this.m_xpath_op_to_lstr = xpathOpToLstr;
+  public void setXPathOpNameStr(java.lang.String xpathOpNameStr) {
+	  this.m_xpath_op_name_str = xpathOpNameStr;
   }
 
-  public java.lang.String getXPathOpToRstr() {
-	  return m_xpath_op_to_rstr;
+  public java.lang.String getXPathOpLstr() {
+	  return m_xpath_op_lstr;
   }
 
-  public void setXPathOpToRstr(java.lang.String xpathOpToRstr) {
-	  this.m_xpath_op_to_rstr = xpathOpToRstr;
+  public void setXPathOpLstr(java.lang.String xpathOpLstr) {
+	  this.m_xpath_op_lstr = xpathOpLstr;
+  }
+
+  public java.lang.String getXPathOpRstr() {
+	  return m_xpath_op_rstr;
+  }
+
+  public void setXPathOpRstr(java.lang.String xpathOpRstr) {
+	  this.m_xpath_op_rstr = xpathOpRstr;
   }
 
 }

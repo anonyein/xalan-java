@@ -23,6 +23,7 @@ import java.util.List;
 import javax.xml.XMLConstants;
 import javax.xml.transform.TransformerException;
 
+import org.apache.xalan.templates.Constants;
 import org.apache.xalan.templates.ElemTemplateElement;
 import org.apache.xalan.templates.StylesheetRoot;
 import org.apache.xalan.templates.XMLNSDecl;
@@ -138,6 +139,28 @@ public class Mod extends XPathArithmeticUtil
 																												  + "type which cannot be atomized.", this); 
 	  }
 	  
+	  if (left instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)left;
+
+		  if (rSeq.size() > 1) {
+			  throw new TransformerException("XPTY0004 : An XPath operator 'mod' cannot be applied to operands, that have cardinality greater than one."); 			  
+		  }
+		  else if (rSeq.size() == 1) {
+			  left = rSeq.item(0);   
+		  }
+	  }
+
+	  if (right instanceof ResultSequence) {
+		  ResultSequence rSeq = (ResultSequence)right;
+
+		  if (rSeq.size() > 1) {
+			  throw new TransformerException("XPTY0004 : An XPath operator 'mod' cannot be applied to operands, that have cardinality greater than one."); 			  
+		  }
+		  else if (rSeq.size() == 1) {
+			  right = rSeq.item(0);   
+		  }
+	  }
+	  
 	  if ((left instanceof ResultSequence) && (((ResultSequence)left).size() == 0)) {
 		 return new ResultSequence();  
 	  }
@@ -183,6 +206,65 @@ public class Mod extends XPathArithmeticUtil
 		  }
 		  else if (xNumber.getXsInteger() != null) {
 			  right = xNumber.getXsInteger();  
+		  }
+	  }
+	  
+	  if ((left instanceof XSNumericType) && !((left instanceof XSFloat) || (left instanceof XSDouble))) {
+		 java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(left);
+		 Double dbl1 = Double.valueOf(str1);
+		  
+		 if (((right instanceof XSFloat) || (right instanceof XSDouble))) {
+			 java.lang.String str2 = XslTransformEvaluationHelper.getStrVal(right);
+
+			 if ((Constants.POSITIVE_INF_STR).equals(str2) || (Constants.NEGATIVE_INF_STR).equals(str2)) {
+				 return left;
+			 }
+
+			 if ((dbl1 != 0) && ("0".equals(str2) || "0.0".equals(str2) || "-0".equals(str2) 
+					                                                    || "-0.0".equals(str2))) {
+				 if (right instanceof XSFloat) {
+                    return new XSFloat("NaN");
+				 }
+				 else if (right instanceof XSDouble) {
+					return new XSDouble("NaN");
+				 }
+			 }			 
+		 }		 		 
+	  }
+	  
+	  if ((left instanceof XSFloat) || (left instanceof XSDouble)) {
+		 java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(left);
+		 java.lang.String str2 = XslTransformEvaluationHelper.getStrVal(right);
+		 
+		 if (("0".equals(str1) || "0.0".equals(str1) || "-0".equals(str1) || "-0.0".equals(str1)) && 
+			 ("0".equals(str2) || "0.0".equals(str2) || "-0".equals(str2) || "-0.0".equals(str2))) {
+			 return new XSDouble("NaN");
+		 }
+	  }
+	  
+	  if ((left instanceof XSFloat) || (right instanceof XSFloat)) {
+		  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(left);
+		  java.lang.String str2 = XslTransformEvaluationHelper.getStrVal(right);
+		  
+		  if (("-0".equals(str1) || "-0.0".equals(str1)) && "-INF".equals(str2)) {
+			 return new XSFloat("-0");  
+		  }
+		  
+		  if (("0".equals(str1) || "0.0".equals(str1)) && "-INF".equals(str2)) {
+			 return new XSFloat("0");  
+		  }
+	  }
+	  
+	  if ((left instanceof XSDouble) || (right instanceof XSDouble)) {
+		  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(left);
+		  java.lang.String str2 = XslTransformEvaluationHelper.getStrVal(right);
+		  
+		  if (("-0".equals(str1) || "-0.0".equals(str1)) && "-INF".equals(str2)) {
+			 return new XSDouble("-0");  
+		  }
+		  
+		  if (("0".equals(str1) || "0.0".equals(str1)) && "-INF".equals(str2)) {
+			 return new XSDouble("0");  
 		  }
 	  }
 	  
@@ -375,6 +457,27 @@ public class Mod extends XPathArithmeticUtil
 		  }
 	  }
 	  
+	  if (left instanceof XSUntypedAtomic) {
+		  java.lang.String str1 = ((XSUntypedAtomic)left).stringValue();
+
+		  try  {
+			  new BigDecimal(str1);  
+		  }
+		  catch (NumberFormatException ex) {
+			  throw new TransformerException("FORG0001 : The string value '" + str1 + "' is not a valid numeric literal."); 
+		  }
+	  } 
+	  else if (right instanceof XSUntypedAtomic) {
+		  java.lang.String str1 = ((XSUntypedAtomic)right).stringValue();
+
+		  try  {
+			  new BigDecimal(str1);
+		  }
+		  catch (NumberFormatException ex) {
+			  throw new TransformerException("FORG0001 : The string value '" + str1 + "' is not a valid numeric literal."); 
+		  }
+	  }
+	  
 	  if (left instanceof XSAnyAtomicType) {
 		  typeName1 = ((XSAnyAtomicType)left).typeName();
 		  typeNs1 = XMLConstants.W3C_XML_SCHEMA_NS_URI; 
@@ -426,7 +529,7 @@ public class Mod extends XPathArithmeticUtil
 
 		  if (lNodeStr != null) {
 			  java.lang.String xpathStr = (XMLConstants.W3C_XML_SCHEMA_NS_URI + ":" + typeName1 + "('" + lNodeStr + "')");
-			  xpathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, nsPrefixTable);
+			  xpathStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, nsPrefixTable);
 			  XPath xpathObj = null;
 			  try {
 			     xpathObj = new XPath(xpathStr, this, xctxt.getNamespaceContext(), XPath.SELECT, null);
@@ -443,7 +546,7 @@ public class Mod extends XPathArithmeticUtil
 
 		  if (rNodeStr != null) {
 			  java.lang.String xpathStr = (XMLConstants.W3C_XML_SCHEMA_NS_URI + ":" + typeName2 + "('" + rNodeStr + "')");
-			  xpathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, nsPrefixTable);
+			  xpathStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, nsPrefixTable);
 			  XPath xpathObj = null;
 			  try {
 			     xpathObj = new XPath(xpathStr, this, xctxt.getNamespaceContext(), XPath.SELECT, null);
@@ -501,20 +604,24 @@ public class Mod extends XPathArithmeticUtil
 		  return result;
 	  }
 	  
-	  Expression leftOperandExpr = getLeftOperand();	  
-	  if (leftOperandExpr instanceof SelfIteratorNoPredicate) {
-		 left = getModifiedOperandValue(left, (SelfIteratorNoPredicate)leftOperandExpr);
-	  }
-	  
-      Expression rightOperandExpr = getRightOperand();	  
-	  if (rightOperandExpr instanceof SelfIteratorNoPredicate) {
-		 right = getModifiedOperandValue(right, (SelfIteratorNoPredicate)rightOperandExpr);
-	  }
+	  if (!((left instanceof XSNumericType) && (right instanceof XSNumericType))) {
+		  Expression leftOperandExpr = getLeftOperand();	  
+
+		  if (leftOperandExpr instanceof SelfIteratorNoPredicate) {
+			  left = getModifiedOperandValue(left, (SelfIteratorNoPredicate)leftOperandExpr);
+		  }
+
+		  Expression rightOperandExpr = getRightOperand();	  
+
+		  if (rightOperandExpr instanceof SelfIteratorNoPredicate) {
+			  right = getModifiedOperandValue(right, (SelfIteratorNoPredicate)rightOperandExpr);
+		  }
+      }
 	  
 	  if (left instanceof XSDouble) {
 		  if (right instanceof XSNumericType) {
 			 java.lang.String str2 = ((XSNumericType)right).stringValue();
-			 if (!("INF".equals(str2) || "-INF".equals(str2) || "NaN".equals(str2))) {
+			 if (!((Constants.POSITIVE_INF_STR).equals(str2) || (Constants.NEGATIVE_INF_STR).equals(str2) || "NaN".equals(str2))) {
 				XSDouble xsDouble1 = (XSDouble)left;
 				if (xsDouble1.infinite()) {
 				   return new XSDouble(Double.NaN);
@@ -526,7 +633,7 @@ public class Mod extends XPathArithmeticUtil
       if (left instanceof XSFloat) {
     	  if (right instanceof XSNumericType) {
  			 java.lang.String str2 = ((XSNumericType)right).stringValue();
- 			 if (!("INF".equals(str2) || "-INF".equals(str2) || "NaN".equals(str2))) {
+ 			 if (!((Constants.POSITIVE_INF_STR).equals(str2) || (Constants.NEGATIVE_INF_STR).equals(str2) || "NaN".equals(str2))) {
  				XSFloat xsFloat1 = (XSFloat)left;
  				if (xsFloat1.infinite()) {
  				   return new XSDouble(Double.NaN);
@@ -537,11 +644,11 @@ public class Mod extends XPathArithmeticUtil
       
       if (left instanceof XSNumericType) {
     	  java.lang.String str1 = ((XSNumericType)left).stringValue(); 
-    	  if (!("INF".equals(str1) || "-INF".equals(str1) || "NaN".equals(str1))) {
+    	  if (!((Constants.POSITIVE_INF_STR).equals(str1) || (Constants.NEGATIVE_INF_STR).equals(str1) || "NaN".equals(str1))) {
     		 if (right instanceof XSDouble) {
     			XSDouble xsDouble = (XSDouble)right;
     			java.lang.String str2 = xsDouble.stringValue();
-    			if ("INF".equals(str2)) {
+    			if ((Constants.POSITIVE_INF_STR).equals(str2)) {
     			   return left;
     			}
     		 }
@@ -550,11 +657,11 @@ public class Mod extends XPathArithmeticUtil
       
       if (left instanceof XSNumericType) {
     	  java.lang.String str1 = ((XSNumericType)left).stringValue(); 
-    	  if (!("INF".equals(str1) || "-INF".equals(str1) || "NaN".equals(str1))) {
+    	  if (!((Constants.POSITIVE_INF_STR).equals(str1) || (Constants.NEGATIVE_INF_STR).equals(str1) || "NaN".equals(str1))) {
     		 if (right instanceof XSFloat) {
     			 XSFloat xsFloat = (XSFloat)right;
     			java.lang.String str2 = xsFloat.stringValue();
-    			if ("INF".equals(str2)) {
+    			if ((Constants.POSITIVE_INF_STR).equals(str2)) {
     			   return left;
     			}
     		 }
@@ -565,16 +672,16 @@ public class Mod extends XPathArithmeticUtil
     	  java.lang.String str1 = ((XSNumericType)left).stringValue(); 
     	  java.lang.String str2 = ((XSNumericType)right).stringValue();
     	  
-    	  if ("INF".equals(str1) && "INF".equals(str2)) {
+    	  if ((Constants.POSITIVE_INF_STR).equals(str1) && (Constants.POSITIVE_INF_STR).equals(str2)) {
     		  return new XSDouble(Double.NaN); 
     	  }
-    	  else if ("INF".equals(str1) && "-INF".equals(str2)) {
+    	  else if ((Constants.POSITIVE_INF_STR).equals(str1) && (Constants.NEGATIVE_INF_STR).equals(str2)) {
     		  return new XSDouble(Double.NaN);
     	  }
-    	  else if ("-INF".equals(str1) && "INF".equals(str2)) {
+    	  else if ((Constants.NEGATIVE_INF_STR).equals(str1) && (Constants.POSITIVE_INF_STR).equals(str2)) {
     		  return new XSDouble(Double.NaN);
     	  }
-          else if ("-INF".equals(str1) && "-INF".equals(str2)) {
+          else if ((Constants.NEGATIVE_INF_STR).equals(str1) && (Constants.NEGATIVE_INF_STR).equals(str2)) {
         	  return new XSDouble(Double.NaN);
     	  }
       }

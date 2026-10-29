@@ -20,6 +20,8 @@ public class XSDouble extends XSNumericType {
 	
 	private XPath3DecimalFormat xpath3DecimalFormat = new XPath3DecimalFormat(
 	                                                              "0.#################E0");
+	
+	private boolean _isSrcFloat = false;
 
 	/**
 	 * Class constructor.
@@ -39,14 +41,14 @@ public class XSDouble extends XSNumericType {
      * Class constructor.
      */
 	public XSDouble(String strVal) throws javax.xml.transform.TransformerException {
-		try {
-			if ("-INF".equals(strVal)) {
-				_value = Double.valueOf(Double.NEGATIVE_INFINITY);
-			} 
-			else if ("INF".equals(strVal) || "+INF".equals(strVal)) {
-				// +INF is rejected with XSD 1.0				
+		try {						 
+			if ((XPath3DecimalFormat.POSITIVE_INF_STR1).equals(strVal) || (XPath3DecimalFormat.POSITIVE_INF_STR2).equals(strVal)) {
+				// Literal string +INF is rejected with XSD 1.0				
 				_value = Double.valueOf(Double.POSITIVE_INFINITY);
-			} 
+			}
+			else if ((XPath3DecimalFormat.NEGATIVE_INF_STR).equals(strVal)) {
+				_value = Double.valueOf(Double.NEGATIVE_INFINITY);
+			}
 			else {
 				_value = Double.valueOf(strVal);
 			}
@@ -70,11 +72,11 @@ public class XSDouble extends XSNumericType {
 		try {
 			Double d1 = null;
 			
-			if ("INF".equals(strVal) || "+INF".equals(strVal)) {
-				// +INF is rejected with XSD 1.0
+			if ((XPath3DecimalFormat.POSITIVE_INF_STR1).equals(strVal) || (XPath3DecimalFormat.POSITIVE_INF_STR2).equals(strVal)) {
+				// Literal string +INF is rejected with XSD 1.0
 				d1 = Double.valueOf(Double.POSITIVE_INFINITY);
 			} 
-			else if ("-INF".equals(strVal)) {
+			else if ((XPath3DecimalFormat.NEGATIVE_INF_STR).equals(strVal)) {
 				d1 = Double.valueOf(Double.NEGATIVE_INFINITY);
 			} 
 			else {
@@ -207,5 +209,13 @@ public class XSDouble extends XSNumericType {
     public int getType() {
         return CLASS_XS_DOUBLE;
     }
+
+	public boolean getIsSrcFloat() {
+		return _isSrcFloat;
+	}
+
+	public void setIsSrcFloat(boolean isSrcFloat) {
+		this._isSrcFloat = isSrcFloat;
+	}
     
 }

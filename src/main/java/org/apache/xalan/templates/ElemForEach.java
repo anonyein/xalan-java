@@ -729,7 +729,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
                     
                // Evaluate the, variable reference XPath expression
                if (prefixTable != null) {
-                  varRefXPathExprStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(
+                  varRefXPathExprStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(
                                                                                                    varRefXPathExprStr, 
                                                                                                    prefixTable);
                }
@@ -747,7 +747,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
                     
                // Evaluate an, xdm sequence index XPath expression
                if (prefixTable != null) {
-                  xpathIndexExprStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(
+                  xpathIndexExprStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(
                                                                                                   xpathIndexExprStr, 
                                                                                                   prefixTable);
                }
@@ -1030,7 +1030,7 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
    private void processSequenceOrArray(TransformerImpl transformer, XPathContext xctxt, 
 		                                                            XObject evalResult) throws TransformerException {       
 	   
-	   List<XObject> xdmItemList = null;
+	   List<XObject> xdmItemList = new ArrayList<XObject>();
 	   
 	   SourceLocator srcLocator = xctxt.getSAXLocator();
 	   
@@ -1038,7 +1038,19 @@ public class ElemForEach extends ElemTemplateElement implements ExpressionOwner
 	   
 	   boolean isXslHomogeneousInpSource = evalResult.isDataHomogeneousSource();
 	   
-	   if (evalResult instanceof ResultSequence) {
+	   if (evalResult instanceof XMLNodeCursorImpl) {
+		   XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)evalResult;
+		   
+		   DTMCursorIterator dtmCursorIter = xmlNodeCursorImpl.iter();
+		   
+		   int nextNode = DTM.NULL;
+		   
+		   while ((nextNode = dtmCursorIter.nextNode()) != DTM.NULL) {
+			  XMLNodeCursorImpl xmlNodeCursorImpl1 = new XMLNodeCursorImpl(nextNode, xctxt);
+			  xdmItemList.add(xmlNodeCursorImpl1);
+		   }
+	   }
+	   else if (evalResult instanceof ResultSequence) {
 		   ResultSequence resultSeq = (ResultSequence)evalResult;
 		   xdmItemList = resultSeq.getResultSequenceItems();   
 	   }

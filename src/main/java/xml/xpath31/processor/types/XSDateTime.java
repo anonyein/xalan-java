@@ -42,6 +42,8 @@ public class XSDateTime extends XSCalendarType {
      */
     private boolean isPopulatedFromFnCurrentDateTime = false;
     
+    private double m_secs_fraction = 0.0;
+    
     
     /**
      * Class constructor.
@@ -106,6 +108,10 @@ public class XSDateTime extends XSCalendarType {
     
     public Calendar getCalendar() {
         return _calendar;
+    }
+    
+    public void setCalendar(Calendar calendar) {
+    	_calendar = calendar; 
     }
     
     public XSDuration getTimezone() {
@@ -494,9 +500,20 @@ public class XSDateTime extends XSCalendarType {
 						    																	+ "schema type 'dateTime' value.");
             }
     
-            double ms = t[2] - ((int) t[2]);
-            ms *= 1000;
-            if (!setItem(gregorianCalObj1, Calendar.MILLISECOND, (int) ms)) {
+            int milliSecs = 0;
+            
+            String str1 = (Double.valueOf(t[2])).toString();
+            int idx2 = str1.indexOf('.');
+            
+            double secsFraction = 0.0;
+            
+            if (idx2 != -1) {
+               str1 = str1.substring(idx2);
+               milliSecs = (int)(Double.valueOf(str1) * 1000);
+               secsFraction = Double.valueOf(str1);                
+            }
+            
+            if (!setItem(gregorianCalObj1, Calendar.MILLISECOND, milliSecs)) {
                throw new TransformerException("XTTE0570 : The supplied string value '" + strVal + "' cannot be parsed to "
 						    																    + "schema type 'dateTime' value.");
             }
@@ -514,7 +531,8 @@ public class XSDateTime extends XSCalendarType {
                 timezoneVal = new XSDayTimeDuration(0, tz[1], tz[2], 0.0, tz[0] < 0);
             }
             
-            xsDateTime = new XSDateTime(gregorianCalObj1, timezoneVal);
+            xsDateTime = new XSDateTime(gregorianCalObj1, timezoneVal);            
+            xsDateTime.setSecsFraction(secsFraction);
         }
         catch (TransformerException ex) {
             throw ex;  
@@ -583,16 +601,6 @@ public class XSDateTime extends XSCalendarType {
         return _calendar.get(Calendar.MINUTE);
     }
     
-    /*public double second() {
-        double secondVal = _calendar.get(Calendar.SECOND);
-        double millisecVal = _calendar.get(Calendar.MILLISECOND);
-
-        millisecVal /= 1000;
-        secondVal += millisecVal;
-        
-        return secondVal;
-    }*/
-    
     public int second() {
         return _calendar.get(Calendar.SECOND);       
     }
@@ -647,14 +655,27 @@ public class XSDateTime extends XSCalendarType {
         returnVal += padInt(calendarVal.get(Calendar.HOUR_OF_DAY), 2);
 
         returnVal += ":";
-        returnVal += padInt(calendarVal.get(Calendar.MINUTE), 2);
-
-        returnVal += ":";
+        
+        int mins = calendarVal.get(Calendar.MINUTE);
+        
         int intSec = (int)second();
         double doubleSec = second();
+        
+        if ((m_secs_fraction < 0) && (doubleSec == 0)) {
+           mins--;
+        }
+        
+        returnVal += padInt(mins, 2);
+
+        returnVal += ":";                
 
         if ((doubleSec - intSec) == 0.0) {
-           returnVal += padInt(intSec, 2);
+           if (m_secs_fraction < 0) {
+        	  returnVal += "59";
+           }
+           else {
+              returnVal += padInt(intSec, 2);
+           }
         }
         else {
             if (doubleSec < 10.0) {
@@ -663,6 +684,12 @@ public class XSDateTime extends XSCalendarType {
             else {
                returnVal += doubleSec;
             }
+        }
+        
+        if (m_secs_fraction != 0) {
+        	String str1 = (Math.abs(m_secs_fraction) + "").substring(1);
+        	        	        	
+        	returnVal = (returnVal + str1);
         }
 
         if (isDateTimeTimezoned()) {
@@ -877,14 +904,32 @@ public class XSDateTime extends XSCalendarType {
            
            Calendar cal1 = (Calendar)((getCalendar()).clone());
            cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)secsVal * 1000))));
+              
+           double secsIntegral = 0.0;           
+           double secsFraction = 0.0;
            
-           result = new XSDateTime(cal1, getTimezone());
+           if (secsVal > 0) {
+              secsIntegral = Math.floor(secsVal);
+              secsFraction = (secsVal - secsIntegral);  
+           }
+           else if (secsVal < 0) {
+        	  secsIntegral = Math.ceil(secsVal);
+        	  secsFraction = (secsVal - secsIntegral); 
+           }
+           
+           XSDateTime xsDateTime = new XSDateTime(cal1, getTimezone());
+           
+           if (secsFraction != 0) {
+        	  xsDateTime.setSecsFraction(secsFraction);  
+           }
+           
+           result = xsDateTime;
         }
         
         return result;
     }
-    
-    /**
+
+	/**
      * Method definition, to subtract supplied xs:dateTime, xs:yearMonthDuration, or 
      * xs:dayTimeDuration value from an xs:dateTime value.
      * 
@@ -938,7 +983,7 @@ public class XSDateTime extends XSCalendarType {
         		 Calendar cal2 = ((XSDateTime)xObj).getCalendar();
         		 long diffDurationMilliSecs = cal1.getTimeInMillis() - cal2.getTimeInMillis();
 
-        		 result = new XSDayTimeDuration(diffDurationMilliSecs / 1000);        		 
+        		 result = new XSDayTimeDuration(diffDurationMilliSecs / 1000);         		 
         	 }
         	 catch (WrongNumberArgsException ex) {
         		 // No op 
@@ -953,13 +998,31 @@ public class XSDateTime extends XSCalendarType {
             result = new XSDateTime(cal1, getTimezone());
          }
          else if (xObj instanceof XSDayTimeDuration) {
-            XSDayTimeDuration xsDayTimeDuration = (XSDayTimeDuration)xObj;
-            double secsVal = xsDayTimeDuration.value();
-            
-            Calendar cal1 = (Calendar)((getCalendar()).clone());
-            cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)secsVal * 1000)) * -1));
-            
-            result = new XSDateTime(cal1, getTimezone());
+        	 XSDayTimeDuration xsDayTimeDuration = (XSDayTimeDuration)xObj;
+        	 double secsVal = xsDayTimeDuration.value();
+
+        	 Calendar cal1 = (Calendar)((getCalendar()).clone());
+        	 cal1.setTimeInMillis(cal1.getTimeInMillis() + ((((long)secsVal * 1000)) * -1));
+
+        	 double secsIntegral = 0.0;           
+        	 double secsFraction = 0.0;
+
+        	 if (secsVal > 0) {
+        		 secsIntegral = Math.floor(secsVal);
+        		 secsFraction = (secsVal - secsIntegral);  
+        	 }
+        	 else if (secsVal < 0) {
+        		 secsIntegral = Math.ceil(secsVal);
+        		 secsFraction = (secsVal - secsIntegral); 
+        	 }
+
+        	 XSDateTime xsDateTime = new XSDateTime(cal1, getTimezone());
+
+        	 if (secsFraction != 0) {
+        		 xsDateTime.setSecsFraction(secsFraction * -1);  
+        	 }
+
+        	 result = xsDateTime; 
          }
          
          return result;
@@ -1024,6 +1087,14 @@ public class XSDateTime extends XSCalendarType {
     
     public void setPopulatedFromFnCurrentDateTime(boolean isPopulatedFromFnCurrentDateTime) {
         this.isPopulatedFromFnCurrentDateTime = isPopulatedFromFnCurrentDateTime;
+    }
+        
+    public void setSecsFraction(double secsFraction) {
+	    this.m_secs_fraction = secsFraction; 		
+	}
+    
+    public double getSecsFraction() {
+    	return m_secs_fraction;
     }
 
 }

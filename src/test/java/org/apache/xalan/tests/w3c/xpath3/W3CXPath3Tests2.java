@@ -18,8 +18,6 @@ package org.apache.xalan.tests.w3c.xpath3;
 
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnContainsTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnContainsTokenTests;
-import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnFunction1Tests;
-import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnFunction2Tests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnFunction3Tests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnFunction4Tests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnLowerCaseTests;
@@ -27,11 +25,15 @@ import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnMatchesTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnReplaceTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnStringJoinTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnTailTests;
-import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnTokenizeTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnUpperCaseTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnXmlInscopePrefixesTests;
-import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FunctionStringTests;
-import org.apache.xalan.tests.w3c.xpath3.map.XPath3MapTests;
+import org.apache.xalan.tests.w3c.xpath3.map.XPath3FnMapContainsTests;
+import org.apache.xalan.tests.w3c.xpath3.map.XPath3FnMapForEachTests;
+import org.apache.xalan.tests.w3c.xpath3.map.XPath3FnMapKeysTests;
+import org.apache.xalan.tests.w3c.xpath3.map.XPath3FnMapMergeTests;
+import org.apache.xalan.tests.w3c.xpath3.map.XPath3FnMapPutTests;
+import org.apache.xalan.tests.w3c.xpath3.map.XPath3FnMapRemoveTests;
+import org.apache.xalan.tests.w3c.xpath3.map.XPath3FnMapSizeTests;
 import org.apache.xalan.tests.w3c.xpath3.math.XPath3FunctionMathTests;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3IsSameNodeTests;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3OpTestsFive;
@@ -39,7 +41,6 @@ import org.apache.xalan.tests.w3c.xpath3.op.XPath3OpTestsFour;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3OpTestsOne;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3OpTestsSix;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3OpTestsThreePart1;
-import org.apache.xalan.tests.w3c.xpath3.op.XPath3OpTestsThreePart2;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3OpTestsTwo;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3QnameEqualTests;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3RangeExprTests;
@@ -64,13 +65,15 @@ import org.junit.runners.Suite.SuiteClasses;
  */
 @RunWith(Suite.class)
 @SuiteClasses({ XPath3IfExprTests.class, XPath3FunctionMathTests.class, XPath3FnTailTests.class, XPath3QuantifiedExprTests.class, XPath3ForClauseTests.class, 
-	            XPath3LetClauseTests.class, XPath3MapTests.class, XPath3XsType1Tests.class, XPath3OpTestsOne.class, XPath3OpTestsTwo.class, 
-	            XPath3OpTestsThreePart1.class, XPath3OpTestsThreePart2.class, XPath3OpTestsFour.class, XPath3IsSameNodeTests.class, XPath3OpTestsFive.class, 
-	            XPath3OpTestsSix.class, XPath3FnFunction1Tests.class, XPath3FnFunction2Tests.class, XPath3FnFunction3Tests.class, XPath3FnFunction4Tests.class,
-	            XPath3OrExprTests.class, XPath3FnMatchesTests.class, XPath3FnReplaceTests.class, XPath3FnTokenizeTests.class, XPath3QnameEqualTests.class,
+	            XPath3LetClauseTests.class, XPath3XsType1Tests.class, XPath3OpTestsOne.class, XPath3OpTestsTwo.class, 
+	            XPath3OpTestsThreePart1.class, XPath3OpTestsFour.class, XPath3IsSameNodeTests.class, XPath3OpTestsFive.class, 
+	            XPath3OpTestsSix.class, XPath3FnFunction3Tests.class, XPath3FnFunction4Tests.class,
+	            XPath3OrExprTests.class, XPath3FnMatchesTests.class, XPath3FnReplaceTests.class, XPath3QnameEqualTests.class,
 	            XPath3FnContainsTests.class, XPath3FnContainsTokenTests.class, XPath3FnXmlInscopePrefixesTests.class,
-	            XPath3FnLowerCaseTests.class, XPath3FnUpperCaseTests.class, XPath3FunctionStringTests.class, XPath3FnStringJoinTests.class,
-	            XPath3XsType2Tests.class, XPath3RangeExprTests.class })
+	            XPath3FnLowerCaseTests.class, XPath3FnUpperCaseTests.class, XPath3FnStringJoinTests.class,
+	            XPath3XsType2Tests.class, XPath3RangeExprTests.class, XPath3FnMapContainsTests.class, XPath3FnMapForEachTests.class, 
+	            XPath3FnMapKeysTests.class, XPath3FnMapMergeTests.class, XPath3FnMapPutTests.class, 
+	            XPath3FnMapRemoveTests.class, XPath3FnMapSizeTests.class })
 public class W3CXPath3Tests2 {
 
 }

@@ -82,11 +82,11 @@ public class FuncSum extends FunctionMultiArgs
 		SourceLocator srcLocator = xctxt.getSAXLocator(); 
 
 		if (m_arg2 != null) {
-			throw new TransformerException("XPST0017 : An XPath 3.1 function sum only allows one or two arguments.", srcLocator); 
+			throw new TransformerException("XPST0017 : An XPath 3.1 function 'sum' only allows one, or two arguments.", srcLocator); 
 		}
 
 		if (m_arg0 == null) {
-			throw new TransformerException("XPST0017 : An XPath 3.1 function sum is called without an argument.", srcLocator);
+			throw new TransformerException("XPST0017 : An XPath 3.1 function 'sum' is called without an argument.", srcLocator);
 		}
 		
 		XObject arg0Obj = null;
@@ -96,7 +96,14 @@ public class FuncSum extends FunctionMultiArgs
 		if (m_arg1 == null) {
 			// An XPath function sum is called with one argument
 			
-			arg0Obj = getFunctionArgEffectiveValue(m_arg0, xctxt);
+			arg0Obj = getFunctionArgEffectiveValue(m_arg0, xctxt);						
+			
+			if (!((arg0Obj instanceof ResultSequence) || (arg0Obj instanceof XMLNodeCursorImpl) || (arg0Obj instanceof XPathArray))) {
+				ResultSequence rSeq = new ResultSequence();
+				rSeq.add(arg0Obj);
+
+				arg0Obj = rSeq;
+			}
 			
 			if (arg0Obj instanceof XMLNodeCursorImpl) {
 				ResultSequence rSeq = getXdmSequenceFromNodeSet((XMLNodeCursorImpl)arg0Obj, xctxt);
@@ -112,10 +119,55 @@ public class FuncSum extends FunctionMultiArgs
 				
 				int size1 = rSeq.size();
 				
-				if (size1 == 0) {
-					result = new XSInteger("0"); 
-				}
-				else {					
+				if (size1 == 1) {
+				   XObject xObj = rSeq.item(0);
+				   
+				   if ((xObj instanceof XSNumericType) || (xObj instanceof XNumber) || (xObj instanceof XSYearMonthDuration) 
+						                                                            || (xObj instanceof XSDayTimeDuration)) {
+					   result = xObj;
+					   
+					   return result;
+				   }
+				   else if (xObj instanceof XSUntypedAtomic) {
+					   String str1 = ((XSUntypedAtomic)xObj).stringValue();
+                	   
+                	   try {
+                		  Double dbl = Double.valueOf(str1);                    		                      		                  		
+                		  
+                		  double dblValue = dbl.doubleValue();
+                		  
+                		  if ((Double.valueOf(dblValue)).isNaN()) {
+                			  result = new XSDouble(Double.NaN);
+                		  }
+                		  else {
+                			  result = new XSDouble(dblValue);
+                		  }
+                		  
+                		  return result;
+                	   }
+                	   catch(NumberFormatException ex) {
+                		  throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an xdm sequence, "
+                                                                                                                                   + "that contains schema typed value "
+                                                                                                                                   + "'untypedAtomic' that could'nt be cast to schema type 'double'.", srcLocator);   
+                	   } 
+				   }
+				   else if (xObj instanceof XMLNodeCursorImpl) {
+					   ResultSequence rSeq2 = getXdmSequenceFromNodeSet((XMLNodeCursorImpl)xObj, xctxt);
+                	   
+                	   FuncSum funcSum = new FuncSum();
+                	   funcSum.setArg0(rSeq2);
+                	   
+                	   result = funcSum.execute(xctxt);
+                	   
+                	   return result;
+				   }
+				   else {
+					   throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an argument that "
+																						                                        + "contains neither an xdm "
+																						                                        + "numeric value or, a duration value.", srcLocator); 
+				   }
+				}								
+				else if (size1 != 0) {					
 					BigInteger sum1 = null;
 					
 					Double sum2 = null;										
@@ -141,9 +193,9 @@ public class FuncSum extends FunctionMultiArgs
 						   isSeqContainsNumber = true;
 						   
 						   if (isSeqContainsXsDayTimeDuration || isSeqContainsXsYearMonthDuration) {
-							  throw new TransformerException("FORG0006 : An XPath 3.1 function sum is called with a sequence argument "
-													  		                                                                  + "that contains values of incompatible "
-													  		                                                                  + "types.", srcLocator);  
+							  throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an xdm sequence, "
+													  		                                                                          + "that contains values of incompatible "
+													  		                                                                          + "types.", srcLocator);  
 						   }
 						   
 						   if (xObj instanceof XSDouble) {
@@ -157,7 +209,26 @@ public class FuncSum extends FunctionMultiArgs
 						   else if (xObj instanceof XSFloat) {
 							   XSFloat xsFloat = (XSFloat)xObj;
 							   if (xsFloat.nan()) {
-								   result = new XSFloat(Float.NaN); 
+								   result = new XSFloat(Float.NaN);
+								   
+								   for (int idx2 = (idx + 1); idx2 < size1; idx2++) {
+									   /**
+									    * Check whether there is any subsequent, xs:double
+									    * 'NaN' exists within the supplied xdm sequence, 
+									    * that takes precedence over xs:float 'NaN'.
+									    */
+									   
+									   XObject xObj2 = rSeq.item(idx2);
+
+									   if (xObj2 instanceof XSDouble) {
+										   XSDouble xsDouble = (XSDouble)xObj2;
+										   if (xsDouble.nan()) {
+											   result = new XSDouble(Double.NaN);
+											   
+											   return result;
+										   } 
+									   }
+								   }
 							   }
 							   
 							   xsFloatCount++;
@@ -198,9 +269,9 @@ public class FuncSum extends FunctionMultiArgs
 						   isSeqContainsNumber = true;
 						   
 						   if (isSeqContainsXsDayTimeDuration || isSeqContainsXsYearMonthDuration) {
-							   throw new TransformerException("FORG0006 : An XPath 3.1 function sum is called with a sequence argument "
-														   		                                                               + "that contains values of incompatible "
-														   		                                                               + "types.", srcLocator);  
+							   throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an xdm sequence, "
+														   		                                                                        + "that contains values of incompatible "
+														   		                                                                        + "types.", srcLocator);  
 						   }
 						   
 						   resultTypeXsDouble = true;
@@ -224,9 +295,9 @@ public class FuncSum extends FunctionMultiArgs
 						   isSeqContainsXsYearMonthDuration = true;
 						   
 						   if (isSeqContainsNumber || isSeqContainsXsDayTimeDuration) {
-							   throw new TransformerException("FORG0006 : An XPath 3.1 function sum is called with a sequence argument "
-														   		                                                               + "that contains values of incompatible "
-														   		                                                               + "types.", srcLocator);  
+							   throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an xdm sequence, "
+														   		                                                                        + "that contains values of incompatible "
+														   		                                                                        + "types.", srcLocator);  
 						   }
 						   
 						   if (xsYearMonthDurationSum == null) {
@@ -240,9 +311,9 @@ public class FuncSum extends FunctionMultiArgs
                     	   isSeqContainsXsDayTimeDuration = true;
                     	   
                     	   if (isSeqContainsNumber || isSeqContainsXsYearMonthDuration) {
-                    		   throw new TransformerException("FORG0006 : An XPath 3.1 function sum is called with a sequence argument "
-							                    		   		                                                               + "that contains values of incompatible "
-							                    		   		                                                               + "types.", srcLocator); 
+                    		   throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an xdm sequence, "
+							                    		   		                                                                        + "that contains values of incompatible "
+							                    		   		                                                                        + "types.", srcLocator); 
                     	   }
                     	   
                     	   if (xsDayTimeDurationSum == null) {
@@ -262,9 +333,9 @@ public class FuncSum extends FunctionMultiArgs
                     		  resultTypeXsDouble = true;
                     		  
                     		  if (isSeqContainsXsDayTimeDuration || isSeqContainsXsYearMonthDuration) {
-   							     throw new TransformerException("FORG0006 : An XPath 3.1 function sum is called with a sequence argument "
-   														   		                                                                 + "that contains values of incompatible "
-   														   		                                                                 + "types.", srcLocator);  
+   							     throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an xdm sequence, "
+   														   		                                                                          + "that contains values of incompatible "
+   														   		                                                                          + "types.", srcLocator);  
    						      }
                     		  
                     		  double dblValue = dbl.doubleValue();
@@ -283,10 +354,41 @@ public class FuncSum extends FunctionMultiArgs
                     		  }
                     	   }
                     	   catch(NumberFormatException ex) {
-                    		   throw new TransformerException("FORG0006 : An XPath 3.1 function sum is called with a sequence argument, "
-                                                                                                                  + "that contains schema typed value "
-                                                                                                                  + "untypedAtomic that could not be cast to schema type double.", srcLocator);   
+                    		   throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an xdm sequence, "
+                                                                                                                                        + "that contains schema typed value "
+                                                                                                                                        + "'untypedAtomic' that could'nt be cast to schema type 'double'.", srcLocator);   
                     	   }
+                       }
+                       else if (xObj instanceof XMLNodeCursorImpl) {
+                    	   ResultSequence rSeq2 = getXdmSequenceFromNodeSet((XMLNodeCursorImpl)xObj, xctxt);
+                    	   
+                    	   FuncSum funcSum = new FuncSum();
+                    	   funcSum.setArg0(rSeq2);
+                    	   
+                    	   XObject xObj2 = funcSum.execute(xctxt);
+                    	   XSDouble xsDouble = (XSDouble)xObj2;
+                    	   
+                    	   if (xsDouble.nan()) {
+							  result = new XSDouble(Double.NaN);
+							  
+							  return result;
+						   }
+						   
+						   xsDoubleCount++;
+						   
+						   resultTypeXsDouble = true;
+
+						   if (sum2 == null) {
+							   sum2 = xsDouble.doubleValue();  
+						   }
+						   else {
+							   sum2 = (sum2 + xsDouble.doubleValue());   
+						   }
+                       }
+                       else {
+                    	   throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an argument that "
+																								                                    + "contains neither an xdm "
+																								                                    + "numeric value or, a duration value.", srcLocator);
                        }
 					}
 					
@@ -335,19 +437,17 @@ public class FuncSum extends FunctionMultiArgs
 					if (xpathSeqTypeResultData != null) {
 					   result.setCastAsType(xpathSeqTypeResultData);
 					}
+				}				
+				else {					
+					result = new XSInteger("0");
+
+					return result;
 				}
-			}
-			else if (arg0Obj instanceof XSNumericType) {
-				result = arg0Obj; 
-			}
-			else if (arg0Obj instanceof XNumber) {
-				result = new XSDouble(((XNumber)arg0Obj).num());
-			}
-			else if (arg0Obj instanceof XSYearMonthDuration) {
-				result = arg0Obj; 
-			}
-			else if (arg0Obj instanceof XSDayTimeDuration) {
-				result = arg0Obj; 
+			}			
+			else {
+				throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum' is supplied with an argument that "
+						                                                                                                 + "contains neither an xdm "
+						                                                                                                 + "numeric value or, a duration value.", srcLocator);
 			}
 		}
 		else {
@@ -355,46 +455,100 @@ public class FuncSum extends FunctionMultiArgs
 
 			arg0Obj = getFunctionArgEffectiveValue(m_arg0, xctxt);
 			
-			arg1Obj = getFunctionArgEffectiveValue(m_arg1, xctxt);
-			
-			if ((arg1Obj instanceof ResultSequence) && (((ResultSequence)arg1Obj).size() == 0)) {
-			   arg1Obj = null;
-			}
-			
-			if ((arg1Obj != null) && !((arg1Obj instanceof XSNumericType) || (arg1Obj instanceof XNumber) 
-					                                                      || (arg1Obj instanceof XSYearMonthDuration) 
-					                                                      || (arg1Obj instanceof XSDayTimeDuration))) {
-				throw new TransformerException("FORG0006 : An XPath 3.1 function sum, second argument should be "
-						                                                                                       + "an xdm atomic value of following possible "
-						                                                                                       + "schema types : numeric, yearMonthDuration, dayTimeDuration.", srcLocator);
-			}
+			arg1Obj = getFunctionArgEffectiveValue(m_arg1, xctxt);						
 			
 			ResultSequence rSeq1 = null;
 			
 			if (arg0Obj instanceof ResultSequence) {
-			   rSeq1 = (ResultSequence)arg0Obj; 
+				rSeq1 = (ResultSequence)arg0Obj; 
 			}
 			else if (arg0Obj instanceof XMLNodeCursorImpl) {
-			   rSeq1 = getXdmSequenceFromNodeSet((XMLNodeCursorImpl)arg0Obj, xctxt); 
+				rSeq1 = getXdmSequenceFromNodeSet((XMLNodeCursorImpl)arg0Obj, xctxt); 
 			}
 			else {
-			   rSeq1 = new ResultSequence();
-			   rSeq1.add(arg0Obj);
+				rSeq1 = new ResultSequence();
+				rSeq1.add(arg0Obj);
 			}
 			
-			if (rSeq1.size() == 0) {
-			   if (arg1Obj != null) {
-			      result = arg1Obj;
-			   }
-			   else {
-				  result = new ResultSequence(); 
-			   }
+			if (rSeq1.size() > 0) {			   			   
+				FuncSum funcSum = new FuncSum();
+				funcSum.setArg0(rSeq1);
+
+				result = funcSum.execute(xctxt);
 			}
-			else {			   
-			   FuncSum funcSum = new FuncSum();
-			   funcSum.setArg0(rSeq1);
-			   
-			   result = funcSum.execute(xctxt); 
+			else {
+				/**
+				 * An XPath function 'sum' first argument is an empty sequence.
+				 * Therefore, XPath function 'sum' second argument shall be 
+				 * the result.
+				 */
+				
+				ResultSequence rSeqArg1 = new ResultSequence(); 
+
+				if (arg1Obj instanceof XMLNodeCursorImpl) {								
+					if (((XMLNodeCursorImpl)arg1Obj).getLength() > 0) {
+						rSeqArg1 = getXdmSequenceFromNodeSet((XMLNodeCursorImpl)arg1Obj, xctxt); 
+					}
+					else {
+						rSeqArg1 = null;
+					}
+				}
+				else if (arg1Obj instanceof XPathArray) {
+					ResultSequence rSeq = ((XPathArray)arg1Obj).atomize();
+
+					if (rSeq.size() > 0) {
+						rSeqArg1 = rSeq;
+					}
+					else {
+						rSeqArg1 = null;
+					}
+				}
+				else if (arg1Obj instanceof ResultSequence) {				
+					ResultSequence rSeq = (ResultSequence)arg1Obj;
+
+					if (rSeq.size() > 0) {
+						rSeqArg1 = rSeq;
+					}
+					else {
+						rSeqArg1 = null;
+					}
+				}
+				else {
+					rSeqArg1.add(arg1Obj);
+				}
+
+				if (rSeqArg1 != null) {
+					if (rSeqArg1.size() == 1) {				   
+						arg1Obj = rSeqArg1.item(0);
+					}
+					else if (rSeqArg1.size() == 0) {
+						arg1Obj = null; 
+					}
+					else {
+						throw new TransformerException("XPTY0004 : An XPath 3.1 function 'sum', second argument cardinality "
+								                                                                                            + "should be zero or one.", srcLocator); 
+					}
+				}
+				else {
+					arg1Obj = null;
+				}
+
+				if ((arg1Obj != null) && !((arg1Obj instanceof XSNumericType) || (arg1Obj instanceof XNumber) 
+																			  || (arg1Obj instanceof XSYearMonthDuration) 
+																			  || (arg1Obj instanceof XSDayTimeDuration)
+																			  || (arg1Obj instanceof XSUntypedAtomic))) {
+					throw new TransformerException("FORG0006 : An XPath 3.1 function 'sum', second argument should be "
+																													  + "an xdm atomic value with following possible "
+																													  + "schema types : 'numeric', 'yearMonthDuration', "
+																													  + "'dayTimeDuration', 'untypedAtomic'.", srcLocator);
+				}
+
+				if (arg1Obj != null) {
+					result = arg1Obj;
+				}
+				else {
+					result = new ResultSequence(); 
+				} 
 			}
 		}
 		

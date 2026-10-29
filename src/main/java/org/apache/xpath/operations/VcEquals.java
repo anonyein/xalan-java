@@ -55,11 +55,12 @@ import xml.xpath31.processor.types.XSAnyURI;
 import xml.xpath31.processor.types.XSBoolean;
 import xml.xpath31.processor.types.XSDecimal;
 import xml.xpath31.processor.types.XSDouble;
+import xml.xpath31.processor.types.XSNumericType;
 import xml.xpath31.processor.types.XSString;
 import xml.xpath31.processor.types.XSUntypedAtomic;
 
 /**
- * An implementation of XPath 3.1 value comparison 
+ * An implementation of XPath 3.1 value comparison, 
  * operator 'eq'.
  * 
  * @author Mukul Gandhi <mukulg@apache.org>
@@ -109,6 +110,26 @@ public class VcEquals extends XPathRelationalOp
 		 return result;
 	  }
 	  
+	  if ((left instanceof XSUntypedAtomic) && (right instanceof XSAnyURI)) {
+		  java.lang.String str1 = ((XSUntypedAtomic)left).stringValue();
+
+		  java.lang.String str2 = ((XSAnyURI)right).stringValue();
+
+		  result = (str1.equals(str2)) ? XBoolean.S_TRUE : XBoolean.S_FALSE;
+
+		  return result;
+	  }
+	  
+	  if ((left instanceof XSAnyURI) && (right instanceof XSUntypedAtomic)) {
+		  java.lang.String str1 = ((XSAnyURI)left).stringValue();
+
+		  java.lang.String str2 = ((XSUntypedAtomic)right).stringValue();
+
+		  result = (str1.equals(str2)) ? XBoolean.S_TRUE : XBoolean.S_FALSE;
+
+		  return result;
+	  }
+	  
 	  if ((left instanceof XSDecimal) && (right instanceof XSDouble)) {
 		 BigDecimal bigDecimal1 = ((XSDecimal)left).getValue();
 		 
@@ -125,6 +146,7 @@ public class VcEquals extends XPathRelationalOp
 	  
 	  if (left instanceof XNumber) {
     	  XNumber lXNumber = (XNumber)left;
+    	  
     	  if (lXNumber.getXsDecimal() != null) {
     		  left = lXNumber.getXsDecimal();  
     	  }
@@ -138,6 +160,7 @@ public class VcEquals extends XPathRelationalOp
 
       if (right instanceof XNumber) {
     	  XNumber rXNumber = (XNumber)right;
+    	  
     	  if (rXNumber.getXsDecimal() != null) {
     		  right = rXNumber.getXsDecimal();  
     	  }
@@ -154,6 +177,7 @@ public class VcEquals extends XPathRelationalOp
       if (XslTransformData.m_stylesheetRoot != null) {
     	  stylesheetRoot = XslTransformData.m_stylesheetRoot; 
     	  TransformerImpl transformerImpl = stylesheetRoot.getTransformerImpl();
+    	  
     	  if (!XslTransformData.m_use_when) {
     	     xctxt = transformerImpl.getXPathContext();
     	  }
@@ -163,6 +187,7 @@ public class VcEquals extends XPathRelationalOp
       }
       else {
     	  stylesheetRoot = XslTransformEvaluationHelper.getXslStylesheetRootFromXslElementRef(this);    	  
+    	  
     	  if ((stylesheetRoot != null) && !XslTransformData.m_use_when) {
     		 TransformerImpl transformerImpl = stylesheetRoot.getTransformerImpl();
      	     xctxt = transformerImpl.getXPathContext();
@@ -170,6 +195,83 @@ public class VcEquals extends XPathRelationalOp
      	  else {
      		 xctxt = new XPathContext();
      	  } 
+      }
+      
+      if ((left instanceof XSDouble) && (right instanceof XSDouble)) {
+    	 // XPath equal check for xs:float lower and upper bound values
+    	  
+    	 XSDouble xsDouble1 = (XSDouble)left;    	 
+    	 java.lang.String str1 = xsDouble1.doubleValue() + "";
+    	 
+    	 XSDouble xsDouble2 = (XSDouble)right;
+    	 java.lang.String str2 = xsDouble2.doubleValue() + "";
+     	 
+     	 if (xsDouble1.getIsSrcFloat() && "-3.4028235E38".equals(str1) 
+     			                                                     && str2.contains("E") && !"-3.4028235E38".equals(str2)) {
+     		int idx = str2.indexOf('E');
+     		java.lang.String str3 = str2.substring(0, idx);     		
+     		str3 = java.lang.String.format("%.7f", Double.valueOf(str3));
+     		
+     		if ("-3.4028235".equals(str3)) {
+     		   return XBoolean.S_TRUE;
+     		}
+     	 }     	 
+     	 else if (xsDouble2.getIsSrcFloat() && "-3.4028235E38".equals(str2) 
+     			                                                          && str1.contains("E") && !"-3.4028235E38".equals(str1)) {
+     		 int idx = str1.indexOf('E');
+     		 java.lang.String str3 = str1.substring(0, idx);     		
+     		 str3 = java.lang.String.format("%.7f", Double.valueOf(str3));
+
+     		 if ("-3.4028235".equals(str3)) {
+     			 return XBoolean.S_TRUE;
+     		 }
+     	 }
+     	 else if (xsDouble1.getIsSrcFloat() && "3.4028235E38".equals(str1) 
+     			                                                         && str2.contains("E") && !"3.4028235E38".equals(str2)) {
+     		int idx = str2.indexOf('E');
+     		java.lang.String str3 = str2.substring(0, idx);     		
+     		str3 = java.lang.String.format("%.7f", Double.valueOf(str3));
+     		
+     		if ("3.4028235".equals(str3)) {
+     		   return XBoolean.S_TRUE;
+     		}
+     	 }     	 
+     	 else if (xsDouble2.getIsSrcFloat() && "3.4028235E38".equals(str2) 
+     			                                                         && str1.contains("E") && !"3.4028235E38".equals(str1)) {
+     		 int idx = str1.indexOf('E');
+     		 java.lang.String str3 = str1.substring(0, idx);     		
+     		 str3 = java.lang.String.format("%.7f", Double.valueOf(str3));
+
+     		 if ("3.4028235".equals(str3)) {
+     			 return XBoolean.S_TRUE;
+     		 }
+     	 }
+      }
+            
+      if ((left instanceof XString) || (left instanceof XSString)) {
+    	  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(left);
+
+    	  if ((Constants.XS_VALID_TRUE).equals(str1)) {
+    		 left = getXsObjectFromValidatedInfo(left, xctxt);
+    	  } 
+      }
+      
+      if ((right instanceof XString) || (right instanceof XSString)) {
+    	  java.lang.String str1 = XslTransformEvaluationHelper.getStrVal(right);
+
+    	  if ((Constants.XS_VALID_TRUE).equals(str1)) {
+    		 right = getXsObjectFromValidatedInfo(right, xctxt);
+    	  } 
+      }
+
+      if (((left instanceof XString) || (left instanceof XSString)) && 
+                                                                   ((right instanceof XNumber) || (right instanceof XSNumericType))) {
+         throw new TransformerException("XPTY0004 : An XPath 3.1 operator 'eq' cannot, compare a numeric value to string."); 
+      }
+
+      if (((left instanceof XNumber) || (left instanceof XSNumericType)) && 
+                                                                        ((right instanceof XString) || (right instanceof XSString))) {
+         throw new TransformerException("XPTY0004 : An XPath 3.1 operator 'eq' cannot, compare a numeric value to string."); 
       }
 	  
       if (left instanceof XPathMap) {
@@ -197,43 +299,47 @@ public class VcEquals extends XPathRelationalOp
 	  }
 	  
 	  boolean isLEmpty = false;
+	  
 	  if (left instanceof ResultSequence) {
 		  if (((ResultSequence)left).size() == 0) {
 			  isLEmpty = true;
 		  }
 		  else if (((ResultSequence)left).size() > 1) {
-			  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath operator eq's first argument cannot be a "
+			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath operator eq's first argument cannot be a "
 			  		                                                                                                      + "sequence of size greater than one.", this); 
 		  }
 	  }
 	  else if (left instanceof XMLNodeCursorImpl) {		  
 		  XMLNodeCursorImpl nodeRef1 = (XMLNodeCursorImpl)left;
+		  
 		  if (nodeRef1.getLength() == 0) {
 			  isLEmpty = true;
 		  }
 		  else if (nodeRef1.getLength() > 1) {
-			  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath operator eq's first argument cannot be a "
+			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath operator eq's first argument cannot be a "
 			  		                                                                                                     + "sequence of size greater than one.", this);
 		  }
 	  }
 
 	  boolean isREmpty = false;
+	  
 	  if (right instanceof ResultSequence) {
 		  if (((ResultSequence)right).size() == 0) {
 			  isREmpty = true;
 		  }
 		  else if (((ResultSequence)right).size() > 1) {
-			  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath operator eq's second argument cannot be a "
+			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath operator eq's second argument cannot be a "
 			  																											 + "sequence of size greater than one.", this);
 		  }
 	  }
 	  else if (right instanceof XMLNodeCursorImpl) {
 		  XMLNodeCursorImpl nodeRef1 = (XMLNodeCursorImpl)right;
+		  
 		  if (nodeRef1.getLength() == 0) {
 			  isREmpty = true;
 		  }
 		  else if (nodeRef1.getLength() > 1) {
-			  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath operator eq's second argument cannot be a "
+			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath operator eq's second argument cannot be a "
 			  																									         + "sequence of size greater than one.", this);
 		  }
 	  }
@@ -266,12 +372,15 @@ public class VcEquals extends XPathRelationalOp
 		  
 		  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)left;
 		  int nodeHandle = (xmlNodeCursorImpl.iterRaw()).nextNode();
+		  
 		  if (nodeHandle != DTM.NULL) {
 			  DTM dtm = xctxt.getDTM(nodeHandle);
 			  Node node = dtm.getNode(nodeHandle);
+			  
 			  if (node instanceof ElementPSVI) {
 				  ElementPSVI elementPsvi = (ElementPSVI)node;
 				  XSTypeDefinition typeDefn = elementPsvi.getTypeDefinition();
+				  
 				  if (typeDefn instanceof XSComplexTypeDefinition) {
 					  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath 3.1 operator 'eq' operand, cannot be a "
 							  																							+ "node validated with schema complex type.");				  
@@ -282,6 +391,7 @@ public class VcEquals extends XPathRelationalOp
 					  typeNs1 = xsSimpleTypeDecl.getTypeNamespace();
 					  
 					  short xsSimpleTypeVariety = xsSimpleTypeDecl.getVariety();
+					  
 					  if (xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_ATOMIC) {
 						 if (typeNs1 == null) {
 							XSTypeDefinition xsTypeDefn = xsSimpleTypeDecl.getBaseType();
@@ -293,6 +403,7 @@ public class VcEquals extends XPathRelationalOp
 						 XSSimpleTypeDecl xsSimpleTypeDeclMemberType = (XSSimpleTypeDecl)(elementPsvi.getMemberTypeDefinition());
 						 typeName1 = xsSimpleTypeDeclMemberType.getTypeName();
 						 typeNs1 = xsSimpleTypeDeclMemberType.getTypeNamespace();
+						 
 						 if (typeNs1 == null) {
 							 XSTypeDefinition xsTypeDefn = xsSimpleTypeDeclMemberType.getBaseType();
 							 typeName1 = xsTypeDefn.getName();
@@ -310,6 +421,7 @@ public class VcEquals extends XPathRelationalOp
 				  typeNs1 = xsSimpleTypeDecl.getTypeNamespace();
 				  
 				  short xsSimpleTypeVariety = xsSimpleTypeDecl.getVariety();
+				  
 				  if (xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_ATOMIC) {
 					 if (typeNs1 == null) {
 						XSTypeDefinition xsTypeDefn = xsSimpleTypeDecl.getBaseType();
@@ -321,6 +433,7 @@ public class VcEquals extends XPathRelationalOp
 					  XSSimpleTypeDecl xsSimpleTypeDeclMemberType = (XSSimpleTypeDecl)(attrPsvi.getMemberTypeDefinition());
 					  typeName1 = xsSimpleTypeDeclMemberType.getTypeName();
 					  typeNs1 = xsSimpleTypeDeclMemberType.getTypeNamespace();
+					  
 					  if (typeNs1 == null) {
 						  XSTypeDefinition xsTypeDefn = xsSimpleTypeDeclMemberType.getBaseType();
 						  typeName1 = xsTypeDefn.getName();
@@ -367,10 +480,12 @@ public class VcEquals extends XPathRelationalOp
 	  
 	  if (left instanceof XSString) {
 		  java.lang.String str1 = ((XSString)left).stringValue();		  
+		  
 		  if ((Constants.XS_VALID_TRUE).equals(str1) && (left.getXsTypeDefinition() != null)) {
 			  XSSimpleTypeDecl xsSimpleTypeDecl = (XSSimpleTypeDecl)(left.getXsTypeDefinition());
 			  java.lang.String typeName = xsSimpleTypeDecl.getTypeName();
 			  java.lang.String typeNs = xsSimpleTypeDecl.getTypeNamespace();
+			  
 			  if ((typeName != null) && !((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs))) {
 				  xsSimpleTypeDecl = (XSSimpleTypeDecl)(xsSimpleTypeDecl.getBaseType());
 				  typeName1 = xsSimpleTypeDecl.getTypeName();
@@ -398,12 +513,15 @@ public class VcEquals extends XPathRelationalOp
 		  
 		  XMLNodeCursorImpl xmlNodeCursorImpl = (XMLNodeCursorImpl)right;
 		  int nodeHandle = (xmlNodeCursorImpl.iterRaw()).nextNode();
+		  
 		  if (nodeHandle != DTM.NULL) {
 			  DTM dtm = xctxt.getDTM(nodeHandle);
 			  Node node = dtm.getNode(nodeHandle);
+			  
 			  if (node instanceof ElementPSVI) {
 				  ElementPSVI elementPsvi = (ElementPSVI)node;
 				  XSTypeDefinition typeDefn = elementPsvi.getTypeDefinition();
+				  
 				  if (typeDefn instanceof XSComplexTypeDefinition) {
 					  throw new javax.xml.transform.TransformerException("FOTY0013 : An XPath 3.1 operator 'eq' operand, cannot be a "
 							  																							+ "node validated with schema complex type.");
@@ -414,6 +532,7 @@ public class VcEquals extends XPathRelationalOp
 					  typeNs2 = xsSimpleTypeDecl.getTypeNamespace();
 					  
 					  short xsSimpleTypeVariety = xsSimpleTypeDecl.getVariety();
+					  
 					  if (xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_ATOMIC) {
 						 if (typeNs2 == null) {
 							XSTypeDefinition xsTypeDefn = xsSimpleTypeDecl.getBaseType();
@@ -425,6 +544,7 @@ public class VcEquals extends XPathRelationalOp
 						  XSSimpleTypeDecl xsSimpleTypeDeclMemberType = (XSSimpleTypeDecl)(elementPsvi.getMemberTypeDefinition());
 						  typeName2 = xsSimpleTypeDeclMemberType.getTypeName();
 						  typeNs2 = xsSimpleTypeDeclMemberType.getTypeNamespace();
+						  
 						  if (typeNs2 == null) {
 							  XSTypeDefinition xsTypeDefn = xsSimpleTypeDeclMemberType.getBaseType();
 							  typeName2 = xsTypeDefn.getName();
@@ -442,6 +562,7 @@ public class VcEquals extends XPathRelationalOp
 				  typeNs2 = xsSimpleTypeDecl.getTypeNamespace();
 				  
 				  short xsSimpleTypeVariety = xsSimpleTypeDecl.getVariety();
+				  
 				  if (xsSimpleTypeVariety == XSSimpleTypeDecl.VARIETY_ATOMIC) {
 					 if (typeNs2 == null) {
 						XSTypeDefinition xsTypeDefn = xsSimpleTypeDecl.getBaseType();
@@ -453,6 +574,7 @@ public class VcEquals extends XPathRelationalOp
 					  XSSimpleTypeDecl xsSimpleTypeDeclMemberType = (XSSimpleTypeDecl)(attrPsvi.getMemberTypeDefinition());
 					  typeName2 = xsSimpleTypeDeclMemberType.getTypeName();
 					  typeNs2 = xsSimpleTypeDeclMemberType.getTypeNamespace();
+					  
 					  if (typeNs2 == null) {
 						  XSTypeDefinition xsTypeDefn = xsSimpleTypeDeclMemberType.getBaseType();
 						  typeName2 = xsTypeDefn.getName();
@@ -499,10 +621,12 @@ public class VcEquals extends XPathRelationalOp
 	  
 	  if (right instanceof XSString) {
 		 java.lang.String str1 = ((XSString)right).stringValue(); 
+		 
 		 if ((Constants.XS_VALID_TRUE).equals(str1) && (right.getXsTypeDefinition() != null)) {
 			XSSimpleTypeDecl xsSimpleTypeDecl = (XSSimpleTypeDecl)(right.getXsTypeDefinition());
 			java.lang.String typeName = xsSimpleTypeDecl.getTypeName();
 			java.lang.String typeNs = xsSimpleTypeDecl.getTypeNamespace();
+			
 			if ((typeName != null) && !((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs))) {
 			   xsSimpleTypeDecl = (XSSimpleTypeDecl)(xsSimpleTypeDecl.getBaseType());
 			   typeName2 = xsSimpleTypeDecl.getTypeName();
@@ -537,9 +661,10 @@ public class VcEquals extends XPathRelationalOp
 	  }
 	  
 	  // Validating an XPath 3.1 operator 'eq' operands compatibility for value comparison	  
+	  
 	  if ((XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs1) && (XMLConstants.W3C_XML_SCHEMA_NS_URI).equals(typeNs2)) {
 		  if ((isXsBuiltInTypeNumeric(typeName1) && !isXsBuiltInTypeNumeric(typeName2)) || 
-				                                                          (isXsBuiltInTypeNumeric(typeName2) && !isXsBuiltInTypeNumeric(typeName1))) {
+				                                                                       (isXsBuiltInTypeNumeric(typeName2) && !isXsBuiltInTypeNumeric(typeName1))) {
 			  throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 operator 'eq' cannot, compare values of schema "
 					                                                                                                     + "types " + typeName1 + " and " + typeName2 + ".");
 		  }
@@ -610,6 +735,7 @@ public class VcEquals extends XPathRelationalOp
 	  }
 	  
 	  List<XMLNSDecl> nsPrefixTable = null;	  
+	  
 	  if (stylesheetRoot != null) {
 		  nsPrefixTable = stylesheetRoot.getPrefixTable();
 	  }
@@ -620,13 +746,15 @@ public class VcEquals extends XPathRelationalOp
 
 	  if (lNodeStr != null) {
 		  java.lang.String xpathStr = (XMLConstants.W3C_XML_SCHEMA_NS_URI + ":" + typeName1 + "('" + lNodeStr + "')");
-		  xpathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, nsPrefixTable);
+		  xpathStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, nsPrefixTable);
 		  XPath xpathObj = null;
+		  
 		  try {
 		     xpathObj = new XPath(xpathStr, this, xctxt.getNamespaceContext(), XPath.SELECT, null);
 		  }
 		  catch (TransformerException ex) {
 			 java.lang.String errMesg = ex.getMessage();
+			 
 			 if (errMesg.contains("XPST0081 : An XML namespace binding for prefix")) {
 				xpathObj = new XPath("'" + lNodeStr + "'", this, xctxt.getNamespaceContext(), XPath.SELECT, null);   
 			 }
@@ -637,13 +765,15 @@ public class VcEquals extends XPathRelationalOp
 
 	  if (rNodeStr != null) {
 		  java.lang.String xpathStr = (XMLConstants.W3C_XML_SCHEMA_NS_URI + ":" + typeName2 + "('" + rNodeStr + "')");
-		  xpathStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, nsPrefixTable);
+		  xpathStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, nsPrefixTable);
 		  XPath xpathObj = null;
+		  
 		  try {
 		     xpathObj = new XPath(xpathStr, this, xctxt.getNamespaceContext(), XPath.SELECT, null);
 		  }
 		  catch (TransformerException ex) {
 			 java.lang.String errMesg = ex.getMessage();
+			 
 			 if (errMesg.contains("XPST0081 : An XML namespace binding for prefix")) {
 				xpathObj = new XPath("'" + rNodeStr + "'", this, xctxt.getNamespaceContext(), XPath.SELECT, null);   
 			 }

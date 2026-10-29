@@ -49,6 +49,7 @@ import org.apache.xpath.types.XSGMonth;
 import org.apache.xpath.types.XSGMonthDay;
 import org.apache.xpath.types.XSGYear;
 import org.apache.xpath.types.XSGYearMonth;
+import org.apache.xpath.types.XSHexBinary;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.traversal.NodeIterator;
@@ -496,19 +497,80 @@ public class XObject extends Expression implements Serializable, Cloneable
   }
 
   /**
-   * Cast result object to a boolean. Always issues an error.
+   * Method definition, to get effective boolean value
+   * for this XObject instance.
    *
-   * @return false
+   * @return                   Boolean value true or false
    *
    * @throws javax.xml.transform.TransformerException
    */
   public boolean bool() throws javax.xml.transform.TransformerException
-  {
+  {	  
+	  
+	  boolean result = false;
 
-    error(XPATHErrorResources.ER_CANT_CONVERT_TO_NUMBER,
-          new Object[]{ getTypeString() });  //"Can not convert "+getTypeString()+" to a number");
+	  if (this instanceof XNumber) {
+         XObject xObj = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)this);
+         
+         if (xObj instanceof XSDouble) {
+        	Double dbl = ((XSDouble)xObj).doubleValue();
+        	
+        	if (!(dbl.isNaN() || (dbl == 0))) {
+         	   result = true;
+         	}
+         }
+         else if ((xObj instanceof XSDecimal) || (xObj instanceof XSInteger)) {
+        	String str1 = XslTransformEvaluationHelper.getStrVal(xObj);        	
+        	BigDecimal bigDecimal1 = new BigDecimal(str1);
+        	
+        	if (!(bigDecimal1.compareTo(BigDecimal.valueOf(0)) == 0)) {
+        	   result = true;
+        	}
+         }
+         else {
+        	XNumber xNum = (XNumber)this;
+        	Double dbl = Double.valueOf(xNum.num());
+        	
+        	if (!(dbl.isNaN() || (dbl == 0))) {
+        	   result = true;
+        	}
+         }
+	  }
+	  else if (this instanceof XSNumericType) {
+         if (this instanceof XSDouble) {
+        	XSDouble xsDouble = (XSDouble)this;
+        	Double dbl = xsDouble.doubleValue();
+        	
+        	if (!(dbl.isNaN() || (dbl == 0))) {
+         	   result = true;
+         	}
+         }
+         else if (this instanceof XSFloat) {
+        	XSFloat xsFloat = (XSFloat)this;
+        	Float flt = xsFloat.floatValue();
+        	
+        	if (!(flt.isNaN() || (flt == 0))) {
+          	   result = true;
+          	}
+         }
+         else {
+        	String str1 = XslTransformEvaluationHelper.getStrVal(this);        	
+         	BigDecimal bigDecimal1 = new BigDecimal(str1);
+         	
+         	if (!(bigDecimal1.compareTo(BigDecimal.valueOf(0)) == 0)) {
+         	   result = true;
+         	} 
+         }
+	  }
+	  else if (this instanceof XSHexBinary) {
+		 throw new TransformerException("FORG0006 : An xdm value with an XML schema type 'hexBinary', "
+		 		                                                                                     + "doesn't have an effective boolean value."); 
+	  }
+	  else {
+		 error(XPATHErrorResources.ER_CANT_CONVERT_TO_NUMBER, new Object[]{ getTypeString() });
+	  }
 
-    return false;
+	  return result;
   }
   
   /**
@@ -964,38 +1026,52 @@ public class XObject extends Expression implements Serializable, Cloneable
     	  
     	  return result;
        }
-       else if ((this instanceof XNumber) && (obj2 instanceof XNumber)) {
-          result = ((XNumber)this).num() < ((XNumber)obj2).num();
-          
-          result = (isLtTest) ? result : !result;
-          
-          return result;
+       else if ((this instanceof XNumber) && (obj2 instanceof XNumber)) {    	   
+    	  XObject obj1 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)this); 
+    	   
+    	  String lStr = XslTransformEvaluationHelper.getStrVal(obj1);
+ 		  BigDecimal lBigDecimal = new BigDecimal(lStr);
+ 		  
+ 		  obj2 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)obj2);
+ 		  String rStr = XslTransformEvaluationHelper.getStrVal(obj2); 
+ 		  
+ 		  BigDecimal rBigDecimal = new BigDecimal(rStr);
+
+ 		  result = (lBigDecimal.compareTo(rBigDecimal) < 0);
+ 		  
+ 		  result = (isLtTest) ? result : !result;
+ 		  
+ 		  return result; 
        }
-       else if ((this instanceof XSNumericType) && (obj2 instanceof XNumber)) {
+       else if ((this instanceof XSNumericType) && (obj2 instanceof XNumber)) {    	      	   
     	  String lStr = ((XSNumericType)this).stringValue();
-    	  XSDouble lDouble = new XSDouble(lStr);
+    	  BigDecimal lBigDecimal = new BigDecimal(lStr);
     	  
-    	  double rdbl = ((XNumber)obj2).num();
-    	  XSDouble rDouble = new XSDouble(rdbl);
+    	  obj2 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)obj2);
+ 		  String rStr = XslTransformEvaluationHelper.getStrVal(obj2); 
+ 		  
+ 		  BigDecimal rBigDecimal = new BigDecimal(rStr);
     	  
-    	  result = lDouble.lt(rDouble);
-    	  
-    	  result = (isLtTest) ? result : !result;
-    	  
-    	  return result;
+ 		  result = (lBigDecimal.compareTo(rBigDecimal) < 0);
+		  
+		  result = (isLtTest) ? result : !result;
+		  
+		  return result;
        }
-       else if ((this instanceof XNumber) && (obj2 instanceof XSNumericType)) {     	  
-     	  double ldbl = ((XNumber)this).num();
-     	  XSDouble lDouble = new XSDouble(ldbl);
-     	  
-     	  String rStr = ((XSNumericType)obj2).stringValue();
-    	  XSDouble rDouble = new XSDouble(rStr);
-     	  
-     	  result = lDouble.lt(rDouble);
-     	  
-     	  result = (isLtTest) ? result : !result;
-   	  
-   	      return result;
+       else if ((this instanceof XNumber) && (obj2 instanceof XSNumericType)) {     	          	   
+    	  XObject obj1 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)this);
+  		  String lStr = XslTransformEvaluationHelper.getStrVal(obj1); 
+  		  
+  		  BigDecimal lBigDecimal = new BigDecimal(lStr);
+  		  
+  		  String rStr = ((XSNumericType)obj2).stringValue();
+  	      BigDecimal rBigDecimal = new BigDecimal(rStr);
+  	      
+  	      result = (lBigDecimal.compareTo(rBigDecimal) < 0);
+		  
+		  result = (isLtTest) ? result : !result;
+		  
+		  return result;
        }
        else if ((this instanceof XSNumericType) && (obj2 instanceof XSNumericType)) {     	      	      	  
     	  double lDbl = 0;
@@ -1451,31 +1527,52 @@ public class XObject extends Expression implements Serializable, Cloneable
  		  
  		   return result;
        }
-       else if ((this instanceof XSNumericType) && (obj2 instanceof XNumber)) {
-     	  String lStr = ((XSNumericType)this).stringValue();
-     	  XSDouble lDouble = new XSDouble(lStr);
-     	  
-     	  double rdbl = ((XNumber)obj2).num();
-     	  XSDouble rDouble = new XSDouble(rdbl);
-     	  
-     	  result = lDouble.gt(rDouble);
-     	  
-     	  result = isGtTest ? result : !result; 
+       else if ((this instanceof XNumber) && (obj2 instanceof XNumber)) {
+    	  XObject obj1 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)this);
+ 		  String lStr = XslTransformEvaluationHelper.getStrVal(obj1); 
+ 		  
+ 		  BigDecimal lBigDecimal = new BigDecimal(lStr);
+ 		  
+ 		  obj2 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)obj2);
+		  String rStr = XslTransformEvaluationHelper.getStrVal(obj2); 
 		  
-		  return result;
+		  BigDecimal rBigDecimal = new BigDecimal(rStr);
+    	   
+          result = (lBigDecimal.compareTo(rBigDecimal) > 0);
+   	      
+   	      result = isGtTest ? result : !result;
+   	      
+   	      return result;
        }
-       else if ((this instanceof XNumber) && (obj2 instanceof XSNumericType)) {     	  
-      	  double ldbl = ((XNumber)this).num();
-      	  XSDouble lDouble = new XSDouble(ldbl);
-      	  
-      	  String rStr = ((XSNumericType)obj2).stringValue();
-     	  XSDouble rDouble = new XSDouble(rStr);
-      	  
-     	  result = lDouble.gt(rDouble);
-     	  
-     	  result = isGtTest ? result : !result; 
+       else if ((this instanceof XSNumericType) && (obj2 instanceof XNumber)) {     	      	       	      		  
+   		  String lStr = ((XSNumericType)this).stringValue();
+   	      BigDecimal lBigDecimal = new BigDecimal(lStr);
+   	      
+   	      obj2 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)obj2);
+		  String rStr = XslTransformEvaluationHelper.getStrVal(obj2); 
 		  
-		  return result;
+		  BigDecimal rBigDecimal = new BigDecimal(rStr);
+   	      
+   	      result = (lBigDecimal.compareTo(rBigDecimal) > 0);
+   	      
+   	      result = isGtTest ? result : !result;
+   	      
+   	      return result;
+       }
+       else if ((this instanceof XNumber) && (obj2 instanceof XSNumericType)) {     	      	   
+    	   XObject obj1 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)this);
+    	   String lStr = XslTransformEvaluationHelper.getStrVal(obj1); 
+
+    	   BigDecimal lBigDecimal = new BigDecimal(lStr);
+    	   
+    	   String rStr = ((XSNumericType)obj2).stringValue();
+    	   BigDecimal rBigDecimal = new BigDecimal(rStr);
+
+    	   result = (lBigDecimal.compareTo(rBigDecimal) > 0);
+
+    	   result = isGtTest ? result : !result;
+    	   
+    	   return result;
        }
        else if ((this instanceof XSNumericType) && (obj2 instanceof XSNumericType)) {     	  
     	  double lDbl = 0;
@@ -2185,55 +2282,98 @@ public class XObject extends Expression implements Serializable, Cloneable
 		  
 		  return result;
 	  }
-	  else if ((this instanceof XSNumericType) && (obj2 instanceof XSNumericType)) {
-		  double lDbl = 0;
-     	  if (this instanceof XSDouble) {
-     		 lDbl = ((XSDouble)this).doubleValue();  
-     	  }
-     	  else {
-     		 String lStr = ((XSNumericType)this).stringValue();
-     		 lDbl = (new XSDouble(lStr)).doubleValue();
-     	  }
-     	  
-     	  double rDbl = 0;
-     	  if (obj2 instanceof XSDouble) {
-     		 rDbl = ((XSDouble)obj2).doubleValue();  
-     	  }
-     	  else {
-     		 String rStr = ((XSNumericType)obj2).stringValue();
-     		 rDbl = (new XSDouble(rStr)).doubleValue();
-     	  }
-     	  
-     	  return (isEqTest) ? (lDbl == rDbl) : (lDbl != rDbl);
+	  else if ((this instanceof XSNumericType) && (obj2 instanceof XSNumericType)) {		  		  
+		  boolean isArg0Nan = false;
+		  boolean isArg1Nan = false;
+
+		  if (this instanceof XSDouble) {
+			  XSDouble xsDouble1 = (XSDouble)this;
+			  isArg0Nan = xsDouble1.nan(); 
+		  }
+		  else if (this instanceof XSFloat) {
+			  XSFloat xsFloat1 = (XSFloat)this;
+			  isArg0Nan = xsFloat1.nan();	 
+		  }
+
+		  if (obj2 instanceof XSDouble) {
+			  XSDouble xsDouble2 = (XSDouble)obj2;
+			  isArg1Nan = xsDouble2.nan(); 
+		  }
+		  else if (obj2 instanceof XSFloat) {
+			  XSFloat xsFloat2 = (XSFloat)obj2;
+			  isArg1Nan = xsFloat2.nan();	 
+		  }
+
+		  if (isArg0Nan && isArg1Nan) {
+			  return true; 
+		  }
+		  else {
+			  double lDbl = 0;
+
+			  if (this instanceof XSDouble) {
+				  lDbl = ((XSDouble)this).doubleValue();  
+			  }
+			  else {
+				  String lStr = ((XSNumericType)this).stringValue();
+				  lDbl = (new XSDouble(lStr)).doubleValue();
+			  }
+
+			  double rDbl = 0;
+
+			  if (obj2 instanceof XSDouble) {
+				  rDbl = ((XSDouble)obj2).doubleValue();  
+			  }
+			  else {
+				  String rStr = ((XSNumericType)obj2).stringValue();
+				  rDbl = (new XSDouble(rStr)).doubleValue();
+			  }
+
+			  return (isEqTest) ? (lDbl == rDbl) : (lDbl != rDbl); 
+		  }
+	  }
+	  else if ((this instanceof XNumber) && (obj2 instanceof XNumber)) {
+		  XObject xObj0 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)this);
+		  String lStr = XslTransformEvaluationHelper.getStrVal(xObj0);  
+		  
+		  BigDecimal lBigDecimal = new BigDecimal(lStr);
+		  
+		  obj2 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)obj2);
+		  String rStr = XslTransformEvaluationHelper.getStrVal(obj2); 
+		  
+		  BigDecimal rBigDecimal = new BigDecimal(rStr);
+
+		  result = (lBigDecimal.compareTo(rBigDecimal) == 0);
+		  result = (isEqTest) ? result : !result;
+		  
+		  return result;		  		  
 	  }
 	  else if ((this instanceof XSNumericType) && (obj2 instanceof XNumber)) {
 		  String lStr = ((XSNumericType)this).stringValue();
-		  BigDecimal lBigDecimal = new BigDecimal(lStr);		  
-		  BigDecimal rBigDecimal = BigDecimal.valueOf(((XNumber)obj2).num());
+		  BigDecimal lBigDecimal = new BigDecimal(lStr);
+		  
+		  obj2 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)obj2);
+		  String rStr = XslTransformEvaluationHelper.getStrVal(obj2); 
+		  
+		  BigDecimal rBigDecimal = new BigDecimal(rStr);
 
 		  result = (lBigDecimal.compareTo(rBigDecimal) == 0);
 		  result = (isEqTest) ? result : !result;
 		  
 		  return result;
 	  }
-	  else if ((this instanceof XNumber) && (obj2 instanceof XSNumericType)) {
-		  BigDecimal lBigDecimal = BigDecimal.valueOf(((XNumber)this).num());		  
+	  else if ((this instanceof XNumber) && (obj2 instanceof XSNumericType)) {		  
+		  XObject xObj0 = XslTransformEvaluationHelper.getXNumberNormalizedValue((XNumber)this);
+		  String lStr = XslTransformEvaluationHelper.getStrVal(xObj0);  
+		  
+		  BigDecimal lBigDecimal = new BigDecimal(lStr);
+		  
 		  BigDecimal rBigDecimal = new BigDecimal(((XSNumericType)obj2).stringValue());
 
 		  result = (lBigDecimal.compareTo(rBigDecimal) == 0);
 		  result = (isEqTest) ? result : !result;
 		  
 		  return result;
-	  }
-	  else if ((this instanceof XNumber) && (obj2 instanceof XNumber)) {
-		  double lDouble = ((XNumber)this).num();
-		  double rDouble = ((XNumber)obj2).num();
-
-		  result = (lDouble == rDouble);
-		  result = (isEqTest) ? result : !result;
-		  
-		  return result;
-	  }
+	  }	  
 	  else if ((this instanceof XSNumericType || this instanceof XNumber) && 
 			                                         !(obj2 instanceof XSNumericType || obj2 instanceof XNumber)) {
 		  result = false;

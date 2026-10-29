@@ -16,26 +16,25 @@
  */
 package org.apache.xalan.tests.w3c.xpath3;
 
-import org.apache.xalan.tests.w3c.xpath3.array.XPath3FunctionArrayAppendTests;
-import org.apache.xalan.tests.w3c.xpath3.array.XPath3FunctionArrayFilterTests;
-import org.apache.xalan.tests.w3c.xpath3.array.XPath3FunctionArrayFoldLeftTests;
-import org.apache.xalan.tests.w3c.xpath3.array.XPath3FunctionArrayFoldRightTests;
-import org.apache.xalan.tests.w3c.xpath3.array.XPath3FunctionArrayForeachTests;
-import org.apache.xalan.tests.w3c.xpath3.array.XPath3FunctionArrayGetTests;
-import org.apache.xalan.tests.w3c.xpath3.array.XPath3FunctionArrayHeadTests;
-import org.apache.xalan.tests.w3c.xpath3.array.XPath3FunctionArraySizeTests;
+import org.apache.xalan.tests.w3c.xpath3.array.XPath3FnArrayAppendTests;
+import org.apache.xalan.tests.w3c.xpath3.array.XPath3FnArrayFilterTests;
+import org.apache.xalan.tests.w3c.xpath3.array.XPath3FnArrayFoldLeftTests;
+import org.apache.xalan.tests.w3c.xpath3.array.XPath3FnArrayFoldRightTests;
+import org.apache.xalan.tests.w3c.xpath3.array.XPath3FnArrayForeachTests;
+import org.apache.xalan.tests.w3c.xpath3.array.XPath3FnArrayGetTests;
+import org.apache.xalan.tests.w3c.xpath3.array.XPath3FnArrayHeadTests;
+import org.apache.xalan.tests.w3c.xpath3.array.XPath3FnArraySizeTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnAbsTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnAdjustDateTimeToTimezoneTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnAdjustDateToTimezoneTests;
-import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnAdjustTimeToTimezoneTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnAvgTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnBooleanTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnCeilingTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnCodepointEqualTests;
+import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnEmptyTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnFormatIntegerTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnNumberTests;
 import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnRandomNumberGeneratorTests;
-import org.apache.xalan.tests.w3c.xpath3.fn.XPath3FnSumTests;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3ExceptTests;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3IntersectTests;
 import org.apache.xalan.tests.w3c.xpath3.op.XPath3UnionTests;
@@ -61,15 +60,14 @@ import org.junit.runners.Suite.SuiteClasses;
  * @xsl.usage advanced
  */
 @RunWith(Suite.class)
-@SuiteClasses({ XPath3ArrowPostfixTests.class, XPath3CastableExprTests.class, XPath3ExceptTests.class, XPath3FnAbsTests.class,
+@SuiteClasses({ XPath3ArrowPostfixTests.class, XPath3CastableExprTests.class, XPath3GeneralCompTests.class, XPath3ExceptTests.class, XPath3FnAbsTests.class,
 	            XPath3InlineFunctionExprTests.class, XPath3FnFormatIntegerTests.class, XPath3AxisStepAbbrTests.class, XPath3AxisTestCollection.class, 
 	            XPath3FnBooleanTests.class, XPath3FnCeilingTests.class, XPath3FnCodepointEqualTests.class, XPath3UnionTests.class,
 	            XPath3IntersectTests.class, XPath3FnAdjustDateToTimezoneTests.class, XPath3FnAdjustDateTimeToTimezoneTests.class, 
-	            XPath3InstanceOfExprTests.class, XPath3LiteralTests.class, XPath3GeneralCompTests.class, XPath3FnAdjustTimeToTimezoneTests.class,
-	            XPath3FnSumTests.class, XPath3FunctionArrayAppendTests.class, XPath3FunctionArraySizeTests.class, XPath3FunctionArrayFilterTests.class,
-	            XPath3FunctionArrayFoldLeftTests.class, XPath3FunctionArrayFoldRightTests.class, XPath3FunctionArrayForeachTests.class,
-	            XPath3FnNumberTests.class, XPath3FunctionArrayGetTests.class, XPath3FunctionArrayHeadTests.class, XPath3XsDurationEqualTests.class, 
-	            XPath3FnAvgTests.class, XPath3FnRandomNumberGeneratorTests.class })
+	            XPath3InstanceOfExprTests.class, XPath3LiteralTests.class, XPath3FnArrayAppendTests.class, XPath3FnArraySizeTests.class, 
+	            XPath3FnArrayFilterTests.class, XPath3FnArrayFoldLeftTests.class, XPath3FnArrayFoldRightTests.class, XPath3FnArrayForeachTests.class,
+	            XPath3FnNumberTests.class, XPath3FnArrayGetTests.class, XPath3FnArrayHeadTests.class, XPath3XsDurationEqualTests.class, 
+	            XPath3FnAvgTests.class, XPath3FnRandomNumberGeneratorTests.class, XPath3FnEmptyTests.class })
 public class W3CXPath3Tests1 {
 	
 

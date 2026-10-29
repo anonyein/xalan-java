@@ -22,6 +22,7 @@ import java.util.Set;
 
 import javax.xml.transform.SourceLocator;
 
+import org.apache.xalan.xslt.util.StringUtil;
 import org.apache.xalan.xslt.util.XslTransformEvaluationHelper;
 import org.apache.xml.dtm.DTM;
 import org.apache.xml.dtm.DTMCursorIterator;
@@ -80,10 +81,14 @@ public class FuncMapContains extends Function2Args {
 	    
 	    XObject xObj0 = getFunctionArgEffectiveValue(m_arg0, xctxt); 
 	           
-	    if ((xObj0 instanceof ResultSequence) && (((ResultSequence)xObj0).size() == 0)) {
-	    	throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 map function 'contains' cannot have its first "
-	    																											+ "argument as an empty "
-	    																											+ "sequence.", srcLocator);  
+	    if (xObj0 instanceof ResultSequence) {
+	    	int size1 = ((ResultSequence)xObj0).size();
+	    	
+	    	if (size1 != 1) {	    	
+	    	   throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 map function 'contains' cannot have its first "
+	    																											              + "argument as an empty "
+	    																											              + "sequence, or a sequence with size greater than one.", srcLocator);
+	    	}
 	    }
 	    
 	    XPathMap xpathMap = null;
@@ -122,25 +127,33 @@ public class FuncMapContains extends Function2Args {
 	    
         XObject arg1Obj = getFunctionArgEffectiveValue(m_arg1, xctxt);
         
-        if ((arg1Obj instanceof ResultSequence) && (((ResultSequence)arg1Obj).size() == 0)) {
-        	throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 map function 'contains' cannot have its second "
-																													+ "argument as an empty "
-																													+ "sequence.", srcLocator);
+        if (arg1Obj instanceof ResultSequence) {
+        	int size1 = ((ResultSequence)arg1Obj).size(); 
+        			
+        	if (size1 != 1) {
+        	   throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 map function 'contains' cannot have its second "
+																													              + "argument as an empty "
+																													              + "sequence, or sequence with size greater than one.", srcLocator);
+        	}
         }
-        else if ((arg1Obj instanceof XMLNodeCursorImpl) && (((XMLNodeCursorImpl)arg1Obj).getLength() == 0)) {
-        	throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 map function 'contains' cannot have its second "
-																													+ "argument as an empty "
-																													+ "sequence.", srcLocator);
+        else if (arg1Obj instanceof XMLNodeCursorImpl) {
+        	int size1 = ((XMLNodeCursorImpl)arg1Obj).getLength();
+        			
+        	if (size1 != 1) {
+         	   throw new javax.xml.transform.TransformerException("XPTY0004 : An XPath 3.1 map function 'contains' cannot have its second "
+ 																													              + "argument as an empty "
+ 																													              + "sequence, or sequence with size greater than one.", srcLocator);
+         	}
         }
 	    	    
 	    if (arg1Obj instanceof XString) {
 	    	String str1 = ((XString)arg1Obj).str();
-	    	str1 = str1.replace(" : ", ":");
+	    	str1 = StringUtil.xmlNsSeparatorWhitespaceNormalization(str1);
 	    	arg1Obj = new XSString(str1);
 		}
 	    else if (arg1Obj instanceof XSString) {
 	    	String str1 = ((XSString)arg1Obj).stringValue();
-	    	str1 = str1.replace(" : ", ":");
+	    	str1 = StringUtil.xmlNsSeparatorWhitespaceNormalization(str1);
 	    	arg1Obj = new XSString(str1);
 		}
 	    else if (arg1Obj instanceof XSUntypedAtomic) {
@@ -148,7 +161,7 @@ public class FuncMapContains extends Function2Args {
 	    }
 	    else if (arg1Obj instanceof XSAnyURI) {
 	       String str1 = ((XSAnyURI)arg1Obj).stringValue();
-		   str1 = str1.replace(" : ", ":");
+	       str1 = StringUtil.xmlNsSeparatorWhitespaceNormalization(str1);
 		   arg1Obj = new XSString(str1);
 	    }
 	    

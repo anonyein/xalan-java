@@ -50,7 +50,9 @@ import org.apache.xpath.compiler.XPathParser.XPathArrayConsFuncArgs;
 import org.apache.xpath.compiler.XPathParser.XPathSequenceConsFuncArgs;
 import org.apache.xpath.composite.XPathArrayConstructor;
 import org.apache.xpath.composite.XPathForExpr;
+import org.apache.xpath.composite.XPathIdentityExpr;
 import org.apache.xpath.composite.XPathLetExpr;
+import org.apache.xpath.composite.XPathSequenceBinaryOp;
 import org.apache.xpath.composite.XPathSequenceConstructor;
 import org.apache.xpath.functions.FuncArgPlaceholder;
 import org.apache.xpath.functions.FuncExtFunctionAvailable;
@@ -252,7 +254,7 @@ public class Compiler extends XPathOpMap
       expr = nodeComparisonPrecede(opPos); break;
     case OpCodes.XPath3OpCodes.OP_NC_FOLLOWS :
       expr = nodeComparisonFollows(opPos); break;
-    case OpCodes.XPath3OpCodes.OP_SIMPLE_MAP_OPERATOR :
+    case OpCodes.XPath3OpCodes.OP_SIMPLE_MAP :
       expr = simpleMapOperator(opPos); break;
     case OpCodes.XPath3OpCodes.OP_SEQUENCE_TYPE_EXPR :
       expr = sequenceTypeExpr(opPos); break;
@@ -354,6 +356,19 @@ public class Compiler extends XPathOpMap
       expr = seqBinaryExpr(opPos); break;
     case OpCodes.XPath3OpCodes.OP_SEQ_INDEX_BINARY_EXPR:
       expr = seqIndexBinaryExpr(opPos); break;
+    case OpCodes.XPath3OpCodes.OP_FUNC_ARG_FUNC_WITH_PREDICATE:
+      expr = XPathParser.m_xpathFuncArgFuncCallWithPredicate; 
+      break;      
+    case OpCodes.XPath3OpCodes.OP_LITERAL_WITH_PREDICATE:
+      expr = XPathParser.m_xpathLiteralWithPredicate;
+      break;
+    case OpCodes.XPath3OpCodes.OP_XPATH_IDENTITY_EXPR:
+    	XPathIdentityExpr xpathIdentityExpr = (XPathParser.m_xpathIdentityExprList).get(0);
+    	(XPathParser.m_xpathIdentityExprList).remove(0);
+        
+    	expr = xpathIdentityExpr;
+        
+        break;  
     case OpCodes.OP_QUO:
       if (!m_xpath_ignore_compile_err) {
          error(XPATHErrorResources.ER_UNKNOWN_OPCODE, new Object[]{ m_currentPattern, "quo" });
@@ -414,13 +429,13 @@ public class Compiler extends XPathOpMap
 		  	  // This can handle all XPath built-in functions, from
 			  // all XPath 3.1 F&O specified function XML namespaces.
 			  
-			  lStr = lStr.replace(" : ", ":");
-			  rStr = rStr.replace(" : ", ":");
+			  lStr = StringUtil.xmlNsSeparatorWhitespaceNormalization(lStr);
+			  rStr = StringUtil.xmlNsSeparatorWhitespaceNormalization(rStr);
 			  			  
 			  List<XMLNSDecl> prefixTable = getDefaultXmlNsPrefixTable();
 
-			  lStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(lStr, prefixTable);
-			  rStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(rStr, prefixTable);
+			  lStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(lStr, prefixTable);
+			  rStr = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(rStr, prefixTable);
 
 			  XPath xpathObj1 = null;
 			  XPath xpathObj2 = null;
@@ -483,47 +498,76 @@ public class Compiler extends XPathOpMap
 		  		  
 		  Equals equals = (Equals)xpathOp1;
 
-		  String lStr = equals.getXPathOpToLstr();
-		  String rStr = equals.getXPathOpToRstr();
+		  String str1 = equals.getXPathOpLstr();
+		  String str2 = equals.getXPathOpRstr();
 		  
-		  if ((lStr != null) && (rStr != null)) {			  
+		  String xpathOpNameStr = equals.getXPathOpNameStr(); 
+		  
+		  if ((str1 != null) && (str2 != null)) {			  
 			  // This can handle all XPath built-in functions, from
-			  // all XPath 3.1 F&O specified function XML namespaces.
-			  
-			  lStr = lStr.replace(" : ", ":");
-			  rStr = rStr.replace(" : ", ":");
+			  // all XPath 3.1 F&O specified function namespaces.
+
+			  str1 = StringUtil.xmlNsSeparatorWhitespaceNormalization(str1);
+			  str2 = StringUtil.xmlNsSeparatorWhitespaceNormalization(str2);
 			  			  
 			  List<XMLNSDecl> prefixTable = getDefaultXmlNsPrefixTable();
 
-			  lStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(lStr, prefixTable);
-			  rStr = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(rStr, prefixTable);
+			  str1 = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(str1, prefixTable);
+			  str2 = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(str2, prefixTable);
 
 			  XPath xpathObj1 = null;
 
 			  try {
-				  xpathObj1 = new XPath(lStr + " to " + rStr, null, getXMLNsPrefixResolver(), XPath.SELECT, null);
+				  xpathObj1 = new XPath(str1 + " " + xpathOpNameStr + " " + str2, null, getXMLNsPrefixResolver(), XPath.SELECT, null);
 			  }
 			  catch (Exception ex) {
-				  lStr = lStr.replaceAll("\\s*", "");
-				  rStr = rStr.replaceAll("\\s*", "");
+				  str1 = str1.replaceAll("\\s*", "");
+				  str2 = str2.replaceAll("\\s*", "");
 
-				  if (lStr.startsWith("(") && lStr.endsWith(")")) {
-					  lStr = lStr.substring(1, lStr.length() - 1);  
+				  if (str1.startsWith("(") && str1.endsWith(")")) {
+					  str1 = str1.substring(1, str1.length() - 1);  
 				  }
 
-				  if (rStr.startsWith("(") && rStr.endsWith(")")) {
-					  rStr = rStr.substring(1, rStr.length() - 1);  
+				  if (str2.startsWith("(") && str2.endsWith(")")) {
+					  str2 = str2.substring(1, str2.length() - 1);  
 				  }
 
 				  try {
-					  xpathObj1 = new XPath(lStr + " to " + rStr, null, getXMLNsPrefixResolver(), XPath.SELECT, null);
+					  xpathObj1 = new XPath(str1 + " " + xpathOpNameStr + " " + str2, null, getXMLNsPrefixResolver(), XPath.SELECT, null);
 				  }
 				  catch (Exception ex2) {
 					  throw new TransformerException(ex2.getMessage()); 
 				  }
 			  }
 			  
-			  xpathOp1.setLeftRight(compile(leftPos), xpathObj1.getExpression());
+			  Expression expr2 = xpathObj1.getExpression();
+			  
+			  if (expr2 instanceof XPathSequenceBinaryOp) {
+				  XPathSequenceBinaryOp xpathSeqBinaryOp = (XPathSequenceBinaryOp)expr2;
+
+				  String xpathStr1 = xpathSeqBinaryOp.getLeftStr();
+				  String xpathStr2 = xpathSeqBinaryOp.getRightStr();
+
+				  xpathStr1 = StringUtil.xmlNsSeparatorWhitespaceNormalization(xpathStr1);
+				  xpathStr2 = StringUtil.xmlNsSeparatorWhitespaceNormalization(xpathStr2);
+
+				  xpathStr1 = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr1, prefixTable);
+				  xpathStr2 = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr2, prefixTable);
+
+				  try {
+					  XPath xpathObj_1 = new XPath(xpathStr1, null, getXMLNsPrefixResolver(), XPath.SELECT, null);
+
+					  XPath xpathObj_2 = new XPath(xpathStr2, null, getXMLNsPrefixResolver(), XPath.SELECT, null);
+
+					  xpathOp1.setLeftRight(xpathObj_1.getExpression(), xpathObj_2.getExpression());
+				  }
+				  catch (Exception ex2) {
+					  throw new TransformerException(ex2.getMessage()); 
+				  }
+			  }
+			  else {
+			      xpathOp1.setLeftRight(compile(leftPos), xpathObj1.getExpression());
+			  }
 
 			  m_xpath_ignore_compile_err = false;
 			  
@@ -540,6 +584,15 @@ public class Compiler extends XPathOpMap
 	  else {
 		  int leftPos = getFirstChildPos(opPos);
 		  int rightPos = getNextOpPos(leftPos);
+		  
+		  if ((XPathParser.m_xpath_arrow_left_str != null) && (XPathParser.m_xpath_arrow_right_str != null)) {
+			 result = xpathOp1;
+			 
+			 XPathParser.m_xpath_arrow_left_str = null;
+			 XPathParser.m_xpath_arrow_right_str = null;
+			 
+			 return result;
+		  }
 		  
 		  if (xpathOp1 instanceof XPathArrowOp) {
 			  m_arrow_op_func_check = false;
@@ -661,8 +714,9 @@ public class Compiler extends XPathOpMap
    */
   protected Expression equals(int opPos) throws TransformerException
   {
-    return compileXPathOperator(new Equals(XPathParser.m_xpath_op_to_lstr, 
-    		                                XPathParser.m_xpath_op_to_rstr), opPos);
+    return compileXPathOperator(new Equals(XPathParser.m_xpath_op_lstr, 
+    		                               XPathParser.m_xpath_op_rstr, 
+    		                               XPathParser.m_xpath_op_name_str), opPos);
   }
   
   /**
@@ -977,7 +1031,8 @@ public class Compiler extends XPathOpMap
    */
   protected Expression arrowOp(int opPos) throws TransformerException
   {
-	return compileXPathOperator(new XPathArrowOp(), opPos);
+	return compileXPathOperator(new XPathArrowOp(XPathParser.m_xpath_arrow_left_str, 
+			                                     XPathParser.m_xpath_arrow_right_str), opPos);
   }
 
   /**
@@ -1246,8 +1301,8 @@ public class Compiler extends XPathOpMap
 
 	  if ((lStr != null) && (rStr != null)) {
 		  try {
-			  lStr = lStr.replace(" : ", ":");
-			  rStr = rStr.replace(" : ", ":");
+			  lStr = StringUtil.xmlNsSeparatorWhitespaceNormalization(lStr);
+			  rStr = StringUtil.xmlNsSeparatorWhitespaceNormalization(rStr);
 
 			  boolean a1 = StringUtil.isStrHasBalancedParentheses(lStr, '(', ')');
 			  boolean a2 = StringUtil.isStrHasBalancedParentheses(rStr, '(', ')');
@@ -1324,8 +1379,8 @@ public class Compiler extends XPathOpMap
 	  
 	  if ((lStr != null) && (rStr != null)) {
 		  try {
-			  lStr = lStr.replace(" : ", ":");
-			  rStr = rStr.replace(" : ", ":");
+			  lStr = StringUtil.xmlNsSeparatorWhitespaceNormalization(lStr);
+			  rStr = StringUtil.xmlNsSeparatorWhitespaceNormalization(rStr);
 
 			  boolean a1 = StringUtil.isStrHasBalancedParentheses(lStr, '(', ')');
 			  boolean a2 = StringUtil.isStrHasBalancedParentheses(rStr, '(', ')');
@@ -1402,8 +1457,8 @@ public class Compiler extends XPathOpMap
 	  
 	  if ((lStr != null) && (rStr != null)) {
 		  try {
-			  lStr = lStr.replace(" : ", ":");
-			  rStr = rStr.replace(" : ", ":");
+			  lStr = StringUtil.xmlNsSeparatorWhitespaceNormalization(lStr);
+			  rStr = StringUtil.xmlNsSeparatorWhitespaceNormalization(rStr);
 
 			  boolean a1 = StringUtil.isStrHasBalancedParentheses(lStr, '(', ')');
 			  boolean a2 = StringUtil.isStrHasBalancedParentheses(rStr, '(', ')');
@@ -2613,7 +2668,7 @@ private static final boolean DEBUG = false;
 	  
 	  List<XMLNSDecl> prefixTable = getDefaultXmlNsPrefixTable();
 	  
-	  String xpathStr1 = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, prefixTable);
+	  String xpathStr1 = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, prefixTable);
 
 	  XPath xpathObj = new XPath(xpathStr1, null, getXMLNsPrefixResolver(), XPath.SELECT, null);
 	  
@@ -2649,7 +2704,7 @@ private static final boolean DEBUG = false;
 	  
 	  List<XMLNSDecl> prefixTable = getDefaultXmlNsPrefixTable();
 	  
-	  String xpathStr1 = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, prefixTable);
+	  String xpathStr1 = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, prefixTable);
 
 	  XPath xpathObj = new XPath(xpathStr1, null, getXMLNsPrefixResolver(), XPath.SELECT, null);
 	  
@@ -2684,7 +2739,7 @@ private static final boolean DEBUG = false;
 
 	  List<XMLNSDecl> prefixTable = getDefaultXmlNsPrefixTable();
 
-	  String xpathStr1 = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr, prefixTable);
+	  String xpathStr1 = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr, prefixTable);
 
 	  XPath xpathObj = new XPath(xpathStr1, null, getXMLNsPrefixResolver(), XPath.SELECT, null);
 

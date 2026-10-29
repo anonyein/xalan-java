@@ -137,22 +137,22 @@ public class FuncFunctionLookup extends Function2Args {
 		boolean xslFuncExists = false;
 		
 		if ((XPathStaticContext.XPATH_BUILT_IN_FUNCS_NS_URI).equals(namespace)) {
-		    Object funcId = m_funcTable.getFunctionIdForXSLBuiltinFuncs(localName);
+		    Object funcId = m_funcTable.getFunctionIdForXSLBuiltinFunc(localName);
 		    
 		    xslFuncExists = xpathBuiltInFuncExists(funcId, arity);
 		}
 		else if ((XPathStaticContext.XPATH_BUILT_IN_MATH_FUNCS_NS_URI).equals(namespace)) {
-		    Object funcId = m_funcTable.getFunctionIdForXPathBuiltinMathFuncs(localName);
+		    Object funcId = m_funcTable.getFunctionIdForXPathBuiltinMathFunc(localName);
 		    
 		    xslFuncExists = xpathBuiltInFuncExists(funcId, arity);
 		}
 		else if ((XPathStaticContext.XPATH_BUILT_IN_MAP_FUNCS_NS_URI).equals(namespace)) {
-		    Object funcId = m_funcTable.getFunctionIdForXPathBuiltinMapFuncs(localName);
+		    Object funcId = m_funcTable.getFunctionIdForXPathBuiltinMapFunc(localName);
 		    
 		    xslFuncExists = xpathBuiltInFuncExists(funcId, arity);
 		}
 		else if ((XPathStaticContext.XPATH_BUILT_IN_ARRAY_FUNCS_NS_URI).equals(namespace)) {
-		    Object funcId = m_funcTable.getFunctionIdForXPathBuiltinArrayFuncs(localName);
+		    Object funcId = m_funcTable.getFunctionIdForXPathBuiltinArrayFunc(localName);
 		    
 		    xslFuncExists = xpathBuiltInFuncExists(funcId, arity);
 		}
@@ -216,7 +216,7 @@ public class FuncFunctionLookup extends Function2Args {
 				
 				List<XMLNSDecl> prefixTable = XslTransformEvaluationHelper.getXSLNsPrefixTable(xctxt);				
 				if (prefixTable != null) {
-					xpathStr1 = XslTransformEvaluationHelper.replaceNsUrisWithPrefixesOnXPathStr(xpathStr1, prefixTable); 
+					xpathStr1 = XslTransformEvaluationHelper.replaceXmlNsUrisWithPrefixesXPathStr(xpathStr1, prefixTable); 
 				}
 
 				XPath xpathObj = new XPath(xpathStr1, srcLocator, xctxt.getNamespaceContext(), XPath.SELECT, null);

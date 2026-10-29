@@ -1,18 +1,16 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-17T10:38:31Z" fail="69" name="namespace" pass="152" run="221" skipped="3" statusUnknown="0">
-   <testResult status="fail" testName="namespace-0101">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;&lt;a/&gt;&lt;/out&gt;</outResult>
-   </testResult>
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-10-09T15:08:39Z" fail="63" name="namespace" pass="158" run="221" skipped="3" statusUnknown="0">
+   <testResult status="pass" testName="namespace-0101"/>
    <testResult status="pass" testName="namespace-0201"/>
    <testResult status="pass" testName="namespace-0202"/>
    <testResult status="pass" testName="namespace-0301"/>
    <testResult status="pass" testName="namespace-0401"/>
    <testResult status="pass" testName="namespace-0402"/>
-   <testResult status="fail" testName="namespace-0501"/>
-   <testResult status="fail" testName="namespace-0601"/>
-   <testResult status="fail" testName="namespace-0602"/>
+   <testResult status="pass" testName="namespace-0501"/>
+   <testResult status="pass" testName="namespace-0601"/>
+   <testResult status="pass" testName="namespace-0602"/>
    <testResult status="pass" testName="namespace-0603"/>
-   <testResult status="fail" testName="namespace-0701"/>
-   <testResult status="fail" testName="namespace-0801"/>
+   <testResult status="pass" testName="namespace-0701"/>
+   <testResult status="pass" testName="namespace-0801"/>
    <testResult status="fail" testName="namespace-0802"/>
    <testResult status="fail" testName="namespace-0901"/>
    <testResult status="fail" testName="namespace-0902"/>
@@ -22,7 +20,7 @@
    <testResult status="pass" testName="namespace-0906"/>
    <testResult status="pass" testName="namespace-0907"/>
    <testResult status="fail" testName="namespace-0908"/>
-   <testResult reason="Xalan configured" status="skipped" testName="namespace-0909"/>
+   <testResult reason="Xalan-J configured" status="skipped" testName="namespace-0909"/>
    <testResult status="fail" testName="namespace-0910"/>
    <testResult status="pass" testName="namespace-0911"/>
    <testResult status="fail" testName="namespace-0912"/>
@@ -54,13 +52,13 @@
       <outResult/>
    </testResult>
    <testResult status="pass" testName="namespace-2201"/>
-   <testResult status="fail" testName="namespace-2301"/>
-   <testResult status="fail" testName="namespace-2302"/>
+   <testResult status="pass" testName="namespace-2301"/>
+   <testResult status="pass" testName="namespace-2302"/>
    <testResult status="fail" testName="namespace-2401"/>
    <testResult status="fail" testName="namespace-2402"/>
    <testResult status="pass" testName="namespace-2501"/>
-   <testResult status="pass" testName="namespace-2502"/>
-   <testResult status="pass" testName="namespace-2503"/>
+   <testResult status="fail" testName="namespace-2502"/>
+   <testResult status="fail" testName="namespace-2503"/>
    <testResult status="pass" testName="namespace-2601"/>
    <testResult status="fail" testName="namespace-2602">
       <outResult/>
@@ -84,7 +82,7 @@
       <outResult/>
    </testResult>
    <testResult status="pass" testName="namespace-2611"/>
-   <testResult status="fail" testName="namespace-2612"/>
+   <testResult status="pass" testName="namespace-2612"/>
    <testResult status="fail" testName="namespace-2614"/>
    <testResult status="fail" testName="namespace-2615"/>
    <testResult status="fail" testName="namespace-2616"/>
@@ -105,7 +103,7 @@
    </testResult>
    <testResult status="fail" testName="namespace-2623">
       <outResult>
-         <errTrace>XTSE0010 : An XML element yyy is not allowed in this position in the stylesheet.</errTrace>
+         <errTrace>XTSE0010 : An XSL stylesheet does not allow, an XML element yyy at this position within the stylesheet.</errTrace>
       </outResult>
    </testResult>
    <testResult status="pass" testName="namespace-2624"/>
@@ -147,10 +145,14 @@
       </outResult>
    </testResult>
    <testResult status="fail" testName="namespace-3101">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;&lt;yyy/&gt;&lt;/out&gt;</outResult>
+      <outResult>
+         <errTrace>XTDE0860 : Could not resolve namespace prefix: none. The node will be ignored.</errTrace>
+      </outResult>
    </testResult>
    <testResult status="fail" testName="namespace-3102">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;&lt;yyy/&gt;&lt;/out&gt;</outResult>
+      <outResult>
+         <errTrace>XTDE0860 : Could not resolve namespace prefix: xyz. The node will be ignored.</errTrace>
+      </outResult>
    </testResult>
    <testResult status="fail" testName="namespace-3103">
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;&lt;yyy/&gt;&lt;/out&gt;</outResult>
@@ -159,13 +161,19 @@
       <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;&lt;yyy/&gt;&lt;/out&gt;</outResult>
    </testResult>
    <testResult status="fail" testName="namespace-3105">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out xmlns="http://testguys.com/"&gt;&lt;yyy/&gt;&lt;/out&gt;</outResult>
+      <outResult>
+         <errTrace>XTDE0860 : Could not resolve namespace prefix: none. The node will be ignored.</errTrace>
+      </outResult>
    </testResult>
    <testResult status="fail" testName="namespace-3106">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;&lt;yyy/&gt;&lt;/out&gt;</outResult>
+      <outResult>
+         <errTrace>XTDE0860 : Could not resolve namespace prefix: abcc. The node will be ignored.</errTrace>
+      </outResult>
    </testResult>
    <testResult status="fail" testName="namespace-3107">
-      <outResult>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;out&gt;&lt;yyy xmlns="http://test.com/"/&gt;&lt;/out&gt;</outResult>
+      <outResult>
+         <errTrace>XTDE0860 : Could not resolve namespace prefix: wxyz. The node will be ignored.</errTrace>
+      </outResult>
    </testResult>
    <testResult status="pass" testName="namespace-3108"/>
    <testResult status="pass" testName="namespace-3109"/>
@@ -244,7 +252,7 @@
    <testResult status="pass" testName="namespace-3311"/>
    <testResult status="pass" testName="namespace-3312"/>
    <testResult status="pass" testName="namespace-3313"/>
-   <testResult reason="Xalan configured" status="skipped" testName="namespace-3314"/>
+   <testResult reason="Xalan-J configured" status="skipped" testName="namespace-3314"/>
    <testResult status="pass" testName="namespace-3315"/>
    <testResult status="pass" testName="namespace-3401"/>
    <testResult status="fail" testName="namespace-3501"/>
@@ -277,7 +285,7 @@
    <testResult status="pass" testName="namespace-4401"/>
    <testResult status="fail" testName="namespace-4501"/>
    <testResult status="pass" testName="namespace-4601"/>
-   <testResult status="pass" testName="namespace-4801"/>
+   <testResult status="fail" testName="namespace-4801"/>
    <testResult status="pass" testName="namespace-4901"/>
    <testResult status="pass" testName="namespace-5001"/>
    <testResult status="pass" testName="namespace-5101"/>

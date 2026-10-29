@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-08-17T10:33:42Z" fail="16" name="prod-GeneralComp.le" pass="41" run="57" statusUnknown="0">
+<?xml version="1.0" encoding="UTF-8"?><testrun dateTime="2026-10-27T10:01:25Z" fail="5" name="prod-GeneralComp.le" pass="52" run="57" statusUnknown="0">
    <testResult status="pass" testName="generalexpression298"/>
    <testResult status="pass" testName="generalexpression299"/>
    <testResult status="pass" testName="generalexpression300"/>
@@ -32,25 +32,25 @@
    <testResult status="pass" testName="generalexpression370"/>
    <testResult status="pass" testName="generalexpression374"/>
    <testResult status="pass" testName="generalexpression375"/>
-   <testResult status="fail" testName="generalexpression376"/>
+   <testResult status="pass" testName="generalexpression376"/>
    <testResult status="pass" testName="generalexpression377"/>
    <testResult status="pass" testName="generalexpression378"/>
    <testResult status="pass" testName="generalexpression379"/>
-   <testResult status="fail" testName="generalexpression380"/>
+   <testResult status="pass" testName="generalexpression380"/>
    <testResult status="pass" testName="generalexpression384"/>
-   <testResult status="fail" testName="generalexpression385"/>
-   <testResult status="fail" testName="generalexpression386"/>
+   <testResult status="pass" testName="generalexpression385"/>
+   <testResult status="pass" testName="generalexpression386"/>
    <testResult status="pass" testName="generalexpression387"/>
    <testResult status="pass" testName="generalexpression388"/>
    <testResult status="pass" testName="generalexpression389"/>
-   <testResult status="fail" testName="generalexpression390"/>
-   <testResult status="fail" testName="generalexpression394"/>
-   <testResult status="fail" testName="generalexpression395"/>
-   <testResult status="fail" testName="generalexpression396"/>
-   <testResult status="fail" testName="lessthaneqonanyuri-1"/>
-   <testResult status="fail" testName="K-GenCompLTEQ-1"/>
+   <testResult status="pass" testName="generalexpression390"/>
+   <testResult status="pass" testName="generalexpression394"/>
+   <testResult status="pass" testName="generalexpression395"/>
+   <testResult status="pass" testName="generalexpression396"/>
+   <testResult status="pass" testName="lessthaneqonanyuri-1"/>
+   <testResult status="pass" testName="K-GenCompLTEQ-1"/>
    <testResult status="fail" testName="K-GenCompLTEQ-2"/>
-   <testResult status="fail" testName="K-GenCompLTEQ-3"/>
+   <testResult status="pass" testName="K-GenCompLTEQ-3"/>
    <testResult status="pass" testName="K-GenCompLTEQ-4"/>
    <testResult status="fail" testName="K-GenCompLTEQ-5"/>
    <testResult status="fail" testName="K-GenCompLTEQ-6"/>
